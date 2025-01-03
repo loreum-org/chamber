@@ -581,13 +581,47 @@ contract ChamberTest is Test {
 
         // Execute the transaction
         vm.startPrank(user1);
+        vm.expectRevert();
+        chamber.executeTransaction(0);
+        vm.stopPrank();
+    }
+
+    function test_Chamber_ExecuteTransaction_MockERC20() public {
+
+
+        uint256 value = 100 ether;
+        bytes memory data = abi.encodeWithSignature("transfer(address,uint256)", user1, value);
+
+        addDirectors();
+
+        // Create a new mock token and send balance to chamber
+        MockERC20 mockToken = new MockERC20();
+        mockToken.mint(address(chamber), value);
+
+        address target = address(mockToken);
+
+        // Submit and confirm the transaction
+        vm.startPrank(user1);
+        chamber.submitTransaction(target, 0, data);
+        vm.stopPrank();
+
+        vm.startPrank(user2);
+        chamber.confirmTransaction(0);
+        vm.stopPrank();
+
+        vm.startPrank(user3);
+        chamber.confirmTransaction(0);
+        vm.stopPrank();
+
+        // Execute the transaction
+        vm.startPrank(user1);
         chamber.executeTransaction(0);
         vm.stopPrank();
 
         // Check the transaction execution
-        assertEq(MockERC20(address(token)).balanceOf(user1), value);
+        assertEq(MockERC20(target).balanceOf(user1), value);
     }
-
+    
     function addDirectors() public {
         // Mint NFTs to users
         uint256 tokenId1 = 1;

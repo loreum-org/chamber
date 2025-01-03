@@ -186,7 +186,10 @@ abstract contract Board {
 
     // View functions for the leaderboard
     function _getTop(uint256 count) internal view returns (uint256[] memory, uint256[] memory) {
-        uint256 resultCount = count > size ? size : count;
+        
+        uint256 _size = size;
+        
+        uint256 resultCount = count > _size ? _size : count;
         uint256[] memory tokenIds = new uint256[](resultCount);
         uint256[] memory amounts = new uint256[](resultCount);
 

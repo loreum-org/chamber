@@ -10,11 +10,11 @@ abstract contract Wallet {
     event ExecuteTransaction(address indexed leader, uint256 indexed nonce);
 
     struct Transaction {
+        bool executed;
+        uint8 confirmations;
         address target;
         uint256 value;
         bytes data;
-        bool executed;
-        uint256 confirmations;
     }
 
     Transaction[] private transactions;
@@ -99,8 +99,6 @@ abstract contract Wallet {
 
         // Update state after external call
         transaction.executed = true;
-
-        emit ExecuteTransaction(msg.sender, nonce);
 
         emit ExecuteTransaction(msg.sender, nonce);
     }

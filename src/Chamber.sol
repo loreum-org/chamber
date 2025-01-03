@@ -12,6 +12,8 @@ import {ReentrancyGuard} from "lib/openzeppelin-contracts/contracts/security/Ree
 /// @title Chamber Contract
 /// @notice This contract manages a multisig wallet with governance and delegation features using ERC20 and ERC721 tokens.
 contract Chamber is Board, Wallet, ReentrancyGuard {
+    /// @notice The version of this implementation.
+    string public version = "1.1.0";
     /// @notice ERC20 governance token
     IERC20 public token;
     /// @notice ERC721 membership token
@@ -34,7 +36,8 @@ contract Chamber is Board, Wallet, ReentrancyGuard {
     error ZeroAddress();
     error ZeroAmount();
     error ArrayIndexOutOfBounds();
-
+    error CannotTransfer();
+    
     /// @notice Initializes the Chamber contract with the given ERC20 and ERC721 tokens and sets the number of seats
     /// @param erc20Token The address of the ERC20 token
     /// @param erc721Token The address of the ERC721 token
@@ -206,7 +209,15 @@ contract Chamber is Board, Wallet, ReentrancyGuard {
     /// @param transactionId The ID of the transaction to execute
     function executeTransaction(uint256 transactionId) public onlyDirector {
         if (getTransaction(transactionId).confirmations < getQuorum()) revert NotEnoughConfirmations();
+
+        // Cache token balance before execution
+        uint256 balanceBefore = token.balanceOf(address(this));
+
+        // Execute the transaction
         _executeTransaction(transactionId);
+
+        // Ensure token balance hasn't decreased
+        if (token.balanceOf(address(this)) < balanceBefore) revert CannotTransfer();
     }
 
     /// @notice Revokes a confirmation for a transaction
