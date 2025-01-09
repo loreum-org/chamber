@@ -27,8 +27,9 @@ contract ChamberVaultTest is Test {
         string memory name = "vERC20";
         string memory symbol = "Vault Token";
 
+        address admin = address(0x9);
         seats = 5;
-        chamber = DeployChamber.deploy(address(token), address(nft), seats, name, symbol);
+        chamber = DeployChamber.deploy(address(token), address(nft), seats, name, symbol, admin);
     }
 
     function test_Vault_Asset() public view {

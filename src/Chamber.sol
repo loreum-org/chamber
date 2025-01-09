@@ -14,8 +14,7 @@ import {ERC20Upgradeable} from "lib/openzeppelin-contracts-upgradeable/contracts
 contract Chamber is ERC4626Upgradeable, Board, Wallet {
 
     /// @notice The implementation version
-    string public version = "1.1.3";
-
+    string public version;
     /// @notice ERC721 membership token
     IERC721 public nft;
 
@@ -77,6 +76,8 @@ contract Chamber is ERC4626Upgradeable, Board, Wallet {
         
         nft = IERC721(erc721Token);
         _setSeats(0, seats);
+
+        version = "1.1.3";
     }
 
     /**
