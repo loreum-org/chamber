@@ -8,6 +8,12 @@ pragma solidity ^0.8.24;
  *      and seat management. Uses a doubly linked list to maintain sorted order of delegations.
  */
 abstract contract Board {
+    /// @notice Quorum threshold in basis points (5100 = 51%)
+    uint256 public constant QUORUM_THRESHOLD_BPS = 5100;
+
+    /// @notice Timelock period for seat updates (7 days)
+    uint256 public constant SEAT_UPDATE_TIMELOCK = 7 days;
+
     /**
      * @notice Node structure for the doubly linked list
      * @dev Each node represents a token delegation with links to maintain sorted order
@@ -260,7 +266,7 @@ abstract contract Board {
     }
 
     function _getQuorum() internal view returns (uint256) {
-        return 1 + (seats * 51) / 100;
+        return 1 + (seats * QUORUM_THRESHOLD_BPS) / 10000;
     }
 
     function _getSeats() internal view returns (uint256) {
@@ -312,7 +318,7 @@ abstract contract Board {
 
         // Require proposal exists and delay has passed
         if (proposal.timestamp == 0) revert InvalidProposal();
-        if (block.timestamp < proposal.timestamp + 7 days) revert TimelockNotExpired();
+        if (block.timestamp < proposal.timestamp + SEAT_UPDATE_TIMELOCK) revert TimelockNotExpired();
 
         // Verify quorum is still maintained
         if (proposal.supporters.length < _getQuorum()) {

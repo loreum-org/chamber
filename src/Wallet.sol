@@ -165,10 +165,10 @@ abstract contract Wallet {
     }
 
     /**
-     * @notice Returns the current nonce
-     * @return uint256 The current nonce value
+     * @notice Returns the current nonce (next transaction ID)
+     * @return uint256 The current nonce value, which is the next available transaction ID
      */
     function getCurrentNonce() public view returns (uint256) {
-        return transactions.length > 0 ? transactions.length - 1 : 0;
+        return transactions.length;
     }
 }

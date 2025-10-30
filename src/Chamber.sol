@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.24;
+pragma solidity ^0.8.24;
 
 import {Board} from "src/Board.sol";
 import {Wallet} from "src/Wallet.sol";
@@ -160,17 +160,25 @@ contract Chamber is ERC4626, Board, Wallet, ReentrancyGuard {
      * @param user The address of the user
      * @return tokenIds The list of tokenIds
      * @return amounts The list of amounts delegated to each tokenId
+     * @dev This function iterates through the entire linked list. For very large lists, consider adding pagination.
      */
     function getDelegations(address user) external view returns (uint256[] memory tokenIds, uint256[] memory amounts) {
+        // Prevent excessive gas consumption by limiting iteration
+        // In production, consider implementing pagination for very large lists
+        uint256 maxIterations = 1000; // Reasonable limit to prevent DoS
         uint256 count = 0;
         uint256 tokenId = head;
+        uint256 iterations = 0;
 
         // First pass: count the number of delegations
-        while (tokenId != 0) {
+        while (tokenId != 0 && iterations < maxIterations) {
             if (userDelegation[user][tokenId] > 0) {
                 count++;
             }
             tokenId = nodes[tokenId].next;
+            unchecked {
+                ++iterations;
+            }
         }
 
         // Allocate arrays with the correct size
@@ -180,13 +188,17 @@ contract Chamber is ERC4626, Board, Wallet, ReentrancyGuard {
         // Second pass: populate the arrays
         count = 0;
         tokenId = head;
-        while (tokenId != 0) {
+        iterations = 0;
+        while (tokenId != 0 && iterations < maxIterations) {
             if (userDelegation[user][tokenId] > 0) {
                 tokenIds[count] = tokenId;
                 amounts[count] = userDelegation[user][tokenId];
                 count++;
             }
             tokenId = nodes[tokenId].next;
+            unchecked {
+                ++iterations;
+            }
         }
     }
 

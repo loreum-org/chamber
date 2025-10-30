@@ -30,6 +30,9 @@ contract ChamberSepoliaTest is Test {
         assertEq(chamber.getSeats(), seats);
     }
 
+    // NOTE: This test calls functions without tokenId parameter, suggesting it tests against
+    // a deployed contract with a different interface. If updating this test, ensure the
+    // function signatures match the deployed contract version.
     function test_Chamber_Sepolia_ExecuteTransactionLowConfCount() public {
         uint256 amount = 2;
         address target = address(token);

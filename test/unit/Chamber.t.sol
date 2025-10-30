@@ -261,7 +261,7 @@ contract ChamberTest is Test {
     }
 
     function test_Chamber_GetQuorum() public view {
-        uint256 expectedQuorum = 1 + (seats * 51) / 100;
+        uint256 expectedQuorum = 1 + (seats * 5100) / 10000; // Using QUORUM_THRESHOLD_BPS constant
         uint256 actualQuorum = chamber.getQuorum();
 
         assertEq(expectedQuorum, actualQuorum);
