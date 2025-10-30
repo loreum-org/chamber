@@ -62,21 +62,46 @@ abstract contract Wallet {
     error TransactionFailed(bytes);
     error InvalidTarget();
 
+    /**
+     * @notice Modifier to check if a transaction exists
+     * @param nonce The transaction nonce to check
+     * @custom:error TransactionDoesNotExist Reverts if transaction doesn't exist
+     */
     modifier txExists(uint256 nonce) {
         if (nonce >= transactions.length) revert TransactionDoesNotExist();
         _;
     }
 
+    /**
+     * @notice Modifier to check if a transaction has not been executed
+     * @param nonce The transaction nonce to check
+     * @custom:error TransactionAlreadyExecuted Reverts if transaction already executed
+     */
     modifier notExecuted(uint256 nonce) {
         if (transactions[nonce].executed) revert TransactionAlreadyExecuted();
         _;
     }
 
+    /**
+     * @notice Modifier to check if a transaction has not been confirmed by a specific tokenId
+     * @param tokenId The tokenId to check
+     * @param nonce The transaction nonce to check
+     * @custom:error TransactionAlreadyConfirmed Reverts if already confirmed by this tokenId
+     */
     modifier notConfirmed(uint256 tokenId, uint256 nonce) {
         if (isConfirmed[nonce][tokenId]) revert TransactionAlreadyConfirmed();
         _;
     }
 
+    /**
+     * @notice Submits a new transaction for approval
+     * @dev Creates a new transaction and automatically confirms it with the submitter's tokenId
+     * @param tokenId The tokenId submitting the transaction (must be a director)
+     * @param target The address to send the transaction to
+     * @param value The amount of Ether to send
+     * @param data The calldata to include in the transaction
+     * @custom:security The submitter automatically confirms the transaction
+     */
     function _submitTransaction(uint256 tokenId, address target, uint256 value, bytes memory data) internal {
         uint256 nonce = transactions.length;
 
@@ -85,6 +110,13 @@ abstract contract Wallet {
         emit SubmitTransaction(tokenId, nonce, target, value, data);
     }
 
+    /**
+     * @notice Confirms a transaction with a director's tokenId
+     * @dev Increments confirmation count and marks the tokenId as having confirmed
+     * @param tokenId The tokenId confirming the transaction
+     * @param nonce The transaction nonce to confirm
+     * @custom:security Uses modifiers to prevent invalid confirmations
+     */
     function _confirmTransaction(uint256 tokenId, uint256 nonce)
         internal
         txExists(nonce)
@@ -98,6 +130,13 @@ abstract contract Wallet {
         emit ConfirmTransaction(tokenId, nonce);
     }
 
+    /**
+     * @notice Revokes a confirmation for a transaction
+     * @dev Decrements confirmation count and removes the tokenId's confirmation status
+     * @param tokenId The tokenId revoking the confirmation
+     * @param nonce The transaction nonce to revoke confirmation for
+     * @custom:error TransactionNotConfirmed Reverts if tokenId hasn't confirmed this transaction
+     */
     function _revokeConfirmation(uint256 tokenId, uint256 nonce) internal txExists(nonce) notExecuted(nonce) {
         if (!isConfirmed[nonce][tokenId]) revert TransactionNotConfirmed();
 
@@ -108,6 +147,15 @@ abstract contract Wallet {
         emit RevokeConfirmation(tokenId, nonce);
     }
 
+    /**
+     * @notice Executes a confirmed transaction
+     * @dev Makes external call using CEI pattern (Checks-Effects-Interactions)
+     * @param tokenId The tokenId executing the transaction
+     * @param nonce The transaction nonce to execute
+     * @custom:security Uses CEI pattern, checks for zero address, reverts on failure
+     * @custom:error InvalidTarget Reverts if target is zero address
+     * @custom:error TransactionFailed Reverts if external call fails
+     */
     function _executeTransaction(uint256 tokenId, uint256 nonce) internal txExists(nonce) notExecuted(nonce) {
         Transaction storage transaction = transactions[nonce];
 

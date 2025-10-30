@@ -173,6 +173,12 @@ abstract contract Board {
         emit Undelegate(msg.sender, tokenId, amount);
     }
 
+    /**
+     * @notice Inserts a new node into the sorted linked list
+     * @dev Creates a new node with the given tokenId and amount, maintaining descending order by amount
+     * @param tokenId The token ID to insert
+     * @param amount The amount of tokens delegated to this tokenId
+     */
     function _insert(uint256 tokenId, uint256 amount) internal {
         if (head == 0) {
             _initializeFirstNode(tokenId, amount);
@@ -182,12 +188,24 @@ abstract contract Board {
         _incrementSize();
     }
 
+    /**
+     * @notice Initializes the first node in the linked list
+     * @dev Sets both head and tail to the same node when the list is empty
+     * @param tokenId The token ID for the first node
+     * @param amount The amount of tokens delegated
+     */
     function _initializeFirstNode(uint256 tokenId, uint256 amount) private {
         nodes[tokenId] = Node({tokenId: tokenId, amount: amount, next: 0, prev: 0});
         head = tokenId;
         tail = tokenId;
     }
 
+    /**
+     * @notice Inserts a node into the linked list in descending order by amount
+     * @dev Traverses the list to find the correct position based on amount
+     * @param tokenId The token ID to insert
+     * @param amount The amount of tokens delegated (determines position in list)
+     */
     function _insertNodeInOrder(uint256 tokenId, uint256 amount) private {
         uint256 current = head;
         uint256 previous = 0;
@@ -212,12 +230,21 @@ abstract contract Board {
         }
     }
 
+    /**
+     * @notice Increments the size counter for the linked list
+     * @dev Uses unchecked arithmetic as size cannot overflow in practice
+     */
     function _incrementSize() private {
         unchecked {
             size++;
         }
     }
 
+    /**
+     * @notice Removes a node from the linked list
+     * @dev Updates pointers of adjacent nodes and clears the removed node
+     * @param tokenId The token ID of the node to remove
+     */
     function _remove(uint256 tokenId) internal {
         Node storage node = nodes[tokenId];
         uint256 prev = node.prev;
@@ -241,13 +268,24 @@ abstract contract Board {
         }
     }
 
+    /**
+     * @notice Repositions a node in the linked list after its amount changes
+     * @dev Removes and reinserts the node to maintain sorted order
+     * @param tokenId The token ID of the node to reposition
+     */
     function _reposition(uint256 tokenId) internal {
         uint256 amount = nodes[tokenId].amount;
         _remove(tokenId);
         _insert(tokenId, amount);
     }
 
-    // View functions for the leaderboard
+    /**
+     * @notice Retrieves the top N nodes from the leaderboard
+     * @dev Returns tokenIds and amounts in descending order by delegation amount
+     * @param count The number of top nodes to retrieve
+     * @return tokenIds Array of tokenIds in descending order by amount
+     * @return amounts Array of corresponding delegation amounts
+     */
     function _getTop(uint256 count) internal view returns (uint256[] memory, uint256[] memory) {
         uint256 _size = size;
 
@@ -265,14 +303,31 @@ abstract contract Board {
         return (tokenIds, amounts);
     }
 
+    /**
+     * @notice Calculates the required quorum for transaction execution
+     * @dev Quorum is 1 plus 51% of seats (rounded down)
+     * @return The minimum number of confirmations required
+     */
     function _getQuorum() internal view returns (uint256) {
         return 1 + (seats * QUORUM_THRESHOLD_BPS) / 10000;
     }
 
+    /**
+     * @notice Gets the current number of board seats
+     * @return The number of seats configured for the board
+     */
     function _getSeats() internal view returns (uint256) {
         return seats;
     }
 
+    /**
+     * @notice Sets or proposes a new number of board seats
+     * @dev On first call, creates a proposal. Subsequent calls add support or cancel if different number.
+     *      If seats is 0 (initial setup), sets immediately without proposal.
+     * @param tokenId The tokenId making the proposal/support
+     * @param numOfSeats The proposed number of seats (must be > 0)
+     * @custom:security Requires quorum support and timelock before execution
+     */
     function _setSeats(uint256 tokenId, uint256 numOfSeats) internal {
         if (numOfSeats <= 0) revert InvalidNumSeats();
 
@@ -313,6 +368,12 @@ abstract contract Board {
         emit SetSeats(tokenId, numOfSeats);
     }
 
+    /**
+     * @notice Executes a pending seat update proposal after timelock expires
+     * @dev Requires proposal exists, timelock expired, and quorum support maintained
+     * @param tokenId The tokenId executing the proposal
+     * @custom:security Requires SEAT_UPDATE_TIMELOCK delay and quorum support
+     */
     function _executeSeatsUpdate(uint256 tokenId) internal {
         SeatUpdate storage proposal = seatUpdate;
 

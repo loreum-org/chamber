@@ -202,24 +202,31 @@ contract Chamber is ERC4626, Board, Wallet, ReentrancyGuard {
         }
     }
 
+    /**
+     * @notice Retrieves the current seat update proposal information
+     * @return SeatUpdate struct containing proposal details
+     */
     function getSeatUpdate() public view returns (SeatUpdate memory) {
         return seatUpdate;
     }
 
     /**
-     * @notice Updates the number of seats
-     * @param numOfSeats The new number of seats
-     * @dev If there's an existing proposal to update seats, calling this
-     *     function with a different number of seats will cancel the existing proposal.
+     * @notice Updates the number of board seats
+     * @dev Creates a proposal if seats are already set, or sets immediately if initial setup.
+     *      If a different number is proposed, cancels existing proposal.
+     * @param tokenId The tokenId making the proposal (must be a director)
+     * @param numOfSeats The new number of seats to propose
+     * @custom:security Requires director status via isDirector modifier
      */
     function updateSeats(uint256 tokenId, uint256 numOfSeats) public isDirector(tokenId) {
         _setSeats(tokenId, numOfSeats);
     }
 
     /**
-     * @notice Executes a pending seat update proposal if it has enough support and the timelock has expired
-     * @dev Can only be called by a director
-     * @dev Requires the proposal to exist, have passed the 7-day timelock, and maintain quorum support
+     * @notice Executes a pending seat update proposal after timelock expires
+     * @dev Requires proposal exists, timelock expired, and quorum support maintained
+     * @param tokenId The tokenId executing the proposal (must be a director)
+     * @custom:security Requires director status, timelock expiration, and quorum support
      */
     function executeSeatsUpdate(uint256 tokenId) public isDirector(tokenId) {
         _executeSeatsUpdate(tokenId);
@@ -228,10 +235,12 @@ contract Chamber is ERC4626, Board, Wallet, ReentrancyGuard {
     /// WALLET ///
 
     /**
-     * @notice Submits a new transaction for approval
+     * @notice Submits a new transaction for approval by directors
+     * @param tokenId The tokenId submitting the transaction (must be a director)
      * @param target The address to send the transaction to
      * @param value The amount of Ether to send
-     * @param data The data to include in the transaction
+     * @param data The calldata to include in the transaction
+     * @custom:security Requires director status, automatically confirms with submitter's tokenId
      */
     function submitTransaction(uint256 tokenId, address target, uint256 value, bytes memory data)
         public
@@ -241,8 +250,10 @@ contract Chamber is ERC4626, Board, Wallet, ReentrancyGuard {
     }
 
     /**
-     * @notice Confirms a transaction
+     * @notice Confirms a transaction with a director's tokenId
+     * @param tokenId The tokenId confirming the transaction (must be a director)
      * @param transactionId The ID of the transaction to confirm
+     * @custom:security Requires director status, prevents duplicate confirmations
      */
     function confirmTransaction(uint256 tokenId, uint256 transactionId) public isDirector(tokenId) {
         _confirmTransaction(tokenId, transactionId);
@@ -250,7 +261,10 @@ contract Chamber is ERC4626, Board, Wallet, ReentrancyGuard {
 
     /**
      * @notice Executes a transaction if it has enough confirmations
+     * @param tokenId The tokenId executing the transaction (must be a director)
      * @param transactionId The ID of the transaction to execute
+     * @custom:security Requires director status and quorum confirmations
+     * @custom:error NotEnoughConfirmations Reverts if quorum not met
      */
     function executeTransaction(uint256 tokenId, uint256 transactionId) public isDirector(tokenId) {
         if (getTransaction(transactionId).confirmations < getQuorum()) revert NotEnoughConfirmations();
@@ -259,18 +273,22 @@ contract Chamber is ERC4626, Board, Wallet, ReentrancyGuard {
 
     /**
      * @notice Revokes a confirmation for a transaction
+     * @param tokenId The tokenId revoking the confirmation (must be a director)
      * @param transactionId The ID of the transaction to revoke confirmation for
+     * @custom:security Requires director status
      */
     function revokeConfirmation(uint256 tokenId, uint256 transactionId) public isDirector(tokenId) {
         _revokeConfirmation(tokenId, transactionId);
     }
     /**
      * @notice Submits multiple transactions for approval in a single call
+     * @param tokenId The tokenId submitting the transactions (must be a director)
      * @param targets The array of addresses to send the transactions to
      * @param values The array of amounts of Ether to send
      * @param data The array of data to include in each transaction
+     * @custom:error ArrayLengthsMustMatch Reverts if array lengths don't match
+     * @custom:security Requires director status for all transactions
      */
-
     function submitBatchTransactions(
         uint256 tokenId,
         address[] memory targets,
@@ -286,7 +304,9 @@ contract Chamber is ERC4626, Board, Wallet, ReentrancyGuard {
 
     /**
      * @notice Confirms multiple transactions in a single call
+     * @param tokenId The tokenId confirming the transactions (must be a director)
      * @param transactionIds The array of transaction IDs to confirm
+     * @custom:security Requires director status for all confirmations
      */
     function confirmBatchTransactions(uint256 tokenId, uint256[] memory transactionIds) public isDirector(tokenId) {
         for (uint256 i = 0; i < transactionIds.length; i++) {
@@ -296,7 +316,10 @@ contract Chamber is ERC4626, Board, Wallet, ReentrancyGuard {
 
     /**
      * @notice Executes multiple transactions in a single call if they have enough confirmations
+     * @param tokenId The tokenId executing the transactions (must be a director)
      * @param transactionIds The array of transaction IDs to execute
+     * @dev Each transaction must individually meet quorum requirements
+     * @custom:security Requires director status and quorum for each transaction
      */
     function executeBatchTransactions(uint256 tokenId, uint256[] memory transactionIds) public {
         for (uint256 i = 0; i < transactionIds.length; i++) {
@@ -310,7 +333,12 @@ contract Chamber is ERC4626, Board, Wallet, ReentrancyGuard {
         emit Received(msg.sender, msg.value);
     }
 
-    /// @notice Modifier to restrict access to only directors
+    /**
+     * @notice Modifier to restrict access to only directors
+     * @dev Checks if the tokenId is in the top N seats and verifies the caller owns the NFT
+     * @param tokenId The tokenId to check director status for
+     * @custom:error NotDirector Reverts if tokenId is not a director or caller doesn't own the NFT
+     */
     modifier isDirector(uint256 tokenId) {
         // Check if tokenId is in top seats
         uint256 seats = _getSeats();
@@ -341,10 +369,13 @@ contract Chamber is ERC4626, Board, Wallet, ReentrancyGuard {
 
     /**
      * @notice Transfers tokens to a specified address
-     * @dev Overrides the ERC20 transfer function to include delegation checks
+     * @dev Overrides the ERC20 transfer function to include delegation checks.
+     *      Ensures users cannot transfer more tokens than they have available (excluding delegations).
      * @param to The recipient address
      * @param value The amount of tokens to transfer
      * @return true if the transfer is successful
+     * @custom:error TransferToZeroAddress Reverts if recipient is zero address
+     * @custom:error ExceedsDelegatedAmount Reverts if transfer would leave insufficient balance for delegations
      */
     function transfer(address to, uint256 value) public override(ERC20, IERC20) nonReentrant returns (bool) {
         if (to == address(0)) revert TransferToZeroAddress();
@@ -361,11 +392,14 @@ contract Chamber is ERC4626, Board, Wallet, ReentrancyGuard {
 
     /**
      * @notice Transfers tokens from one address to another
-     * @dev Overrides the ERC20 transferFrom function to include delegation checks
+     * @dev Overrides the ERC20 transferFrom function to include delegation checks.
+     *      Ensures users cannot transfer more tokens than they have available (excluding delegations).
      * @param from The address to transfer tokens from
      * @param to The address to transfer tokens to
      * @param value The amount of tokens to transfer
      * @return true if the transfer is successful
+     * @custom:error TransferToZeroAddress Reverts if recipient is zero address
+     * @custom:error ExceedsDelegatedAmount Reverts if transfer would leave insufficient balance for delegations
      */
     function transferFrom(address from, address to, uint256 value)
         public
