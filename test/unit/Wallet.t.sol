@@ -102,17 +102,20 @@ contract WalletTest is Test {
         uint256 value = 1 ether;
         bytes memory data = "";
 
+        // Initially, no transactions exist, so next nonce is 0
         uint256 initialNonce = wallet.getCurrentNonce();
         assertEq(initialNonce, 0);
 
+        // After submitting 1 transaction, next nonce should be 1
         wallet.submitTransaction(1, target, value, data);
 
         uint256 newNonce = wallet.getCurrentNonce();
-        assertEq(newNonce, 0);
+        assertEq(newNonce, 1);
 
+        // After submitting 2 transactions, next nonce should be 2
         wallet.submitTransaction(1, target, value, data);
 
         uint256 newNonce1 = wallet.getCurrentNonce();
-        assertEq(newNonce1, 1);
+        assertEq(newNonce1, 2);
     }
 }
