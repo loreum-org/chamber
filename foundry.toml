@@ -5,6 +5,14 @@ cache_path = 'cache'
 evm_version = 'cancun'
 
 libs = ['lib']
+remappings = [
+  "@layerzerolabs/lz-evm-protocol-v2/=lib/layerzero-v2/packages/layerzero-v2/evm/protocol/",
+  "@layerzerolabs/lz-evm-messagelib-v2/=lib/layerzero-v2/packages/layerzero-v2/evm/messagelib/",
+  "@layerzerolabs/ovault-evm/=lib/devtools/packages/ovault-evm/",
+  "@layerzerolabs/oft-evm/=lib/devtools/packages/oft-evm/",
+  "@layerzerolabs/oapp-evm/=lib/devtools/packages/oapp-evm/",
+  "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
+]
 names = false
 offline = false
 optimizer = true

@@ -5,3 +5,9 @@
 	path = lib/openzeppelin-contracts
 	url = https://github.com/OpenZeppelin/openzeppelin-contracts
 	branch = release-v5.0
+[submodule "lib/devtools"]
+	path = lib/devtools
+	url = https://github.com/LayerZero-Labs/devtools
+[submodule "lib/layerzero-v2"]
+	path = lib/layerzero-v2
+	url = https://github.com/LayerZero-Labs/LayerZero-v2
