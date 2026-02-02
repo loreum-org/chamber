@@ -1,6 +1,14 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity 0.8.30;
 
+import {IWallet} from "./interfaces/IWallet.sol";
+
+/**
+ * @title Wallet
+ * @notice Abstract contract implementing multisig transaction management
+ * @dev Provides core functionality for submitting, confirming, and executing transactions
+ *      with configurable quorum requirements
+ */
 abstract contract Wallet {
     /**
      * @notice Structure representing a transaction in the wallet
@@ -19,72 +27,55 @@ abstract contract Wallet {
     }
 
     /// @notice Array of all transactions submitted to the wallet
-    Transaction[] private transactions;
+    Transaction[] internal transactions;
 
     /// @notice Mapping from transaction nonce to tokenId to confirmation status
-    mapping(uint256 => mapping(uint256 => bool)) private isConfirmed;
+    mapping(uint256 => mapping(uint256 => bool)) internal isConfirmed;
 
-    /**
-     * @notice Emitted when a new transaction is submitted
-     * @param tokenId The tokenId submitting the transaction
-     * @param nonce The unique identifier for the transaction
-     * @param to The target address for the transaction
-     * @param value The amount of ETH to send
-     * @param data The calldata for the transaction
-     */
-    event SubmitTransaction(uint256 tokenId, uint256 nonce, address indexed to, uint256 value, bytes data);
+    /// @dev Events and errors are defined in IWallet interface
 
-    /**
-     * @notice Emitted when a transaction is confirmed by a leader
-     * @param tokenId The address of the leader confirming
-     * @param nonce The identifier of the confirmed transaction
-     */
-    event ConfirmTransaction(uint256 tokenId, uint256 nonce);
-
-    /**
-     * @notice Emitted when a confirmation is revoked by a leader
-     * @param tokenId The address of the leader revoking confirmation
-     * @param nonce The identifier of the transaction
-     */
-    event RevokeConfirmation(uint256 tokenId, uint256 nonce);
-
-    /**
-     * @notice Emitted when a transaction is executed
-     * @param tokenId The address of the leader executing the transaction
-     * @param nonce The identifier of the executed transaction
-     */
-    event ExecuteTransaction(uint256 tokenId, uint256 nonce);
-
-    error TransactionDoesNotExist();
-    error TransactionAlreadyExecuted();
-    error TransactionAlreadyConfirmed();
-    error TransactionNotConfirmed();
-    error TransactionFailed(bytes);
-    error InvalidTarget();
-
+    /// @notice Modifier to check if a transaction exists
+    /// @param nonce The transaction index to check
     modifier txExists(uint256 nonce) {
-        if (nonce >= transactions.length) revert TransactionDoesNotExist();
+        if (nonce >= transactions.length) revert IWallet.TransactionDoesNotExist();
         _;
     }
 
+    /// @notice Modifier to check if a transaction has not been executed
+    /// @param nonce The transaction index to check
     modifier notExecuted(uint256 nonce) {
-        if (transactions[nonce].executed) revert TransactionAlreadyExecuted();
+        if (transactions[nonce].executed) revert IWallet.TransactionAlreadyExecuted();
         _;
     }
 
+    /// @notice Modifier to check if a transaction has not been confirmed by a specific tokenId
+    /// @param tokenId The token ID to check confirmation for
+    /// @param nonce The transaction index to check
     modifier notConfirmed(uint256 tokenId, uint256 nonce) {
-        if (isConfirmed[nonce][tokenId]) revert TransactionAlreadyConfirmed();
+        if (isConfirmed[nonce][tokenId]) revert IWallet.TransactionAlreadyConfirmed();
         _;
     }
 
+    /**
+     * @notice Submits a new transaction and auto-confirms for the submitter
+     * @param tokenId The token ID submitting the transaction
+     * @param target The destination address for the transaction
+     * @param value The amount of ETH to send
+     * @param data The calldata to execute
+     */
     function _submitTransaction(uint256 tokenId, address target, uint256 value, bytes memory data) internal {
         uint256 nonce = transactions.length;
 
         transactions.push(Transaction({target: target, value: value, data: data, executed: false, confirmations: 0}));
         _confirmTransaction(tokenId, nonce);
-        emit SubmitTransaction(tokenId, nonce, target, value, data);
+        emit IWallet.SubmitTransaction(tokenId, nonce, target, value, data);
     }
 
+    /**
+     * @notice Confirms a transaction for a specific token ID
+     * @param tokenId The token ID confirming the transaction
+     * @param nonce The transaction index to confirm
+     */
     function _confirmTransaction(uint256 tokenId, uint256 nonce)
         internal
         txExists(nonce)
@@ -95,63 +86,81 @@ abstract contract Wallet {
         transaction.confirmations += 1;
         isConfirmed[nonce][tokenId] = true;
 
-        emit ConfirmTransaction(tokenId, nonce);
+        emit IWallet.ConfirmTransaction(tokenId, nonce);
     }
 
+    /**
+     * @notice Revokes a previously given confirmation
+     * @param tokenId The token ID revoking the confirmation
+     * @param nonce The transaction index to revoke confirmation for
+     */
     function _revokeConfirmation(uint256 tokenId, uint256 nonce) internal txExists(nonce) notExecuted(nonce) {
-        if (!isConfirmed[nonce][tokenId]) revert TransactionNotConfirmed();
+        if (!isConfirmed[nonce][tokenId]) revert IWallet.TransactionNotConfirmed();
 
         Transaction storage transaction = transactions[nonce];
-        transaction.confirmations -= 1;
+        
+        // Prevent underflow
+        if (transaction.confirmations > 0) {
+            unchecked {
+                transaction.confirmations -= 1;
+            }
+        }
         isConfirmed[nonce][tokenId] = false;
 
-        emit RevokeConfirmation(tokenId, nonce);
+        emit IWallet.RevokeConfirmation(tokenId, nonce);
     }
 
+    /**
+     * @notice Executes a confirmed transaction
+     * @dev Uses CEI pattern - state updated before external call
+     * @param tokenId The token ID executing the transaction
+     * @param nonce The transaction index to execute
+     */
     function _executeTransaction(uint256 tokenId, uint256 nonce) internal txExists(nonce) notExecuted(nonce) {
         Transaction storage transaction = transactions[nonce];
 
         // Add zero address check
-        if (transaction.target == address(0)) revert InvalidTarget();
+        if (transaction.target == address(0)) revert IWallet.InvalidTarget();
 
         // Store values locally to prevent multiple storage reads
         address target = transaction.target;
         uint256 value = transaction.value;
         bytes memory data = transaction.data;
 
-        // Make external call before state changes (CEI pattern)
-        (bool success, bytes memory returnData) = target.call{value: value}(data);
-        if (!success) revert TransactionFailed(returnData);
-
-        // Update state after external call
+        // CEI pattern: Update state BEFORE external call to prevent reentrancy
         transaction.executed = true;
 
-        emit ExecuteTransaction(tokenId, nonce);
+        // Make external call after state changes
+        (bool success, bytes memory returnData) = target.call{value: value}(data);
+        if (!success) {
+            // Revert state on failure
+            transaction.executed = false;
+            revert IWallet.TransactionFailed(returnData);
+        }
+
+        emit IWallet.ExecuteTransaction(tokenId, nonce);
     }
 
     /**
      * @notice Returns the total number of transactions
      * @return The total number of transactions
      */
-    function getTransactionCount() public view returns (uint256) {
+    function getTransactionCount() public view virtual returns (uint256) {
         return transactions.length;
     }
 
     /**
      * @notice Returns the details of a specific transaction
      * @param nonce The index of the transaction to retrieve
-     * @return The Transaction struct containing the transaction details
+     * @return executed Whether the transaction has been executed
+     * @return confirmations Number of confirmations
+     * @return target The target address
+     * @return value The ETH value
+     * @return data The calldata
      */
-    function getTransaction(uint256 nonce) public view returns (Transaction memory) {
+    function getTransaction(uint256 nonce) public view virtual returns (bool executed, uint8 confirmations, address target, uint256 value, bytes memory data) {
         Transaction storage transaction = transactions[nonce];
-
-        return Transaction({
-            target: transaction.target,
-            value: transaction.value,
-            data: transaction.data,
-            executed: transaction.executed,
-            confirmations: transaction.confirmations
-        });
+        return (transaction.executed, transaction.confirmations, transaction.target, transaction.value, transaction.data);
     }
 
     /**
@@ -160,15 +169,27 @@ abstract contract Wallet {
      * @param nonce The index of the transaction to check
      * @return True if the transaction is confirmed by the director, false otherwise
      */
-    function getConfirmation(uint256 tokenId, uint256 nonce) public view returns (bool) {
+    function getConfirmation(uint256 tokenId, uint256 nonce) public view virtual returns (bool) {
         return isConfirmed[nonce][tokenId];
     }
 
     /**
-     * @notice Returns the current nonce
-     * @return uint256 The current nonce value
+     * @notice Returns the next transaction ID (current nonce)
+     * @return uint256 The next transaction ID that will be assigned
+     */
+    function getNextTransactionId() public view virtual returns (uint256) {
+        return transactions.length;
+    }
+
+    /**
+     * @notice Returns the last transaction ID
+     * @return uint256 The last transaction ID (or 0 if no transactions)
+     * @dev Deprecated: Use getNextTransactionId() instead
      */
     function getCurrentNonce() public view returns (uint256) {
         return transactions.length > 0 ? transactions.length - 1 : 0;
     }
+
+    /// @dev Storage gap for future upgrades
+    uint256[50] private __gap;
 }

@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity 0.8.30;
+
+import {IBoard} from "./interfaces/IBoard.sol";
 
 /**
  * @title Board
@@ -48,84 +50,20 @@ abstract contract Board {
      * @notice Structure representing a proposal to update the number of board seats
      * @param proposedSeats The proposed new number of seats
      * @param timestamp When the proposal was created
+     * @param requiredQuorum The quorum required at proposal time
      * @param supporters Array of tokenIds that have supported this proposal
      */
     struct SeatUpdate {
         uint256 proposedSeats;
         uint256 timestamp;
+        uint256 requiredQuorum;
         uint256[] supporters;
     }
 
     /// @notice Seat update proposal
     SeatUpdate internal seatUpdate;
 
-    /// EVENTS ///
-
-    /**
-     * @notice Emitted when the number of seats is set
-     * @param tokenId The tokenId that called the function\
-     * @param numOfSeats The new number of seats
-     */
-    event SetSeats(uint256 tokenId, uint256 numOfSeats);
-
-    /**
-     * @notice Emitted when a seat update proposal is cancelled
-     * @param tokenId The tokenId who cancelled the proposal
-     */
-    event SeatUpdateCancelled(uint256 tokenId);
-
-    /**
-     * @notice Emitted when a call to set the number of seats is made
-     * @param tokenId The tokenId that called the function
-     * @param seats The number of seats
-     */
-    event ExecuteSetSeats(uint256 tokenId, uint256 seats);
-
-    /**
-     * @notice Emitted when a user delegates tokens to a tokenId
-     * @param sender The address of the user delegating tokens
-     * @param tokenId The tokenId to which tokens are delegated
-     * @param amount The amount of tokens delegated
-     */
-    event Delegate(address indexed sender, uint256 tokenId, uint256 amount);
-
-    /**
-     * @notice Emitted when a user undelegates tokens from a tokenId
-     * @param sender The address of the user undelegating tokens
-     * @param tokenId The tokenId from which tokens are undelegated
-     * @param amount The amount of tokens undelegated
-     */
-    event Undelegate(address indexed sender, uint256 tokenId, uint256 amount);
-
-    /// ERRORS ///
-
-    /// @notice Thrown when an update request has already been sent by the caller
-    error AlreadySentUpdateRequest();
-
-    /// @notice Thrown when the number of seats provided is invalid
-    error InvalidNumSeats();
-
-    /// @notice Thrown when the node does not exist
-    error NodeDoesNotExist();
-
-    /// @notice Thrown when the amount exceeds the delegation
-    error AmountExceedsDelegation();
-
-    /// @notice Thrown when the proposal ID is invalid or does not exist
-    error InvalidProposal();
-
-    /// @notice Thrown when attempting to execute a proposal before its timelock period has expired
-    error TimelockNotExpired();
-
-    /// @notice Thrown if updateSeates execution call hasn't got enough votes.
-    error InsufficientVotes();
-
-    /// @notice Thrown when a supporter is not found on the leaderboard
-    /// @param supporter The address of the supporter
-    error SupporterNotOnLeaderboard(address supporter);
-
-    /// @notice Thrown when the linked list has reached its maximum size
-    error MaxNodesReached();
+    /// @dev Events and errors are defined in IBoard interface
 
     /// MODIFIERS ///
 
@@ -135,7 +73,7 @@ abstract contract Board {
      * @custom:throws "Circuit breaker active" if the contract is already locked
      */
     modifier circuitBreaker() {
-        require(!locked, "Circuit breaker active");
+        if (locked) revert IBoard.CircuitBreakerActive();
         locked = true;
         _;
         locked = false;
@@ -143,13 +81,15 @@ abstract contract Board {
 
     /**
      * @notice Modifier that prevents reentrancy and contract calls
-     * @dev Checks if caller is an EOA or if circuit breaker is not active
-     * @custom:throws "No contract calls" if caller is a contract and circuit breaker is active
+     * @dev Prevents all calls when circuit breaker is active
+     * @custom:throws "Circuit breaker active" if the contract is locked
      */
     modifier preventReentry() {
-        require(msg.sender.code.length == 0 || !locked, "No contract calls");
+        if (locked) revert IBoard.CircuitBreakerActive();
         _;
     }
+
+    /// @dev CircuitBreakerActive error is defined in IBoard interface
 
     /// FUNCTIONS ///
 
@@ -178,7 +118,7 @@ abstract contract Board {
             // Create new node
             _insert(tokenId, amount);
         }
-        emit Delegate(msg.sender, tokenId, amount);
+        emit IBoard.Delegate(msg.sender, tokenId, amount);
     }
 
     /**
@@ -189,8 +129,8 @@ abstract contract Board {
      */
     function _undelegate(uint256 tokenId, uint256 amount) internal preventReentry {
         Node storage node = nodes[tokenId];
-        if (node.tokenId != tokenId) revert NodeDoesNotExist();
-        if (amount > node.amount) revert AmountExceedsDelegation();
+        if (node.tokenId != tokenId) revert IBoard.NodeDoesNotExist();
+        if (amount > node.amount) revert IBoard.AmountExceedsDelegation();
 
         node.amount -= amount;
 
@@ -199,21 +139,32 @@ abstract contract Board {
         } else {
             _reposition(tokenId);
         }
-        emit Undelegate(msg.sender, tokenId, amount);
+        emit IBoard.Undelegate(msg.sender, tokenId, amount);
     }
 
+    /**
+     * @notice Repositions a node in the sorted list after its amount changes
+     * @dev Removes and re-inserts the node to maintain sorted order
+     * @param tokenId The token ID to reposition
+     */
     function _reposition(uint256 tokenId) internal circuitBreaker {
         Node memory node = nodes[tokenId];
-        require(node.tokenId == tokenId, "Invalid node");
+        if (node.tokenId != tokenId) revert IBoard.NodeDoesNotExist();
         
         bool success = _remove(tokenId);
-        require(success, "Remove failed");
+        if (!success) revert IBoard.NodeDoesNotExist();
         
         _insert(tokenId, node.amount);
-    }    
+    }
 
+    /**
+     * @notice Inserts a new node into the sorted linked list
+     * @dev Maintains descending order by amount
+     * @param tokenId The token ID to insert
+     * @param amount The delegation amount for the node
+     */
     function _insert(uint256 tokenId, uint256 amount) internal {
-        if (size >= MAX_NODES) revert MaxNodesReached();
+        if (size >= MAX_NODES) revert IBoard.MaxNodesReached();
         
         if (head == 0) {
             _initializeFirstNode(tokenId, amount);
@@ -225,12 +176,23 @@ abstract contract Board {
         }
     }
 
+    /**
+     * @notice Initializes the first node in an empty list
+     * @param tokenId The token ID for the first node
+     * @param amount The delegation amount
+     */
     function _initializeFirstNode(uint256 tokenId, uint256 amount) private {
         nodes[tokenId] = Node({tokenId: tokenId, amount: amount, next: 0, prev: 0});
         head = tokenId;
         tail = tokenId;
     }
 
+    /**
+     * @notice Inserts a node in sorted order within an existing list
+     * @dev Traverses from head to find correct position based on amount
+     * @param tokenId The token ID to insert
+     * @param amount The delegation amount
+     */
     function _insertNodeInOrder(uint256 tokenId, uint256 amount) private {
         // Cache head value
         uint256 current = head;
@@ -268,10 +230,19 @@ abstract contract Board {
         }
     }
 
-    
-
+    /**
+     * @notice Removes a node from the linked list
+     * @param tokenId The token ID to remove
+     * @return True if removal was successful
+     */
     function _remove(uint256 tokenId) internal returns (bool) {
         Node storage node = nodes[tokenId];
+        
+        // Check if node exists
+        if (node.tokenId != tokenId) {
+            return false;
+        }
+        
         uint256 prev = node.prev;
         uint256 next = node.next;
 
@@ -288,23 +259,36 @@ abstract contract Board {
         }
 
         delete nodes[tokenId];
-        unchecked {
-            size--;
-            return true;            
+        
+        // Ensure size doesn't underflow
+        if (size > 0) {
+            unchecked {
+                size--;
+            }
         }
-
+        return true;
     }
 
-    // View functions for the leaderboard
+    /**
+     * @notice Retrieves the top N nodes from the sorted list
+     * @param count The number of top nodes to retrieve
+     * @return tokenIds Array of token IDs in descending order by amount
+     * @return amounts Array of corresponding delegation amounts
+     */
     function _getTop(uint256 count) internal view returns (uint256[] memory, uint256[] memory) {
         uint256 _size = size;
+
+        // Handle empty board
+        if (_size == 0) {
+            return (new uint256[](0), new uint256[](0));
+        }
 
         uint256 resultCount = count > _size ? _size : count;
         uint256[] memory tokenIds = new uint256[](resultCount);
         uint256[] memory amounts = new uint256[](resultCount);
 
         uint256 current = head;
-        for (uint256 i = 0; i < resultCount; i++) {
+        for (uint256 i = 0; i < resultCount && current != 0; i++) {
             tokenIds[i] = current;
             amounts[i] = nodes[current].amount;
             current = nodes[current].next;
@@ -313,21 +297,36 @@ abstract contract Board {
         return (tokenIds, amounts);
     }
 
+    /**
+     * @notice Calculates the current quorum requirement
+     * @dev Quorum is 51% of seats + 1
+     * @return The number of confirmations required for quorum
+     */
     function _getQuorum() internal view returns (uint256) {
         return 1 + (seats * 51) / 100;
     }
 
+    /**
+     * @notice Returns the current number of board seats
+     * @return The number of seats
+     */
     function _getSeats() internal view returns (uint256) {
         return seats;
     }
 
+    /**
+     * @notice Sets or proposes a new number of board seats
+     * @dev Initial call sets seats directly; subsequent calls create/update proposals
+     * @param tokenId The token ID proposing the change (0 for initial setup)
+     * @param numOfSeats The proposed number of seats
+     */
     function _setSeats(uint256 tokenId, uint256 numOfSeats) internal {
-        if (numOfSeats <= 0) revert InvalidNumSeats();
+        if (numOfSeats <= 0) revert IBoard.InvalidNumSeats();
 
         // Initial setup case
         if (seats == 0) {
             seats = numOfSeats;
-            emit ExecuteSetSeats(tokenId, numOfSeats);
+            emit IBoard.ExecuteSetSeats(tokenId, numOfSeats);
             return;
         }
 
@@ -337,18 +336,19 @@ abstract contract Board {
         if (proposal.timestamp == 0) {
             proposal.proposedSeats = numOfSeats;
             proposal.timestamp = block.timestamp;
+            proposal.requiredQuorum = _getQuorum(); // Store quorum at proposal time
         } else {
             // Delete the proposal if numOfSeats doesn't match
             if (proposal.proposedSeats != numOfSeats) {
                 delete seatUpdate;
-                emit SeatUpdateCancelled(tokenId);
+                emit IBoard.SeatUpdateCancelled(tokenId);
                 return;
             }
 
             // Check if caller already voted on seat update
             for (uint256 i; i < proposal.supporters.length;) {
                 if (proposal.supporters[i] == tokenId) {
-                    revert AlreadySentUpdateRequest();
+                    revert IBoard.AlreadySentUpdateRequest();
                 }
                 unchecked {
                     ++i;
@@ -358,23 +358,31 @@ abstract contract Board {
 
         // Add support
         proposal.supporters.push(tokenId);
-        emit SetSeats(tokenId, numOfSeats);
+        emit IBoard.SetSeats(tokenId, numOfSeats);
     }
 
+    /**
+     * @notice Executes a pending seat update proposal
+     * @dev Requires proposal to exist, timelock expired, and quorum maintained
+     * @param tokenId The token ID executing the update
+     */
     function _executeSeatsUpdate(uint256 tokenId) internal {
         SeatUpdate storage proposal = seatUpdate;
 
         // Require proposal exists and delay has passed
-        if (proposal.timestamp == 0) revert InvalidProposal();
-        if (block.timestamp < proposal.timestamp + 7 days) revert TimelockNotExpired();
+        if (proposal.timestamp == 0) revert IBoard.InvalidProposal();
+        if (block.timestamp < proposal.timestamp + 7 days) revert IBoard.TimelockNotExpired();
 
-        // Verify quorum is still maintained
-        if (proposal.supporters.length < _getQuorum()) {
-            revert InsufficientVotes();
+        // Verify quorum is maintained using proposal-time quorum, not current quorum
+        if (proposal.supporters.length < proposal.requiredQuorum) {
+            revert IBoard.InsufficientVotes();
         }
 
         seats = proposal.proposedSeats;
         delete seatUpdate;
-        emit ExecuteSetSeats(tokenId, proposal.proposedSeats);
+        emit IBoard.ExecuteSetSeats(tokenId, proposal.proposedSeats);
     }
+
+    /// @dev Storage gap for future upgrades
+    uint256[50] private __gap;
 }

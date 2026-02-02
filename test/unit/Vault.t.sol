@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.30;
 
 import {Test} from "lib/forge-std/src/Test.sol";
 import {Chamber} from "src/Chamber.sol";
@@ -7,8 +7,6 @@ import {IERC20} from "lib/openzeppelin-contracts/contracts/interfaces/IERC20.sol
 import {IERC721} from "lib/openzeppelin-contracts/contracts/interfaces/IERC721.sol";
 import {MockERC20} from "test/mock/MockERC20.sol";
 import {MockERC721} from "test/mock/MockERC721.sol";
-import {Board} from "src/Board.sol";
-import {Wallet} from "src/Wallet.sol";
 import {DeployChamber} from "test/utils/DeployChamber.sol";
 
 contract ChamberVaultTest is Test {

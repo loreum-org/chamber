@@ -2,7 +2,7 @@ Review:
 
 1. It is recommended to include SPDX license identifiers at the beginning of the contract. You can add a comment like `// SPDX-License-Identifier: MIT` to specify the license.
 
-2. The version pragma `pragma solidity =0.8.24 ^0.8.0 ^0.8.24;` seems incorrect. It should be `pragma solidity >=0.8.0 <0.9.0;` to specify that the contract is compatible with Solidity version 0.8.x.
+2. The version pragma `pragma solidity =0.8.30 ^0.8.0 ^0.8.30;` seems incorrect. It should be `pragma solidity >=0.8.0 <0.9.0;` to specify that the contract is compatible with Solidity version 0.8.x.
 
 3. The `ReentrancyGuard` contract from OpenZeppelin is used to prevent reentrant calls to functions. This is a good security practice.
 

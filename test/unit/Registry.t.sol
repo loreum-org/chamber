@@ -4,9 +4,12 @@ pragma solidity ^0.8.24;
 import {Test} from "forge-std/Test.sol";
 import {Registry} from "src/Registry.sol";
 import {Chamber} from "src/Chamber.sol";
+import {IChamber} from "src/interfaces/IChamber.sol";
 import {MockERC20} from "test/mock/MockERC20.sol";
 import {MockERC721} from "test/mock/MockERC721.sol";
 import {DeployRegistry} from "test/utils/DeployRegistry.sol";
+import {ProxyAdmin} from "lib/openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
+import {Clones} from "lib/openzeppelin-contracts/contracts/proxy/Clones.sol";
 
 contract RegistryTest is Test {
     Registry public registry;
@@ -32,6 +35,24 @@ contract RegistryTest is Test {
         assertTrue(registry.hasRole(registry.ADMIN_ROLE(), admin));
     }
 
+    function test_Registry_Initialize_ZeroAdmin_Reverts() public {
+        // Use a minimal proxy to test initialization with zero admin
+        address payable proxy = payable(Clones.clone(address(new Registry())));
+        Registry proxyRegistry = Registry(proxy);
+        
+        vm.expectRevert(Registry.ZeroAddress.selector);
+        proxyRegistry.initialize(address(implementation), address(0));
+    }
+
+    function test_Registry_Initialize_ZeroImplementation_Reverts() public {
+        // Use a minimal proxy to test initialization with zero implementation
+        address payable proxy = payable(Clones.clone(address(new Registry())));
+        Registry proxyRegistry = Registry(proxy);
+        
+        vm.expectRevert(Registry.ZeroAddress.selector);
+        proxyRegistry.initialize(address(0), admin);
+    }
+
     function test_Registry_CreateChamber() public {
         address chamber = registry.createChamber(
             address(token),
@@ -47,6 +68,50 @@ contract RegistryTest is Test {
         address[] memory chambers = registry.getAllChambers();
         assertEq(chambers.length, 1);
         assertEq(chambers[0], chamber);
+    }
+
+    function test_Registry_CreateChamber_ZeroERC20_Reverts() public {
+        vm.expectRevert(Registry.ZeroAddress.selector);
+        registry.createChamber(
+            address(0),
+            address(nft),
+            5,
+            "Chamber Token",
+            "CHMB"
+        );
+    }
+
+    function test_Registry_CreateChamber_ZeroERC721_Reverts() public {
+        vm.expectRevert(Registry.ZeroAddress.selector);
+        registry.createChamber(
+            address(token),
+            address(0),
+            5,
+            "Chamber Token",
+            "CHMB"
+        );
+    }
+
+    function test_Registry_CreateChamber_ZeroSeats_Reverts() public {
+        vm.expectRevert(Registry.InvalidSeats.selector);
+        registry.createChamber(
+            address(token),
+            address(nft),
+            0,
+            "Chamber Token",
+            "CHMB"
+        );
+    }
+
+    function test_Registry_CreateChamber_TooManySeats_Reverts() public {
+        vm.expectRevert(Registry.InvalidSeats.selector);
+        registry.createChamber(
+            address(token),
+            address(nft),
+            21,
+            "Chamber Token",
+            "CHMB"
+        );
     }
 
     function test_Registry_GetChambers_Pagination() public {
@@ -75,4 +140,75 @@ contract RegistryTest is Test {
         chambers = registry.getChambers(3, 3);
         assertEq(chambers.length, 2);
     }
-} 
+
+    function test_Registry_IsChamber_False() public view {
+        assertFalse(registry.isChamber(address(0x1234)));
+    }
+
+    function test_Registry_GetAllChambers_Empty() public view {
+        address[] memory chambers = registry.getAllChambers();
+        assertEq(chambers.length, 0);
+    }
+
+    function test_Registry_GetChamberCount_Empty() public view {
+        assertEq(registry.getChamberCount(), 0);
+    }
+
+    function test_Registry_CreateChamber_UsesTransparentProxy() public {
+        address chamber = registry.createChamber(
+            address(token),
+            address(nft),
+            5,
+            "Chamber Token",
+            "CHMB"
+        );
+
+        // Verify it's a proxy by checking code size (proxies have different code)
+        uint256 codeSize;
+        assembly {
+            codeSize := extcodesize(chamber)
+        }
+        assertGt(codeSize, 0);
+        
+        // Verify chamber is registered
+        assertTrue(registry.isChamber(chamber));
+    }
+
+    function test_Registry_CreateChamber_ProxyAdminOwnership() public {
+        address chamber = registry.createChamber(
+            address(token),
+            address(nft),
+            5,
+            "Chamber Token",
+            "CHMB"
+        );
+
+        // Get ProxyAdmin address from chamber
+        address proxyAdminAddress = IChamber(chamber).getProxyAdmin();
+        assertNotEq(proxyAdminAddress, address(0));
+        
+        // Verify ProxyAdmin ownership was transferred to chamber
+        ProxyAdmin proxyAdmin = ProxyAdmin(proxyAdminAddress);
+        assertEq(proxyAdmin.owner(), chamber);
+    }
+
+    function test_Registry_CreateChamber_ChamberIsInitialized() public {
+        address chamber = registry.createChamber(
+            address(token),
+            address(nft),
+            5,
+            "Chamber Token",
+            "CHMB"
+        );
+
+        IChamber chamberContract = IChamber(chamber);
+        Chamber chamberImpl = Chamber(payable(chamber));
+        
+        // Verify chamber is initialized
+        assertEq(chamberContract.name(), "Chamber Token");
+        assertEq(chamberContract.symbol(), "CHMB");
+        assertEq(chamberContract.getSeats(), 5);
+        assertEq(chamberContract.asset(), address(token));
+        assertEq(address(chamberImpl.nft()), address(nft));
+    }
+}

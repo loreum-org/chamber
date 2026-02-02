@@ -1,6 +1,7 @@
 [profile.default]
 
 cache = true
+
 cache_path = 'cache'
 evm_version = 'cancun'
 

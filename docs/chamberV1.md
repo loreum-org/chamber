@@ -178,7 +178,7 @@ sequenceDiagram
 ```
 
 ## Registry Contract Overview
-The Registry contract serves as a central directory for managing and deploying Chamber contracts within a decentralized platform. Built on Solidity 0.8.24, it leverages the power of smart contracts on the Ethereum blockchain to ensure secure and efficient governance mechanisms. This contract is part of a larger ecosystem aimed at enhancing liquid democracy and governance through tokenized representation.
+The Registry contract serves as a central directory for managing and deploying Chamber contracts within a decentralized platform. Built on Solidity 0.8.30, it leverages the power of smart contracts on the Ethereum blockchain to ensure secure and efficient governance mechanisms. This contract is part of a larger ecosystem aimed at enhancing liquid democracy and governance through tokenized representation.
 
 ### Key Features
 

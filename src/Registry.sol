@@ -1,22 +1,27 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity 0.8.30;
 
 import {AccessControl} from "lib/openzeppelin-contracts/contracts/access/AccessControl.sol";
 import {Initializable} from "lib/openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
-import {Clones} from "lib/openzeppelin-contracts/contracts/proxy/Clones.sol";
+import {TransparentUpgradeableProxy} from "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {ProxyAdmin} from "lib/openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
+import {IChamber} from "./interfaces/IChamber.sol";
 
 
 /**
  * @title Registry
  * @notice Central registry for deploying and managing Chamber instances
- * @dev Uses minimal proxy pattern for gas-efficient deployment
+ * @dev Uses TransparentUpgradeableProxy for upgradeable Chamber deployments
  */
 contract Registry is AccessControl, Initializable {
     /// @notice Role for managing the registry configuration
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
-    /// @notice The implementation contract to clone
+    /// @notice The implementation contract for Chamber proxies
     address public implementation;
+
+    /// @notice Admin address for Chamber proxies (Registry admin)
+    address public proxyAdmin;
 
     /// @notice Array to track all deployed chambers
     address[] private _chambers;
@@ -42,33 +47,40 @@ contract Registry is AccessControl, Initializable {
         address erc721Token
     );
 
+    /// @notice Thrown when address is zero
     error ZeroAddress();
+
+    /// @notice Thrown when seats value is invalid (0 or > 20)
     error InvalidSeats();
 
+    /// @notice Disables initializers in the implementation contract
     constructor() {
         _disableInitializers();
     }
 
     /**
      * @notice Initializes the Registry contract
-     * @param admin The address that will have admin role
+     * @param _implementation The address of the Chamber implementation contract for proxies
+     * @param admin The address that will have admin role and proxy admin
      */
     function initialize(address _implementation, address admin) external initializer {
         if (admin == address(0) || _implementation == address(0)) revert ZeroAddress();
         implementation = _implementation;
+        proxyAdmin = admin;
         
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
         _grantRole(ADMIN_ROLE, admin);
     }
 
     /**
-     * @notice Deploys a new Chamber instance
+     * @notice Deploys a new Chamber instance using TransparentUpgradeableProxy
+     * @dev The chamber will be its own admin, allowing it to upgrade via governance
      * @param erc20Token The ERC20 token to be used for assets
      * @param erc721Token The ERC721 token to be used for membership
      * @param seats The initial number of board seats
      * @param name The name of the chamber's ERC20 token
      * @param symbol The symbol of the chamber's ERC20 token
-     * @return chamber The address of the newly deployed chamber
+     * @return chamber The address of the newly deployed chamber proxy
      */
     function createChamber(
         address erc20Token,
@@ -79,9 +91,33 @@ contract Registry is AccessControl, Initializable {
     ) external returns (address payable chamber) {
         if (erc20Token == address(0) || erc721Token == address(0)) revert ZeroAddress();
         if (seats == 0 || seats > 20) revert InvalidSeats();
+        if (implementation == address(0)) revert ZeroAddress();
         
-        chamber = payable(Clones.clone(implementation));
-        IChamber(chamber).initialize(erc20Token, erc721Token, seats, name, symbol);
+        // Encode the initialization data
+        bytes memory initData = abi.encodeWithSelector(
+            IChamber.initialize.selector,
+            erc20Token,
+            erc721Token,
+            seats,
+            name,
+            symbol
+        );
+        
+        // Deploy new TransparentUpgradeableProxy with chamber as its own admin
+        // We calculate a salt to make the address deterministic, then deploy with that address as admin
+        // Note: This requires the chamber address to be known, so we use CREATE2 or deploy twice
+        // For simplicity, deploy with Registry as admin, then transfer via Chamber function
+        TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
+            implementation,
+            address(this), // Registry as temporary admin - will transfer to chamber
+            initData
+        );
+        
+        chamber = payable(address(proxy));
+        
+        // Transfer ProxyAdmin ownership to the chamber itself
+        // This allows the chamber to upgrade itself via governance
+        _transferChamberAdmin(chamber);
         
         _chambers.push(chamber);
         _isChamber[chamber] = true;
@@ -144,16 +180,20 @@ contract Registry is AccessControl, Initializable {
     function isChamber(address chamber) external view returns (bool) {
         return _isChamber[chamber];
     }
-}
 
-interface IChamber {
-    function initialize(
-        address erc20Token,
-        address erc721Token,
-        uint256 seats,
-        string memory name,
-        string memory symbol
-    ) external;
+    /**
+     * @notice Transfers ProxyAdmin ownership to the chamber itself
+     * @dev This allows the chamber to upgrade itself via governance
+     * @param chamber The chamber proxy address
+     */
+    function _transferChamberAdmin(address chamber) internal {
+        // Get the ProxyAdmin address from the chamber
+        address proxyAdminAddress = IChamber(chamber).getProxyAdmin();
+        if (proxyAdminAddress == address(0)) revert ZeroAddress();
+        
+        // Transfer ownership of ProxyAdmin to the chamber
+        ProxyAdmin proxyAdminInstance = ProxyAdmin(proxyAdminAddress);
+        proxyAdminInstance.transferOwnership(chamber);
+    }
 }
-
 

@@ -79,3 +79,14 @@ For detailed documentation, visit [docs.loreum.org](https://docs.loreum.org)
 ## License
 
 MIT License
+
+
+== Logs ==
+  Registry deployed at: 0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0
+  MockERC20 deployed at: 0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9
+    Name: Mock Token
+    Symbol: MOCK
+    Initial Supply: 1000000 tokens
+  MockERC721 deployed at: 0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9
+    Name: Mock NFT
+    Symbol: MNFT
