@@ -98,7 +98,7 @@ abstract contract Wallet {
         if (!isConfirmed[nonce][tokenId]) revert IWallet.TransactionNotConfirmed();
 
         Transaction storage transaction = transactions[nonce];
-        
+
         // Prevent underflow
         if (transaction.confirmations > 0) {
             unchecked {
@@ -158,9 +158,15 @@ abstract contract Wallet {
      * @return value The ETH value
      * @return data The calldata
      */
-    function getTransaction(uint256 nonce) public view virtual returns (bool executed, uint8 confirmations, address target, uint256 value, bytes memory data) {
+    function getTransaction(uint256 nonce)
+        public
+        view
+        virtual
+        returns (bool executed, uint8 confirmations, address target, uint256 value, bytes memory data)
+    {
         Transaction storage transaction = transactions[nonce];
-        return (transaction.executed, transaction.confirmations, transaction.target, transaction.value, transaction.data);
+        return
+            (transaction.executed, transaction.confirmations, transaction.target, transaction.value, transaction.data);
     }
 
     /**

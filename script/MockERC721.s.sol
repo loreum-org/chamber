@@ -13,7 +13,7 @@ contract DeployMockERC721 is Script {
         vm.startBroadcast();
 
         MockERC721 nft = new MockERC721(name, symbol);
-        
+
         console.log("MockERC721 deployed at:", address(nft));
         console.log("  Name:", name);
         console.log("  Symbol:", symbol);

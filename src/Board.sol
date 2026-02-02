@@ -150,10 +150,10 @@ abstract contract Board {
     function _reposition(uint256 tokenId) internal circuitBreaker {
         Node memory node = nodes[tokenId];
         if (node.tokenId != tokenId) revert IBoard.NodeDoesNotExist();
-        
+
         bool success = _remove(tokenId);
         if (!success) revert IBoard.NodeDoesNotExist();
-        
+
         _insert(tokenId, node.amount);
     }
 
@@ -165,7 +165,7 @@ abstract contract Board {
      */
     function _insert(uint256 tokenId, uint256 amount) internal {
         if (size >= MAX_NODES) revert IBoard.MaxNodesReached();
-        
+
         if (head == 0) {
             _initializeFirstNode(tokenId, amount);
         } else {
@@ -197,7 +197,7 @@ abstract contract Board {
         // Cache head value
         uint256 current = head;
         uint256 previous;
-        
+
         // Use unchecked for gas savings since we control node linking
         unchecked {
             // Find insertion point
@@ -237,12 +237,12 @@ abstract contract Board {
      */
     function _remove(uint256 tokenId) internal returns (bool) {
         Node storage node = nodes[tokenId];
-        
+
         // Check if node exists
         if (node.tokenId != tokenId) {
             return false;
         }
-        
+
         uint256 prev = node.prev;
         uint256 next = node.next;
 
@@ -259,7 +259,7 @@ abstract contract Board {
         }
 
         delete nodes[tokenId];
-        
+
         // Ensure size doesn't underflow
         if (size > 0) {
             unchecked {

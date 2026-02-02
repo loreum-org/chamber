@@ -33,13 +33,13 @@ contract DeployChamber is Script {
         } else if (block.chainid == 31337) {
             // Local anvil - deploy mock tokens
             admin = msg.sender;
-            
+
             MockERC20 mockAsset = new MockERC20("Mock Token", "MOCK", 1_000_000 ether);
             MockERC721 mockNft = new MockERC721("Mock NFT", "MNFT");
-            
+
             asset = address(mockAsset);
             nft = address(mockNft);
-            
+
             console.log("MockERC20 deployed at:", asset);
             console.log("MockERC721 deployed at:", nft);
         } else {

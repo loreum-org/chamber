@@ -34,10 +34,10 @@ contract WalletFuzzTest is Test {
 
         // Verify transaction was submitted
         assertEq(wallet.getTransactionCount(), initialCount + 1);
-        
-        (bool executed, uint8 confirmations, address trxTarget, uint256 trxValue, bytes memory trxData) = 
+
+        (bool executed, uint8 confirmations, address trxTarget, uint256 trxValue, bytes memory trxData) =
             wallet.getTransaction(initialCount);
-        
+
         assertEq(executed, false);
         assertEq(confirmations, 1); // Auto-confirmed by submitter
         assertEq(trxTarget, target);
@@ -105,16 +105,15 @@ contract WalletFuzzTest is Test {
         // Bound inputs
         tokenId = bound(tokenId, 1, type(uint256).max);
         value = bound(value, 1, 100 ether); // Must have value for execution test
-        
+
         // Use a payable address that can receive ETH (exclude precompiles, contracts, and special addresses)
         // Precompiles are addresses 0x1-0x9, so we exclude addresses < 0x10
         // Also exclude console.log address (0x000000000000000000636F6e736F6c652e6c6f67)
         address consoleAddress = address(0x000000000000000000636F6e736F6c652e6c6f67);
-        if (target == address(0) || 
-            target == address(wallet) || 
-            uint160(target) < 0x10 || 
-            target.code.length > 0 ||
-            target == consoleAddress) {
+        if (
+            target == address(0) || target == address(wallet) || uint160(target) < 0x10 || target.code.length > 0
+                || target == consoleAddress
+        ) {
             target = payable(address(0x100)); // Use address >= 0x100 to avoid precompiles
         }
 
@@ -137,7 +136,11 @@ contract WalletFuzzTest is Test {
     }
 
     /// @notice Fuzz test for multiple transactions
-    function testFuzz_MultipleTransactions(uint256[5] memory tokenIds, address[5] memory targets, uint256[5] memory values) public {
+    function testFuzz_MultipleTransactions(
+        uint256[5] memory tokenIds,
+        address[5] memory targets,
+        uint256[5] memory values
+    ) public {
         // Bound inputs
         for (uint256 i = 0; i < 5; i++) {
             tokenIds[i] = bound(tokenIds[i], 1, type(uint256).max);
@@ -165,9 +168,8 @@ contract WalletFuzzTest is Test {
 
         // Verify each transaction
         for (uint256 i = 0; i < 5; i++) {
-            (bool executed, uint8 confirmations, address trxTarget, uint256 trxValue,) = 
-                wallet.getTransaction(i);
-            
+            (bool executed, uint8 confirmations, address trxTarget, uint256 trxValue,) = wallet.getTransaction(i);
+
             assertEq(executed, false);
             assertEq(confirmations, 1);
             assertEq(trxTarget, targets[i]);
@@ -226,16 +228,15 @@ contract WalletFuzzTest is Test {
     function testFuzz_ExecuteAlreadyExecuted(uint256 tokenId, address target, uint256 value) public {
         tokenId = bound(tokenId, 1, type(uint256).max);
         value = bound(value, 1, 100 ether);
-        
+
         // Use a payable address that can receive ETH (exclude precompiles, contracts, and special addresses)
         // Precompiles are addresses 0x1-0x9, and some networks have more
         // Also exclude addresses that might be problematic (low addresses < 0x10)
         // Exclude console.log address (0x000000000000000000636F6e736F6c652e6c6f67)
-        if (target == address(0) || 
-            target == address(wallet) || 
-            uint160(target) < 0x10 || 
-            target.code.length > 0 ||
-            target == address(0x000000000000000000636F6e736F6c652e6c6f67)) {
+        if (
+            target == address(0) || target == address(wallet) || uint160(target) < 0x10 || target.code.length > 0
+                || target == address(0x000000000000000000636F6e736F6c652e6c6f67)
+        ) {
             target = payable(address(0x3));
         }
 

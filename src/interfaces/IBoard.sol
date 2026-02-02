@@ -7,7 +7,6 @@ pragma solidity 0.8.30;
  * @dev Structs are defined in Board.sol - use Board.Node and Board.SeatUpdate types
  */
 interface IBoard {
-
     /**
      * @notice Retrieves node information for a given tokenId
      * @param tokenId The token ID to query
@@ -52,7 +51,10 @@ interface IBoard {
      * @return The current SeatUpdate struct containing proposal details (Board.SeatUpdate)
      */
     /// @dev Returns SeatUpdate struct (defined in Board.sol, includes requiredQuorum field)
-    function getSeatUpdate() external view returns (uint256 proposedSeats, uint256 timestamp, uint256 requiredQuorum, uint256[] memory supporters);
+    function getSeatUpdate()
+        external
+        view
+        returns (uint256 proposedSeats, uint256 timestamp, uint256 requiredQuorum, uint256[] memory supporters);
 
     /// Events
     /**

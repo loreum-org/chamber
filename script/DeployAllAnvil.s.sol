@@ -10,7 +10,7 @@ import {MockERC721} from "test/mock/MockERC721.sol";
 contract DeployAllAnvil is Script {
     function run() external {
         address admin;
-        
+
         // Try to get admin from env, fall back to msg.sender for local
         try vm.envAddress("ADMIN") returns (address envAdmin) {
             admin = envAdmin;
@@ -22,7 +22,7 @@ contract DeployAllAnvil is Script {
         string memory tokenName = vm.envOr("TOKEN_NAME", string("Mock Token"));
         string memory tokenSymbol = vm.envOr("TOKEN_SYMBOL", string("MOCK"));
         uint256 initialSupply = vm.envOr("TOKEN_SUPPLY", uint256(1_000_000 ether));
-        
+
         string memory nftName = vm.envOr("NFT_NAME", string("Mock NFT"));
         string memory nftSymbol = vm.envOr("NFT_SYMBOL", string("MNFT"));
 

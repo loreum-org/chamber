@@ -7,7 +7,6 @@ pragma solidity 0.8.30;
  * @dev Transaction struct is defined in Wallet.sol - use Wallet.Transaction type
  */
 interface IWallet {
-
     /**
      * @notice Submits a new transaction for approval
      * @param tokenId The tokenId submitting the transaction
@@ -78,7 +77,10 @@ interface IWallet {
      * @return The Transaction struct containing the transaction details (Wallet.Transaction)
      */
     /// @dev Returns Transaction struct (defined in Wallet.sol)
-    function getTransaction(uint256 nonce) external view returns (bool executed, uint8 confirmations, address target, uint256 value, bytes memory data);
+    function getTransaction(uint256 nonce)
+        external
+        view
+        returns (bool executed, uint8 confirmations, address target, uint256 value, bytes memory data);
 
     /**
      * @notice Checks if a transaction is confirmed by a specific director
@@ -103,7 +105,9 @@ interface IWallet {
      * @param value The amount of ETH to send
      * @param data The calldata for the transaction
      */
-    event SubmitTransaction(uint256 indexed tokenId, uint256 indexed nonce, address indexed to, uint256 value, bytes data);
+    event SubmitTransaction(
+        uint256 indexed tokenId, uint256 indexed nonce, address indexed to, uint256 value, bytes data
+    );
 
     /**
      * @notice Emitted when a transaction is confirmed by a leader

@@ -8,7 +8,7 @@ import {DeployRegistry as DeployRegistryLib} from "test/utils/DeployRegistry.sol
 contract DeployRegistry is Script {
     function run() external {
         address admin;
-        
+
         // Try to get admin from env, fall back to msg.sender for local
         try vm.envAddress("ADMIN") returns (address envAdmin) {
             admin = envAdmin;
@@ -23,4 +23,4 @@ contract DeployRegistry is Script {
 
         vm.stopBroadcast();
     }
-} 
+}

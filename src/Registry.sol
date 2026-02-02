@@ -3,10 +3,11 @@ pragma solidity 0.8.30;
 
 import {AccessControl} from "lib/openzeppelin-contracts/contracts/access/AccessControl.sol";
 import {Initializable} from "lib/openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
-import {TransparentUpgradeableProxy} from "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {
+    TransparentUpgradeableProxy
+} from "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {ProxyAdmin} from "lib/openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 import {IChamber} from "./interfaces/IChamber.sol";
-
 
 /**
  * @title Registry
@@ -39,12 +40,7 @@ contract Registry is AccessControl, Initializable {
      * @param erc721Token The ERC721 token used for membership
      */
     event ChamberCreated(
-        address indexed chamber,
-        uint256 seats,
-        string name,
-        string symbol,
-        address erc20Token,
-        address erc721Token
+        address indexed chamber, uint256 seats, string name, string symbol, address erc20Token, address erc721Token
     );
 
     /// @notice Thrown when address is zero
@@ -67,7 +63,7 @@ contract Registry is AccessControl, Initializable {
         if (admin == address(0) || _implementation == address(0)) revert ZeroAddress();
         implementation = _implementation;
         proxyAdmin = admin;
-        
+
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
         _grantRole(ADMIN_ROLE, admin);
     }
@@ -92,17 +88,11 @@ contract Registry is AccessControl, Initializable {
         if (erc20Token == address(0) || erc721Token == address(0)) revert ZeroAddress();
         if (seats == 0 || seats > 20) revert InvalidSeats();
         if (implementation == address(0)) revert ZeroAddress();
-        
+
         // Encode the initialization data
-        bytes memory initData = abi.encodeWithSelector(
-            IChamber.initialize.selector,
-            erc20Token,
-            erc721Token,
-            seats,
-            name,
-            symbol
-        );
-        
+        bytes memory initData =
+            abi.encodeWithSelector(IChamber.initialize.selector, erc20Token, erc721Token, seats, name, symbol);
+
         // Deploy new TransparentUpgradeableProxy with chamber as its own admin
         // We calculate a salt to make the address deterministic, then deploy with that address as admin
         // Note: This requires the chamber address to be known, so we use CREATE2 or deploy twice
@@ -112,24 +102,17 @@ contract Registry is AccessControl, Initializable {
             address(this), // Registry as temporary admin - will transfer to chamber
             initData
         );
-        
+
         chamber = payable(address(proxy));
-        
+
         // Transfer ProxyAdmin ownership to the chamber itself
         // This allows the chamber to upgrade itself via governance
         _transferChamberAdmin(chamber);
-        
+
         _chambers.push(chamber);
         _isChamber[chamber] = true;
-        
-        emit ChamberCreated(
-            chamber,
-            seats,
-            name,
-            symbol,
-            erc20Token,
-            erc721Token
-        );
+
+        emit ChamberCreated(chamber, seats, name, symbol, erc20Token, erc721Token);
     }
 
     /**
@@ -166,7 +149,9 @@ contract Registry is AccessControl, Initializable {
 
         for (uint256 i = 0; i < count;) {
             result[i] = _chambers[skip + i];
-            unchecked { ++i; }
+            unchecked {
+                ++i;
+            }
         }
 
         return result;
@@ -190,7 +175,7 @@ contract Registry is AccessControl, Initializable {
         // Get the ProxyAdmin address from the chamber
         address proxyAdminAddress = IChamber(chamber).getProxyAdmin();
         if (proxyAdminAddress == address(0)) revert ZeroAddress();
-        
+
         // Transfer ownership of ProxyAdmin to the chamber
         ProxyAdmin proxyAdminInstance = ProxyAdmin(proxyAdminAddress);
         proxyAdminInstance.transferOwnership(chamber);

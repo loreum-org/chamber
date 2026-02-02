@@ -7,11 +7,17 @@ import {IChamber} from "src/interfaces/IChamber.sol";
 import {IWallet} from "src/interfaces/IWallet.sol";
 import {IERC20} from "lib/openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import {IERC721} from "lib/openzeppelin-contracts/contracts/interfaces/IERC721.sol";
-import {ERC4626Upgradeable} from "lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/ERC4626Upgradeable.sol";
+import {
+    ERC4626Upgradeable
+} from "lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {ERC20Upgradeable} from "lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
-import {ReentrancyGuardUpgradeable} from "lib/openzeppelin-contracts-upgradeable/contracts/utils/ReentrancyGuardUpgradeable.sol";
+import {
+    ReentrancyGuardUpgradeable
+} from "lib/openzeppelin-contracts-upgradeable/contracts/utils/ReentrancyGuardUpgradeable.sol";
 import {ProxyAdmin} from "lib/openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
-import {ITransparentUpgradeableProxy} from "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {
+    ITransparentUpgradeableProxy
+} from "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {StorageSlot} from "lib/openzeppelin-contracts/contracts/utils/StorageSlot.sol";
 
 /**
@@ -36,7 +42,7 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
 
     /// Constants
     uint256 private constant MAX_SEATS = 20;
-    
+
     /// @notice Function selector for upgradeImplementation(address,bytes)
     bytes4 private constant UPGRADE_SELECTOR = 0xc89311b6;
 
@@ -62,11 +68,11 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
         if (erc20Token == address(0) || erc721Token == address(0)) {
             revert IChamber.ZeroAddress();
         }
-        
+
         __ERC4626_init(IERC20(erc20Token));
         __ERC20_init(_name, _symbol);
         __ReentrancyGuard_init();
-        
+
         nft = IERC721(erc721Token);
         _setSeats(0, seats);
 
@@ -85,9 +91,12 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
         if (balanceOf(msg.sender) < amount) revert IChamber.InsufficientChamberBalance();
 
         // Verify NFT exists (ownerOf reverts if token doesn't exist)
-        try nft.ownerOf(tokenId) returns (address) {
-            // Token exists, continue
-        } catch {
+        try nft.ownerOf(tokenId) returns (
+            address
+        ) {
+        // Token exists, continue
+        }
+        catch {
             revert IChamber.InvalidTokenId();
         }
 
@@ -189,7 +198,9 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
                 // Return address(0) to indicate invalid director
                 topOwners[i] = address(0);
             }
-            unchecked { ++i; }
+            unchecked {
+                ++i;
+            }
         }
 
         return topOwners;
@@ -201,7 +212,12 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
      * @return tokenIds The list of tokenIds
      * @return amounts The list of amounts delegated to each tokenId
      */
-    function getDelegations(address agent) public view override returns (uint256[] memory tokenIds, uint256[] memory amounts) {
+    function getDelegations(address agent)
+        public
+        view
+        override
+        returns (uint256[] memory tokenIds, uint256[] memory amounts)
+    {
         if (agent == address(0)) revert IChamber.ZeroAddress();
 
         uint256 count = 0;
@@ -214,7 +230,9 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
             if (amount > 0) {
                 tempTokenIds[count] = tokenId;
                 tempAmounts[count] = amount;
-                unchecked { ++count; }
+                unchecked {
+                    ++count;
+                }
             }
             tokenId = nodes[tokenId].next;
         }
@@ -224,7 +242,9 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
         for (uint256 i = 0; i < count;) {
             tokenIds[i] = tempTokenIds[i];
             amounts[i] = tempAmounts[i];
-            unchecked { ++i; }
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -300,7 +320,7 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
         isDirector(tokenId)
     {
         if (target == address(0)) revert IChamber.ZeroAddress();
-        
+
         // Allow address(this) only for upgradeImplementation calls
         if (target == address(this)) {
             // Check if this is an upgrade call by checking the function selector
@@ -310,7 +330,7 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
                 revert IChamber.InvalidTransaction();
             }
         }
-        
+
         // Check if contract has sufficient balance for ETH transfers
         if (value > 0 && address(this).balance < value) {
             revert IChamber.InsufficientChamberBalance();
@@ -325,11 +345,7 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
      * @param tokenId The tokenId confirming the transaction
      * @param transactionId The ID of the transaction to confirm
      */
-    function confirmTransaction(uint256 tokenId, uint256 transactionId) 
-        public 
-        override
-        isDirector(tokenId) 
-    {
+    function confirmTransaction(uint256 tokenId, uint256 transactionId) public override isDirector(tokenId) {
         if (transactionId >= transactions.length) revert IWallet.TransactionDoesNotExist();
         Transaction storage transaction = transactions[transactionId];
         if (transaction.executed) revert IWallet.TransactionAlreadyExecuted();
@@ -344,11 +360,11 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
      * @param tokenId The tokenId executing the transaction
      * @param transactionId The ID of the transaction to execute
      */
-    function executeTransaction(uint256 tokenId, uint256 transactionId) 
-        public 
+    function executeTransaction(uint256 tokenId, uint256 transactionId)
+        public
         override
         nonReentrant
-        isDirector(tokenId) 
+        isDirector(tokenId)
     {
         if (transactionId >= transactions.length) revert IWallet.TransactionDoesNotExist();
         Transaction storage transaction = transactions[transactionId];
@@ -383,14 +399,18 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
         uint256[] memory values,
         bytes[] memory data
     ) public override isDirector(tokenId) {
-        if (targets.length != values.length || values.length != data.length) revert IChamber.ArrayLengthsMustMatch();
+        if (targets.length != values.length || values.length != data.length) {
+            revert IChamber.ArrayLengthsMustMatch();
+        }
         if (targets.length == 0) revert IChamber.ZeroAmount();
 
         // Check total ETH balance requirement
         uint256 totalValue = 0;
         for (uint256 i = 0; i < values.length;) {
             totalValue += values[i];
-            unchecked { ++i; }
+            unchecked {
+                ++i;
+            }
         }
         if (totalValue > address(this).balance) {
             revert IChamber.InsufficientChamberBalance();
@@ -398,7 +418,7 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
 
         for (uint256 i = 0; i < targets.length;) {
             if (targets[i] == address(0)) revert IChamber.ZeroAddress();
-            
+
             // Allow address(this) only for upgradeImplementation calls
             if (targets[i] == address(this)) {
                 if (data[i].length < 4) revert IChamber.InvalidTransaction();
@@ -407,10 +427,12 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
                     revert IChamber.InvalidTransaction();
                 }
             }
-            
+
             _submitTransaction(tokenId, targets[i], values[i], data[i]);
             emit IChamber.TransactionSubmitted(getNextTransactionId() - 1, targets[i], values[i]);
-            unchecked { ++i; }
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -419,10 +441,10 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
      * @param tokenId The tokenId confirming the transactions
      * @param transactionIds The array of transaction IDs to confirm
      */
-    function confirmBatchTransactions(uint256 tokenId, uint256[] memory transactionIds) 
-        public 
+    function confirmBatchTransactions(uint256 tokenId, uint256[] memory transactionIds)
+        public
         override
-        isDirector(tokenId) 
+        isDirector(tokenId)
     {
         if (transactionIds.length == 0) revert IChamber.ZeroAmount();
 
@@ -430,13 +452,15 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
             uint256 transactionId = transactionIds[i];
             if (transactionId >= transactions.length) revert IWallet.TransactionDoesNotExist();
             Transaction storage transaction = transactions[transactionId];
-            
+
             if (transaction.executed) revert IWallet.TransactionAlreadyExecuted();
             if (isConfirmed[transactionId][tokenId]) revert IWallet.TransactionAlreadyConfirmed();
 
             _confirmTransaction(tokenId, transactionId);
             emit IChamber.TransactionConfirmed(transactionId, msg.sender);
-            unchecked { ++i; }
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -445,11 +469,11 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
      * @param tokenId The tokenId executing the transactions
      * @param transactionIds The array of transaction IDs to execute
      */
-    function executeBatchTransactions(uint256 tokenId, uint256[] memory transactionIds) 
-        public 
+    function executeBatchTransactions(uint256 tokenId, uint256[] memory transactionIds)
+        public
         override
         nonReentrant
-        isDirector(tokenId) 
+        isDirector(tokenId)
     {
         if (transactionIds.length == 0) revert IChamber.ZeroAmount();
 
@@ -457,13 +481,15 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
             uint256 transactionId = transactionIds[i];
             if (transactionId >= transactions.length) revert IWallet.TransactionDoesNotExist();
             Transaction storage transaction = transactions[transactionId];
-            
+
             if (transaction.executed) revert IWallet.TransactionAlreadyExecuted();
             if (transaction.confirmations < getQuorum()) revert IChamber.NotEnoughConfirmations();
 
             _executeTransaction(tokenId, transactionId);
             emit IChamber.TransactionExecuted(transactionId, msg.sender);
-            unchecked { ++i; }
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -532,14 +558,14 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
         address proxyAdminAddress = this.getProxyAdmin();
         if (proxyAdminAddress == address(0)) revert IChamber.ZeroAddress();
         if (newImplementation == address(0)) revert IChamber.ZeroAddress();
-        
+
         ProxyAdmin proxyAdmin = ProxyAdmin(proxyAdminAddress);
-        
+
         // Verify this Chamber is the owner of ProxyAdmin
         if (proxyAdmin.owner() != address(this)) {
             revert IChamber.NotDirector(); // Reuse error for unauthorized
         }
-        
+
         // Perform the upgrade via ProxyAdmin
         ITransparentUpgradeableProxy proxy = ITransparentUpgradeableProxy(address(this));
         proxyAdmin.upgradeAndCall(proxy, newImplementation, data);
@@ -560,12 +586,12 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
 
         address owner = _msgSender();
         uint256 ownerBalance = balanceOf(owner);
-        
+
         // Check sufficient balance first
         if (ownerBalance < value) {
             revert IChamber.InsufficientChamberBalance();
         }
-        
+
         // Check delegation before transfer
         if (ownerBalance - value < totalAgentDelegations[owner]) {
             revert IChamber.ExceedsDelegatedAmount();
@@ -595,12 +621,12 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
 
         address spender = _msgSender();
         uint256 fromBalance = balanceOf(from);
-        
+
         // Check sufficient balance first
         if (fromBalance < value) {
             revert IChamber.InsufficientChamberBalance();
         }
-        
+
         // Check delegation before transfer
         if (fromBalance - value < totalAgentDelegations[from]) {
             revert IChamber.ExceedsDelegatedAmount();
@@ -629,7 +655,12 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
      * @return value The ETH value
      * @return data The calldata
      */
-    function getTransaction(uint256 nonce) public view override(IWallet, Wallet) returns (bool, uint8, address, uint256, bytes memory) {
+    function getTransaction(uint256 nonce)
+        public
+        view
+        override(IWallet, Wallet)
+        returns (bool, uint8, address, uint256, bytes memory)
+    {
         return super.getTransaction(nonce);
     }
 

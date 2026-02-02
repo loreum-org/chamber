@@ -30,14 +30,7 @@ contract ChamberTest is Test {
         address admin = address(0x9);
 
         seats = 5;
-        chamber = DeployChamber.deploy(
-            address(token),
-            address(nft),
-            seats,
-            name,
-            symbol,
-            admin
-        );
+        chamber = DeployChamber.deploy(address(token), address(nft), seats, name, symbol, admin);
     }
 
     function test_Chamber_delegate_success() public {
@@ -66,10 +59,7 @@ contract ChamberTest is Test {
         assertEq(nodeAmount, amount);
     }
 
-    function test_Chamber_Undelegate_success(
-        uint256 tokenId,
-        uint256 amount
-    ) public {
+    function test_Chamber_Undelegate_success(uint256 tokenId, uint256 amount) public {
         if (tokenId == 0) return;
         if (amount < 1 || amount > 1_000_000_000 ether) return;
         // Mint tokens to user1
@@ -116,7 +106,8 @@ contract ChamberTest is Test {
         chamber.submitTransaction(1, target, value, data);
         vm.stopPrank();
 
-        (bool executed, uint8 confirmations, address trxTarget, uint256 trxValue, bytes memory trxData) = chamber.getTransaction(0);
+        (bool executed, uint8 confirmations, address trxTarget, uint256 trxValue, bytes memory trxData) =
+            chamber.getTransaction(0);
 
         assertEq(target, trxTarget);
         assertEq(value, trxValue);
@@ -393,10 +384,7 @@ contract ChamberTest is Test {
         chamber.undelegate(tokenId1, undelegateAmount);
 
         // Check updated delegation
-        assertEq(
-            chamber.getAgentDelegation(user1, tokenId1),
-            amount - undelegateAmount
-        );
+        assertEq(chamber.getAgentDelegation(user1, tokenId1), amount - undelegateAmount);
 
         // Check node amount
         (, uint256 nodeAmount,,) = chamber.getMember(tokenId1);
@@ -486,8 +474,7 @@ contract ChamberTest is Test {
         vm.stopPrank();
 
         // Get user delegations
-        (uint256[] memory tokenIds, uint256[] memory amounts) = chamber
-            .getDelegations(user1);
+        (uint256[] memory tokenIds, uint256[] memory amounts) = chamber.getDelegations(user1);
 
         // Check user delegations
         assertEq(tokenIds.length, 3);
@@ -503,11 +490,7 @@ contract ChamberTest is Test {
 
     function test_Chamber_ExecuteTransaction_MockERC20() public {
         uint256 value = 100 ether;
-        bytes memory data = abi.encodeWithSignature(
-            "transfer(address,uint256)",
-            user1,
-            value
-        );
+        bytes memory data = abi.encodeWithSignature("transfer(address,uint256)", user1, value);
 
         addDirectors();
 
@@ -593,16 +576,8 @@ contract ChamberTest is Test {
     function test_Chamber_ExecuteTransactionLowConfCount() public {
         uint256 amount = 1000;
         address target = address(token);
-        bytes memory approveData = abi.encodeWithSignature(
-            "approve(address,uint256)",
-            address(0x5),
-            amount
-        );
-        bytes memory transferData = abi.encodeWithSignature(
-            "transfer(address,uint256)",
-            address(0x5),
-            amount
-        );
+        bytes memory approveData = abi.encodeWithSignature("approve(address,uint256)", address(0x5), amount);
+        bytes memory transferData = abi.encodeWithSignature("transfer(address,uint256)", address(0x5), amount);
 
         addDirectors();
 
@@ -635,11 +610,7 @@ contract ChamberTest is Test {
     function test_Chamber_ExecuteTransactionMintNFT() public {
         uint256 tokenId = 100;
         address target = address(nft);
-        bytes memory mintData = abi.encodeWithSignature(
-            "mintWithTokenId(address,uint256)",
-            address(0x5),
-            tokenId
-        );
+        bytes memory mintData = abi.encodeWithSignature("mintWithTokenId(address,uint256)", address(0x5), tokenId);
 
         addDirectors();
 
@@ -836,8 +807,7 @@ contract ChamberTest is Test {
         addDirectors();
 
         // Get the top 3 directors
-        (uint256[] memory topTokenIds, uint256[] memory topAmounts) = chamber
-            .getTop(3);
+        (uint256[] memory topTokenIds, uint256[] memory topAmounts) = chamber.getTop(3);
 
         // Check the top directors
         assertEq(topTokenIds.length, 3);
@@ -900,7 +870,7 @@ contract ChamberTest is Test {
         Chamber impl = new Chamber();
         address payable proxy = payable(Clones.clone(address(impl)));
         Chamber proxyChamber = Chamber(proxy);
-        
+
         vm.expectRevert(IChamber.ZeroAddress.selector);
         proxyChamber.initialize(address(0), address(nft), 5, "Test", "TST");
     }
@@ -910,18 +880,18 @@ contract ChamberTest is Test {
         Chamber impl = new Chamber();
         address payable proxy = payable(Clones.clone(address(impl)));
         Chamber proxyChamber = Chamber(proxy);
-        
+
         vm.expectRevert(IChamber.ZeroAddress.selector);
         proxyChamber.initialize(address(token), address(0), 5, "Test", "TST");
     }
 
     function test_Chamber_Delegate_ZeroTokenId_Reverts() public {
         MockERC20(address(token)).mint(user1, 100);
-        
+
         vm.startPrank(user1);
         token.approve(address(chamber), 100);
         chamber.deposit(100, user1);
-        
+
         vm.expectRevert(IChamber.ZeroTokenId.selector);
         chamber.delegate(0, 50);
         vm.stopPrank();
@@ -929,11 +899,11 @@ contract ChamberTest is Test {
 
     function test_Chamber_Delegate_InvalidTokenId_Reverts() public {
         MockERC20(address(token)).mint(user1, 100);
-        
+
         vm.startPrank(user1);
         token.approve(address(chamber), 100);
         chamber.deposit(100, user1);
-        
+
         // Token 999 doesn't exist
         vm.expectRevert(IChamber.InvalidTokenId.selector);
         chamber.delegate(999, 50);
@@ -952,7 +922,7 @@ contract ChamberTest is Test {
 
     function test_Chamber_SubmitTransaction_ZeroAddress_Reverts() public {
         addDirectors();
-        
+
         vm.prank(user1);
         vm.expectRevert(IChamber.ZeroAddress.selector);
         chamber.submitTransaction(1, address(0), 0, "");
@@ -960,7 +930,7 @@ contract ChamberTest is Test {
 
     function test_Chamber_SubmitTransaction_SelfTarget_Reverts() public {
         addDirectors();
-        
+
         vm.prank(user1);
         vm.expectRevert(IChamber.InvalidTransaction.selector);
         chamber.submitTransaction(1, address(chamber), 0, "");
@@ -968,7 +938,7 @@ contract ChamberTest is Test {
 
     function test_Chamber_SubmitTransaction_InsufficientBalance_Reverts() public {
         addDirectors();
-        
+
         vm.prank(user1);
         vm.expectRevert(IChamber.InsufficientChamberBalance.selector);
         chamber.submitTransaction(1, address(0x3), 100 ether, "");
@@ -976,7 +946,7 @@ contract ChamberTest is Test {
 
     function test_Chamber_ConfirmTransaction_NonExistent_Reverts() public {
         addDirectors();
-        
+
         vm.prank(user1);
         vm.expectRevert();
         chamber.confirmTransaction(1, 999);
@@ -985,24 +955,24 @@ contract ChamberTest is Test {
     function test_Chamber_ConfirmTransaction_AlreadyExecuted_Reverts() public {
         addDirectors();
         deal(address(chamber), 1 ether);
-        
+
         vm.prank(user1);
         chamber.submitTransaction(1, address(0x3), 1 ether, "");
-        
+
         vm.prank(user2);
         chamber.confirmTransaction(2, 0);
-        
+
         vm.prank(user3);
         chamber.confirmTransaction(3, 0);
-        
+
         vm.prank(user1);
         chamber.executeTransaction(1, 0);
-        
+
         // Try to confirm again - should revert
         address user4 = address(0x4);
         MockERC721(address(nft)).mintWithTokenId(user4, 4);
         MockERC20(address(token)).mint(user4, 1 ether);
-        
+
         vm.startPrank(user4);
         token.approve(address(chamber), 1 ether);
         chamber.deposit(1 ether, user4);
@@ -1014,10 +984,10 @@ contract ChamberTest is Test {
 
     function test_Chamber_ConfirmTransaction_AlreadyConfirmed_Reverts() public {
         addDirectors();
-        
+
         vm.prank(user1);
         chamber.submitTransaction(1, address(0x3), 0, "");
-        
+
         vm.prank(user1);
         vm.expectRevert();
         chamber.confirmTransaction(1, 0);
@@ -1025,7 +995,7 @@ contract ChamberTest is Test {
 
     function test_Chamber_ExecuteTransaction_NonExistent_Reverts() public {
         addDirectors();
-        
+
         vm.prank(user1);
         vm.expectRevert();
         chamber.executeTransaction(1, 999);
@@ -1034,19 +1004,19 @@ contract ChamberTest is Test {
     function test_Chamber_ExecuteTransaction_AlreadyExecuted_Reverts() public {
         addDirectors();
         deal(address(chamber), 1 ether);
-        
+
         vm.prank(user1);
         chamber.submitTransaction(1, address(0x3), 1 ether, "");
-        
+
         vm.prank(user2);
         chamber.confirmTransaction(2, 0);
-        
+
         vm.prank(user3);
         chamber.confirmTransaction(3, 0);
-        
+
         vm.prank(user1);
         chamber.executeTransaction(1, 0);
-        
+
         vm.prank(user1);
         vm.expectRevert();
         chamber.executeTransaction(1, 0);
@@ -1054,11 +1024,11 @@ contract ChamberTest is Test {
 
     function test_Chamber_SubmitBatchTransactions_EmptyArray_Reverts() public {
         addDirectors();
-        
+
         address[] memory targets = new address[](0);
         uint256[] memory values = new uint256[](0);
         bytes[] memory data = new bytes[](0);
-        
+
         vm.prank(user1);
         vm.expectRevert(IChamber.ZeroAmount.selector);
         chamber.submitBatchTransactions(1, targets, values, data);
@@ -1066,14 +1036,14 @@ contract ChamberTest is Test {
 
     function test_Chamber_SubmitBatchTransactions_ArrayMismatch_Reverts() public {
         addDirectors();
-        
+
         address[] memory targets = new address[](2);
         targets[0] = address(0x3);
         targets[1] = address(0x4);
         uint256[] memory values = new uint256[](1);
         values[0] = 0;
         bytes[] memory data = new bytes[](2);
-        
+
         vm.prank(user1);
         vm.expectRevert(IChamber.ArrayLengthsMustMatch.selector);
         chamber.submitBatchTransactions(1, targets, values, data);
@@ -1081,13 +1051,13 @@ contract ChamberTest is Test {
 
     function test_Chamber_SubmitBatchTransactions_ZeroAddress_Reverts() public {
         addDirectors();
-        
+
         address[] memory targets = new address[](1);
         targets[0] = address(0);
         uint256[] memory values = new uint256[](1);
         values[0] = 0;
         bytes[] memory data = new bytes[](1);
-        
+
         vm.prank(user1);
         vm.expectRevert(IChamber.ZeroAddress.selector);
         chamber.submitBatchTransactions(1, targets, values, data);
@@ -1095,13 +1065,13 @@ contract ChamberTest is Test {
 
     function test_Chamber_SubmitBatchTransactions_SelfTarget_Reverts() public {
         addDirectors();
-        
+
         address[] memory targets = new address[](1);
         targets[0] = address(chamber);
         uint256[] memory values = new uint256[](1);
         values[0] = 0;
         bytes[] memory data = new bytes[](1);
-        
+
         vm.prank(user1);
         vm.expectRevert(IChamber.InvalidTransaction.selector);
         chamber.submitBatchTransactions(1, targets, values, data);
@@ -1109,13 +1079,13 @@ contract ChamberTest is Test {
 
     function test_Chamber_SubmitBatchTransactions_InsufficientBalance_Reverts() public {
         addDirectors();
-        
+
         address[] memory targets = new address[](1);
         targets[0] = address(0x3);
         uint256[] memory values = new uint256[](1);
         values[0] = 100 ether;
         bytes[] memory data = new bytes[](1);
-        
+
         vm.prank(user1);
         vm.expectRevert(IChamber.InsufficientChamberBalance.selector);
         chamber.submitBatchTransactions(1, targets, values, data);
@@ -1123,9 +1093,9 @@ contract ChamberTest is Test {
 
     function test_Chamber_ConfirmBatchTransactions_EmptyArray_Reverts() public {
         addDirectors();
-        
+
         uint256[] memory transactionIds = new uint256[](0);
-        
+
         vm.prank(user1);
         vm.expectRevert(IChamber.ZeroAmount.selector);
         chamber.confirmBatchTransactions(1, transactionIds);
@@ -1133,10 +1103,10 @@ contract ChamberTest is Test {
 
     function test_Chamber_ConfirmBatchTransactions_NonExistent_Reverts() public {
         addDirectors();
-        
+
         uint256[] memory transactionIds = new uint256[](1);
         transactionIds[0] = 999;
-        
+
         vm.prank(user1);
         vm.expectRevert();
         chamber.confirmBatchTransactions(1, transactionIds);
@@ -1144,9 +1114,9 @@ contract ChamberTest is Test {
 
     function test_Chamber_ExecuteBatchTransactions_EmptyArray_Reverts() public {
         addDirectors();
-        
+
         uint256[] memory transactionIds = new uint256[](0);
-        
+
         vm.prank(user1);
         vm.expectRevert(IChamber.ZeroAmount.selector);
         chamber.executeBatchTransactions(1, transactionIds);
@@ -1154,10 +1124,10 @@ contract ChamberTest is Test {
 
     function test_Chamber_ExecuteBatchTransactions_NonExistent_Reverts() public {
         addDirectors();
-        
+
         uint256[] memory transactionIds = new uint256[](1);
         transactionIds[0] = 999;
-        
+
         vm.prank(user1);
         vm.expectRevert();
         chamber.executeBatchTransactions(1, transactionIds);
@@ -1166,13 +1136,13 @@ contract ChamberTest is Test {
     function test_Chamber_ExecuteBatchTransactions_NotEnoughConfirmations_Reverts() public {
         addDirectors();
         deal(address(chamber), 1 ether);
-        
+
         vm.prank(user1);
         chamber.submitTransaction(1, address(0x3), 0, "");
-        
+
         uint256[] memory transactionIds = new uint256[](1);
         transactionIds[0] = 0;
-        
+
         vm.prank(user1);
         vm.expectRevert(IChamber.NotEnoughConfirmations.selector);
         chamber.executeBatchTransactions(1, transactionIds);
@@ -1180,7 +1150,7 @@ contract ChamberTest is Test {
 
     function test_Chamber_Receive() public {
         deal(address(this), 1 ether);
-        
+
         (bool success,) = address(chamber).call{value: 1 ether}("");
         assertTrue(success);
         assertEq(address(chamber).balance, 1 ether);
@@ -1188,7 +1158,7 @@ contract ChamberTest is Test {
 
     function test_Chamber_IsDirector_ZeroTokenId_Reverts() public {
         addDirectors();
-        
+
         vm.prank(user1);
         vm.expectRevert(IChamber.NotDirector.selector);
         chamber.submitTransaction(0, address(0x3), 0, "");
@@ -1196,7 +1166,7 @@ contract ChamberTest is Test {
 
     function test_Chamber_IsDirector_NotOwner_Reverts() public {
         addDirectors();
-        
+
         // user2 trying to use user1's tokenId
         vm.prank(user2);
         vm.expectRevert(IChamber.NotDirector.selector);
@@ -1206,37 +1176,37 @@ contract ChamberTest is Test {
     function test_Chamber_IsDirector_NotInTopSeats_Reverts() public {
         // Add 6 directors but only 5 seats
         addDirectors();
-        
+
         address user4 = address(0x4);
         MockERC721(address(nft)).mintWithTokenId(user4, 4);
         MockERC20(address(token)).mint(user4, 1 ether);
-        
+
         address user5 = address(0x5);
         MockERC721(address(nft)).mintWithTokenId(user5, 5);
         MockERC20(address(token)).mint(user5, 1 ether);
-        
+
         address user6 = address(0x6);
         MockERC721(address(nft)).mintWithTokenId(user6, 6);
         MockERC20(address(token)).mint(user6, 1 ether);
-        
+
         vm.startPrank(user4);
         token.approve(address(chamber), 1 ether);
         chamber.deposit(1 ether, user4);
         chamber.delegate(4, 1);
         vm.stopPrank();
-        
+
         vm.startPrank(user5);
         token.approve(address(chamber), 1 ether);
         chamber.deposit(1 ether, user5);
         chamber.delegate(5, 1);
         vm.stopPrank();
-        
+
         vm.startPrank(user6);
         token.approve(address(chamber), 1 ether);
         chamber.deposit(1 ether, user6);
         chamber.delegate(6, 1);
         vm.stopPrank();
-        
+
         // user6 (tokenId 6) is the 6th but only 5 seats
         vm.prank(user6);
         vm.expectRevert(IChamber.NotDirector.selector);
@@ -1245,14 +1215,14 @@ contract ChamberTest is Test {
 
     function test_Chamber_Transfer_ZeroAddress_Reverts() public {
         deal(address(chamber), address(this), 1e18);
-        
+
         vm.expectRevert(IChamber.TransferToZeroAddress.selector);
         chamber.transfer(address(0), 1 ether);
     }
 
     function test_Chamber_Transfer_ZeroAmount_Reverts() public {
         deal(address(chamber), address(this), 1e18);
-        
+
         vm.expectRevert(IChamber.ZeroAmount.selector);
         chamber.transfer(user1, 0);
     }
@@ -1265,7 +1235,7 @@ contract ChamberTest is Test {
     function test_Chamber_TransferFrom_ZeroAddress_Reverts() public {
         deal(address(chamber), address(this), 1e18);
         chamber.approve(address(this), 1 ether);
-        
+
         vm.expectRevert(IChamber.TransferToZeroAddress.selector);
         chamber.transferFrom(address(this), address(0), 1 ether);
     }
@@ -1273,22 +1243,22 @@ contract ChamberTest is Test {
     function test_Chamber_TransferFrom_ZeroAmount_Reverts() public {
         deal(address(chamber), address(this), 1e18);
         chamber.approve(address(this), 1 ether);
-        
+
         vm.expectRevert(IChamber.ZeroAmount.selector);
         chamber.transferFrom(address(this), user1, 0);
     }
 
     function test_Chamber_TransferFrom_InsufficientBalance_Reverts() public {
         chamber.approve(address(this), 1 ether);
-        
+
         vm.expectRevert(IChamber.InsufficientChamberBalance.selector);
         chamber.transferFrom(address(this), user1, 1 ether);
     }
 
     function test_Chamber_GetDirectors_BurnedNFT() public {
         addDirectors();
-        
-        // Get directors - should return address(0) for burned NFTs 
+
+        // Get directors - should return address(0) for burned NFTs
         // (though we can't actually burn in mock, we test the try/catch)
         address[] memory directors = chamber.getDirectors();
         assertEq(directors.length, 3);
@@ -1296,56 +1266,56 @@ contract ChamberTest is Test {
 
     function test_Chamber_GetNextTransactionId() public {
         assertEq(chamber.getNextTransactionId(), 0);
-        
+
         addDirectors();
-        
+
         vm.prank(user1);
         chamber.submitTransaction(1, address(0x3), 0, "");
-        
+
         assertEq(chamber.getNextTransactionId(), 1);
     }
 
     function test_Chamber_GetConfirmation() public {
         addDirectors();
-        
+
         vm.prank(user1);
         chamber.submitTransaction(1, address(0x3), 0, "");
-        
+
         assertTrue(chamber.getConfirmation(1, 0));
         assertFalse(chamber.getConfirmation(2, 0));
     }
 
     function test_Chamber_RevokeConfirmation_CheckConfirmation() public {
         addDirectors();
-        
+
         vm.prank(user1);
         chamber.submitTransaction(1, address(0x3), 0, "");
-        
+
         vm.prank(user1);
         chamber.revokeConfirmation(1, 0);
-        
+
         assertFalse(chamber.getConfirmation(1, 0));
     }
 
     function test_Chamber_ConfirmBatchTransactions_AlreadyExecuted_Reverts() public {
         addDirectors();
         deal(address(chamber), 1 ether);
-        
+
         vm.prank(user1);
         chamber.submitTransaction(1, address(0x3), 1 ether, "");
-        
+
         vm.prank(user2);
         chamber.confirmTransaction(2, 0);
-        
+
         vm.prank(user3);
         chamber.confirmTransaction(3, 0);
-        
+
         vm.prank(user1);
         chamber.executeTransaction(1, 0);
-        
+
         uint256[] memory batch = new uint256[](1);
         batch[0] = 0;
-        
+
         // Add another director
         address user4 = address(0x4);
         MockERC721(address(nft)).mintWithTokenId(user4, 4);
@@ -1354,7 +1324,7 @@ contract ChamberTest is Test {
         token.approve(address(chamber), 1 ether);
         chamber.deposit(1 ether, user4);
         chamber.delegate(4, 1);
-        
+
         vm.expectRevert();
         chamber.confirmBatchTransactions(4, batch);
         vm.stopPrank();
@@ -1362,13 +1332,13 @@ contract ChamberTest is Test {
 
     function test_Chamber_ConfirmBatchTransactions_AlreadyConfirmed_Reverts() public {
         addDirectors();
-        
+
         vm.prank(user1);
         chamber.submitTransaction(1, address(0x3), 0, "");
-        
+
         uint256[] memory batch = new uint256[](1);
         batch[0] = 0;
-        
+
         vm.prank(user1);
         vm.expectRevert();
         chamber.confirmBatchTransactions(1, batch);
@@ -1377,22 +1347,22 @@ contract ChamberTest is Test {
     function test_Chamber_ExecuteBatchTransactions_AlreadyExecuted_Reverts() public {
         addDirectors();
         deal(address(chamber), 2 ether);
-        
+
         vm.prank(user1);
         chamber.submitTransaction(1, address(0x3), 1 ether, "");
-        
+
         vm.prank(user2);
         chamber.confirmTransaction(2, 0);
-        
+
         vm.prank(user3);
         chamber.confirmTransaction(3, 0);
-        
+
         vm.prank(user1);
         chamber.executeTransaction(1, 0);
-        
+
         uint256[] memory batch = new uint256[](1);
         batch[0] = 0;
-        
+
         vm.prank(user1);
         vm.expectRevert();
         chamber.executeBatchTransactions(1, batch);
@@ -1400,11 +1370,11 @@ contract ChamberTest is Test {
 
     function test_Chamber_GetDelegations_NoMatches() public {
         addDirectors();
-        
+
         // user1 has delegations, but user2's delegations should not be returned
         address otherUser = address(0x999);
         (uint256[] memory tokenIds, uint256[] memory amounts) = chamber.getDelegations(otherUser);
-        
+
         assertEq(tokenIds.length, 0);
         assertEq(amounts.length, 0);
     }

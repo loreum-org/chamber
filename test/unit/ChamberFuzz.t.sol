@@ -30,14 +30,7 @@ contract ChamberFuzzTest is Test {
 
         address admin = address(0x9);
         seats = 5;
-        chamber = DeployChamber.deploy(
-            address(token),
-            address(nft),
-            seats,
-            name,
-            symbol,
-            admin
-        );
+        chamber = DeployChamber.deploy(address(token), address(nft), seats, name, symbol, admin);
     }
 
     /// @notice Fuzz test for delegate with random amounts
@@ -63,7 +56,12 @@ contract ChamberFuzzTest is Test {
     }
 
     /// @notice Fuzz test for undelegate with random amounts
-    function testFuzz_Undelegate(uint256 tokenId, uint256 depositAmount, uint256 delegateAmount, uint256 undelegateAmount) public {
+    function testFuzz_Undelegate(
+        uint256 tokenId,
+        uint256 depositAmount,
+        uint256 delegateAmount,
+        uint256 undelegateAmount
+    ) public {
         // Bound inputs
         tokenId = bound(tokenId, 1, type(uint256).max);
         depositAmount = bound(depositAmount, 1, MAX_AMOUNT);
@@ -95,15 +93,17 @@ contract ChamberFuzzTest is Test {
     }
 
     /// @notice Fuzz test for multiple delegations
-    function testFuzz_MultipleDelegations(uint256[5] memory tokenIds, uint256[5] memory amounts, uint256 totalDeposit) public {
+    function testFuzz_MultipleDelegations(uint256[5] memory tokenIds, uint256[5] memory amounts, uint256 totalDeposit)
+        public
+    {
         // Bound inputs - ensure totalDeposit is large enough
         totalDeposit = bound(totalDeposit, 5, MAX_AMOUNT); // At least 5 to divide by 5
-        
+
         uint256 sum = 0;
-        
+
         for (uint256 i = 0; i < 5; i++) {
             tokenIds[i] = bound(tokenIds[i], 1, type(uint256).max - 10); // Leave room for uniqueness
-            
+
             // Ensure unique tokenIds
             for (uint256 j = 0; j < i; j++) {
                 if (tokenIds[i] == tokenIds[j]) {
@@ -118,7 +118,7 @@ contract ChamberFuzzTest is Test {
                 }
             }
         }
-        
+
         // Bound amounts to ensure they fit within totalDeposit
         for (uint256 i = 0; i < 5; i++) {
             uint256 maxAmount = totalDeposit / 5;
@@ -170,23 +170,25 @@ contract ChamberFuzzTest is Test {
 
         vm.startPrank(user1);
         token.approve(address(chamber), depositAmount);
-        
+
         uint256 beforeBalance = chamber.balanceOf(user1);
         chamber.deposit(depositAmount, user1);
         uint256 afterDepositBalance = chamber.balanceOf(user1);
-        
+
         assertEq(afterDepositBalance, beforeBalance + depositAmount);
 
         // Withdraw
         chamber.withdraw(withdrawAmount, user1, user1);
         uint256 afterWithdrawBalance = chamber.balanceOf(user1);
-        
+
         assertEq(afterWithdrawBalance, afterDepositBalance - withdrawAmount);
         vm.stopPrank();
     }
 
     /// @notice Fuzz test for transfer with delegation constraints
-    function testFuzz_TransferWithDelegation(uint256 depositAmount, uint256 delegateAmount, uint256 transferAmount) public {
+    function testFuzz_TransferWithDelegation(uint256 depositAmount, uint256 delegateAmount, uint256 transferAmount)
+        public
+    {
         // Bound inputs
         depositAmount = bound(depositAmount, 2, MAX_AMOUNT); // At least 2 to allow both delegate and transfer
         delegateAmount = bound(delegateAmount, 1, depositAmount - 1); // Leave at least 1 for transfer
@@ -207,7 +209,7 @@ contract ChamberFuzzTest is Test {
         vm.stopPrank();
 
         uint256 availableBalance = chamber.balanceOf(user1) - delegateAmount;
-        
+
         if (transferAmount <= availableBalance) {
             // Should succeed
             vm.prank(user1);
@@ -255,10 +257,12 @@ contract ChamberFuzzTest is Test {
     }
 
     /// @notice Fuzz test for getDelegations
-    function testFuzz_GetDelegations(uint256[3] memory tokenIds, uint256[3] memory amounts, uint256 totalDeposit) public {
+    function testFuzz_GetDelegations(uint256[3] memory tokenIds, uint256[3] memory amounts, uint256 totalDeposit)
+        public
+    {
         // Bound inputs - ensure totalDeposit is large enough
         totalDeposit = bound(totalDeposit, 3, MAX_AMOUNT); // At least 3 to divide by 3
-        
+
         // Ensure unique tokenIds first
         for (uint256 i = 0; i < 3; i++) {
             tokenIds[i] = bound(tokenIds[i], 1, type(uint256).max - 10); // Leave room for uniqueness
@@ -275,7 +279,7 @@ contract ChamberFuzzTest is Test {
                 }
             }
         }
-        
+
         uint256 sum = 0;
         // Bound amounts to ensure they fit within totalDeposit
         for (uint256 i = 0; i < 3; i++) {
@@ -336,7 +340,9 @@ contract ChamberFuzzTest is Test {
     }
 
     /// @notice Fuzz test for insufficient balance delegation
-    function testFuzz_DelegateInsufficientBalance(uint256 tokenId, uint256 depositAmount, uint256 delegateAmount) public {
+    function testFuzz_DelegateInsufficientBalance(uint256 tokenId, uint256 depositAmount, uint256 delegateAmount)
+        public
+    {
         tokenId = bound(tokenId, 1, type(uint256).max);
         depositAmount = bound(depositAmount, 1, MAX_AMOUNT);
         delegateAmount = bound(delegateAmount, depositAmount + 1, type(uint256).max);
@@ -356,7 +362,7 @@ contract ChamberFuzzTest is Test {
     /// @notice Invariant: Total delegations should never exceed user balance
     function testFuzz_Invariant_DelegationBalance(uint256 depositAmount, uint256[3] memory delegateAmounts) public {
         depositAmount = bound(depositAmount, 3, MAX_AMOUNT); // At least 3 to divide by 3
-        
+
         uint256 sum = 0;
         // Bound amounts to ensure they fit within depositAmount
         for (uint256 i = 0; i < 3; i++) {
@@ -391,9 +397,11 @@ contract ChamberFuzzTest is Test {
     }
 
     /// @notice Invariant: Board size should match number of nodes with non-zero amounts
-    function testFuzz_Invariant_BoardSize(uint256[5] memory tokenIds, uint256[5] memory amounts, uint256 totalDeposit) public {
+    function testFuzz_Invariant_BoardSize(uint256[5] memory tokenIds, uint256[5] memory amounts, uint256 totalDeposit)
+        public
+    {
         totalDeposit = bound(totalDeposit, 5, MAX_AMOUNT); // At least 5 to divide by 5
-        
+
         // Ensure unique tokenIds first
         for (uint256 i = 0; i < 5; i++) {
             tokenIds[i] = bound(tokenIds[i], 1, type(uint256).max - 100); // Leave room for uniqueness
@@ -409,7 +417,7 @@ contract ChamberFuzzTest is Test {
                 }
             }
         }
-        
+
         uint256 sum = 0;
         // Bound amounts to ensure they fit within totalDeposit
         for (uint256 i = 0; i < 5; i++) {
@@ -424,12 +432,12 @@ contract ChamberFuzzTest is Test {
         }
 
         MockERC20(address(token)).mint(user1, totalDeposit);
-        
+
         // Track unique tokenIds that will actually be delegated to
         uint256[] memory uniqueTokenIds = new uint256[](5);
         uint256[] memory uniqueAmounts = new uint256[](5);
         uint256 uniqueCount = 0;
-        
+
         for (uint256 i = 0; i < 5; i++) {
             // Only process if amount > 0
             if (amounts[i] > 0) {
@@ -443,17 +451,20 @@ contract ChamberFuzzTest is Test {
                         break;
                     }
                 }
-                
+
                 if (!isDuplicate) {
                     // New unique tokenId
                     uniqueTokenIds[uniqueCount] = tokenIds[i];
                     uniqueAmounts[uniqueCount] = amounts[i];
                     uniqueCount++;
-                    
+
                     // Mint NFT if it doesn't exist
-                    try nft.ownerOf(tokenIds[i]) returns (address) {
-                        // Token already exists, skip minting
-                    } catch {
+                    try nft.ownerOf(tokenIds[i]) returns (
+                        address
+                    ) {
+                    // Token already exists, skip minting
+                    }
+                    catch {
                         // Token doesn't exist, mint it
                         MockERC721(address(nft)).mintWithTokenId(user1, tokenIds[i]);
                     }
