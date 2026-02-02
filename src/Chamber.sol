@@ -76,7 +76,7 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
         nft = IERC721(erc721Token);
         _setSeats(0, seats);
 
-        version = "1.1.3";
+        version = "0.4";
     }
 
     /**
