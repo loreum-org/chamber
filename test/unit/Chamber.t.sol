@@ -102,9 +102,13 @@ contract ChamberTest is Test {
         MockERC20(address(token)).approve(address(chamber), amount);
         chamber.deposit(amount, user1);
         chamber.delegate(tokenId, 1);
-
-        chamber.submitTransaction(1, target, value, data);
         vm.stopPrank();
+
+        // Warp time to satisfy minimum delegation age
+        vm.warp(block.timestamp + 1 days + 1);
+
+        vm.prank(user1);
+        chamber.submitTransaction(1, target, value, data);
 
         (bool executed, uint8 confirmations, address trxTarget, uint256 trxValue, bytes memory trxData) =
             chamber.getTransaction(0);
@@ -130,9 +134,13 @@ contract ChamberTest is Test {
         MockERC20(address(token)).approve(address(chamber), amount);
         chamber.deposit(amount, user1);
         chamber.delegate(tokenId, 1);
-
-        chamber.submitTransaction(1, target, value, data);
         vm.stopPrank();
+
+        // Warp time to satisfy minimum delegation age
+        vm.warp(block.timestamp + 1 days + 1);
+
+        vm.prank(user1);
+        chamber.submitTransaction(1, target, value, data);
 
         (, uint8 confirmations,,,) = chamber.getTransaction(0);
         assertEq(confirmations, 1);
@@ -152,7 +160,12 @@ contract ChamberTest is Test {
         MockERC20(address(token)).approve(address(chamber), amount);
         chamber.deposit(amount, user1);
         chamber.delegate(tokenId, 1);
+        vm.stopPrank();
 
+        // Warp time to satisfy minimum delegation age
+        vm.warp(block.timestamp + 1 days + 1);
+
+        vm.startPrank(user1);
         chamber.submitTransaction(1, target, value, data);
         chamber.revokeConfirmation(1, 0);
         vm.stopPrank();
@@ -184,26 +197,34 @@ contract ChamberTest is Test {
         MockERC20(address(token)).approve(address(chamber), amount);
         chamber.deposit(amount, user1);
         chamber.delegate(tokenId, 1);
-        chamber.submitTransaction(1, target, value, data);
         vm.stopPrank();
 
         vm.startPrank(user2);
         MockERC20(address(token)).approve(address(chamber), amount);
         chamber.deposit(amount, user2);
         chamber.delegate(tokenId + 1, 1);
-        chamber.confirmTransaction(2, 0);
         vm.stopPrank();
 
         vm.startPrank(user3);
         MockERC20(address(token)).approve(address(chamber), amount);
         chamber.deposit(amount, user3);
         chamber.delegate(tokenId + 2, 1);
-        chamber.confirmTransaction(3, 0);
         vm.stopPrank();
 
-        vm.startPrank(user1);
+        // Warp time to satisfy minimum delegation age
+        vm.warp(block.timestamp + 1 days + 1);
+
+        vm.prank(user1);
+        chamber.submitTransaction(1, target, value, data);
+
+        vm.prank(user2);
+        chamber.confirmTransaction(2, 0);
+
+        vm.prank(user3);
+        chamber.confirmTransaction(3, 0);
+
+        vm.prank(user1);
         chamber.executeTransaction(1, 0);
-        vm.stopPrank();
 
         (bool executed,,,,) = chamber.getTransaction(0);
         assertEq(executed, true);
@@ -225,9 +246,13 @@ contract ChamberTest is Test {
         MockERC20(address(token)).approve(address(chamber), amount);
         chamber.deposit(amount, user1);
         chamber.delegate(tokenId, 1);
-
-        chamber.submitTransaction(1, target, value, data);
         vm.stopPrank();
+
+        // Warp time to satisfy minimum delegation age
+        vm.warp(block.timestamp + 1 days + 1);
+
+        vm.prank(user1);
+        chamber.submitTransaction(1, target, value, data);
 
         uint256 count = chamber.getTransactionCount();
 
@@ -706,6 +731,9 @@ contract ChamberTest is Test {
         chamber.deposit(amount, user3);
         chamber.delegate(3, 1);
         vm.stopPrank();
+
+        // Warp time forward to satisfy minimum delegation age requirement
+        vm.warp(block.timestamp + 1 days + 1);
     }
 
     function test_Chamber_GetTotalAgentDelegations() public {
@@ -1207,6 +1235,9 @@ contract ChamberTest is Test {
         chamber.delegate(6, 1);
         vm.stopPrank();
 
+        // Warp time to satisfy minimum delegation age for new users
+        vm.warp(block.timestamp + 1 days + 1);
+
         // user6 (tokenId 6) is the 6th but only 5 seats
         vm.prank(user6);
         vm.expectRevert(IChamber.NotDirector.selector);
@@ -1380,6 +1411,202 @@ contract ChamberTest is Test {
     }
 
     function test_Chamber_Version() public view {
-        assertEq(chamber.version(), "1.1.3");
+        assertEq(chamber.version(), "0.5");
+    }
+
+    // ============ New Security Feature Tests ============
+
+    function test_Chamber_DelegationTooRecent_Reverts() public {
+        uint256 tokenId = 1;
+        uint256 amount = 1 ether;
+        MockERC721(address(nft)).mintWithTokenId(user1, tokenId);
+        MockERC20(address(token)).mint(user1, amount);
+
+        vm.startPrank(user1);
+        MockERC20(address(token)).approve(address(chamber), amount);
+        chamber.deposit(amount, user1);
+        chamber.delegate(tokenId, 1);
+
+        // Try to submit transaction immediately (should fail)
+        vm.expectRevert(IChamber.DelegationTooRecent.selector);
+        chamber.submitTransaction(1, address(0x3), 0, "");
+        vm.stopPrank();
+    }
+
+    function test_Chamber_DelegationAgeRequirement_Success() public {
+        uint256 tokenId = 1;
+        uint256 amount = 1 ether;
+        MockERC721(address(nft)).mintWithTokenId(user1, tokenId);
+        MockERC20(address(token)).mint(user1, amount);
+
+        vm.startPrank(user1);
+        MockERC20(address(token)).approve(address(chamber), amount);
+        chamber.deposit(amount, user1);
+        chamber.delegate(tokenId, 1);
+        vm.stopPrank();
+
+        // Warp time forward past minimum delegation age
+        vm.warp(block.timestamp + 1 days + 1);
+
+        // Now should succeed
+        vm.prank(user1);
+        chamber.submitTransaction(1, address(0x3), 0, "");
+
+        assertEq(chamber.getTransactionCount(), 1);
+    }
+
+    function test_Chamber_GetAgentFirstDelegationTime() public {
+        uint256 tokenId = 1;
+        uint256 amount = 100;
+        MockERC721(address(nft)).mintWithTokenId(user1, tokenId);
+        MockERC20(address(token)).mint(user1, amount);
+
+        // Before delegation, should be 0
+        assertEq(chamber.getAgentFirstDelegationTime(user1), 0);
+
+        vm.startPrank(user1);
+        token.approve(address(chamber), amount);
+        chamber.deposit(amount, user1);
+        
+        uint256 delegationTime = block.timestamp;
+        chamber.delegate(tokenId, amount);
+        vm.stopPrank();
+
+        // After delegation, should be set
+        assertEq(chamber.getAgentFirstDelegationTime(user1), delegationTime);
+    }
+
+    function test_Chamber_Withdraw_ExceedsDelegatedAmount_Reverts() public {
+        uint256 tokenId = 1;
+        uint256 amount = 1000;
+        MockERC721(address(nft)).mintWithTokenId(user1, tokenId);
+        MockERC20(address(token)).mint(user1, amount);
+
+        vm.startPrank(user1);
+        token.approve(address(chamber), amount);
+        chamber.deposit(amount, user1);
+        chamber.delegate(tokenId, amount);
+
+        // Try to withdraw - should fail because all shares are delegated
+        vm.expectRevert(IChamber.ExceedsDelegatedAmount.selector);
+        chamber.withdraw(amount, user1, user1);
+        vm.stopPrank();
+    }
+
+    function test_Chamber_Redeem_ExceedsDelegatedAmount_Reverts() public {
+        uint256 tokenId = 1;
+        uint256 amount = 1000;
+        MockERC721(address(nft)).mintWithTokenId(user1, tokenId);
+        MockERC20(address(token)).mint(user1, amount);
+
+        vm.startPrank(user1);
+        token.approve(address(chamber), amount);
+        chamber.deposit(amount, user1);
+        chamber.delegate(tokenId, amount);
+
+        // Try to redeem - should fail because all shares are delegated
+        vm.expectRevert(IChamber.ExceedsDelegatedAmount.selector);
+        chamber.redeem(amount, user1, user1);
+        vm.stopPrank();
+    }
+
+    function test_Chamber_Withdraw_PartialDelegation_Success() public {
+        uint256 tokenId = 1;
+        uint256 amount = 1000;
+        uint256 delegateAmount = 500;
+        MockERC721(address(nft)).mintWithTokenId(user1, tokenId);
+        MockERC20(address(token)).mint(user1, amount);
+
+        vm.startPrank(user1);
+        token.approve(address(chamber), amount);
+        chamber.deposit(amount, user1);
+        chamber.delegate(tokenId, delegateAmount);
+
+        // Should be able to withdraw undelegated portion
+        uint256 withdrawAmount = amount - delegateAmount;
+        chamber.withdraw(withdrawAmount, user1, user1);
+        vm.stopPrank();
+
+        assertEq(token.balanceOf(user1), withdrawAmount);
+    }
+
+    function test_Chamber_TransactionExpiration() public {
+        addDirectors();
+
+        vm.prank(user1);
+        chamber.submitTransaction(1, address(0x3), 0, "");
+
+        // Check transaction is not expired initially
+        assertFalse(chamber.isTransactionExpired(0));
+
+        // Warp forward past expiration (30 days)
+        vm.warp(block.timestamp + 31 days);
+
+        // Check transaction is expired
+        assertTrue(chamber.isTransactionExpired(0));
+    }
+
+    function test_Chamber_ConfirmExpiredTransaction_Reverts() public {
+        addDirectors();
+
+        vm.prank(user1);
+        chamber.submitTransaction(1, address(0x3), 0, "");
+
+        // Warp forward past expiration
+        vm.warp(block.timestamp + 31 days);
+
+        // Try to confirm expired transaction
+        vm.prank(user2);
+        vm.expectRevert();
+        chamber.confirmTransaction(2, 0);
+    }
+
+    function test_Chamber_ExecuteExpiredTransaction_Reverts() public {
+        addDirectors();
+
+        vm.prank(user1);
+        chamber.submitTransaction(1, address(0x3), 0, "");
+
+        vm.prank(user2);
+        chamber.confirmTransaction(2, 0);
+
+        vm.prank(user3);
+        chamber.confirmTransaction(3, 0);
+
+        // Warp forward past expiration
+        vm.warp(block.timestamp + 31 days);
+
+        // Try to execute expired transaction
+        vm.prank(user1);
+        vm.expectRevert();
+        chamber.executeTransaction(1, 0);
+    }
+
+    function test_Chamber_GetTransactionFull() public {
+        addDirectors();
+
+        uint256 beforeSubmit = block.timestamp;
+        vm.prank(user1);
+        chamber.submitTransaction(1, address(0x3), 0, "");
+
+        (
+            bool executed,
+            uint8 confirmations,
+            address target,
+            uint256 value,
+            bytes memory data,
+            uint256 submittedAt
+        ) = chamber.getTransactionFull(0);
+
+        assertEq(executed, false);
+        assertEq(confirmations, 1);
+        assertEq(target, address(0x3));
+        assertEq(value, 0);
+        assertEq(data, "");
+        assertGe(submittedAt, beforeSubmit);
+    }
+
+    function test_Chamber_MinimumDelegationAge_Constant() public view {
+        assertEq(chamber.MINIMUM_DELEGATION_AGE(), 1 days);
     }
 }

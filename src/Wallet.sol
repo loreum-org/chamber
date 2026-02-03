@@ -17,6 +17,7 @@ abstract contract Wallet {
      * @param target The destination address for the transaction
      * @param value The amount of ETH to send with the transaction
      * @param data The calldata to be executed
+     * @param submittedAt Timestamp when the transaction was submitted
      */
     struct Transaction {
         bool executed;
@@ -24,7 +25,11 @@ abstract contract Wallet {
         address target;
         uint256 value;
         bytes data;
+        uint256 submittedAt;
     }
+
+    /// @notice Transaction expiration period (30 days)
+    uint256 public constant TRANSACTION_EXPIRATION = 30 days;
 
     /// @notice Array of all transactions submitted to the wallet
     Transaction[] internal transactions;
@@ -56,6 +61,15 @@ abstract contract Wallet {
         _;
     }
 
+    /// @notice Modifier to check if a transaction has not expired
+    /// @param nonce The transaction index to check
+    modifier notExpired(uint256 nonce) {
+        if (block.timestamp > transactions[nonce].submittedAt + TRANSACTION_EXPIRATION) {
+            revert IWallet.TransactionExpired();
+        }
+        _;
+    }
+
     /**
      * @notice Submits a new transaction and auto-confirms for the submitter
      * @param tokenId The token ID submitting the transaction
@@ -66,7 +80,16 @@ abstract contract Wallet {
     function _submitTransaction(uint256 tokenId, address target, uint256 value, bytes memory data) internal {
         uint256 nonce = transactions.length;
 
-        transactions.push(Transaction({target: target, value: value, data: data, executed: false, confirmations: 0}));
+        transactions.push(
+            Transaction({
+                target: target,
+                value: value,
+                data: data,
+                executed: false,
+                confirmations: 0,
+                submittedAt: block.timestamp
+            })
+        );
         _confirmTransaction(tokenId, nonce);
         emit IWallet.SubmitTransaction(tokenId, nonce, target, value, data);
     }
@@ -80,6 +103,7 @@ abstract contract Wallet {
         internal
         txExists(nonce)
         notExecuted(nonce)
+        notExpired(nonce)
         notConfirmed(tokenId, nonce)
     {
         Transaction storage transaction = transactions[nonce];
@@ -116,7 +140,12 @@ abstract contract Wallet {
      * @param tokenId The token ID executing the transaction
      * @param nonce The transaction index to execute
      */
-    function _executeTransaction(uint256 tokenId, uint256 nonce) internal txExists(nonce) notExecuted(nonce) {
+    function _executeTransaction(uint256 tokenId, uint256 nonce)
+        internal
+        txExists(nonce)
+        notExecuted(nonce)
+        notExpired(nonce)
+    {
         Transaction storage transaction = transactions[nonce];
 
         // Add zero address check
@@ -167,6 +196,50 @@ abstract contract Wallet {
         Transaction storage transaction = transactions[nonce];
         return
             (transaction.executed, transaction.confirmations, transaction.target, transaction.value, transaction.data);
+    }
+
+    /**
+     * @notice Returns the full details of a specific transaction including timestamp
+     * @param nonce The index of the transaction to retrieve
+     * @return executed Whether the transaction has been executed
+     * @return confirmations Number of confirmations
+     * @return target The target address
+     * @return value The ETH value
+     * @return data The calldata
+     * @return submittedAt The timestamp when the transaction was submitted
+     */
+    function getTransactionFull(uint256 nonce)
+        public
+        view
+        virtual
+        returns (
+            bool executed,
+            uint8 confirmations,
+            address target,
+            uint256 value,
+            bytes memory data,
+            uint256 submittedAt
+        )
+    {
+        Transaction storage transaction = transactions[nonce];
+        return (
+            transaction.executed,
+            transaction.confirmations,
+            transaction.target,
+            transaction.value,
+            transaction.data,
+            transaction.submittedAt
+        );
+    }
+
+    /**
+     * @notice Checks if a transaction has expired
+     * @param nonce The index of the transaction to check
+     * @return True if the transaction has expired, false otherwise
+     */
+    function isTransactionExpired(uint256 nonce) public view virtual returns (bool) {
+        if (nonce >= transactions.length) revert IWallet.TransactionDoesNotExist();
+        return block.timestamp > transactions[nonce].submittedAt + TRANSACTION_EXPIRATION;
     }
 
     /**

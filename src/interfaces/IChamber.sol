@@ -64,6 +64,13 @@ interface IChamber is IERC4626, IBoard, IWallet {
     function getTotalAgentDelegations(address agent) external view returns (uint256);
 
     /**
+     * @notice Returns the first delegation timestamp for an agent
+     * @param agent The address of the agent
+     * @return The timestamp of the agent's first delegation (0 if never delegated)
+     */
+    function getAgentFirstDelegationTime(address agent) external view returns (uint256);
+
+    /**
      * @notice Updates the number of seats
      * @param tokenId The tokenId proposing the update
      * @param numOfSeats The new number of seats
@@ -216,4 +223,7 @@ interface IChamber is IERC4626, IBoard, IWallet {
 
     /// @notice Thrown when signature is invalid
     error InvalidSignature();
+
+    /// @notice Thrown when delegation is too recent to perform director actions
+    error DelegationTooRecent();
 }

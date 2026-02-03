@@ -7,6 +7,7 @@ import {IChamber} from "src/interfaces/IChamber.sol";
 import {IWallet} from "src/interfaces/IWallet.sol";
 import {IERC20} from "lib/openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import {IERC721} from "lib/openzeppelin-contracts/contracts/interfaces/IERC721.sol";
+import {IERC4626} from "lib/openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 import {
     ERC4626Upgradeable
 } from "lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/ERC4626Upgradeable.sol";
@@ -38,10 +39,16 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
     /// @notice Mapping to track total delegated amount per agent
     mapping(address => uint256) private totalAgentDelegations;
 
+    /// @notice Mapping to track when each agent first delegated (for director age requirement)
+    mapping(address => uint256) private agentFirstDelegationTime;
+
     /// @dev Events and errors are defined in IChamber interface
 
     /// Constants
     uint256 private constant MAX_SEATS = 20;
+
+    /// @notice Minimum time an agent must have delegated before becoming a director (1 day)
+    uint256 public constant MINIMUM_DELEGATION_AGE = 1 days;
 
     /// @notice Function selector for upgradeImplementation(address,bytes)
     bytes4 private constant UPGRADE_SELECTOR = 0xc89311b6;
@@ -76,7 +83,7 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
         nft = IERC721(erc721Token);
         _setSeats(0, seats);
 
-        version = "0.4";
+        version = "0.5";
     }
 
     /**
@@ -103,6 +110,11 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
         // Update delegation state
         agentDelegation[msg.sender][tokenId] += amount;
         totalAgentDelegations[msg.sender] += amount;
+
+        // Track first delegation time for director age requirement
+        if (agentFirstDelegationTime[msg.sender] == 0) {
+            agentFirstDelegationTime[msg.sender] = block.timestamp;
+        }
 
         // Update board state
         _delegate(tokenId, amount);
@@ -500,6 +512,7 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
 
     /// @notice Modifier to restrict access to only directors
     /// @dev Checks if the caller owns a tokenId that is in the top seats
+    /// @dev Also enforces minimum delegation age requirement to prevent flash loan attacks
     /// @param tokenId The NFT token ID to check for directorship
     modifier isDirector(uint256 tokenId) {
         // Prevent zero tokenId
@@ -507,6 +520,12 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
 
         // Check if tokenId exists and is owned by caller
         if (nft.ownerOf(tokenId) != msg.sender) revert IChamber.NotDirector();
+
+        // Check minimum delegation age requirement (prevents flash loan attacks)
+        uint256 firstDelegationTime = agentFirstDelegationTime[msg.sender];
+        if (firstDelegationTime == 0 || block.timestamp < firstDelegationTime + MINIMUM_DELEGATION_AGE) {
+            revert IChamber.DelegationTooRecent();
+        }
 
         // Check if tokenId is in top seats
         uint256 current = head;
@@ -638,6 +657,67 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
         return true;
     }
 
+    /// ERC4626 OVERRIDES ///
+
+    /**
+     * @notice Withdraws assets from the vault
+     * @dev Overrides ERC4626 withdraw to check delegation constraints
+     * @param assets The amount of assets to withdraw
+     * @param receiver The address to receive the assets
+     * @param owner The address of the share owner
+     * @return shares The amount of shares burned
+     */
+    function withdraw(uint256 assets, address receiver, address owner)
+        public
+        override(ERC4626Upgradeable, IERC4626)
+        returns (uint256)
+    {
+        uint256 shares = previewWithdraw(assets);
+        _checkDelegationConstraint(owner, shares);
+        return super.withdraw(assets, receiver, owner);
+    }
+
+    /**
+     * @notice Redeems shares from the vault
+     * @dev Overrides ERC4626 redeem to check delegation constraints
+     * @param shares The amount of shares to redeem
+     * @param receiver The address to receive the assets
+     * @param owner The address of the share owner
+     * @return assets The amount of assets received
+     */
+    function redeem(uint256 shares, address receiver, address owner)
+        public
+        override(ERC4626Upgradeable, IERC4626)
+        returns (uint256)
+    {
+        _checkDelegationConstraint(owner, shares);
+        return super.redeem(shares, receiver, owner);
+    }
+
+    /**
+     * @notice Internal function to check if a share burn would violate delegation constraints
+     * @param owner The address of the share owner
+     * @param shares The amount of shares being burned
+     */
+    function _checkDelegationConstraint(address owner, uint256 shares) internal view {
+        uint256 ownerBalance = balanceOf(owner);
+        if (ownerBalance < shares) {
+            revert IChamber.InsufficientChamberBalance();
+        }
+        if (ownerBalance - shares < totalAgentDelegations[owner]) {
+            revert IChamber.ExceedsDelegatedAmount();
+        }
+    }
+
+    /**
+     * @notice Returns the first delegation timestamp for an agent
+     * @param agent The address of the agent
+     * @return The timestamp of the agent's first delegation (0 if never delegated)
+     */
+    function getAgentFirstDelegationTime(address agent) external view returns (uint256) {
+        return agentFirstDelegationTime[agent];
+    }
+
     /**
      * @notice Returns the next transaction ID (current nonce)
      * @return uint256 The next transaction ID that will be assigned
@@ -680,6 +760,41 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
      */
     function getConfirmation(uint256 tokenId, uint256 nonce) public view override(IWallet, Wallet) returns (bool) {
         return super.getConfirmation(tokenId, nonce);
+    }
+
+    /**
+     * @notice Returns the full details of a specific transaction including timestamp
+     * @param nonce The index of the transaction to retrieve
+     * @return executed Whether the transaction has been executed
+     * @return confirmations Number of confirmations
+     * @return target The target address
+     * @return value The ETH value
+     * @return data The calldata
+     * @return submittedAt The timestamp when the transaction was submitted
+     */
+    function getTransactionFull(uint256 nonce)
+        public
+        view
+        override(IWallet, Wallet)
+        returns (
+            bool executed,
+            uint8 confirmations,
+            address target,
+            uint256 value,
+            bytes memory data,
+            uint256 submittedAt
+        )
+    {
+        return super.getTransactionFull(nonce);
+    }
+
+    /**
+     * @notice Checks if a transaction has expired
+     * @param nonce The index of the transaction to check
+     * @return True if the transaction has expired, false otherwise
+     */
+    function isTransactionExpired(uint256 nonce) public view override(IWallet, Wallet) returns (bool) {
+        return super.isTransactionExpired(nonce);
     }
 
     /// @dev Storage gap for future upgrades

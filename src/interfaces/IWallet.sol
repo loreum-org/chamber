@@ -96,6 +96,35 @@ interface IWallet {
      */
     function getNextTransactionId() external view returns (uint256);
 
+    /**
+     * @notice Returns the full details of a specific transaction including timestamp
+     * @param nonce The index of the transaction to retrieve
+     * @return executed Whether the transaction has been executed
+     * @return confirmations Number of confirmations
+     * @return target The target address
+     * @return value The ETH value
+     * @return data The calldata
+     * @return submittedAt The timestamp when the transaction was submitted
+     */
+    function getTransactionFull(uint256 nonce)
+        external
+        view
+        returns (
+            bool executed,
+            uint8 confirmations,
+            address target,
+            uint256 value,
+            bytes memory data,
+            uint256 submittedAt
+        );
+
+    /**
+     * @notice Checks if a transaction has expired
+     * @param nonce The index of the transaction to check
+     * @return True if the transaction has expired, false otherwise
+     */
+    function isTransactionExpired(uint256 nonce) external view returns (bool);
+
     /// Events
     /**
      * @notice Emitted when a new transaction is submitted
@@ -149,4 +178,7 @@ interface IWallet {
 
     /// @notice Thrown when transaction target is invalid
     error InvalidTarget();
+
+    /// @notice Thrown when a transaction has expired (past 30 days)
+    error TransactionExpired();
 }

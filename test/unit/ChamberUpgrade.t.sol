@@ -82,6 +82,9 @@ contract ChamberUpgradeTest is Test {
         chamber.deposit(amount, user3);
         chamber.delegate(3, amount);
         vm.stopPrank();
+
+        // Warp time to satisfy minimum delegation age requirement
+        vm.warp(block.timestamp + 1 days + 1);
     }
 
     function test_Chamber_GetProxyAdmin() public view {
@@ -179,9 +182,10 @@ contract ChamberUpgradeTest is Test {
         bytes memory upgradeData =
             abi.encodeWithSelector(IChamber.upgradeImplementation.selector, address(newImplementation), "");
 
-        // Non-director cannot submit upgrade transaction (tokenId 999 not in top seats)
+        // Non-director cannot submit upgrade transaction
+        // Since they never delegated, DelegationTooRecent is thrown first
         vm.prank(nonDirector);
-        vm.expectRevert(IChamber.NotDirector.selector);
+        vm.expectRevert(IChamber.DelegationTooRecent.selector);
         chamber.submitTransaction(999, chamberAddress, 0, upgradeData);
     }
 
