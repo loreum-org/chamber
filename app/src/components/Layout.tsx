@@ -1,11 +1,12 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { motion } from 'framer-motion'
-import { FiHome, FiPlus, FiBox, FiGithub, FiBook } from 'react-icons/fi'
+import { FiHome, FiPlus, FiGithub, FiBook } from 'react-icons/fi'
 
 const navItems = [
   { path: '/', label: 'Chambers', icon: FiHome },
   { path: '/deploy', label: 'Deploy', icon: FiPlus },
+  { path: '/docs', label: 'Docs', icon: FiBook },
 ]
 
 export default function Layout() {
@@ -20,15 +21,7 @@ export default function Layout() {
             {/* Logo */}
             <Link to="/" className="flex items-center gap-3 group">
               <div className="relative">
-                <div className="w-9 h-9 bg-gradient-to-br from-cyan-500 to-violet-600 rounded-xl flex items-center justify-center shadow-glow group-hover:shadow-glow-lg transition-all">
-                  <FiBox className="w-4.5 h-4.5 text-white" />
-                </div>
-              </div>
-              <div>
-                <h1 className="font-heading text-lg font-semibold text-slate-100 group-hover:text-cyan-400 transition-colors tracking-tight">
-                  Chamber
-                </h1>
-                <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">Protocol</p>
+                <img src="/logo.svg" alt="Chamber Logo" className="w-10 h-10 object-contain transition-all" />
               </div>
             </Link>
 
@@ -84,9 +77,7 @@ export default function Layout() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3 text-slate-500 text-sm">
-              <div className="w-6 h-6 bg-gradient-to-br from-cyan-500/20 to-violet-500/20 rounded-lg flex items-center justify-center">
-                <FiBox className="w-3 h-3 text-cyan-500" />
-              </div>
+              <img src="/logo.svg" alt="Chamber Logo" className="w-6 h-6 object-contain opacity-80" />
               <span className="font-medium">Chamber Protocol</span>
               <span className="text-slate-700">|</span>
               <span>Decentralized Treasury Governance</span>
@@ -101,10 +92,10 @@ export default function Layout() {
                 <FiGithub className="w-4 h-4" />
                 GitHub
               </a>
-              <a href="#" className="flex items-center gap-2 hover:text-cyan-400 transition-colors">
+              <Link to="/docs" className="flex items-center gap-2 hover:text-cyan-400 transition-colors">
                 <FiBook className="w-4 h-4" />
                 Docs
-              </a>
+              </Link>
             </div>
           </div>
         </div>

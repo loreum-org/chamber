@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="200" height="200">
+  <!-- Outer Circle -->
+  <circle cx="50" cy="50" r="48" fill="none" stroke="#4CAF50" stroke-width="4" />
+  
+  <!-- Inner Circle with Gradient -->
+  <circle cx="50" cy="50" r="30" fill="url(#gradient)" />
+  <defs>
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4CAF50; stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2196F3; stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Nuro Symbol (Connected Nodes) -->
+  <line x1="50" y1="20" x2="50" y2="80" stroke="#FFF" stroke-width="2" />
+  <line x1="20" y1="50" x2="80" y2="50" stroke="#FFF" stroke-width="2" />
+  <circle cx="50" cy="50" r="5" fill="#FFF" />
+  <circle cx="50" cy="20" r="5" fill="#FFF" />
+  <circle cx="50" cy="80" r="5" fill="#FFF" />
+  <circle cx="20" cy="50" r="5" fill="#FFF" />
+  <circle cx="80" cy="50" r="5" fill="#FFF" />
+
+  <!-- Text -->
+  <text x="50" y="95" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#4CAF50">Nuro</text>
+</svg>

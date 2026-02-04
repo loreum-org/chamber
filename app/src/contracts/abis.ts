@@ -517,6 +517,20 @@ export const registryAbi = [
   },
   {
     type: 'function',
+    name: 'getChambersByAsset',
+    inputs: [{ name: 'asset', type: 'address' }],
+    outputs: [{ name: '', type: 'address[]' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'getAssets',
+    inputs: [],
+    outputs: [{ name: '', type: 'address[]' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
     name: 'implementation',
     inputs: [],
     outputs: [{ name: '', type: 'address' }],

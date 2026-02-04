@@ -87,6 +87,19 @@ export const registryAbi = [
   },
   {
     "type": "function",
+    "name": "getAssets",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address[]",
+        "internalType": "address[]"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "getChamberCount",
     "inputs": [],
     "outputs": [
@@ -111,6 +124,25 @@ export const registryAbi = [
         "name": "skip",
         "type": "uint256",
         "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address[]",
+        "internalType": "address[]"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getChambersByAsset",
+    "inputs": [
+      {
+        "name": "asset",
+        "type": "address",
+        "internalType": "address"
       }
     ],
     "outputs": [

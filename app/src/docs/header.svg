@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 200">
+  <!-- Definitions -->
+  <defs>
+    <linearGradient id="bg-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1E1E2E;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2D2D44;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Neural network pattern -->
+    <pattern id="neural-pattern" x="0" y="0" width="80" height="80" patternUnits="userSpaceOnUse">
+      <circle cx="40" cy="40" r="1" fill="#ffffff20"/>
+      <circle cx="0" cy="0" r="1" fill="#ffffff20"/>
+      <circle cx="80" cy="80" r="1" fill="#ffffff20"/>
+      <line x1="40" y1="40" x2="0" y2="0" stroke="#ffffff10" stroke-width="0.5"/>
+      <line x1="40" y1="40" x2="80" y2="80" stroke="#ffffff10" stroke-width="0.5"/>
+    </pattern>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="200" fill="url(#bg-gradient)"/>
+  <rect width="800" height="200" fill="url(#neural-pattern)"/>
+
+  <!-- Central Chamber Hexagon -->
+  <g transform="translate(400,100)">
+    <!-- Outer hexagon -->
+    <path d="M-60,-35 L0,-70 L60,-35 L60,35 L0,70 L-60,35 Z" 
+          fill="none" stroke="#7B2BF9" stroke-width="2"/>
+    <!-- Inner hexagon -->
+    <path d="M-40,-23 L0,-46 L40,-23 L40,23 L0,46 L-40,23 Z" 
+          fill="none" stroke="#7B2BF9" stroke-width="2"/>
+    
+    <!-- Connecting nodes -->
+    <circle cx="-50" cy="0" r="4" fill="#7B2BF9"/>
+    <circle cx="50" cy="0" r="4" fill="#7B2BF9"/>
+    <circle cx="-25" cy="-43" r="4" fill="#7B2BF9"/>
+    <circle cx="25" cy="-43" r="4" fill="#7B2BF9"/>
+    <circle cx="-25" cy="43" r="4" fill="#7B2BF9"/>
+    <circle cx="25" cy="43" r="4" fill="#7B2BF9"/>
+  </g>
+
+  <!-- Orbital paths -->
+  <g transform="translate(400,100)">
+    <path d="M-120,0 A120,40 0 1,1 120,0" fill="none" stroke="#ffffff20" stroke-width="1"/>
+    <path d="M-100,-20 A100,60 0 1,0 100,-20" fill="none" stroke="#ffffff20" stroke-width="1"/>
+    
+    <!-- AI Agents on orbital paths -->
+    <circle cx="-100" cy="10" r="6" fill="#7B2BF9"/>
+    <circle cx="80" cy="-15" r="6" fill="#7B2BF9"/>
+    <circle cx="0" cy="50" r="6" fill="#7B2BF9"/>
+  </g>
+
+  <!-- Connection lines representing delegation -->
+  <g transform="translate(400,100)" stroke="#7B2BF940" stroke-width="1">
+    <line x1="-100" y1="10" x2="-50" y2="0"/>
+    <line x1="80" y1="-15" x2="50" y2="0"/>
+    <line x1="0" y1="50" x2="0" y2="46"/>
+  </g>
+
+  <!-- Pulse effect circles -->
+  <circle cx="400" cy="100" r="90" fill="none" stroke="#7B2BF920" stroke-width="1">
+    <animate attributeName="r" from="80" to="90" dur="2s" repeatCount="indefinite"/>
+    <animate attributeName="stroke-opacity" from="0.2" to="0" dur="2s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="400" cy="100" r="85" fill="none" stroke="#7B2BF920" stroke-width="1">
+    <animate attributeName="r" from="75" to="85" dur="2s" repeatCount="indefinite"/>
+    <animate attributeName="stroke-opacity" from="0.2" to="0" dur="2s" repeatCount="indefinite"/>
+  </circle>
+</svg>

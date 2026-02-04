@@ -1,0 +1,20 @@
+<svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="logo-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#06b6d4" />
+      <stop offset="100%" stop-color="#8b5cf6" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Main Pyramid Structure -->
+  <!-- Left Face -->
+  <path d="M50 10L15 80L50 95V10Z" stroke="url(#logo-gradient)" stroke-width="2" stroke-linejoin="round" fill="url(#logo-gradient)" fill-opacity="0.05" />
+  <!-- Right Face -->
+  <path d="M50 10L85 80L50 95V10Z" stroke="url(#logo-gradient)" stroke-width="2" stroke-linejoin="round" fill="url(#logo-gradient)" fill-opacity="0.1" />
+  
+  <!-- Glowing Core Chamber -->
+  <path d="M50 40L35 75L50 82L65 75L50 40Z" fill="url(#logo-gradient)" style="filter: drop-shadow(0 0 10px rgba(6, 182, 212, 0.6));" />
+  
+  <!-- Structural Perspective Lines -->
+  <path d="M15 80L85 80" stroke="url(#logo-gradient)" stroke-width="1" stroke-opacity="0.3" stroke-dasharray="2 2" />
+</svg>
