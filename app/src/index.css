@@ -169,6 +169,16 @@
     @apply icon-container text-emerald-400;
     background-color: rgba(16, 185, 129, 0.15);
   }
+
+  /* Mermaid diagram styling */
+  .mermaid-container svg {
+    @apply max-w-full h-auto mx-auto;
+    background: transparent !important;
+  }
+  
+  .mermaid-container .label {
+    @apply text-slate-300;
+  }
 }
 
 @layer utilities {

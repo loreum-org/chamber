@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAccount } from 'wagmi'
 import { useQueryClient } from '@tanstack/react-query'
-import { FiBox, FiAlertCircle, FiCheck, FiLoader } from 'react-icons/fi'
+import { FiAlertCircle, FiCheck, FiLoader } from 'react-icons/fi'
 import { useCreateChamberWithStatus } from '@/hooks'
 import { useRegistryAddress } from '@/hooks/useRegistry'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
@@ -121,9 +121,7 @@ export default function DeployChamber() {
       >
         {/* Header */}
         <div className="text-center">
-          <div className="w-16 h-16 bg-gradient-to-br from-cyan-500 to-violet-600 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-glow">
-            <FiBox className="w-8 h-8 text-white" />
-          </div>
+          <img src="/logo.svg" alt="Chamber Logo" className="w-20 h-20 object-contain mx-auto mb-5" />
           <h1 className="font-heading text-3xl font-bold text-slate-100 mb-2 tracking-tight">
             Deploy New Chamber
           </h1>
@@ -346,7 +344,7 @@ export default function DeployChamber() {
                   </>
                 ) : (
                   <>
-                    <FiBox className="w-5 h-5" />
+                    <img src="/logo.svg" alt="" className="w-5 h-5 object-contain" />
                     Deploy Chamber
                   </>
                 )}

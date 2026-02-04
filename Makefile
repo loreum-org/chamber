@@ -50,7 +50,7 @@ deploy-all-anvil :; forge script script/DeployAllAnvil.s.sol:DeployAllAnvil \
 	--verbosity -vvv
 
 # Sync ABIs from compiled contracts to the app
-sync-abis :; node scripts/sync-abis.js
+sync-abis :; node script/sync-abis.js
 
 # Full local development setup: deploy contracts + sync ABIs
 # Usage: Start anvil in one terminal, then run `make setup-local` in another

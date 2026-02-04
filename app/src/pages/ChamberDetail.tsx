@@ -22,6 +22,7 @@ import {
   useBoardMembers,
   useDelegations,
   useChamberEventRefresh,
+  useChambersByAsset,
 } from '@/hooks'
 import BoardVisualization from '@/components/BoardVisualization'
 import TreasuryOverview from '@/components/TreasuryOverview'
@@ -286,6 +287,11 @@ interface OverviewTabProps {
 }
 
 function OverviewTab({ chamberAddress, chamberInfo, members, totalDelegated, userBalance }: OverviewTabProps) {
+  const { chambers: relatedChambers, isLoading: isLoadingRelated } = useChambersByAsset(chamberInfo.assetToken as `0x${string}`)
+  
+  // Filter out current chamber from related chambers
+  const filteredRelated = relatedChambers?.filter(addr => addr.toLowerCase() !== chamberAddress.toLowerCase()) || []
+
   return (
     <div className="grid lg:grid-cols-2 gap-6">
       {/* Directors */}
@@ -378,6 +384,57 @@ function OverviewTab({ chamberAddress, chamberInfo, members, totalDelegated, use
             </div>
           </div>
         )}
+      </div>
+
+      {/* Organization / Related Chambers */}
+      <div className="panel lg:col-span-2">
+        <div className="p-4 border-b border-slate-700/30 flex items-center justify-between">
+          <div>
+            <h3 className="font-heading font-semibold text-slate-100">Organization (Sub Chambers)</h3>
+            <p className="text-slate-500 text-xs mt-0.5">
+              Other chambers sharing the same underlying asset
+            </p>
+          </div>
+          {filteredRelated.length > 0 && (
+            <span className="badge badge-primary">{filteredRelated.length} related</span>
+          )}
+        </div>
+        <div className="p-4">
+          {isLoadingRelated ? (
+            <div className="flex gap-4 overflow-x-auto pb-2">
+              {[1, 2].map(i => (
+                <div key={i} className="min-w-[250px] h-24 bg-slate-800/50 rounded-xl animate-pulse" />
+              ))}
+            </div>
+          ) : filteredRelated.length > 0 ? (
+            <div className="flex gap-4 overflow-x-auto pb-2">
+              {filteredRelated.map((addr) => (
+                <Link 
+                  key={addr}
+                  to={`/chamber/${addr}`}
+                  className="min-w-[250px] p-4 rounded-xl bg-slate-800/40 border border-slate-700/50 hover:border-cyan-500/50 hover:bg-slate-800/60 transition-all group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-slate-700/50 flex items-center justify-center group-hover:bg-cyan-500/20 transition-colors">
+                      <FiLayers className="w-5 h-5 text-slate-400 group-hover:text-cyan-400" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-slate-200 group-hover:text-cyan-400 transition-colors">
+                        {addr.slice(0, 8)}...{addr.slice(-6)}
+                      </div>
+                      <div className="text-xs text-slate-500">Related Chamber</div>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="py-8 text-center bg-slate-800/20 rounded-xl border border-dashed border-slate-700/50">
+              <FiLayers className="w-8 h-8 text-slate-600 mx-auto mb-2" />
+              <p className="text-slate-500 text-sm">No other chambers in this organization</p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Contract Info */}

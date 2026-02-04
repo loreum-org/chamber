@@ -7,9 +7,9 @@ import {MockERC20} from "test/mock/MockERC20.sol";
 contract DeployMockERC20 is Script {
     function run() external {
         // Default values, can be overridden with env vars
-        string memory name = vm.envOr("TOKEN_NAME", string("Mock Token"));
-        string memory symbol = vm.envOr("TOKEN_SYMBOL", string("MOCK"));
-        uint256 initialSupply = vm.envOr("TOKEN_SUPPLY", uint256(1_000_000 ether));
+        string memory name = vm.envOr("TOKEN_NAME", string("Mock LORE"));
+        string memory symbol = vm.envOr("TOKEN_SYMBOL", string("LORE"));
+        uint256 initialSupply = vm.envOr("TOKEN_SUPPLY", uint256(100_000_000 ether));
 
         vm.startBroadcast();
 

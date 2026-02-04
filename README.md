@@ -1,6 +1,6 @@
 # Loreum Chamber
 
-Loreum is a Smart Account framework that integrates artificial intelligence agents with decentralized capital management and directorship. The system introduces a novel Chamber architecture that enables dynamic, market-driven governance while maintaining human oversight through a unique delegation mechanism.
+Loreum is a secure shared vault for communities. NFT holders elect a board of leaders who work together to manage funds and approve transactions through a unique delegation mechanism.
 
 ## Overview
 

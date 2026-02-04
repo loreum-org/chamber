@@ -30,6 +30,15 @@ contract Registry is AccessControl, Initializable {
     /// @notice Mapping to check if an address is a deployed chamber
     mapping(address => bool) private _isChamber;
 
+    /// @notice Mapping from asset address to array of chamber addresses
+    mapping(address => address[]) private _chambersByAsset;
+
+    /// @notice Array of all unique asset addresses (Organizations)
+    address[] private _assets;
+
+    /// @notice Mapping to check if an address is tracked as an asset
+    mapping(address => bool) private _isAsset;
+
     /**
      * @notice Emitted when a new chamber is deployed
      * @param chamber The address of the newly deployed chamber
@@ -112,6 +121,13 @@ contract Registry is AccessControl, Initializable {
         _chambers.push(chamber);
         _isChamber[chamber] = true;
 
+        // Index chamber by asset
+        if (!_isAsset[erc20Token]) {
+            _isAsset[erc20Token] = true;
+            _assets.push(erc20Token);
+        }
+        _chambersByAsset[erc20Token].push(chamber);
+
         emit ChamberCreated(chamber, seats, name, symbol, erc20Token, erc721Token);
     }
 
@@ -164,6 +180,23 @@ contract Registry is AccessControl, Initializable {
      */
     function isChamber(address chamber) external view returns (bool) {
         return _isChamber[chamber];
+    }
+
+    /**
+     * @notice Returns all chambers for a given asset
+     * @param asset The asset address
+     * @return Array of chamber addresses
+     */
+    function getChambersByAsset(address asset) external view returns (address[] memory) {
+        return _chambersByAsset[asset];
+    }
+
+    /**
+     * @notice Returns all unique assets (Organizations)
+     * @return Array of asset addresses
+     */
+    function getAssets() external view returns (address[] memory) {
+        return _assets;
     }
 
     /**

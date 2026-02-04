@@ -109,6 +109,43 @@ export function useIsChamber(address: `0x${string}` | undefined) {
   return data as boolean | undefined
 }
 
+export function useChambersByAsset(asset: `0x${string}` | undefined) {
+  const registryAddress = useRegistryAddress()
+  
+  const { data, isLoading, error, refetch } = useReadContract({
+    address: registryAddress,
+    abi: registryAbi,
+    functionName: 'getChambersByAsset',
+    args: asset ? [asset] : undefined,
+    query: { enabled: !!asset && registryAddress !== '0x0000000000000000000000000000000000000000' },
+  })
+
+  return {
+    chambers: data as `0x${string}`[] | undefined,
+    isLoading,
+    error,
+    refetch,
+  }
+}
+
+export function useAssets() {
+  const registryAddress = useRegistryAddress()
+  
+  const { data, isLoading, error, refetch } = useReadContract({
+    address: registryAddress,
+    abi: registryAbi,
+    functionName: 'getAssets',
+    query: { enabled: registryAddress !== '0x0000000000000000000000000000000000000000' },
+  })
+
+  return {
+    assets: data as `0x${string}`[] | undefined,
+    isLoading,
+    error,
+    refetch,
+  }
+}
+
 export function useCreateChamber() {
   const registryAddress = useRegistryAddress()
   const { writeContract, data: hash, isPending, error } = useWriteContract()
