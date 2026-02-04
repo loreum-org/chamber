@@ -1,5 +1,6 @@
 import { getDefaultConfig } from '@rainbow-me/rainbowkit'
 import { mainnet, sepolia, Chain } from 'wagmi/chains'
+import localDeployments from '../contracts/deployments.json'
 
 // Define localhost chain explicitly with correct chain ID
 const localhost: Chain = {
@@ -35,25 +36,40 @@ export const config = getDefaultConfig({
   ssr: false,
 })
 
-// Contract addresses - can be overridden with environment variables
-// For localhost, update these after deploying contracts to Anvil
+// Contract addresses - localhost uses auto-generated deployments.json from `make deploy-anvil-all`
+// Testnet/mainnet addresses can be overridden with environment variables
 export const CONTRACT_ADDRESSES = {
   // Sepolia testnet addresses
   sepolia: {
     registry: (import.meta.env.VITE_SEPOLIA_REGISTRY || '0x0000000000000000000000000000000000000000') as `0x${string}`,
     chamberImplementation: (import.meta.env.VITE_SEPOLIA_CHAMBER_IMPL || '0x0000000000000000000000000000000000000000') as `0x${string}`,
+    mockERC20: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+    mockERC721: '0x0000000000000000000000000000000000000000' as `0x${string}`,
   },
   // Mainnet addresses (when deployed)
   mainnet: {
     registry: (import.meta.env.VITE_MAINNET_REGISTRY || '0x0000000000000000000000000000000000000000') as `0x${string}`,
     chamberImplementation: (import.meta.env.VITE_MAINNET_CHAMBER_IMPL || '0x0000000000000000000000000000000000000000') as `0x${string}`,
+    mockERC20: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+    mockERC721: '0x0000000000000000000000000000000000000000' as `0x${string}`,
   },
-  // Localhost for development - update these after running `make deploy-anvil contract=Registry`
+  // Localhost - auto-populated from deployments.json via `make deploy-anvil-all`
   localhost: {
-    registry: (import.meta.env.VITE_LOCALHOST_REGISTRY || '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0') as `0x${string}`,
-    chamberImplementation: (import.meta.env.VITE_LOCALHOST_CHAMBER_IMPL || 'xe7f1725E7734CE288F8367e1Bb143E90bb3F0512') as `0x${string}`,
+    registry: localDeployments.registry as `0x${string}`,
+    chamberImplementation: localDeployments.chamberImplementation as `0x${string}`,
+    mockERC20: localDeployments.mockERC20 as `0x${string}`,
+    mockERC721: localDeployments.mockERC721 as `0x${string}`,
   },
 } as const
+
+// Export localhost deployment info for convenience
+export const localhostDeployment = {
+  ...localDeployments,
+  registry: localDeployments.registry as `0x${string}`,
+  chamberImplementation: localDeployments.chamberImplementation as `0x${string}`,
+  mockERC20: localDeployments.mockERC20 as `0x${string}`,
+  mockERC721: localDeployments.mockERC721 as `0x${string}`,
+}
 
 export function getContractAddresses(chainId: number) {
   switch (chainId) {

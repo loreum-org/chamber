@@ -179,7 +179,7 @@ export default function DeployChamber() {
                   placeholder="e.g., ALPHA"
                   className="input"
                   value={formData.symbol}
-                  onChange={(e) => setFormData({ ...formData, symbol: e.target.value.toUpperCase() })}
+                  onChange={(e) => setFormData({ ...formData, symbol: e.target.value })}
                   maxLength={10}
                   required
                 />

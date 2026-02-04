@@ -15,5 +15,8 @@ src = 'src'
 script = 'script'
 test = 'test/unit'
 
+# Allow scripts to write deployment addresses to the app directory
+fs_permissions = [{ access = "read-write", path = "./app" }]
+
 [profile.sepolia]
 test = "test/sepolia"

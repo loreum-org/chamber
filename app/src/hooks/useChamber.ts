@@ -1,4 +1,4 @@
-import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
+import { useReadContract, useWriteContract, useWaitForTransactionReceipt, useSimulateContract, useAccount } from 'wagmi'
 import { chamberAbi, erc20Abi } from '@/contracts/abis'
 import type { Transaction, BoardMember, SeatUpdate } from '@/types'
 
@@ -353,13 +353,22 @@ export function useExecuteTransaction(chamberAddress: `0x${string}` | undefined)
   return { execute, isPending, isConfirming, isSuccess, error, hash }
 }
 
+/**
+ * Hook for delegating shares to an NFT token ID.
+ * Uses simulation to validate the transaction before sending.
+ */
 export function useDelegate(chamberAddress: `0x${string}` | undefined) {
-  const { writeContract, data: hash, isPending, error } = useWriteContract()
+  const { address: userAddress } = useAccount()
+  const { writeContractAsync, data: hash, isPending, error: writeError } = useWriteContract()
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
 
   const delegate = async (tokenId: bigint, amount: bigint) => {
-    if (!chamberAddress) return
-    writeContract({
+    if (!chamberAddress || !userAddress) {
+      throw new Error('Chamber address or user address not available')
+    }
+    
+    // The writeContractAsync will automatically simulate before sending
+    return writeContractAsync({
       address: chamberAddress,
       abi: chamberAbi,
       functionName: 'delegate',
@@ -367,16 +376,53 @@ export function useDelegate(chamberAddress: `0x${string}` | undefined) {
     })
   }
 
-  return { delegate, isPending, isConfirming, isSuccess, error, hash }
+  return { delegate, isPending, isConfirming, isSuccess, error: writeError, hash }
 }
 
+/**
+ * Hook for simulating a delegate call to check if it will succeed.
+ * Use this to show validation errors before the user clicks submit.
+ */
+export function useSimulateDelegate(
+  chamberAddress: `0x${string}` | undefined,
+  tokenId: bigint | undefined,
+  amount: bigint | undefined
+) {
+  const { address: userAddress } = useAccount()
+  
+  const { data, error, isLoading, refetch } = useSimulateContract({
+    address: chamberAddress,
+    abi: chamberAbi,
+    functionName: 'delegate',
+    args: tokenId !== undefined && amount !== undefined ? [tokenId, amount] : undefined,
+    query: {
+      enabled: !!chamberAddress && !!userAddress && tokenId !== undefined && amount !== undefined && amount > 0n,
+    },
+  })
+
+  return {
+    isValid: !!data && !error,
+    error,
+    isLoading,
+    refetch,
+  }
+}
+
+/**
+ * Hook for undelegating shares from an NFT token ID.
+ * Uses simulation to validate the transaction before sending.
+ */
 export function useUndelegate(chamberAddress: `0x${string}` | undefined) {
-  const { writeContract, data: hash, isPending, error } = useWriteContract()
+  const { address: userAddress } = useAccount()
+  const { writeContractAsync, data: hash, isPending, error: writeError } = useWriteContract()
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
 
   const undelegate = async (tokenId: bigint, amount: bigint) => {
-    if (!chamberAddress) return
-    writeContract({
+    if (!chamberAddress || !userAddress) {
+      throw new Error('Chamber address or user address not available')
+    }
+    
+    return writeContractAsync({
       address: chamberAddress,
       abi: chamberAbi,
       functionName: 'undelegate',
@@ -384,16 +430,52 @@ export function useUndelegate(chamberAddress: `0x${string}` | undefined) {
     })
   }
 
-  return { undelegate, isPending, isConfirming, isSuccess, error, hash }
+  return { undelegate, isPending, isConfirming, isSuccess, error: writeError, hash }
 }
 
+/**
+ * Hook for simulating an undelegate call to check if it will succeed.
+ */
+export function useSimulateUndelegate(
+  chamberAddress: `0x${string}` | undefined,
+  tokenId: bigint | undefined,
+  amount: bigint | undefined
+) {
+  const { address: userAddress } = useAccount()
+  
+  const { data, error, isLoading, refetch } = useSimulateContract({
+    address: chamberAddress,
+    abi: chamberAbi,
+    functionName: 'undelegate',
+    args: tokenId !== undefined && amount !== undefined ? [tokenId, amount] : undefined,
+    query: {
+      enabled: !!chamberAddress && !!userAddress && tokenId !== undefined && amount !== undefined && amount > 0n,
+    },
+  })
+
+  return {
+    isValid: !!data && !error,
+    error,
+    isLoading,
+    refetch,
+  }
+}
+
+/**
+ * Hook for depositing assets into the chamber.
+ * Uses simulation to validate the transaction before sending.
+ */
 export function useDeposit(chamberAddress: `0x${string}` | undefined) {
-  const { writeContract, data: hash, isPending, error } = useWriteContract()
+  const { address: userAddress } = useAccount()
+  const { writeContractAsync, data: hash, isPending, error: writeError } = useWriteContract()
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
 
   const deposit = async (assets: bigint, receiver: `0x${string}`) => {
-    if (!chamberAddress) return
-    writeContract({
+    if (!chamberAddress || !userAddress) {
+      throw new Error('Chamber address or user address not available')
+    }
+    
+    return writeContractAsync({
       address: chamberAddress,
       abi: chamberAbi,
       functionName: 'deposit',
@@ -401,16 +483,52 @@ export function useDeposit(chamberAddress: `0x${string}` | undefined) {
     })
   }
 
-  return { deposit, isPending, isConfirming, isSuccess, error, hash }
+  return { deposit, isPending, isConfirming, isSuccess, error: writeError, hash }
 }
 
+/**
+ * Hook for simulating a deposit call to check if it will succeed.
+ */
+export function useSimulateDeposit(
+  chamberAddress: `0x${string}` | undefined,
+  assets: bigint | undefined,
+  receiver: `0x${string}` | undefined
+) {
+  const { address: userAddress } = useAccount()
+  
+  const { data, error, isLoading, refetch } = useSimulateContract({
+    address: chamberAddress,
+    abi: chamberAbi,
+    functionName: 'deposit',
+    args: assets !== undefined && receiver ? [assets, receiver] : undefined,
+    query: {
+      enabled: !!chamberAddress && !!userAddress && assets !== undefined && assets > 0n && !!receiver,
+    },
+  })
+
+  return {
+    isValid: !!data && !error,
+    error,
+    isLoading,
+    refetch,
+  }
+}
+
+/**
+ * Hook for withdrawing assets from the chamber.
+ * Uses simulation to validate the transaction before sending.
+ */
 export function useWithdraw(chamberAddress: `0x${string}` | undefined) {
-  const { writeContract, data: hash, isPending, error } = useWriteContract()
+  const { address: userAddress } = useAccount()
+  const { writeContractAsync, data: hash, isPending, error: writeError } = useWriteContract()
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
 
   const withdraw = async (assets: bigint, receiver: `0x${string}`, owner: `0x${string}`) => {
-    if (!chamberAddress) return
-    writeContract({
+    if (!chamberAddress || !userAddress) {
+      throw new Error('Chamber address or user address not available')
+    }
+    
+    return writeContractAsync({
       address: chamberAddress,
       abi: chamberAbi,
       functionName: 'withdraw',
@@ -418,5 +536,34 @@ export function useWithdraw(chamberAddress: `0x${string}` | undefined) {
     })
   }
 
-  return { withdraw, isPending, isConfirming, isSuccess, error, hash }
+  return { withdraw, isPending, isConfirming, isSuccess, error: writeError, hash }
+}
+
+/**
+ * Hook for simulating a withdraw call to check if it will succeed.
+ */
+export function useSimulateWithdraw(
+  chamberAddress: `0x${string}` | undefined,
+  assets: bigint | undefined,
+  receiver: `0x${string}` | undefined,
+  owner: `0x${string}` | undefined
+) {
+  const { address: userAddress } = useAccount()
+  
+  const { data, error, isLoading, refetch } = useSimulateContract({
+    address: chamberAddress,
+    abi: chamberAbi,
+    functionName: 'withdraw',
+    args: assets !== undefined && receiver && owner ? [assets, receiver, owner] : undefined,
+    query: {
+      enabled: !!chamberAddress && !!userAddress && assets !== undefined && assets > 0n && !!receiver && !!owner,
+    },
+  })
+
+  return {
+    isValid: !!data && !error,
+    error,
+    isLoading,
+    refetch,
+  }
 }

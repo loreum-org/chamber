@@ -46,5 +46,16 @@ contract DeployAllAnvil is Script {
         console.log("  Symbol:", nftSymbol);
 
         vm.stopBroadcast();
+
+        // Write deployment addresses to JSON file for the app to consume
+        string memory json = vm.serializeAddress("deployment", "registry", address(registry));
+        json = vm.serializeAddress("deployment", "chamberImplementation", registry.implementation());
+        json = vm.serializeAddress("deployment", "mockERC20", address(mockERC20));
+        json = vm.serializeAddress("deployment", "mockERC721", address(mockERC721));
+        json = vm.serializeUint("deployment", "chainId", block.chainid);
+        json = vm.serializeUint("deployment", "timestamp", block.timestamp);
+        
+        vm.writeJson(json, "./app/src/contracts/deployments.json");
+        console.log("Deployment addresses written to app/src/contracts/deployments.json");
     }
 }

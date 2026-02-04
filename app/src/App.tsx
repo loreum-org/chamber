@@ -37,6 +37,7 @@ function App() {
           <Route index element={<Dashboard />} />
           <Route path="deploy" element={<DeployChamber />} />
           <Route path="chamber/:address" element={<ChamberDetail />} />
+          <Route path="chamber/:address/:tab" element={<ChamberDetail />} />
           <Route path="chamber/:address/transactions" element={<TransactionQueue />} />
         </Route>
       </Routes>

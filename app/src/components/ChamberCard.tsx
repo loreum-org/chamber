@@ -1,7 +1,9 @@
 import { Link } from 'react-router-dom'
-import { FiArrowRight, FiUsers, FiLayers, FiCheckCircle } from 'react-icons/fi'
+import { FiArrowRight, FiUsers, FiLayers, FiCheckCircle, FiShield } from 'react-icons/fi'
+import { useReadContract } from 'wagmi'
 import { useChamberInfo } from '@/hooks'
 import { formatUnits } from 'viem'
+import { erc20Abi } from '@/contracts'
 
 interface ChamberCardProps {
   address: `0x${string}`
@@ -16,17 +18,27 @@ export default function ChamberCard({ address }: ChamberCardProps) {
     quorum, 
     directors, 
     transactionCount,
+    assetToken,
   } = useChamberInfo(address)
+
+  // Get asset token symbol
+  const { data: assetSymbol } = useReadContract({
+    address: assetToken,
+    abi: erc20Abi,
+    functionName: 'symbol',
+    query: { enabled: !!assetToken },
+  })
 
   const shortAddress = `${address.slice(0, 6)}...${address.slice(-4)}`
 
   return (
     <Link to={`/chamber/${address}`} className="card-hover group block relative">
-      {/* Pending Transactions Badge */}
+      {/* Transaction Count Badge - only show if there are transactions */}
       {transactionCount !== undefined && transactionCount > 0 && (
         <div className="absolute -top-2 -right-2 z-10">
-          <span className="badge badge-pending">
-            {transactionCount} pending
+          <span className="badge bg-slate-700 text-slate-300 border-slate-600">
+            <FiShield className="w-3 h-3 mr-1" />
+            {transactionCount} tx
           </span>
         </div>
       )}
@@ -54,6 +66,7 @@ export default function ChamberCard({ address }: ChamberCardProps) {
               ? `${parseFloat(formatUnits(totalAssets, 18)).toFixed(2)}`
               : '...'
             }
+            {assetSymbol && <span className="text-slate-400 ml-1">{assetSymbol as string}</span>}
           </div>
         </div>
         <div className="stat-card">

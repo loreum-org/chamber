@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { formatUnits, parseUnits } from 'viem'
 import {
@@ -8,9 +8,16 @@ import {
   FiUser,
   FiLoader,
   FiInfo,
+  FiAlertCircle,
 } from 'react-icons/fi'
 import toast from 'react-hot-toast'
-import { useDelegate, useUndelegate } from '@/hooks'
+import { 
+  useDelegate, 
+  useUndelegate, 
+  useChamberEventRefresh,
+  useSimulateDelegate,
+  useSimulateUndelegate,
+} from '@/hooks'
 import type { BoardMember } from '@/types'
 
 interface DelegationManagerProps {
@@ -18,6 +25,7 @@ interface DelegationManagerProps {
   userBalance: bigint | undefined
   delegations: { tokenId: bigint; amount: bigint }[]
   members: BoardMember[]
+  vaultSymbol?: string
 }
 
 export default function DelegationManager({
@@ -25,6 +33,7 @@ export default function DelegationManager({
   userBalance,
   delegations,
   members,
+  vaultSymbol,
 }: DelegationManagerProps) {
   const [delegateTokenId, setDelegateTokenId] = useState('')
   const [delegateAmount, setDelegateAmount] = useState('')
@@ -34,8 +43,96 @@ export default function DelegationManager({
   const { delegate, isPending: isDelegating, isConfirming: isDelegateConfirming } = useDelegate(chamberAddress)
   const { undelegate, isPending: isUndelegating, isConfirming: isUndelegateConfirming } = useUndelegate(chamberAddress)
 
+  // Watch for delegation events and auto-refresh when transactions are mined
+  useChamberEventRefresh(chamberAddress)
+
   const totalDelegated = delegations.reduce((sum, d) => sum + d.amount, 0n)
   const availableBalance = userBalance ? userBalance - totalDelegated : 0n
+
+  // Parse amounts for simulation
+  const delegateAmountBigInt = useMemo(() => {
+    try {
+      return delegateAmount ? parseUnits(delegateAmount, 18) : undefined
+    } catch {
+      return undefined
+    }
+  }, [delegateAmount])
+
+  const undelegateAmountBigInt = useMemo(() => {
+    try {
+      return undelegateAmount ? parseUnits(undelegateAmount, 18) : undefined
+    } catch {
+      return undefined
+    }
+  }, [undelegateAmount])
+
+  // Simulate transactions to catch errors before user submits
+  const { 
+    isValid: isDelegateValid, 
+    error: delegateSimError,
+    isLoading: isDelegateSimulating,
+  } = useSimulateDelegate(
+    chamberAddress,
+    delegateTokenId ? BigInt(delegateTokenId) : undefined,
+    delegateAmountBigInt
+  )
+
+  const { 
+    isValid: isUndelegateValid, 
+    error: undelegateSimError,
+    isLoading: isUndelegateSimulating,
+  } = useSimulateUndelegate(
+    chamberAddress,
+    undelegateTokenId ? BigInt(undelegateTokenId) : undefined,
+    undelegateAmountBigInt
+  )
+
+  // Helper to extract readable error message
+  const getErrorMessage = (error: Error | null): string | null => {
+    if (!error) return null
+    const message = error.message || ''
+    
+    // Map custom error names to user-friendly messages
+    const errorMessages: Record<string, string> = {
+      'InsufficientChamberBalance': 'You don\'t have enough shares to delegate this amount',
+      'InsufficientDelegatedAmount': 'You haven\'t delegated this much to this NFT',
+      'ZeroTokenId': 'Token ID cannot be zero',
+      'ZeroAmount': 'Amount cannot be zero',
+      'InvalidTokenId': 'This NFT token ID does not exist',
+      'NotDirector': 'You are not a director',
+      'ExceedsDelegatedAmount': 'Amount exceeds your delegated balance',
+    }
+    
+    // Check for custom error name in message
+    for (const [errorName, friendlyMessage] of Object.entries(errorMessages)) {
+      if (message.includes(errorName)) {
+        return friendlyMessage
+      }
+    }
+    
+    // Extract revert reason if present
+    const revertMatch = message.match(/reverted with reason string '([^']+)'/)
+    if (revertMatch) return revertMatch[1]
+    
+    // Extract custom error name
+    const customErrorMatch = message.match(/reverted with custom error '([^']+)'/)
+    if (customErrorMatch) {
+      const errorName = customErrorMatch[1]
+      return errorMessages[errorName] || errorName
+    }
+    
+    // Check for error signature and provide guidance
+    if (message.includes('0x1fed7fc5')) return 'This NFT token ID does not exist'
+    if (message.includes('0xf4844814')) return 'You don\'t have enough shares'
+    
+    // Common error patterns
+    if (message.includes('insufficient balance')) return 'Insufficient balance'
+    if (message.includes('exceeds balance')) return 'Amount exceeds balance'
+    if (message.includes('not owner')) return 'You do not own this NFT'
+    
+    // Return truncated message
+    return message.length > 100 ? message.slice(0, 100) + '...' : message
+  }
 
   const handleDelegate = async () => {
     if (!delegateTokenId || !delegateAmount) return
@@ -77,6 +174,7 @@ export default function DelegationManager({
             {userBalance !== undefined
               ? parseFloat(formatUnits(userBalance, 18)).toFixed(4)
               : '0.0000'}
+            {vaultSymbol && <span className="text-lg text-slate-400 ml-1">{vaultSymbol}</span>}
           </div>
         </motion.div>
 
@@ -89,6 +187,7 @@ export default function DelegationManager({
           <div className="text-slate-500 text-xs mb-1.5">Delegated</div>
           <div className="font-heading text-xl font-bold gradient-text">
             {parseFloat(formatUnits(totalDelegated, 18)).toFixed(4)}
+            {vaultSymbol && <span className="text-lg text-slate-400 ml-1">{vaultSymbol}</span>}
           </div>
         </motion.div>
 
@@ -101,6 +200,7 @@ export default function DelegationManager({
           <div className="text-slate-500 text-xs mb-1.5">Available</div>
           <div className="font-heading text-xl font-bold text-emerald-400">
             {parseFloat(formatUnits(availableBalance, 18)).toFixed(4)}
+            {vaultSymbol && <span className="text-lg text-slate-400 ml-1">{vaultSymbol}</span>}
           </div>
         </motion.div>
       </div>
@@ -162,15 +262,31 @@ export default function DelegationManager({
               </div>
             </div>
 
+            {/* Simulation Error Display */}
+            {delegateTokenId && delegateAmount && delegateSimError && (
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/30">
+                <FiAlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+                <div className="text-red-400 text-sm">
+                  <span className="font-medium">Transaction will fail: </span>
+                  {getErrorMessage(delegateSimError)}
+                </div>
+              </div>
+            )}
+
             <button
               onClick={handleDelegate}
-              disabled={isDelegating || isDelegateConfirming || !delegateTokenId || !delegateAmount}
+              disabled={isDelegating || isDelegateConfirming || !delegateTokenId || !delegateAmount || (delegateTokenId && delegateAmount && !isDelegateValid && !isDelegateSimulating)}
               className="btn btn-primary w-full"
             >
               {isDelegating || isDelegateConfirming ? (
                 <>
                   <FiLoader className="w-4 h-4 animate-spin" />
                   {isDelegating ? 'Confirm...' : 'Processing...'}
+                </>
+              ) : isDelegateSimulating ? (
+                <>
+                  <FiLoader className="w-4 h-4 animate-spin" />
+                  Validating...
                 </>
               ) : (
                 <>
@@ -212,7 +328,7 @@ export default function DelegationManager({
                 <option value="">Select delegated NFT...</option>
                 {delegations.map((d) => (
                   <option key={d.tokenId.toString()} value={d.tokenId.toString()}>
-                    #{d.tokenId.toString()} - {parseFloat(formatUnits(d.amount, 18)).toFixed(4)} delegated
+                    #{d.tokenId.toString()} - {parseFloat(formatUnits(d.amount, 18)).toFixed(4)} {vaultSymbol || ''} delegated
                   </option>
                 ))}
               </select>
@@ -244,15 +360,31 @@ export default function DelegationManager({
               </div>
             </div>
 
+            {/* Simulation Error Display */}
+            {undelegateTokenId && undelegateAmount && undelegateSimError && (
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/30">
+                <FiAlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+                <div className="text-red-400 text-sm">
+                  <span className="font-medium">Transaction will fail: </span>
+                  {getErrorMessage(undelegateSimError)}
+                </div>
+              </div>
+            )}
+
             <button
               onClick={handleUndelegate}
-              disabled={isUndelegating || isUndelegateConfirming || !undelegateTokenId || !undelegateAmount}
+              disabled={isUndelegating || isUndelegateConfirming || !undelegateTokenId || !undelegateAmount || (undelegateTokenId && undelegateAmount && !isUndelegateValid && !isUndelegateSimulating)}
               className="btn btn-secondary w-full border-red-500/30 hover:border-red-500/50 hover:text-red-400"
             >
               {isUndelegating || isUndelegateConfirming ? (
                 <>
                   <FiLoader className="w-4 h-4 animate-spin" />
                   {isUndelegating ? 'Confirm...' : 'Processing...'}
+                </>
+              ) : isUndelegateSimulating ? (
+                <>
+                  <FiLoader className="w-4 h-4 animate-spin" />
+                  Validating...
                 </>
               ) : (
                 <>
@@ -302,6 +434,7 @@ export default function DelegationManager({
                   <div className="text-right">
                     <div className="font-mono text-slate-100">
                       {parseFloat(formatUnits(delegation.amount, 18)).toFixed(4)}
+                      {vaultSymbol && <span className="text-slate-400 ml-1">{vaultSymbol}</span>}
                     </div>
                     <div className="text-slate-500 text-xs">delegated</div>
                   </div>

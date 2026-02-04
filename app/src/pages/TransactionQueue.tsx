@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAccount, useReadContracts } from 'wagmi'
-import { formatEther, isAddress, encodeFunctionData } from 'viem'
+import { formatEther, isAddress, encodeFunctionData, parseAbi } from 'viem'
 import {
   FiArrowLeft,
   FiPlus,
@@ -25,6 +25,7 @@ import {
   useSubmitTransaction,
   useConfirmTransaction,
   useExecuteTransaction,
+  useChamberEvents,
 } from '@/hooks'
 import { chamberAbi, erc20Abi } from '@/contracts/abis'
 import type { Transaction } from '@/types'
@@ -34,7 +35,7 @@ type TabType = 'queue' | 'history' | 'new'
 export default function TransactionQueue() {
   const { address } = useParams<{ address: string }>()
   const chamberAddress = address as `0x${string}`
-  useAccount()
+  const { address: userAddress } = useAccount()
   
   const [activeTab, setActiveTab] = useState<TabType>('queue')
   const [transactions, setTransactions] = useState<(Transaction & { status: string })[]>([])
@@ -46,13 +47,21 @@ export default function TransactionQueue() {
   const transactionCount = chamberInfo.transactionCount || 0
   const transactionIds = Array.from({ length: transactionCount }, (_, i) => i)
   
-  const { data: transactionsData } = useReadContracts({
+  const { data: transactionsData, refetch: refetchTransactions } = useReadContracts({
     contracts: transactionIds.map(id => ({
       address: chamberAddress,
       abi: chamberAbi,
       functionName: 'getTransaction',
       args: [BigInt(id)],
     })),
+  })
+
+  // Watch for transaction events and auto-refresh when transactions are mined
+  useChamberEvents(chamberAddress, {
+    onTransactionEvent: () => {
+      console.log('Transaction event detected, refetching...')
+      refetchTransactions()
+    },
   })
 
   useEffect(() => {
@@ -81,8 +90,23 @@ export default function TransactionQueue() {
   const readyTransactions = transactions.filter(tx => !tx.executed && tx.status === 'ready')
   const executedTransactions = transactions.filter(tx => tx.executed)
 
-  // Check if user is a director
-  const userTokenId = members.find(m => chamberInfo.directors?.includes(m.owner as `0x${string}`))?.tokenId
+  // Check if user is a director and get their token ID
+  // Directors array contains wallet addresses of NFT owners for board member token IDs
+  const userTokenId = useMemo(() => {
+    if (!userAddress || !chamberInfo.directors || !members.length) return undefined
+    
+    // Find the index of user's address in the directors array
+    const directorIndex = chamberInfo.directors.findIndex(
+      (director) => director.toLowerCase() === userAddress.toLowerCase()
+    )
+    
+    // If user is a director, get the corresponding token ID from members
+    if (directorIndex >= 0 && directorIndex < members.length) {
+      return members[directorIndex].tokenId
+    }
+    
+    return undefined
+  }, [userAddress, chamberInfo.directors, members])
 
   return (
     <div className="space-y-6">
@@ -487,15 +511,155 @@ interface NewTransactionFormProps {
   onSuccess: () => void
 }
 
+// Helper to get placeholder text for different parameter types
+function getPlaceholder(type: string): string {
+  if (type === 'address') return '0x...'
+  if (type.startsWith('uint') || type.startsWith('int')) return '0'
+  if (type === 'bool') return 'true or false'
+  if (type === 'bytes' || type.startsWith('bytes')) return '0x...'
+  if (type === 'string') return 'Enter text...'
+  if (type.endsWith('[]')) return 'Comma-separated values or JSON array'
+  return 'Enter value...'
+}
+
+// Helper to parse function signature and extract parameter info
+interface ParsedParam {
+  name: string
+  type: string
+}
+
+function parseFunctionSignature(sig: string): { name: string; params: ParsedParam[] } | null {
+  try {
+    // Match pattern like "functionName(type1,type2)" or "functionName(type1 name1, type2 name2)"
+    const match = sig.match(/^(\w+)\((.*)\)$/)
+    if (!match) return null
+
+    const name = match[1]
+    const paramsStr = match[2].trim()
+    
+    if (!paramsStr) {
+      return { name, params: [] }
+    }
+
+    const params: ParsedParam[] = paramsStr.split(',').map((param, index) => {
+      const parts = param.trim().split(/\s+/)
+      const type = parts[0]
+      const paramName = parts[1] || `param${index}`
+      return { name: paramName, type }
+    })
+
+    return { name, params }
+  } catch {
+    return null
+  }
+}
+
+// Helper to convert input value to the correct type for encoding
+function parseParamValue(value: string, type: string): unknown {
+  if (type === 'address') {
+    return value as `0x${string}`
+  }
+  if (type.startsWith('uint') || type.startsWith('int')) {
+    // Handle decimals for common token amounts
+    if (value.includes('.')) {
+      const decimals = type === 'uint256' ? 18 : 0
+      return BigInt(Math.floor(parseFloat(value) * Math.pow(10, decimals)))
+    }
+    return BigInt(value)
+  }
+  if (type === 'bool') {
+    return value.toLowerCase() === 'true' || value === '1'
+  }
+  if (type === 'bytes' || type.startsWith('bytes')) {
+    return value as `0x${string}`
+  }
+  if (type.endsWith('[]')) {
+    // Array type - parse as JSON
+    try {
+      return JSON.parse(value)
+    } catch {
+      return value.split(',').map(v => v.trim())
+    }
+  }
+  return value
+}
+
 function NewTransactionForm({ chamberAddress, userTokenId, onSuccess }: NewTransactionFormProps) {
+  const { address: userAddress } = useAccount()
   const [txType, setTxType] = useState<'eth' | 'token' | 'custom'>('eth')
   const [target, setTarget] = useState('')
   const [value, setValue] = useState('')
   const [data, setData] = useState('0x')
   const [tokenAddress, setTokenAddress] = useState('')
   const [tokenAmount, setTokenAmount] = useState('')
+  
+  // Custom transaction state
+  const [functionSig, setFunctionSig] = useState('')
+  const [parsedFunction, setParsedFunction] = useState<{ name: string; params: ParsedParam[] } | null>(null)
+  const [paramValues, setParamValues] = useState<Record<string, string>>({})
+  const [sigError, setSigError] = useState<string | null>(null)
+  const [encodedData, setEncodedData] = useState<string>('0x')
 
   const { submit, isPending, isConfirming } = useSubmitTransaction(chamberAddress)
+
+  // Parse function signature when it changes
+  useEffect(() => {
+    if (!functionSig.trim()) {
+      setParsedFunction(null)
+      setSigError(null)
+      setEncodedData('0x')
+      return
+    }
+
+    const parsed = parseFunctionSignature(functionSig.trim())
+    if (parsed) {
+      setParsedFunction(parsed)
+      setSigError(null)
+      // Reset param values when signature changes
+      setParamValues({})
+    } else {
+      setParsedFunction(null)
+      setSigError('Invalid function signature. Example: transfer(address,uint256)')
+    }
+  }, [functionSig])
+
+  // Encode function data when params change
+  useEffect(() => {
+    if (!parsedFunction) {
+      setEncodedData('0x')
+      return
+    }
+
+    try {
+      // Build the ABI from the signature
+      const abiStr = `function ${functionSig}`
+      const abi = parseAbi([abiStr])
+      
+      // Parse all param values
+      const args = parsedFunction.params.map((param, index) => {
+        const value = paramValues[`param${index}`] || ''
+        return parseParamValue(value, param.type)
+      })
+
+      // Only encode if all required params have values
+      const hasAllParams = parsedFunction.params.every((_, index) => paramValues[`param${index}`]?.trim())
+      
+      if (hasAllParams || parsedFunction.params.length === 0) {
+        const encoded = encodeFunctionData({
+          abi,
+          functionName: parsedFunction.name,
+          args,
+        })
+        setEncodedData(encoded)
+        setData(encoded)
+      } else {
+        setEncodedData('0x')
+      }
+    } catch (err) {
+      console.error('Encoding error:', err)
+      setEncodedData('0x')
+    }
+  }, [parsedFunction, paramValues, functionSig])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -529,6 +693,9 @@ function NewTransactionForm({ chamberAddress, userTokenId, onSuccess }: NewTrans
         toast.success('Transaction submitted!')
         onSuccess()
         return
+      } else if (txType === 'custom') {
+        txValue = value ? BigInt(parseFloat(value) * 1e18) : 0n
+        txData = encodedData as `0x${string}`
       }
 
       await submit(userTokenId, target as `0x${string}`, txValue, txData)
@@ -551,6 +718,12 @@ function NewTransactionForm({ chamberAddress, userTokenId, onSuccess }: NewTrans
           You must be a board director to submit transactions.
           Delegate shares to your NFT to become a director.
         </p>
+        <div className="text-left bg-slate-800/50 rounded-lg p-4 mt-4 text-xs">
+          <div className="text-slate-500 mb-2">Debug Info:</div>
+          <div className="font-mono text-slate-400 space-y-1">
+            <div>Your Address: {userAddress || 'Not connected'}</div>
+          </div>
+        </div>
       </div>
     )
   }
@@ -666,7 +839,7 @@ function NewTransactionForm({ chamberAddress, userTokenId, onSuccess }: NewTrans
           <>
             <div>
               <label className="block text-slate-300 text-sm font-medium mb-2">
-                ETH Value
+                ETH Value (optional)
               </label>
               <input
                 type="number"
@@ -678,17 +851,67 @@ function NewTransactionForm({ chamberAddress, userTokenId, onSuccess }: NewTrans
                 step="any"
               />
             </div>
+
             <div>
               <label className="block text-slate-300 text-sm font-medium mb-2">
-                Transaction Data (hex)
+                Function Signature
               </label>
-              <textarea
-                placeholder="0x..."
-                className="input font-mono h-24 resize-none"
-                value={data}
-                onChange={(e) => setData(e.target.value)}
+              <input
+                type="text"
+                placeholder="e.g., transfer(address,uint256) or mint(address to, uint256 amount)"
+                className={`input font-mono ${sigError ? 'border-red-500/50' : ''}`}
+                value={functionSig}
+                onChange={(e) => setFunctionSig(e.target.value)}
               />
+              {sigError && (
+                <p className="text-red-400 text-xs mt-1">{sigError}</p>
+              )}
+              <p className="text-slate-500 text-xs mt-1">
+                Enter the function signature with parameter types (and optional names)
+              </p>
             </div>
+
+            {/* Dynamic Parameter Inputs */}
+            {parsedFunction && parsedFunction.params.length > 0 && (
+              <div className="space-y-3 p-4 bg-slate-800/30 rounded-xl border border-slate-700/50">
+                <div className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-3">
+                  Function Parameters
+                </div>
+                {parsedFunction.params.map((param, index) => (
+                  <div key={index}>
+                    <label className="block text-slate-300 text-sm font-medium mb-2">
+                      <span className="text-cyan-400">{param.type}</span>
+                      <span className="text-slate-500 ml-2">{param.name}</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder={getPlaceholder(param.type)}
+                      className="input font-mono"
+                      value={paramValues[`param${index}`] || ''}
+                      onChange={(e) => setParamValues(prev => ({
+                        ...prev,
+                        [`param${index}`]: e.target.value
+                      }))}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Encoded Data Preview */}
+            {encodedData && encodedData !== '0x' && (
+              <div className="p-4 bg-slate-800/30 rounded-xl border border-slate-700/50">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-slate-400 text-xs font-medium uppercase tracking-wider">
+                    Encoded Transaction Data
+                  </span>
+                  <span className="badge badge-success text-xs">Valid</span>
+                </div>
+                <code className="block text-slate-400 text-xs font-mono bg-slate-900/50 p-2 rounded-lg overflow-x-auto break-all">
+                  {encodedData}
+                </code>
+              </div>
+            )}
           </>
         )}
 

@@ -42,11 +42,19 @@ deploy-erc721-anvil :; forge script script/MockERC721.s.sol:DeployMockERC721 \
 	--verbosity -vvv
 
 # Deploy Registry, MockERC20, and MockERC721 to anvil
+# This also writes deployment addresses to app/src/contracts/deployments.json
 deploy-all-anvil :; forge script script/DeployAllAnvil.s.sol:DeployAllAnvil \
 	--rpc-url http://localhost:8545 \
 	--private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 \
 	--broadcast \
 	--verbosity -vvv
+
+# Sync ABIs from compiled contracts to the app
+sync-abis :; node scripts/sync-abis.js
+
+# Full local development setup: deploy contracts + sync ABIs
+# Usage: Start anvil in one terminal, then run `make setup-local` in another
+setup-local :; $(MAKE) deploy-all-anvil && $(MAKE) sync-abis
 
 deploy-erc20 :; forge script script/MockERC20.s.sol:DeployMockERC20 \
 	--chain-id ${chain} \
@@ -77,3 +85,7 @@ call :; cast call ${address} ${method} ${args} \
 	--chain-id ${chain} \
 	--rpc-url ${rpc} \
 	--private-key ${private}
+
+
+
+dev :; cd app && npm run dev

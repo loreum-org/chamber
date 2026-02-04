@@ -401,6 +401,62 @@ export const chamberAbi = [
       { name: 'numOfSeats', type: 'uint256', indexed: false },
     ],
   },
+  // ERC4626 Deposit event
+  {
+    type: 'event',
+    name: 'Deposit',
+    inputs: [
+      { name: 'sender', type: 'address', indexed: true },
+      { name: 'owner', type: 'address', indexed: true },
+      { name: 'assets', type: 'uint256', indexed: false },
+      { name: 'shares', type: 'uint256', indexed: false },
+    ],
+  },
+  // ERC4626 Withdraw event
+  {
+    type: 'event',
+    name: 'Withdraw',
+    inputs: [
+      { name: 'sender', type: 'address', indexed: true },
+      { name: 'receiver', type: 'address', indexed: true },
+      { name: 'owner', type: 'address', indexed: true },
+      { name: 'assets', type: 'uint256', indexed: false },
+      { name: 'shares', type: 'uint256', indexed: false },
+    ],
+  },
+  // ERC20 Transfer event
+  {
+    type: 'event',
+    name: 'Transfer',
+    inputs: [
+      { name: 'from', type: 'address', indexed: true },
+      { name: 'to', type: 'address', indexed: true },
+      { name: 'value', type: 'uint256', indexed: false },
+    ],
+  },
+  // Custom Errors
+  { type: 'error', name: 'InsufficientDelegatedAmount', inputs: [] },
+  { type: 'error', name: 'InsufficientChamberBalance', inputs: [] },
+  { type: 'error', name: 'ExceedsDelegatedAmount', inputs: [] },
+  { type: 'error', name: 'TransferFailed', inputs: [] },
+  { type: 'error', name: 'TransferToZeroAddress', inputs: [] },
+  { type: 'error', name: 'ArrayLengthsMustMatch', inputs: [] },
+  { type: 'error', name: 'NotEnoughConfirmations', inputs: [] },
+  { type: 'error', name: 'NotDirector', inputs: [] },
+  { type: 'error', name: 'ZeroAddress', inputs: [] },
+  { type: 'error', name: 'ZeroAmount', inputs: [] },
+  { type: 'error', name: 'ZeroTokenId', inputs: [] },
+  { type: 'error', name: 'InvalidTokenId', inputs: [] },
+  { type: 'error', name: 'ArrayIndexOutOfBounds', inputs: [] },
+  { type: 'error', name: 'CannotTransfer', inputs: [] },
+  { type: 'error', name: 'NotOnLeaderboard', inputs: [{ name: 'account', type: 'address' }] },
+  { type: 'error', name: 'ZeroSeats', inputs: [] },
+  { type: 'error', name: 'TooManySeats', inputs: [] },
+  { type: 'error', name: 'InvalidDelegation', inputs: [] },
+  { type: 'error', name: 'InvalidNFTOwner', inputs: [] },
+  { type: 'error', name: 'InvalidQuorum', inputs: [] },
+  { type: 'error', name: 'InvalidTransaction', inputs: [] },
+  { type: 'error', name: 'InvalidSignature', inputs: [] },
 ] as const
 
 // Registry ABI - Factory for deploying chambers
@@ -547,6 +603,17 @@ export const erc20Abi = [
     outputs: [{ name: '', type: 'bool' }],
     stateMutability: 'nonpayable',
   },
+  // MockERC20 mint function
+  {
+    type: 'function',
+    name: 'mint',
+    inputs: [
+      { name: 'to', type: 'address' },
+      { name: 'amount', type: 'uint256' },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
 ] as const
 
 // ERC721 ABI for NFT interactions
@@ -595,5 +662,23 @@ export const erc721Abi = [
     inputs: [{ name: 'tokenId', type: 'uint256' }],
     outputs: [{ name: '', type: 'string' }],
     stateMutability: 'view',
+  },
+  // MockERC721 mint functions
+  {
+    type: 'function',
+    name: 'mint',
+    inputs: [{ name: 'to', type: 'address' }],
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'mintWithTokenId',
+    inputs: [
+      { name: 'to', type: 'address' },
+      { name: 'tokenId', type: 'uint256' },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
   },
 ] as const

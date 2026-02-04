@@ -1,8 +1,8 @@
-import { useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { useAccount, useBalance } from 'wagmi'
+import { useAccount, useBalance, useReadContract } from 'wagmi'
 import { formatUnits } from 'viem'
+import { erc20Abi } from '@/contracts'
 import {
   FiArrowLeft,
   FiCopy,
@@ -21,6 +21,7 @@ import {
   useChamberBalance,
   useBoardMembers,
   useDelegations,
+  useChamberEventRefresh,
 } from '@/hooks'
 import BoardVisualization from '@/components/BoardVisualization'
 import TreasuryOverview from '@/components/TreasuryOverview'
@@ -28,17 +29,40 @@ import DelegationManager from '@/components/DelegationManager'
 
 type Tab = 'overview' | 'board' | 'treasury' | 'delegation'
 
+const validTabs: Tab[] = ['overview', 'board', 'treasury', 'delegation']
+
 export default function ChamberDetail() {
-  const { address } = useParams<{ address: string }>()
+  const { address, tab } = useParams<{ address: string; tab?: string }>()
+  const navigate = useNavigate()
   const chamberAddress = address as `0x${string}`
   const { address: userAddress } = useAccount()
   
-  const [activeTab, setActiveTab] = useState<Tab>('overview')
+  // Derive active tab from URL, default to 'overview'
+  const activeTab: Tab = tab && validTabs.includes(tab as Tab) ? (tab as Tab) : 'overview'
+  
+  const setActiveTab = (newTab: Tab) => {
+    if (newTab === 'overview') {
+      navigate(`/chamber/${chamberAddress}`)
+    } else {
+      navigate(`/chamber/${chamberAddress}/${newTab}`)
+    }
+  }
 
   const chamberInfo = useChamberInfo(chamberAddress)
   const { balance: userBalance } = useChamberBalance(chamberAddress, userAddress)
   const { members } = useBoardMembers(chamberAddress, 20)
   const { delegations } = useDelegations(chamberAddress, userAddress)
+  
+  // Get asset token symbol
+  const { data: assetSymbol } = useReadContract({
+    address: chamberInfo.assetToken,
+    abi: erc20Abi,
+    functionName: 'symbol',
+    query: { enabled: !!chamberInfo.assetToken },
+  })
+  
+  // Watch for contract events and auto-refresh data when transactions are mined
+  useChamberEventRefresh(chamberAddress)
   
   // ETH balance of chamber
   const { data: ethBalance } = useBalance({
@@ -137,7 +161,8 @@ export default function ChamberDetail() {
                 ? parseFloat(formatUnits(chamberInfo.totalAssets, 18)).toLocaleString(undefined, {
                     maximumFractionDigits: 2,
                   })
-                : '...'}
+                : '...'}{' '}
+              {assetSymbol && <span className="text-lg text-slate-400">{assetSymbol as string}</span>}
             </div>
           </div>
           
@@ -243,6 +268,7 @@ export default function ChamberDetail() {
             userBalance={userBalance}
             delegations={delegations}
             members={members}
+            vaultSymbol={chamberInfo.symbol}
           />
         )}
       </motion.div>
@@ -322,13 +348,19 @@ function OverviewTab({ chamberAddress, chamberInfo, members, totalDelegated, use
             <FiArrowLeft className="w-4 h-4 rotate-180 ml-auto" />
           </Link>
           
-          <button className="btn btn-secondary w-full justify-start">
+          <button 
+            onClick={() => setActiveTab('treasury')}
+            className="btn btn-secondary w-full justify-start"
+          >
             <FiPlus className="w-4 h-4" />
             Deposit Assets
             <FiArrowLeft className="w-4 h-4 rotate-180 ml-auto" />
           </button>
           
-          <button className="btn btn-secondary w-full justify-start">
+          <button 
+            onClick={() => setActiveTab('delegation')}
+            className="btn btn-secondary w-full justify-start"
+          >
             <FiSend className="w-4 h-4" />
             Delegate Votes
             <FiArrowLeft className="w-4 h-4 rotate-180 ml-auto" />
@@ -371,13 +403,15 @@ function OverviewTab({ chamberAddress, chamberInfo, members, totalDelegated, use
             <div className="font-mono text-slate-100 text-sm">
               {chamberInfo.totalSupply !== undefined
                 ? parseFloat(formatUnits(chamberInfo.totalSupply, 18)).toLocaleString()
-                : '...'}
+                : '...'}{' '}
+              {chamberInfo.symbol && <span className="text-slate-400">{chamberInfo.symbol}</span>}
             </div>
           </div>
           <div className="stat-card">
-            <div className="text-slate-500 text-xs mb-1.5">Total Delegated</div>
+            <div className="text-slate-500 text-xs mb-1.5">Total Delegated (Voting Power)</div>
             <div className="font-mono text-slate-100 text-sm">
-              {parseFloat(formatUnits(totalDelegated, 18)).toLocaleString()}
+              {parseFloat(formatUnits(totalDelegated, 18)).toLocaleString()}{' '}
+              {chamberInfo.symbol && <span className="text-slate-400">{chamberInfo.symbol}</span>}
             </div>
           </div>
         </div>

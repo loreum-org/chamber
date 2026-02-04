@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { useAccount } from 'wagmi'
+import { useAccount, useReadContract } from 'wagmi'
 import { formatUnits, parseUnits, maxUint256 } from 'viem'
 import {
   FiArrowDownCircle,
@@ -20,7 +20,11 @@ import {
   useTokenAllowance, 
   useTokenApprove,
   useTokenBalance,
+  useChamberEvents,
+  useSimulateDeposit,
+  useSimulateWithdraw,
 } from '@/hooks'
+import { erc20Abi } from '@/contracts'
 
 interface TreasuryOverviewProps {
   chamberAddress: `0x${string}`
@@ -33,6 +37,14 @@ export default function TreasuryOverview({ chamberAddress, chamberInfo, userBala
   const [depositAmount, setDepositAmount] = useState('')
   const [withdrawAmount, setWithdrawAmount] = useState('')
   
+  // Get asset token symbol
+  const { data: assetSymbol } = useReadContract({
+    address: chamberInfo.assetToken,
+    abi: erc20Abi,
+    functionName: 'symbol',
+    query: { enabled: !!chamberInfo.assetToken },
+  })
+
   // Get user's token balance and allowance
   const { balance: tokenBalance, refetch: refetchTokenBalance } = useTokenBalance(
     chamberInfo.assetToken,
@@ -48,6 +60,14 @@ export default function TreasuryOverview({ chamberAddress, chamberInfo, userBala
   const { deposit, isPending: isDepositing, isConfirming: isDepositConfirming } = useDeposit(chamberAddress)
   const { withdraw, isPending: isWithdrawing, isConfirming: isWithdrawConfirming } = useWithdraw(chamberAddress)
 
+  // Watch for vault events and refresh data when transactions are mined
+  useChamberEvents(chamberAddress, {
+    onVaultEvent: () => {
+      refetchTokenBalance()
+      refetchAllowance()
+    },
+  })
+
   // Refetch allowance after approval succeeds
   useEffect(() => {
     if (isApproveSuccess) {
@@ -55,9 +75,89 @@ export default function TreasuryOverview({ chamberAddress, chamberInfo, userBala
     }
   }, [isApproveSuccess, refetchAllowance])
 
+  // Parse amounts for simulation
+  const depositAmountBigInt = useMemo(() => {
+    try {
+      return depositAmount ? parseUnits(depositAmount, 18) : 0n
+    } catch {
+      return 0n
+    }
+  }, [depositAmount])
+
+  const withdrawAmountBigInt = useMemo(() => {
+    try {
+      return withdrawAmount ? parseUnits(withdrawAmount, 18) : 0n
+    } catch {
+      return 0n
+    }
+  }, [withdrawAmount])
+
   // Calculate if approval is needed
-  const depositAmountBigInt = depositAmount ? parseUnits(depositAmount, 18) : 0n
   const needsApproval = allowance !== undefined && depositAmountBigInt > 0n && allowance < depositAmountBigInt
+
+  // Simulate transactions to catch errors before user submits
+  const { 
+    isValid: isDepositValid, 
+    error: depositSimError,
+    isLoading: isDepositSimulating,
+  } = useSimulateDeposit(
+    chamberAddress,
+    depositAmountBigInt > 0n ? depositAmountBigInt : undefined,
+    userAddress
+  )
+
+  const { 
+    isValid: isWithdrawValid, 
+    error: withdrawSimError,
+    isLoading: isWithdrawSimulating,
+  } = useSimulateWithdraw(
+    chamberAddress,
+    withdrawAmountBigInt > 0n ? withdrawAmountBigInt : undefined,
+    userAddress,
+    userAddress
+  )
+
+  // Helper to extract readable error message
+  const getErrorMessage = (error: Error | null): string | null => {
+    if (!error) return null
+    const message = error.message || ''
+    
+    // Map custom error names to user-friendly messages
+    const errorMessages: Record<string, string> = {
+      'InsufficientChamberBalance': 'You don\'t have enough shares',
+      'InsufficientDelegatedAmount': 'Insufficient delegated amount',
+      'ZeroAmount': 'Amount cannot be zero',
+      'ExceedsDelegatedAmount': 'Cannot withdraw - some shares are delegated',
+      'ERC20InsufficientAllowance': 'Token approval required',
+      'ERC20InsufficientBalance': 'Insufficient token balance',
+    }
+    
+    // Check for custom error name in message
+    for (const [errorName, friendlyMessage] of Object.entries(errorMessages)) {
+      if (message.includes(errorName)) {
+        return friendlyMessage
+      }
+    }
+    
+    // Extract revert reason if present
+    const revertMatch = message.match(/reverted with reason string '([^']+)'/)
+    if (revertMatch) return revertMatch[1]
+    
+    // Extract custom error name
+    const customErrorMatch = message.match(/reverted with custom error '([^']+)'/)
+    if (customErrorMatch) {
+      const errorName = customErrorMatch[1]
+      return errorMessages[errorName] || errorName
+    }
+    
+    // Common error patterns
+    if (message.includes('insufficient')) return 'Insufficient balance'
+    if (message.includes('exceeds')) return 'Amount exceeds balance'
+    if (message.includes('allowance')) return 'Insufficient token allowance'
+    
+    // Return truncated message
+    return message.length > 100 ? message.slice(0, 100) + '...' : message
+  }
 
   const handleApprove = async () => {
     if (!chamberAddress) return
@@ -119,6 +219,9 @@ export default function TreasuryOverview({ chamberAddress, chamberInfo, userBala
                     })
                   : '...'
                 }
+                {assetSymbol && (
+                  <span className="text-lg text-slate-400 ml-2">{assetSymbol as string}</span>
+                )}
               </p>
             </div>
           </div>
@@ -151,14 +254,17 @@ export default function TreasuryOverview({ chamberAddress, chamberInfo, userBala
                     })
                   : '...'
                 }
+                {chamberInfo.symbol && (
+                  <span className="text-lg text-slate-400 ml-2">{chamberInfo.symbol}</span>
+                )}
               </p>
             </div>
           </div>
           <div className="text-slate-500 text-sm">
-            1 share = {chamberInfo.totalSupply && chamberInfo.totalAssets && chamberInfo.totalSupply > 0n
+            1 {chamberInfo.symbol || 'share'} = {chamberInfo.totalSupply && chamberInfo.totalAssets && chamberInfo.totalSupply > 0n
               ? (Number(chamberInfo.totalAssets) / Number(chamberInfo.totalSupply)).toFixed(4)
               : '1.0000'
-            } assets
+            } {assetSymbol as string || 'assets'}
           </div>
         </motion.div>
 
@@ -181,6 +287,9 @@ export default function TreasuryOverview({ chamberAddress, chamberInfo, userBala
                     })
                   : 'Connect Wallet'
                 }
+                {userBalance !== undefined && chamberInfo.symbol && (
+                  <span className="text-lg text-slate-400 ml-2">{chamberInfo.symbol}</span>
+                )}
               </p>
             </div>
           </div>
@@ -215,9 +324,9 @@ export default function TreasuryOverview({ chamberAddress, chamberInfo, userBala
             {/* Token Balance Display */}
             {tokenBalance !== undefined && (
               <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-500">Your Token Balance:</span>
+                <span className="text-slate-500">Your {assetSymbol as string || 'Token'} Balance:</span>
                 <span className="text-slate-300 font-mono">
-                  {parseFloat(formatUnits(tokenBalance, 18)).toLocaleString(undefined, { maximumFractionDigits: 4 })}
+                  {parseFloat(formatUnits(tokenBalance, 18)).toLocaleString(undefined, { maximumFractionDigits: 4 })} {assetSymbol as string || ''}
                 </span>
               </div>
             )}
@@ -262,6 +371,17 @@ export default function TreasuryOverview({ chamberAddress, chamberInfo, userBala
               </div>
             )}
 
+            {/* Simulation Error Display */}
+            {depositAmount && !needsApproval && depositSimError && (
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/30">
+                <FiAlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+                <div className="text-red-400 text-sm">
+                  <span className="font-medium">Transaction will fail: </span>
+                  {getErrorMessage(depositSimError)}
+                </div>
+              </div>
+            )}
+
             {/* Approve or Deposit Button */}
             {needsApproval ? (
               <button
@@ -284,13 +404,18 @@ export default function TreasuryOverview({ chamberAddress, chamberInfo, userBala
             ) : (
               <button
                 onClick={handleDeposit}
-                disabled={isDepositing || isDepositConfirming || !depositAmount}
+                disabled={isDepositing || isDepositConfirming || !depositAmount || (depositAmount && !isDepositValid && !isDepositSimulating)}
                 className="btn btn-primary w-full"
               >
                 {isDepositing || isDepositConfirming ? (
                   <>
                     <FiLoader className="w-4 h-4 animate-spin" />
                     {isDepositing ? 'Confirm...' : 'Processing...'}
+                  </>
+                ) : isDepositSimulating ? (
+                  <>
+                    <FiLoader className="w-4 h-4 animate-spin" />
+                    Validating...
                   </>
                 ) : (
                   <>
@@ -344,15 +469,31 @@ export default function TreasuryOverview({ chamberAddress, chamberInfo, userBala
               </div>
             </div>
 
+            {/* Simulation Error Display */}
+            {withdrawAmount && withdrawSimError && (
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/30">
+                <FiAlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+                <div className="text-red-400 text-sm">
+                  <span className="font-medium">Transaction will fail: </span>
+                  {getErrorMessage(withdrawSimError)}
+                </div>
+              </div>
+            )}
+
             <button
               onClick={handleWithdraw}
-              disabled={isWithdrawing || isWithdrawConfirming || !withdrawAmount}
+              disabled={isWithdrawing || isWithdrawConfirming || !withdrawAmount || (withdrawAmount && !isWithdrawValid && !isWithdrawSimulating)}
               className="btn btn-secondary w-full border-red-500/30 hover:border-red-500/50 hover:text-red-400"
             >
               {isWithdrawing || isWithdrawConfirming ? (
                 <>
                   <FiLoader className="w-4 h-4 animate-spin" />
                   {isWithdrawing ? 'Confirm...' : 'Processing...'}
+                </>
+              ) : isWithdrawSimulating ? (
+                <>
+                  <FiLoader className="w-4 h-4 animate-spin" />
+                  Validating...
                 </>
               ) : (
                 <>
