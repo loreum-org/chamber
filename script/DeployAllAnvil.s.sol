@@ -54,7 +54,7 @@ contract DeployAllAnvil is Script {
         json = vm.serializeAddress("deployment", "mockERC721", address(mockERC721));
         json = vm.serializeUint("deployment", "chainId", block.chainid);
         json = vm.serializeUint("deployment", "timestamp", block.timestamp);
-        
+
         vm.writeJson(json, "./app/src/contracts/deployments.json");
         console.log("Deployment addresses written to app/src/contracts/deployments.json");
     }
