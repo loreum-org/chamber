@@ -326,6 +326,7 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
         if (target == address(this)) {
             // Check if this is an upgrade call by checking the function selector
             if (data.length < 4) revert IChamber.InvalidTransaction();
+            // forge-lint: disable-next-line(unsafe-typecast)
             bytes4 selector = bytes4(data);
             if (selector != UPGRADE_SELECTOR) {
                 revert IChamber.InvalidTransaction();
@@ -423,6 +424,7 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
             // Allow address(this) only for upgradeImplementation calls
             if (targets[i] == address(this)) {
                 if (data[i].length < 4) revert IChamber.InvalidTransaction();
+                // forge-lint: disable-next-line(unsafe-typecast)
                 bytes4 selector = bytes4(data[i]);
                 if (selector != UPGRADE_SELECTOR) {
                     revert IChamber.InvalidTransaction();
@@ -504,21 +506,28 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
     ///      Also supports EIP-1271 for Smart Contract Directors.
     /// @param tokenId The NFT token ID to check for directorship
     modifier isDirector(uint256 tokenId) {
+        _isDirector(tokenId);
+        _;
+    }
+
+    function _isDirector(uint256 tokenId) internal view {
         // Prevent zero tokenId
         if (tokenId == 0) revert IChamber.NotDirector();
 
         address owner = nft.ownerOf(tokenId);
-        
+
         // 1. Check strict ownership (EOA or simple Contract Owner)
         bool isOwner = (owner == msg.sender);
 
         // 2. If not direct owner, check if msg.sender is a valid signer for the owner (EIP-1271)
-        //    This allows an Agent contract to sign on behalf of the NFT owner, 
+        //    This allows an Agent contract to sign on behalf of the NFT owner,
         //    OR allows the NFT owner to be a Smart Account that approves msg.sender.
         if (!isOwner && owner.code.length > 0) {
             // We verify if msg.sender is authorized by the Smart Account 'owner'
             // Construct a "DirectorAuth" hash that the Smart Account must validate
-            bytes32 hash = keccak256(abi.encodePacked("DirectorAuth", address(this), tokenId, msg.sender));
+            bytes32 hash;
+            // forge-lint: disable-next-line(asm-keccak256)
+            hash = keccak256(abi.encodePacked("DirectorAuth", address(this), tokenId, msg.sender));
             try IERC1271(owner).isValidSignature(hash, abi.encode(msg.sender)) returns (bytes4 magicValue) {
                 if (magicValue == IERC1271.isValidSignature.selector) {
                     isOwner = true;
@@ -536,7 +545,6 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
 
         while (current != 0 && remaining > 0) {
             if (current == tokenId) {
-                _;
                 return;
             }
             current = nodes[current].next;
@@ -705,5 +713,5 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
     }
 
     /// @dev Storage gap for future upgrades
-    uint256[50] private __gap;
+    uint256[50] private _gap;
 }

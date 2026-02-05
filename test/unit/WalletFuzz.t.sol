@@ -50,7 +50,13 @@ contract WalletFuzzTest is Test {
         // Bound inputs
         tokenId1 = bound(tokenId1, 1, type(uint256).max);
         tokenId2 = bound(tokenId2, 1, type(uint256).max);
-        if (tokenId1 == tokenId2) tokenId2 = tokenId1 + 1;
+        if (tokenId1 == tokenId2) {
+            if (tokenId1 < type(uint256).max) {
+                tokenId2 = tokenId1 + 1;
+            } else {
+                tokenId2 = 1;
+            }
+        }
         value = bound(value, 0, 100 ether);
         if (target == address(0) || target == address(wallet)) {
             target = address(0x3);
@@ -114,6 +120,7 @@ contract WalletFuzzTest is Test {
             target == address(0) || target == address(wallet) || uint160(target) < 0x10 || target.code.length > 0
                 || target == consoleAddress
         ) {
+            // forge-lint: disable-next-line(unsafe-typecast)
             target = payable(address(0x100)); // Use address >= 0x100 to avoid precompiles
         }
 
@@ -146,6 +153,7 @@ contract WalletFuzzTest is Test {
             tokenIds[i] = bound(tokenIds[i], 1, type(uint256).max);
             values[i] = bound(values[i], 0, 20 ether);
             if (targets[i] == address(0) || targets[i] == address(wallet)) {
+                // forge-lint: disable-next-line(unsafe-typecast)
                 targets[i] = address(uint160(i + 100));
             }
         }
@@ -306,6 +314,7 @@ contract WalletFuzzTest is Test {
 
         // Submit and execute transactions
         for (uint256 i = 0; i < 3; i++) {
+            // forge-lint: disable-next-line(unsafe-typecast)
             address target = address(uint160(i + 100));
             wallet.submitTransaction(tokenIds[i], target, values[i], "");
             wallet.executeTransaction(tokenIds[i], i);

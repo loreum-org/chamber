@@ -213,13 +213,15 @@ contract ChamberFuzzTest is Test {
         if (transferAmount <= availableBalance) {
             // Should succeed
             vm.prank(user1);
-            chamber.transfer(user2, transferAmount);
+            bool success = chamber.transfer(user2, transferAmount);
+            assertTrue(success, "Transfer should succeed");
             assertEq(chamber.balanceOf(user2), transferAmount);
         } else {
             // Should revert
             vm.prank(user1);
             vm.expectRevert(IChamber.ExceedsDelegatedAmount.selector);
-            chamber.transfer(user2, transferAmount);
+            bool success = chamber.transfer(user2, transferAmount);
+            assertTrue(success, "Transfer call should return true if it doesn't revert (but it should revert here)");
         }
     }
 
@@ -231,6 +233,8 @@ contract ChamberFuzzTest is Test {
 
         // Setup directors
         for (uint256 i = 1; i <= numDirectors; i++) {
+            // casting to 'uint160' is safe because we just need a unique address derived from index
+            // forge-lint: disable-next-line(unsafe-typecast)
             address user = address(uint160(i));
             MockERC721(address(nft)).mintWithTokenId(user, i);
             MockERC20(address(token)).mint(user, 1 ether);
@@ -400,11 +404,12 @@ contract ChamberFuzzTest is Test {
     function testFuzz_Invariant_BoardSize(uint256[5] memory tokenIds, uint256[5] memory amounts, uint256 totalDeposit)
         public
     {
-        totalDeposit = bound(totalDeposit, 5, MAX_AMOUNT); // At least 5 to divide by 5
+        // Bound totalDeposit to a reasonable max to avoid overflow issues in setup
+        totalDeposit = bound(totalDeposit, 5, MAX_AMOUNT);
 
         // Ensure unique tokenIds first
         for (uint256 i = 0; i < 5; i++) {
-            tokenIds[i] = bound(tokenIds[i], 1, type(uint256).max - 100); // Leave room for uniqueness
+            tokenIds[i] = bound(tokenIds[i], 1, type(uint256).max - 100);
             for (uint256 j = 0; j < i; j++) {
                 if (tokenIds[i] == tokenIds[j]) {
                     unchecked {

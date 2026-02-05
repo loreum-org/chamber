@@ -9,7 +9,6 @@ import {MockERC20} from "test/mock/MockERC20.sol";
 import {MockERC721} from "test/mock/MockERC721.sol";
 import {DeployRegistry} from "test/utils/DeployRegistry.sol";
 import {ProxyAdmin} from "lib/openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
-import {IERC721} from "lib/openzeppelin-contracts/contracts/interfaces/IERC721.sol";
 
 contract ChamberUpgradeTest is Test {
     Registry public registry;

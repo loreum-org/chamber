@@ -73,9 +73,17 @@ abstract contract Board {
      * @custom:throws "Circuit breaker active" if the contract is already locked
      */
     modifier circuitBreaker() {
+        _circuitBreakerBefore();
+        _;
+        _circuitBreakerAfter();
+    }
+
+    function _circuitBreakerBefore() internal {
         if (locked) revert IBoard.CircuitBreakerActive();
         locked = true;
-        _;
+    }
+
+    function _circuitBreakerAfter() internal {
         locked = false;
     }
 
@@ -85,8 +93,12 @@ abstract contract Board {
      * @custom:throws "Circuit breaker active" if the contract is locked
      */
     modifier preventReentry() {
-        if (locked) revert IBoard.CircuitBreakerActive();
+        _preventReentry();
         _;
+    }
+
+    function _preventReentry() internal view {
+        if (locked) revert IBoard.CircuitBreakerActive();
     }
 
     /// @dev CircuitBreakerActive error is defined in IBoard interface
@@ -384,5 +396,5 @@ abstract contract Board {
     }
 
     /// @dev Storage gap for future upgrades
-    uint256[50] private __gap;
+    uint256[50] private _gap;
 }

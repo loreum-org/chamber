@@ -302,12 +302,12 @@ contract BoardTest is Test {
         assertEq(board.getSeats(), 7);
     }
 
-    function test_Board_GetQuorum() public {
+    function test_Board_GetQuorum() public view {
         // 5 seats: quorum = 1 + (5 * 51) / 100 = 1 + 2 = 3
         assertEq(board.getQuorum(), 3);
     }
 
-    function test_Board_GetSeats() public {
+    function test_Board_GetSeats() public view {
         assertEq(board.getSeats(), 5);
     }
 

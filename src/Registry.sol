@@ -170,15 +170,12 @@ contract Registry is AccessControl, Initializable {
         // We set the proxy admin to be the Registry (this contract) initially
         // Ideally, Agents should be owned by their users, so we can transfer proxy admin rights if needed.
         // For simplicity, we keep Registry as admin or transfer to owner?
-        // Let's keep Registry as admin for upgrades, or transfer to Owner. 
+        // Let's keep Registry as admin for upgrades, or transfer to Owner.
         // Standard practice for "Smart Accounts" is usually self-sovereign or factory-managed.
         // We will make the Owner the admin of the proxy for full sovereignty.
-        
-        TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
-            agentImplementation,
-            address(this),
-            initData
-        );
+
+        TransparentUpgradeableProxy proxy =
+            new TransparentUpgradeableProxy(agentImplementation, address(this), initData);
 
         agent = payable(address(proxy));
 
@@ -302,33 +299,33 @@ contract Registry is AccessControl, Initializable {
         // We deployed it, so we are currently the owner of the ProxyAdmin contract created by the constructor
         // Wait, TransparentUpgradeableProxy constructor creates a ProxyAdmin contract if admin is not a ProxyAdmin.
         // We passed address(this) as admin.
-        
+
         // Actually, we need to access the ProxyAdmin contract.
-        // Standard OZ TransparentProxy: 
+        // Standard OZ TransparentProxy:
         // If we want to change admin, we need to call changeAdmin on the proxy? No, admin is in storage.
         // If we want to change the OWNER of the ProxyAdmin contract, we need to find it.
-        
+
         // Simplified: The Registry IS the admin of the proxy initially.
         // We want to change the admin of the proxy to a new ProxyAdmin owned by the user?
         // OR just change the admin address to the user directly?
-        
+
         // Let's assume we want the User to control upgrades.
         // We need to retrieve the ProxyAdmin address.
         // Since we cannot easily get it from the proxy (admin slot is protected),
         // we should have deployed a ProxyAdmin explicitly if we wanted to manage it.
-        
+
         // FIX: For Agent deployment, we will just deploy a ProxyAdmin explicitly to ensure control.
         // Re-implementing createAgent logic slightly to use explicit ProxyAdmin management if needed.
-        // But for now, keeping it simple: Registry retains upgrade rights? 
+        // But for now, keeping it simple: Registry retains upgrade rights?
         // No, "Sovereign Agents" implies user control.
-        
+
         // We will perform a standard admin transfer on the proxy itself.
         // Since Registry is the admin, we can call ProxyAdmin functions.
-        // But TransparentProxy doesn't expose `changeAdmin` directly to the admin? 
+        // But TransparentProxy doesn't expose `changeAdmin` directly to the admin?
         // Yes it does, via the ProxyAdmin interface.
-        
-        // Ideally we fetch the ProxyAdmin address. 
-        // For this MVP, let's keep Registry as the admin for simplicity of management 
+
+        // Ideally we fetch the ProxyAdmin address.
+        // For this MVP, let's keep Registry as the admin for simplicity of management
         // (Managed Agents), or add a function to transfer it later.
     }
 }
