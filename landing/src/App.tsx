@@ -130,6 +130,18 @@ function App() {
         </div>
       </section>
 
+      {/* Mission Section */}
+      <section id="mission" className="relative z-10 py-32 px-6">
+        <div className="max-w-7xl mx-auto flex flex-col items-center text-center">
+          <FadeIn>
+            <h2 className="text-4xl md:text-5xl font-display mb-8">Our Mission</h2>
+            <p className="text-2xl md:text-4xl text-white font-light max-w-4xl leading-relaxed">
+              "To enable protocol teams to <span className="text-space-accent">maximize their potential</span>."
+            </p>
+          </FadeIn>
+        </div>
+      </section>
+
       {/* Core Features */}
       <section id="technology" className="relative z-10 py-32 px-6">
         <div className="max-w-7xl mx-auto">
@@ -145,29 +157,101 @@ function App() {
               {
                 icon: <Cpu className="w-8 h-8 text-blue-400" />,
                 title: "Agent Directors",
-                desc: "Smart contracts that can propose, vote, and execute transactions based on programmed policies and AI inference."
+                desc: "Smart contracts that can propose, vote, and execute transactions based on programmed policies and AI inference.",
+                glow: "bg-blue-500/20"
               },
               {
                 icon: <Shield className="w-8 h-8 text-purple-400" />,
                 title: "Policy Modules",
-                desc: "Modular governance guardrails that ensure safety while enabling autonomous operation."
+                desc: "Modular governance guardrails that ensure safety while enabling autonomous operation.",
+                glow: "bg-purple-500/20"
               },
               {
                 icon: <Layers className="w-8 h-8 text-emerald-400" />,
                 title: "Sub-Chambers",
-                desc: "Fractal organizational structures allowing for specialized departments and efficient resource allocation."
+                desc: "Fractal organizational structures allowing for specialized departments and efficient resource allocation.",
+                glow: "bg-emerald-500/20"
               }
             ].map((feature, i) => (
-              <FadeIn key={i} delay={i * 0.2} className="p-8 border border-white/10 bg-white/5 hover:bg-white/10 transition-colors group cursor-default">
-                <div className="mb-6 p-4 bg-white/5 inline-block rounded-lg group-hover:scale-110 transition-transform duration-500">
-                  {feature.icon}
-                </div>
-                <h3 className="text-2xl font-display mb-4">{feature.title}</h3>
-                <p className="text-gray-400 leading-relaxed text-sm">
-                  {feature.desc}
-                </p>
+              <FadeIn key={i} delay={i * 0.2} className="group relative">
+                 <div className="absolute -inset-px bg-gradient-to-b from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-xl pointer-events-none" />
+                 
+                 <div className="relative h-full p-8 bg-space-800/40 backdrop-blur-md border border-white/10 rounded-xl overflow-hidden group-hover:border-white/20 transition-all duration-500 hover:translate-y-[-4px] hover:shadow-2xl">
+                    {/* Glow effect */}
+                    <div className={`absolute -top-10 -right-10 w-32 h-32 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 ${feature.glow}`} />
+                    
+                    <div className="relative mb-6 p-4 bg-white/5 inline-block rounded-lg group-hover:scale-110 group-hover:bg-white/10 transition-all duration-500 border border-white/5">
+                      {feature.icon}
+                    </div>
+                    
+                    <h3 className="relative text-2xl font-display mb-4 tracking-wide text-white group-hover:text-space-accent transition-colors">{feature.title}</h3>
+                    <p className="relative text-gray-400 leading-relaxed text-sm group-hover:text-gray-300 transition-colors">
+                      {feature.desc}
+                    </p>
+                 </div>
               </FadeIn>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Governance Architecture Section */}
+      <section id="governance" className="relative z-10 py-32 px-6 border-t border-white/5">
+        <div className="max-w-7xl mx-auto">
+          <FadeIn className="text-center mb-20">
+            <h2 className="text-4xl md:text-5xl font-display mb-6">Fractal Governance</h2>
+            <p className="text-gray-400 max-w-2xl mx-auto text-lg font-light">
+              Loreum utilizes a unique Chamber and Sub-Chamber architecture to create efficient, specialized, and scalable organizations.
+            </p>
+          </FadeIn>
+
+          <div className="grid md:grid-cols-2 gap-16 items-center">
+             <FadeIn delay={0.2} className="relative">
+                {/* Diagrammatic representation */}
+                <div className="relative p-8 border border-white/10 rounded-2xl bg-white/5 backdrop-blur-sm aspect-[4/3] flex flex-col items-center justify-center gap-8">
+                   {/* Main Chamber */}
+                   <div className="relative z-10 p-6 bg-space-800 border border-space-accent/50 rounded-xl w-48 text-center shadow-[0_0_30px_rgba(208,214,249,0.1)]">
+                      <div className="text-space-accent font-display text-xl mb-1">Root Chamber</div>
+                      <div className="text-xs text-gray-400">Global Consensus</div>
+                      
+                      {/* Connection Lines */}
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 h-8 w-px bg-gradient-to-b from-space-accent/50 to-transparent"></div>
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 w-48 h-8 border-x border-t border-space-accent/20 rounded-t-xl translate-y-8"></div>
+                   </div>
+
+                   {/* Sub Chambers */}
+                   <div className="flex gap-4 mt-8 pt-4">
+                      <div className="p-4 bg-space-800/50 border border-white/10 rounded-lg w-28 text-center backdrop-blur-md">
+                         <div className="text-white font-display mb-1">Treasury</div>
+                         <div className="text-[10px] text-gray-500">Asset Mgmt</div>
+                      </div>
+                      <div className="p-4 bg-space-800/50 border border-white/10 rounded-lg w-28 text-center backdrop-blur-md">
+                         <div className="text-white font-display mb-1">Ops</div>
+                         <div className="text-[10px] text-gray-500">Coordination</div>
+                      </div>
+                      <div className="p-4 bg-space-800/50 border border-white/10 rounded-lg w-28 text-center backdrop-blur-md">
+                         <div className="text-white font-display mb-1">R&D</div>
+                         <div className="text-[10px] text-gray-500">Innovation</div>
+                      </div>
+                   </div>
+                </div>
+             </FadeIn>
+
+             <FadeIn delay={0.4} className="space-y-12">
+                <div className="group">
+                   <h3 className="text-2xl font-display mb-3 text-white group-hover:text-space-accent transition-colors">The Chamber</h3>
+                   <p className="text-gray-400 leading-relaxed font-light">
+                      The central governing body that holds ultimate authority. It sets global policies, manages the main treasury, and orchestrates the broader mission of the organization.
+                   </p>
+                </div>
+                
+                <div className="group">
+                   <h3 className="text-2xl font-display mb-3 text-white group-hover:text-space-accent transition-colors">Sub-Chambers</h3>
+                   <p className="text-gray-400 leading-relaxed font-light">
+                      Specialized departments with delegated authority. Each Sub-Chamber operates with its own budget and mandate, allowing for parallel execution and faster decision-making without bottling up at the top.
+                   </p>
+                </div>
+             </FadeIn>
           </div>
         </div>
       </section>
