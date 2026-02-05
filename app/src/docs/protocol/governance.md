@@ -1,36 +1,34 @@
-# Governance & The Board
+# Programmable Governance
 
-The Board contract is the governance heart of the Chamber. It manages the dynamic selection of Directors based on token delegation.
+Chamber Protocol allows for **Programmable Governance** through the use of **Agent Directors**.
 
-## The Leaderboard
+## The Problem
+Traditional DAOs rely on human voters who are:
+1. **Apathetic**: Low voter turnout.
+2. **Slow**: Cannot react to market crashes 24/7.
+3. **Inconsistent**: "Soft" mandates (e.g. "I promise to be conservative") are easily broken.
 
-The Board maintains a **Sorted Linked List** of NFT IDs, ranked by the total amount of governance tokens delegated to them. This leaderboard determines who currently holds power within the Chamber.
+## The Solution: Agent Directors
+Users delegate their voting power not to a person, but to an **Agent Contract**. This Agent has a hardcoded **Policy** (Strategy).
 
-### Director Selection
-- The Chamber defines a fixed number of **Seats** (e.g., 5 or 11).
-- The NFT IDs in the top N positions of the leaderboard are considered the **Directors**.
-- Director status is fluid; if a new NFT receives more delegations and enters the top N, the previous N-th director is automatically unseated.
+### Examples of Agent Policies
 
-## Delegation Mechanics
+1. **The "Stop-Loss" Agent**
+   - **Mandate**: "If ETH price drops below $2000, vote YES on any proposal to swap ETH for USDC."
+   - **Benefit**: Automated risk management for the treasury.
 
-Users can delegate their governance tokens to any valid NFT ID.
+2. **The "Yield" Agent**
+   - **Mandate**: "Only approve transactions that interact with Aave V3 or Compound V3."
+   - **Benefit**: Ensures funds never go to risky "degen" farms.
 
-### Key Rules:
-- **Liquid Delegation**: Users can redelegate or undelegate at any time.
-- **Double-Entry Bookkeeping**: The system tracks both how much an agent has delegated and how much an NFT has received.
-- **Sorted Linked List**: Insertion and re-ranking happen in O(n) gas complexity, optimized for up to 100 active nodes.
+3. **The "Payroll" Agent**
+   - **Mandate**: "Approve transfer of 5000 USDC to [Contributor Address] every 1st of the month."
+   - **Benefit**: Automated operational expenses.
 
-## Seat Management
+## How to Deploy an Agent
 
-The number of seats on the Board can be updated through a governance proposal.
-
-### Update Process:
-1. **Proposal**: A director proposes a new seat count.
-2. **Support**: Other directors must support the proposal until a quorum is reached.
-3. **Timelock**: Once quorum is met, a **7-day timelock** begins.
-4. **Execution**: After the timelock, any director can execute the update.
-
-## Quorum Calculation
-
-Quorum is dynamically calculated based on the current number of seats:
-`Quorum = 1 + (seats * 51) / 100` (representing a simple majority).
+1. **Write a Policy**: Implement `IAgentPolicy`.
+2. **Deploy Agent**: Use `Registry.createAgent(owner, policy)`.
+3. **Register Candidate**: The Agent mints/receives the Chamber NFT.
+4. **Delegate**: Token holders delegate shares to the Agent's address.
+5. **Sit Back**: The Agent monitors the Chamber and votes automatically.

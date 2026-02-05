@@ -11,6 +11,7 @@ import {
     ERC4626Upgradeable
 } from "lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {ERC20Upgradeable} from "lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
+import {IERC1271} from "lib/openzeppelin-contracts/contracts/interfaces/IERC1271.sol";
 import {
     ReentrancyGuardUpgradeable
 } from "lib/openzeppelin-contracts-upgradeable/contracts/utils/ReentrancyGuardUpgradeable.sol";
@@ -499,14 +500,35 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
     }
 
     /// @notice Modifier to restrict access to only directors
-    /// @dev Checks if the caller owns a tokenId that is in the top seats
+    /// @dev Checks if the caller owns a tokenId that is in the top seats.
+    ///      Also supports EIP-1271 for Smart Contract Directors.
     /// @param tokenId The NFT token ID to check for directorship
     modifier isDirector(uint256 tokenId) {
         // Prevent zero tokenId
         if (tokenId == 0) revert IChamber.NotDirector();
 
-        // Check if tokenId exists and is owned by caller
-        if (nft.ownerOf(tokenId) != msg.sender) revert IChamber.NotDirector();
+        address owner = nft.ownerOf(tokenId);
+        
+        // 1. Check strict ownership (EOA or simple Contract Owner)
+        bool isOwner = (owner == msg.sender);
+
+        // 2. If not direct owner, check if msg.sender is a valid signer for the owner (EIP-1271)
+        //    This allows an Agent contract to sign on behalf of the NFT owner, 
+        //    OR allows the NFT owner to be a Smart Account that approves msg.sender.
+        if (!isOwner && owner.code.length > 0) {
+            // We verify if msg.sender is authorized by the Smart Account 'owner'
+            // Construct a "DirectorAuth" hash that the Smart Account must validate
+            bytes32 hash = keccak256(abi.encodePacked("DirectorAuth", address(this), tokenId, msg.sender));
+            try IERC1271(owner).isValidSignature(hash, abi.encode(msg.sender)) returns (bytes4 magicValue) {
+                if (magicValue == IERC1271.isValidSignature.selector) {
+                    isOwner = true;
+                }
+            } catch {
+                // Ignore failure, remain isOwner = false
+            }
+        }
+
+        if (!isOwner) revert IChamber.NotDirector();
 
         // Check if tokenId is in top seats
         uint256 current = head;

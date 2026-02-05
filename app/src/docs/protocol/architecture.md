@@ -1,338 +1,56 @@
-# Chamber Architecture
+# Architecture: Agent-Driven Governance
 
-## System Overview
-
-Chamber is a modular smart contract system that combines three core functionalities:
-1. **ERC4626 Vault** - Asset management and tokenization
-2. **Board Governance** - NFT-based delegation and director selection
-3. **Wallet Multisig** - Quorum-based transaction management
-
-## Contract Hierarchy
-
-```
-Registry
-  └── Chamber (ERC4626Upgradeable, Board, Wallet)
-        ├── Board (abstract)
-        └── Wallet (abstract)
-```
+Chamber Protocol introduces a novel "Hybrid Smart Account" governance model where Board Directors can be programmable smart contracts (Agents) rather than just human EOAs.
 
 ## Core Components
 
-### 1. Registry Contract
+### 1. The Chamber (`Chamber.sol`)
+The central hub combining Vault, Board, and Wallet.
+- **Upgrade**: Now supports **EIP-1271** signature validation in the `isDirector` modifier.
+- **Logic**: If a Director is a smart contract, the Chamber asks it: *"Do you authorize this action?"*
 
-**Purpose**: Factory contract for deploying Chamber instances using minimal proxy pattern.
+### 2. The Agent (`Agent.sol`)
+An ERC-8004 inspired Smart Account that holds the Director NFT (or is the delegated leader).
+- **Role**: Sits on the Board of Directors.
+- **Brain**: Contains a `IAgentPolicy` module that dictates its voting behavior.
+- **Automation**: Can be triggered by Keepers (Chainlink/Gelato) to auto-confirm transactions that meet its policy.
 
-**Key Features**:
-- Gas-efficient deployment via `Clones.clone()`
-- Tracks all deployed chambers
-- Access control for admin functions
+### 3. The Registry (`Registry.sol`)
+Factory for deploying both Chambers and Agents.
+- Ensures Agents use verified implementations for security.
 
-**Storage**:
-- `implementation`: Address of Chamber implementation contract
-- `_chambers[]`: Array of deployed chamber addresses
-- `_isChamber`: Mapping to verify chamber addresses
+## Governance Flow
 
-### 2. Chamber Contract
+```mermaid
+sequenceDiagram
+    participant Chamber
+    participant Agent
+    participant Policy
+    participant Keeper
 
-**Purpose**: Main contract combining all functionality.
-
-**Inheritance**:
-- `ERC4626Upgradeable`: Vault functionality
-- `ReentrancyGuardUpgradeable`: Reentrancy protection
-- `Board`: Governance functionality
-- `Wallet`: Multisig functionality
-- `IChamber`: Interface compliance
-
-**Key State Variables**:
-- `nft`: ERC721 token contract for membership
-- `agentDelegation`: Mapping of agent → tokenId → amount
-- `totalAgentDelegations`: Total delegations per agent
-- `version`: Implementation version string
-
-### 3. Board Contract
-
-**Purpose**: Manages delegation leaderboard and director selection.
-
-**Data Structures**:
-```solidity
-struct Node {
-    uint256 tokenId;
-    uint256 amount;      // Total delegations
-    uint256 next;        // Next node in sorted list
-    uint256 prev;        // Previous node in sorted list
-}
-
-struct SeatUpdate {
-    uint256 proposedSeats;
-    uint256 timestamp;
-    uint256 requiredQuorum;
-    uint256[] supporters;
-}
-```
-
-**Key Features**:
-- **Sorted Linked List**: Maintains nodes sorted by delegation amount (descending)
-- **Circuit Breaker**: Prevents reentrancy during repositioning
-- **Seat Management**: Dynamic seat updates with timelock and quorum
-- **Quorum Calculation**: `1 + (seats * 51) / 100`
-
-**Operations**:
-- `_delegate()`: Add/update delegation, maintain sorted order
-- `_undelegate()`: Remove delegation, update or remove node
-- `_reposition()`: Re-sort node after amount change
-- `_insert()`: Insert new node in sorted position
-- `_remove()`: Remove node from list
-- `_getTop()`: Retrieve top N nodes
-
-### 4. Wallet Contract
-
-**Purpose**: Multisig transaction management.
-
-**Data Structures**:
-```solidity
-struct Transaction {
-    bool executed;
-    uint8 confirmations;
-    address target;
-    uint256 value;
-    bytes data;
-}
-```
-
-**Key Features**:
-- Transaction submission with auto-confirmation
-- Quorum-based confirmation system
-- Batch operations support
-- CEI pattern for execution safety
-
-**Operations**:
-- `_submitTransaction()`: Create transaction, auto-confirm submitter
-- `_confirmTransaction()`: Add confirmation from director
-- `_revokeConfirmation()`: Remove confirmation
-- `_executeTransaction()`: Execute transaction after quorum
-
-## Data Flow
-
-### Delegation Flow
-
-```
-User → delegate(tokenId, amount)
-  → Update agentDelegation mapping
-  → Board._delegate()
-    → Update/create Node
-    → Reposition in sorted list
-  → Emit DelegationUpdated event
-```
-
-### Transaction Flow
-
-```
-Director → submitTransaction(tokenId, target, value, data)
-  → Wallet._submitTransaction()
-    → Create Transaction struct
-    → Auto-confirm submitter
-  → Directors → confirmTransaction(tokenId, transactionId)
-    → Increment confirmations
-    → Check quorum reached
-  → Director → executeTransaction(tokenId, transactionId)
-    → Check quorum
-    → Execute external call
-    → Mark executed
-```
-
-### Director Selection Flow
-
-```
-Delegation changes
-  → Board updates sorted list
-  → getDirectors() called
-    → getTop(seats)
-    → Resolve NFT owners
-    → Return director addresses
-```
-
-## Security Patterns
-
-### 1. Circuit Breaker
-
-The Board contract implements a circuit breaker pattern to prevent reentrancy during critical operations:
-
-```solidity
-modifier circuitBreaker() {
-    if (locked) revert CircuitBreakerActive();
-    locked = true;
-    _;
-    locked = false;
-}
-```
-
-Used during `_reposition()` to prevent state corruption during linked list updates.
-
-### 2. ReentrancyGuard
-
-Chamber uses OpenZeppelin's `ReentrancyGuardUpgradeable` for transaction execution:
-
-```solidity
-function executeTransaction(...) public nonReentrant {
-    // Execute external call
-}
-```
-
-### 3. CEI Pattern
-
-Wallet contract follows Checks-Effects-Interactions pattern:
-
-```solidity
-function _executeTransaction(...) internal {
-    // Check
-    if (transaction.executed) revert();
+    Note over Chamber: Transaction #42 Proposed
     
-    // Effect
-    transaction.executed = true;
+    Keeper->>Agent: autoConfirm(chamber, 42)
+    Agent->>Chamber: getTransaction(42)
+    Chamber-->>Agent: {target: Uniswap, value: 100 ETH...}
     
-    // Interaction
-    (bool success, ) = target.call{value: value}(data);
-    if (!success) {
-        transaction.executed = false; // Revert on failure
-        revert();
-    }
+    Agent->>Policy: canApprove(chamber, 42)
+    Policy-->>Agent: true (Authorized)
+    
+    Agent->>Chamber: confirmTransaction(42)
+    Chamber-->>Chamber: Confirmation Added
+```
+
+## EIP-1271 Integration
+
+To allow Agents to participate in governance (both on-chain and via off-chain signatures), the `Chamber` checks signatures using EIP-1271:
+
+```solidity
+// In Chamber.sol
+if (director.code.length > 0) {
+    bytes4 magic = IERC1271(director).isValidSignature(hash, signature);
+    require(magic == 0x1626ba7e, "Invalid Contract Signature");
 }
 ```
 
-### 4. Input Validation
-
-All public functions validate inputs:
-- Zero address checks
-- Zero amount checks
-- Balance checks
-- Existence checks (NFT, transaction, node)
-
-### 5. Storage Gaps
-
-All upgradeable contracts include storage gaps:
-
-```solidity
-uint256[50] private __gap;
-```
-
-Prevents storage collisions during upgrades.
-
-## Upgradeability
-
-### Proxy Pattern
-
-Chamber uses OpenZeppelin's upgradeable contracts with TransparentUpgradeableProxy:
-
-1. **Implementation Contract**: Contains logic (no state)
-2. **Proxy Contract**: Stores state, delegates calls to implementation
-3. **Admin**: Controls upgrades
-
-### Initialization
-
-All contracts use `initializer` pattern:
-
-```solidity
-function initialize(...) external initializer {
-    __ERC4626_init(...);
-    __ReentrancyGuard_init();
-    // Initialize state
-}
-```
-
-## Gas Optimization
-
-### 1. Minimal Proxy Pattern
-
-Registry uses `Clones.clone()` for gas-efficient Chamber deployment:
-- ~45,000 gas vs ~2,000,000+ gas for full deployment
-- Shared implementation code
-- Separate storage per instance
-
-### 2. Unchecked Arithmetic
-
-Used in loops where overflow is impossible:
-
-```solidity
-for (uint256 i = 0; i < count;) {
-    // operations
-    unchecked { ++i; }
-}
-```
-
-### 3. Storage Packing
-
-Structs designed to pack efficiently:
-- `Transaction`: bool + uint8 + address + uint256 + bytes
-- `Node`: 4 × uint256
-
-### 4. Batch Operations
-
-Batch functions reduce transaction overhead:
-- `submitBatchTransactions()`
-- `confirmBatchTransactions()`
-- `executeBatchTransactions()`
-
-## Limitations
-
-### Board Limitations
-
-- **Max Nodes**: 100 nodes in linked list
-- **Max Seats**: 20 seats maximum
-- **Gas Costs**: O(n) operations for large lists
-
-### Wallet Limitations
-
-- **No Scheduling**: Transactions execute immediately when quorum reached
-- **No Conditions**: No time-based or condition-based execution
-- **No Cancellation**: Transactions cannot be cancelled (only revoked)
-
-### Chamber Limitations
-
-- **Single NFT Contract**: One ERC721 per Chamber
-- **Single Asset**: One ERC20 asset per Chamber
-- **No Multi-Asset**: Cannot hold multiple ERC20 tokens
-
-## Future Enhancements
-
-1. **Multi-Asset Support**: Hold multiple ERC20 tokens
-2. **Transaction Scheduling**: Time-based execution
-3. **Conditional Execution**: Execute based on conditions
-4. **Governance Strategies**: Configurable quorum calculations
-5. **Metadata Tracking**: Enhanced Registry with metadata
-
-## Design Decisions
-
-### Why Sorted Linked List?
-
-- Efficient insertion/removal: O(n) worst case
-- Maintains order automatically
-- No need for external sorting
-- Gas-efficient for typical use cases (< 100 nodes)
-
-### Why NFT-Based Directors?
-
-- Flexible membership model
-- Can represent roles, members, or entities
-- Transferable governance power
-- Compatible with existing NFT ecosystems
-
-### Why ERC4626?
-
-- Standard vault interface
-- Composability with DeFi protocols
-- Tokenized shares
-- Standard deposit/withdraw patterns
-
-## Testing Strategy
-
-1. **Unit Tests**: Test each contract in isolation
-2. **Integration Tests**: Test contract interactions
-3. **Fuzz Tests**: Property-based testing
-4. **Gas Tests**: Optimize gas usage
-5. **Upgrade Tests**: Verify upgrade compatibility
-
-## References
-
-- [ERC4626 Standard](https://eips.ethereum.org/EIPS/eip-4626)
-- [OpenZeppelin Upgradeable Contracts](https://docs.openzeppelin.com/upgrades-plugins/1.x/)
-- [Minimal Proxy Pattern (EIP-1167)](https://eips.ethereum.org/EIPS/eip-1167)
+This enables **Gasless Voting** and **Delegated Signing** where an Agent can authorize a relayer to vote on its behalf.
