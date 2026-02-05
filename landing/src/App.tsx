@@ -199,7 +199,7 @@ function App() {
       <section id="governance" className="relative z-10 py-32 px-6 border-t border-white/5">
         <div className="max-w-7xl mx-auto">
           <FadeIn className="text-center mb-20">
-            <h2 className="text-4xl md:text-5xl font-display mb-6">Fractal Governance</h2>
+            <h2 className="text-4xl md:text-5xl font-display mb-6">Ecosystem Governance</h2>
             <p className="text-gray-400 max-w-2xl mx-auto text-lg font-light">
               Loreum utilizes a unique Chamber and Sub-Chamber architecture to create efficient, specialized, and scalable organizations.
             </p>
@@ -297,20 +297,7 @@ function App() {
                 <div className="w-32 h-32 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-full blur-xl animate-pulse" />
                 <div className="relative z-10 w-24 h-24 bg-space-900 border border-white/30 flex items-center justify-center rounded-lg rotate-45">
                    <div className="-rotate-45">
-                     <svg 
-                       viewBox="0 0 24 24" 
-                       fill="none" 
-                       stroke="currentColor" 
-                       strokeWidth="1.5" 
-                       strokeLinecap="round" 
-                       strokeLinejoin="round" 
-                       className="w-12 h-12 text-gray-500"
-                     >
-                       {/* Pyramid Structure */}
-                       <path d="M12 3L2 21h20L12 3z" />
-                       {/* Inner Chamber (Trapezoid Entrance) */}
-                       <path d="M10 13 L14 13 L15 19 L9 19 Z" />
-                     </svg>
+                     <img src="/logo.svg" alt="Loreum Logo" className="w-12 h-12" />
                    </div>
                 </div>
               </div>
