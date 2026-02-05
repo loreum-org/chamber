@@ -41,7 +41,7 @@ contract RegistryTest is Test {
         Registry proxyRegistry = Registry(proxy);
 
         vm.expectRevert(Registry.ZeroAddress.selector);
-        proxyRegistry.initialize(address(implementation), address(0));
+        proxyRegistry.initialize(address(implementation), address(0), address(0));
     }
 
     function test_Registry_Initialize_ZeroImplementation_Reverts() public {
@@ -50,7 +50,7 @@ contract RegistryTest is Test {
         Registry proxyRegistry = Registry(proxy);
 
         vm.expectRevert(Registry.ZeroAddress.selector);
-        proxyRegistry.initialize(address(0), admin);
+        proxyRegistry.initialize(address(0), address(0), admin);
     }
 
     function test_Registry_CreateChamber() public {
