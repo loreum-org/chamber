@@ -37,23 +37,35 @@ abstract contract Wallet {
     /// @notice Modifier to check if a transaction exists
     /// @param nonce The transaction index to check
     modifier txExists(uint256 nonce) {
-        if (nonce >= transactions.length) revert IWallet.TransactionDoesNotExist();
+        _txExists(nonce);
         _;
+    }
+
+    function _txExists(uint256 nonce) internal view {
+        if (nonce >= transactions.length) revert IWallet.TransactionDoesNotExist();
     }
 
     /// @notice Modifier to check if a transaction has not been executed
     /// @param nonce The transaction index to check
     modifier notExecuted(uint256 nonce) {
-        if (transactions[nonce].executed) revert IWallet.TransactionAlreadyExecuted();
+        _notExecuted(nonce);
         _;
+    }
+
+    function _notExecuted(uint256 nonce) internal view {
+        if (transactions[nonce].executed) revert IWallet.TransactionAlreadyExecuted();
     }
 
     /// @notice Modifier to check if a transaction has not been confirmed by a specific tokenId
     /// @param tokenId The token ID to check confirmation for
     /// @param nonce The transaction index to check
     modifier notConfirmed(uint256 tokenId, uint256 nonce) {
-        if (isConfirmed[nonce][tokenId]) revert IWallet.TransactionAlreadyConfirmed();
+        _notConfirmed(tokenId, nonce);
         _;
+    }
+
+    function _notConfirmed(uint256 tokenId, uint256 nonce) internal view {
+        if (isConfirmed[nonce][tokenId]) revert IWallet.TransactionAlreadyConfirmed();
     }
 
     /**
@@ -197,5 +209,5 @@ abstract contract Wallet {
     }
 
     /// @dev Storage gap for future upgrades
-    uint256[50] private __gap;
+    uint256[50] private _gap;
 }
