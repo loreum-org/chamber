@@ -652,8 +652,8 @@ contract ChamberTest is Test {
         vm.startPrank(user1);
         chamber.approve(bob, amount);
         vm.expectRevert(IChamber.ExceedsDelegatedAmount.selector);
-        bool success = chamber.transfer(bob, amount);
-        assertTrue(success); // Should not reach here due to revert
+        // forge-lint: disable-next-line(erc20-unchecked-transfer)
+        chamber.transfer(bob, amount);
     }
 
     function test_Chamber_transferFrom() public {
@@ -674,8 +674,8 @@ contract ChamberTest is Test {
         vm.startPrank(user1);
         chamber.approve(user1, amount);
         vm.expectRevert(IChamber.ExceedsDelegatedAmount.selector);
-        bool success = chamber.transferFrom(user1, bob, amount);
-        assertTrue(success);
+        // forge-lint: disable-next-line(erc20-unchecked-transfer)
+        chamber.transferFrom(user1, bob, amount);
     }
 
     function addDirectors() internal {
@@ -1221,22 +1221,22 @@ contract ChamberTest is Test {
         deal(address(chamber), address(this), 1e18);
 
         vm.expectRevert(IChamber.TransferToZeroAddress.selector);
-        bool success = chamber.transfer(address(0), 1 ether);
-        assertTrue(success);
+        // forge-lint: disable-next-line(erc20-unchecked-transfer)
+        chamber.transfer(address(0), 1 ether);
     }
 
     function test_Chamber_Transfer_ZeroAmount_Reverts() public {
         deal(address(chamber), address(this), 1e18);
 
         vm.expectRevert(IChamber.ZeroAmount.selector);
-        bool success = chamber.transfer(user1, 0);
-        assertTrue(success);
+        // forge-lint: disable-next-line(erc20-unchecked-transfer)
+        chamber.transfer(user1, 0);
     }
 
     function test_Chamber_Transfer_InsufficientBalance_Reverts() public {
         vm.expectRevert(IChamber.InsufficientChamberBalance.selector);
-        bool success = chamber.transfer(user1, 1 ether);
-        assertTrue(success);
+        // forge-lint: disable-next-line(erc20-unchecked-transfer)
+        chamber.transfer(user1, 1 ether);
     }
 
     function test_Chamber_TransferFrom_ZeroAddress_Reverts() public {
@@ -1244,8 +1244,8 @@ contract ChamberTest is Test {
         chamber.approve(address(this), 1 ether);
 
         vm.expectRevert(IChamber.TransferToZeroAddress.selector);
-        bool success = chamber.transferFrom(address(this), address(0), 1 ether);
-        assertTrue(success);
+        // forge-lint: disable-next-line(erc20-unchecked-transfer)
+        chamber.transferFrom(address(this), address(0), 1 ether);
     }
 
     function test_Chamber_TransferFrom_ZeroAmount_Reverts() public {
@@ -1253,16 +1253,16 @@ contract ChamberTest is Test {
         chamber.approve(address(this), 1 ether);
 
         vm.expectRevert(IChamber.ZeroAmount.selector);
-        bool success = chamber.transferFrom(address(this), user1, 0);
-        assertTrue(success);
+        // forge-lint: disable-next-line(erc20-unchecked-transfer)
+        chamber.transferFrom(address(this), user1, 0);
     }
 
     function test_Chamber_TransferFrom_InsufficientBalance_Reverts() public {
         chamber.approve(address(this), 1 ether);
 
         vm.expectRevert(IChamber.InsufficientChamberBalance.selector);
-        bool success = chamber.transferFrom(address(this), user1, 1 ether);
-        assertTrue(success);
+        // forge-lint: disable-next-line(erc20-unchecked-transfer)
+        chamber.transferFrom(address(this), user1, 1 ether);
     }
 
     function test_Chamber_GetDirectors_BurnedNFT() public {

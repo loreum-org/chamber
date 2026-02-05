@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, ChevronRight, Layers, Shield, Sparkles, Cpu } from 'lucide-react';
+import { ArrowRight, ChevronRight, Layers, Shield, Cpu, TrendingUp, ShieldAlert, Search, Radio } from 'lucide-react';
 
 const FadeIn = ({ children, delay = 0, className = "" }: { children: React.ReactNode, delay?: number, className?: string }) => (
   <motion.div
@@ -40,9 +40,12 @@ function App() {
           <a href="#technology" className="hover:text-space-accent transition-colors">TECHNOLOGY</a>
           <a href="#governance" className="hover:text-space-accent transition-colors">GOVERNANCE</a>
         </div>
-        <button className="hidden md:flex items-center gap-2 border border-white/20 px-6 py-2 rounded-full hover:bg-white/10 transition-all text-sm tracking-wide">
+        <a 
+          href={import.meta.env.VITE_CHAMBER_APP_URL}
+          className="hidden md:flex items-center gap-2 border border-white/20 px-6 py-2 rounded-full hover:bg-white/10 transition-all text-sm tracking-wide"
+        >
           LAUNCH APP
-        </button>
+        </a>
       </nav>
 
       {/* Hero Section */}
@@ -96,20 +99,34 @@ function App() {
         </div>
       </section>
 
-      {/* Stats/Info Strip */}
+      {/* Built on Ethereum Strip */}
       <section className="relative z-10 border-y border-white/10 bg-space-800/50 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-6 py-12 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-          {[
-            { label: "Active Agents", value: "2,048" },
-            { label: "Treasury Value", value: "$420M+" },
-            { label: "Proposals Processed", value: "15K+" },
-            { label: "Block Time", value: "< 2s" }
-          ].map((stat, i) => (
-            <div key={i}>
-              <div className="text-3xl font-display mb-1">{stat.value}</div>
-              <div className="text-xs text-gray-500 tracking-widest uppercase">{stat.label}</div>
+        <div className="max-w-7xl mx-auto px-6 py-12 flex items-center justify-center">
+          <a 
+            href="https://ethereum.org" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex items-center gap-4 group opacity-70 hover:opacity-100 transition-opacity"
+          >
+            <div className="flex flex-col items-center">
+               <span className="text-sm font-light tracking-widest text-gray-400 mb-2">BUILT ON</span>
+               <div className="flex items-center gap-3">
+                 <svg 
+                   className="w-8 h-8 text-white group-hover:text-space-accent transition-colors" 
+                   viewBox="0 0 784.37 1277.39" 
+                   fill="currentColor"
+                 >
+                    <path d="M392.07 0L383.5 29.11V873.74L392.07 882.29L784.13 650.54L392.07 0Z" fillOpacity="0.6" />
+                    <path d="M392.07 0L0 650.54L392.07 882.29V481.55V0Z" />
+                    <path d="M392.07 956.52L385.15 964.96V1263.39L392.07 1277.38L784.37 724.89L392.07 956.52Z" fillOpacity="0.6" />
+                    <path d="M392.07 1277.38V956.52L0 724.89L392.07 1277.38Z" />
+                    <path d="M392.07 882.29L784.13 650.54L392.07 473.55V882.29Z" fillOpacity="0.2" />
+                    <path d="M0 650.54L392.07 882.29V473.55L0 650.54Z" fillOpacity="0.6" />
+                 </svg>
+                 <span className="text-3xl font-display tracking-widest">ETHEREUM</span>
+               </div>
             </div>
-          ))}
+          </a>
         </div>
       </section>
 
@@ -196,34 +213,85 @@ function App() {
                 <div className="w-32 h-32 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-full blur-xl animate-pulse" />
                 <div className="relative z-10 w-24 h-24 bg-space-900 border border-white/30 flex items-center justify-center rounded-lg rotate-45">
                    <div className="-rotate-45">
-                     <Sparkles className="w-10 h-10 text-space-accent" />
+                     <svg 
+                       viewBox="0 0 24 24" 
+                       fill="none" 
+                       stroke="currentColor" 
+                       strokeWidth="1.5" 
+                       strokeLinecap="round" 
+                       strokeLinejoin="round" 
+                       className="w-12 h-12 text-gray-500"
+                     >
+                       {/* Pyramid Structure */}
+                       <path d="M12 3L2 21h20L12 3z" />
+                       {/* Inner Chamber (Trapezoid Entrance) */}
+                       <path d="M10 13 L14 13 L15 19 L9 19 Z" />
+                     </svg>
                    </div>
                 </div>
               </div>
               
-              {/* Floating Elements */}
+              {/* Floating Elements - Fleet Agents */}
+              {/* Yield Miner */}
               <motion.div 
-                animate={{ y: [0, -20, 0] }}
+                animate={{ y: [0, -15, 0] }}
                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute top-0 right-10 bg-space-800 border border-white/10 p-4 rounded-lg backdrop-blur-md"
+                className="absolute top-0 right-0 bg-space-800 border border-white/10 p-3 rounded-lg backdrop-blur-md flex items-center gap-3"
               >
-                <div className="text-xs text-gray-500 mb-1">Status</div>
-                <div className="text-green-400 text-sm flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
-                  Operational
+                <div className="p-2 bg-blue-500/20 rounded-md">
+                  <TrendingUp className="w-4 h-4 text-blue-400" />
+                </div>
+                <div>
+                  <div className="text-xs text-gray-400">Yield Miner</div>
+                  <div className="text-white text-xs font-mono">+12.4% APY</div>
                 </div>
               </motion.div>
 
+              {/* Risk Agent */}
               <motion.div 
                 animate={{ y: [0, 20, 0] }}
                 transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                className="absolute bottom-10 left-0 bg-space-800 border border-white/10 p-4 rounded-lg backdrop-blur-md"
+                className="absolute bottom-10 left-0 bg-space-800 border border-white/10 p-3 rounded-lg backdrop-blur-md flex items-center gap-3"
               >
-                <div className="text-xs text-gray-500 mb-1">Transactions</div>
-                <div className="text-white text-sm font-mono">
-                  0x7f...3a2b
+                <div className="p-2 bg-red-500/20 rounded-md">
+                   <ShieldAlert className="w-4 h-4 text-red-400" />
+                </div>
+                <div>
+                  <div className="text-xs text-gray-400">Risk Agent</div>
+                  <div className="text-white text-xs font-mono">Auditing...</div>
                 </div>
               </motion.div>
+
+              {/* Research Agent */}
+              <motion.div 
+                animate={{ x: [0, 10, 0], y: [0, -10, 0] }}
+                transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+                className="absolute top-20 left-[-20px] bg-space-800 border border-white/10 p-3 rounded-lg backdrop-blur-md flex items-center gap-3"
+              >
+                <div className="p-2 bg-purple-500/20 rounded-md">
+                   <Search className="w-4 h-4 text-purple-400" />
+                </div>
+                <div>
+                  <div className="text-xs text-gray-400">Research Agent</div>
+                  <div className="text-white text-xs font-mono">Analyzing Proposals</div>
+                </div>
+              </motion.div>
+
+              {/* Media Agent */}
+              <motion.div 
+                animate={{ x: [0, -10, 0], y: [0, 10, 0] }}
+                transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 3 }}
+                className="absolute bottom-20 right-[-10px] bg-space-800 border border-white/10 p-3 rounded-lg backdrop-blur-md flex items-center gap-3"
+              >
+                <div className="p-2 bg-pink-500/20 rounded-md">
+                   <Radio className="w-4 h-4 text-pink-400" />
+                </div>
+                <div>
+                  <div className="text-xs text-gray-400">Media Agent</div>
+                  <div className="text-white text-xs font-mono">Broadcasting</div>
+                </div>
+              </motion.div>
+
             </motion.div>
           </div>
         </div>
