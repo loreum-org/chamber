@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { useParams, Link, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import Mermaid from '@/components/Mermaid'

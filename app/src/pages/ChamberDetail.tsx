@@ -244,6 +244,7 @@ export default function ChamberDetail() {
             members={members}
             totalDelegated={totalDelegated}
             userBalance={userBalance}
+            setActiveTab={setActiveTab}
           />
         )}
         
@@ -284,9 +285,10 @@ interface OverviewTabProps {
   members: ReturnType<typeof useBoardMembers>['members']
   totalDelegated: bigint
   userBalance: bigint | undefined
+  setActiveTab: (tab: Tab) => void
 }
 
-function OverviewTab({ chamberAddress, chamberInfo, members, totalDelegated, userBalance }: OverviewTabProps) {
+function OverviewTab({ chamberAddress, chamberInfo, members, totalDelegated, userBalance, setActiveTab }: OverviewTabProps) {
   const { chambers: relatedChambers, isLoading: isLoadingRelated } = useChambersByAsset(chamberInfo.assetToken as `0x${string}`)
   
   // Filter out current chamber from related chambers

@@ -459,8 +459,8 @@ export const chamberAbi = [
   { type: 'error', name: 'InvalidSignature', inputs: [] },
 ] as const
 
-// Registry ABI - Factory for deploying chambers
-export const registryAbi = [
+// ChamberRegistry ABI - Factory for deploying chambers
+export const chamberRegistryAbi = [
   {
     type: 'function',
     name: 'initialize',
@@ -482,6 +482,17 @@ export const registryAbi = [
       { name: 'symbol', type: 'string' },
     ],
     outputs: [{ name: 'chamber', type: 'address' }],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'createAgent',
+    inputs: [
+      { name: 'owner', type: 'address' },
+      { name: 'policy', type: 'address' },
+      { name: 'metadataURI', type: 'string' },
+    ],
+    outputs: [{ name: 'agent', type: 'address' }],
     stateMutability: 'nonpayable',
   },
   {
@@ -546,6 +557,15 @@ export const registryAbi = [
       { name: 'symbol', type: 'string', indexed: false },
       { name: 'erc20Token', type: 'address', indexed: false },
       { name: 'erc721Token', type: 'address', indexed: false },
+    ],
+  },
+  {
+    type: 'event',
+    name: 'AgentCreated',
+    inputs: [
+      { name: 'agent', type: 'address', indexed: true },
+      { name: 'owner', type: 'address', indexed: true },
+      { name: 'policy', type: 'address', indexed: false },
     ],
   },
 ] as const

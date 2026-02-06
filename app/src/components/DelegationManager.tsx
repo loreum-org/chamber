@@ -275,7 +275,7 @@ export default function DelegationManager({
 
             <button
               onClick={handleDelegate}
-              disabled={isDelegating || isDelegateConfirming || !delegateTokenId || !delegateAmount || (delegateTokenId && delegateAmount && !isDelegateValid && !isDelegateSimulating)}
+              disabled={isDelegating || isDelegateConfirming || !delegateTokenId || !delegateAmount || !!(delegateTokenId && delegateAmount && !isDelegateValid && !isDelegateSimulating)}
               className="btn btn-primary w-full"
             >
               {isDelegating || isDelegateConfirming ? (
@@ -373,7 +373,7 @@ export default function DelegationManager({
 
             <button
               onClick={handleUndelegate}
-              disabled={isUndelegating || isUndelegateConfirming || !undelegateTokenId || !undelegateAmount || (undelegateTokenId && undelegateAmount && !isUndelegateValid && !isUndelegateSimulating)}
+              disabled={isUndelegating || isUndelegateConfirming || !undelegateTokenId || !undelegateAmount || !!(undelegateTokenId && undelegateAmount && !isUndelegateValid && !isUndelegateSimulating)}
               className="btn btn-secondary w-full border-red-500/30 hover:border-red-500/50 hover:text-red-400"
             >
               {isUndelegating || isUndelegateConfirming ? (

@@ -10,12 +10,14 @@ import {ProxyAdmin} from "lib/openzeppelin-contracts/contracts/proxy/transparent
 import {IChamber} from "./interfaces/IChamber.sol";
 import {Agent} from "./Agent.sol";
 
+import {AgentIdentityRegistry} from "./AgentIdentityRegistry.sol";
+
 /**
- * @title Registry
+ * @title ChamberRegistry
  * @notice Central registry for deploying and managing Chamber instances and Agents
  * @dev Uses TransparentUpgradeableProxy for upgradeable Chamber deployments
  */
-contract Registry is AccessControl, Initializable {
+contract ChamberRegistry is AccessControl, Initializable {
     /// @notice Role for managing the registry configuration
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
@@ -24,6 +26,9 @@ contract Registry is AccessControl, Initializable {
 
     /// @notice The implementation contract for Agent proxies
     address public agentImplementation;
+
+    /// @notice The Agent Identity Registry contract
+    address public agentIdentityRegistry;
 
     /// @notice Admin address for Chamber proxies (Registry admin)
     address public proxyAdmin;
@@ -85,14 +90,21 @@ contract Registry is AccessControl, Initializable {
      * @notice Initializes the Registry contract
      * @param _implementation The address of the Chamber implementation contract for proxies
      * @param _agentImplementation The address of the Agent implementation contract for proxies
+     * @param _agentIdentityRegistry The address of the AgentIdentityRegistry contract
      * @param admin The address that will have admin role and proxy admin
      */
-    function initialize(address _implementation, address _agentImplementation, address admin) external initializer {
+    function initialize(
+        address _implementation,
+        address _agentImplementation,
+        address _agentIdentityRegistry,
+        address admin
+    ) external initializer {
         if (admin == address(0) || _implementation == address(0) || _agentImplementation == address(0)) {
             revert ZeroAddress();
         }
         implementation = _implementation;
         agentImplementation = _agentImplementation;
+        agentIdentityRegistry = _agentIdentityRegistry;
         proxyAdmin = admin;
 
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
@@ -157,34 +169,44 @@ contract Registry is AccessControl, Initializable {
      * @notice Deploys a new Agent instance using TransparentUpgradeableProxy
      * @param owner The owner of the agent (can upgrade policies)
      * @param policy The initial policy contract for the agent
+     * @param metadataURI The metadata URI for the Agent's identity
      * @return agent The address of the newly deployed agent proxy
      */
-    function createAgent(address owner, address policy) external returns (address payable agent) {
+    function createAgent(address owner, address policy, string memory metadataURI)
+        external
+        returns (address payable agent)
+    {
         if (owner == address(0)) revert ZeroAddress();
         if (agentImplementation == address(0)) revert ZeroAddress();
 
         // Encode the initialization data
-        bytes memory initData = abi.encodeWithSelector(Agent.initialize.selector, owner, policy);
+        bytes memory initData = abi.encodeWithSelector(Agent.initialize.selector, owner, policy, address(this));
 
         // Deploy new TransparentUpgradeableProxy
         // We set the proxy admin to be the Registry (this contract) initially
-        // Ideally, Agents should be owned by their users, so we can transfer proxy admin rights if needed.
-        // For simplicity, we keep Registry as admin or transfer to owner?
-        // Let's keep Registry as admin for upgrades, or transfer to Owner.
-        // Standard practice for "Smart Accounts" is usually self-sovereign or factory-managed.
-        // We will make the Owner the admin of the proxy for full sovereignty.
-
         TransparentUpgradeableProxy proxy =
             new TransparentUpgradeableProxy(agentImplementation, address(this), initData);
 
         agent = payable(address(proxy));
 
         // Transfer ProxyAdmin ownership to the Agent Owner
-        // This allows the user to upgrade their Agent implementation if they want
         _transferAgentAdmin(agent, owner);
 
         _agents.push(agent);
         _isAgent[agent] = true;
+
+        // Register Agent Identity (ERC-8004)
+        if (agentIdentityRegistry != address(0)) {
+            AgentIdentityRegistry(agentIdentityRegistry)
+                .registerAgent(
+                    owner, // Identity NFT goes to the owner (or should it go to the Agent?)
+                    // ERC-8004 implies the Agent *is* the identity holder, or controls it.
+                    // Actually, Identity Registry maps Agent Address -> TokenID.
+                    // The OWNER of the NFT is usually the controller of the Agent.
+                    agent,
+                    metadataURI
+                );
+        }
 
         emit AgentCreated(agent, owner, policy);
     }
@@ -295,38 +317,15 @@ contract Registry is AccessControl, Initializable {
      * @param owner The new owner address
      */
     function _transferAgentAdmin(address agent, address owner) internal {
-        // Helper to get admin from storage slot or we assume standard TransparentProxy pattern
-        // We deployed it, so we are currently the owner of the ProxyAdmin contract created by the constructor
-        // Wait, TransparentUpgradeableProxy constructor creates a ProxyAdmin contract if admin is not a ProxyAdmin.
-        // We passed address(this) as admin.
-
-        // Actually, we need to access the ProxyAdmin contract.
-        // Standard OZ TransparentProxy:
-        // If we want to change admin, we need to call changeAdmin on the proxy? No, admin is in storage.
-        // If we want to change the OWNER of the ProxyAdmin contract, we need to find it.
-
-        // Simplified: The Registry IS the admin of the proxy initially.
-        // We want to change the admin of the proxy to a new ProxyAdmin owned by the user?
-        // OR just change the admin address to the user directly?
-
-        // Let's assume we want the User to control upgrades.
-        // We need to retrieve the ProxyAdmin address.
-        // Since we cannot easily get it from the proxy (admin slot is protected),
-        // we should have deployed a ProxyAdmin explicitly if we wanted to manage it.
-
-        // FIX: For Agent deployment, we will just deploy a ProxyAdmin explicitly to ensure control.
-        // Re-implementing createAgent logic slightly to use explicit ProxyAdmin management if needed.
-        // But for now, keeping it simple: Registry retains upgrade rights?
-        // No, "Sovereign Agents" implies user control.
-
-        // We will perform a standard admin transfer on the proxy itself.
-        // Since Registry is the admin, we can call ProxyAdmin functions.
-        // But TransparentProxy doesn't expose `changeAdmin` directly to the admin?
-        // Yes it does, via the ProxyAdmin interface.
-
-        // Ideally we fetch the ProxyAdmin address.
-        // For this MVP, let's keep Registry as the admin for simplicity of management
-        // (Managed Agents), or add a function to transfer it later.
+        // Get ProxyAdmin address from the Agent
+        // Note: Agent must implement getProxyAdmin()
+        try Agent(payable(agent)).getProxyAdmin() returns (address proxyAdminAddress) {
+            if (proxyAdminAddress != address(0)) {
+                ProxyAdmin(proxyAdminAddress).transferOwnership(owner);
+            }
+        } catch {
+            revert("Failed to get ProxyAdmin");
+        }
     }
 }
 

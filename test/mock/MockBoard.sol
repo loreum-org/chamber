@@ -4,7 +4,6 @@ pragma solidity ^0.8.24;
 import {Board} from "src/Board.sol";
 
 contract MockBoard is Board {
-
     function exposed_delegate(uint256 tokenId, uint256 amount) public {
         _delegate(tokenId, amount);
     }

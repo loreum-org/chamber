@@ -41,11 +41,24 @@ contract BoardFuzzTest is Test {
         for (uint256 i = 0; i < 10; i++) {
             tokenIds[i] = bound(tokenIds[i], 1, type(uint256).max);
             amounts[i] = bound(amounts[i], 1, MAX_AMOUNT);
-            
+
             // Ensure unique tokenIds
-            for (uint256 j = 0; j < i; j++) {
-                if (tokenIds[i] == tokenIds[j]) {
-                    tokenIds[i] = tokenIds[i] + 1;
+            bool unique = false;
+            while (!unique) {
+                unique = true;
+                if (tokenIds[i] == 0) {
+                    tokenIds[i] = 1;
+                    unique = false;
+                    continue;
+                }
+                for (uint256 j = 0; j < i; j++) {
+                    if (tokenIds[i] == tokenIds[j]) {
+                        unchecked {
+                            tokenIds[i]++;
+                        }
+                        unique = false;
+                        break;
+                    }
                 }
             }
         }
@@ -59,7 +72,7 @@ contract BoardFuzzTest is Test {
 
         // Verify sorted order (descending by amount)
         (uint256[] memory topTokenIds, uint256[] memory topAmounts) = board.getTop(10);
-        
+
         for (uint256 i = 0; i < topTokenIds.length - 1; i++) {
             assertGe(topAmounts[i], topAmounts[i + 1], "Board should be sorted in descending order");
         }
@@ -105,7 +118,7 @@ contract BoardFuzzTest is Test {
         board.exposed_undelegate(tokenId, undelegateAmount);
 
         uint256 afterAmount = board.getNode(tokenId).amount;
-        
+
         if (afterAmount == 0) {
             // Node should be removed if amount becomes zero
             assertEq(board.getSize(), initialSize - 1);
@@ -118,12 +131,22 @@ contract BoardFuzzTest is Test {
     }
 
     /// @notice Fuzz test for reposition after amount change
-    function testFuzz_Reposition(uint256 tokenId1, uint256 tokenId2, uint256 amount1, uint256 amount2, uint256 additionalAmount) public {
+    function testFuzz_Reposition(
+        uint256 tokenId1,
+        uint256 tokenId2,
+        uint256 amount1,
+        uint256 amount2,
+        uint256 additionalAmount
+    ) public {
         // Bound inputs
         tokenId1 = bound(tokenId1, 1, type(uint256).max);
         tokenId2 = bound(tokenId2, 1, type(uint256).max);
-        if (tokenId1 == tokenId2) tokenId2 = tokenId1 + 1;
-        
+        if (tokenId1 == tokenId2) {
+            unchecked {
+                tokenId2 = tokenId1 + 1;
+            }
+        }
+
         amount1 = bound(amount1, 1, MAX_AMOUNT / 2);
         amount2 = bound(amount2, 1, MAX_AMOUNT / 2);
         additionalAmount = bound(additionalAmount, 1, MAX_AMOUNT / 2);
@@ -134,13 +157,13 @@ contract BoardFuzzTest is Test {
 
         // Determine initial order
         uint256 initialHead = board.getHead();
-        
+
         // Add amount to tokenId1 that might change order
         board.exposed_delegate(tokenId1, additionalAmount);
 
         // Verify board is still sorted
         (uint256[] memory topTokenIds, uint256[] memory topAmounts) = board.getTop(2);
-        
+
         if (topTokenIds.length >= 2) {
             assertGe(topAmounts[0], topAmounts[1], "Board should remain sorted after reposition");
         }
@@ -188,8 +211,10 @@ contract BoardFuzzTest is Test {
         assertEq(amounts.length, expectedCount);
 
         // Verify sorted order
-        for (uint256 i = 0; i < tokenIds.length - 1; i++) {
-            assertGe(amounts[i], amounts[i + 1], "Results should be sorted");
+        if (tokenIds.length > 1) {
+            for (uint256 i = 0; i < tokenIds.length - 1; i++) {
+                assertGe(amounts[i], amounts[i + 1], "Results should be sorted");
+            }
         }
     }
 
@@ -232,8 +257,9 @@ contract BoardFuzzTest is Test {
         // Bound seats to valid range
         seats = bound(seats, 1, 20);
 
-        board.setSeats(0, seats);
-        uint256 quorum = board.getQuorum();
+        MockBoard newBoard = new MockBoard();
+        newBoard.setSeats(0, seats);
+        uint256 quorum = newBoard.getQuorum();
 
         // Quorum should be 1 + (seats * 51) / 100
         uint256 expectedQuorum = 1 + (seats * 51) / 100;
@@ -246,11 +272,24 @@ contract BoardFuzzTest is Test {
         for (uint256 i = 0; i < 20; i++) {
             tokenIds[i] = bound(tokenIds[i], 1, type(uint256).max);
             amounts[i] = bound(amounts[i], 1, MAX_AMOUNT);
-            
+
             // Ensure unique tokenIds
-            for (uint256 j = 0; j < i; j++) {
-                if (tokenIds[i] == tokenIds[j]) {
-                    tokenIds[i] = tokenIds[i] + 1;
+            bool unique = false;
+            while (!unique) {
+                unique = true;
+                if (tokenIds[i] == 0) {
+                    tokenIds[i] = 1;
+                    unique = false;
+                    continue;
+                }
+                for (uint256 j = 0; j < i; j++) {
+                    if (tokenIds[i] == tokenIds[j]) {
+                        unchecked {
+                            tokenIds[i]++;
+                        }
+                        unique = false;
+                        break;
+                    }
                 }
             }
         }
@@ -272,11 +311,24 @@ contract BoardFuzzTest is Test {
         for (uint256 i = 0; i < 10; i++) {
             tokenIds[i] = bound(tokenIds[i], 1, type(uint256).max);
             amounts[i] = bound(amounts[i], 1, MAX_AMOUNT);
-            
+
             // Ensure unique tokenIds
-            for (uint256 j = 0; j < i; j++) {
-                if (tokenIds[i] == tokenIds[j]) {
-                    tokenIds[i] = tokenIds[i] + 1;
+            bool unique = false;
+            while (!unique) {
+                unique = true;
+                if (tokenIds[i] == 0) {
+                    tokenIds[i] = 1;
+                    unique = false;
+                    continue;
+                }
+                for (uint256 j = 0; j < i; j++) {
+                    if (tokenIds[i] == tokenIds[j]) {
+                        unchecked {
+                            tokenIds[i]++;
+                        }
+                        unique = false;
+                        break;
+                    }
                 }
             }
         }

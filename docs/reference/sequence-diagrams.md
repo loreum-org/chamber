@@ -237,33 +237,33 @@ This diagram shows how a new Chamber is deployed through the Registry.
 ```mermaid
 sequenceDiagram
     participant User
-    participant Registry
+    participant ChamberRegistry
     participant Clones
     participant ChamberImpl
     participant ChamberProxy
 
     Note over User,ChamberProxy: Chamber Deployment Flow
 
-    User->>Registry: createChamber(erc20Token, erc721Token, seats, name, symbol)
+    User->>ChamberRegistry: createChamber(erc20Token, erc721Token, seats, name, symbol)
     
-    Registry->>Registry: Validate inputs (tokens != 0, seats 1-20)
+    ChamberRegistry->>ChamberRegistry: Validate inputs (tokens != 0, seats 1-20)
     
-    Registry->>Clones: clone(implementation)
-    Clones-->>Registry: chamberProxy (minimal proxy address)
+    ChamberRegistry->>Clones: clone(implementation)
+    Clones-->>ChamberRegistry: chamberProxy (minimal proxy address)
     
-    Registry->>ChamberProxy: initialize(erc20Token, erc721Token, seats, name, symbol)
+    ChamberRegistry->>ChamberProxy: initialize(erc20Token, erc721Token, seats, name, symbol)
     
     ChamberProxy->>ChamberImpl: delegatecall initialize(...)
     ChamberImpl->>ChamberProxy: Initialize storage
     Note over ChamberProxy: Set ERC4626, Board, Wallet state
     
-    ChamberProxy-->>Registry: Initialization complete
+    ChamberProxy-->>ChamberRegistry: Initialization complete
     
-    Registry->>Registry: _chambers.push(chamber)
-    Registry->>Registry: _isChamber[chamber] = true
+    ChamberRegistry->>ChamberRegistry: _chambers.push(chamber)
+    ChamberRegistry->>ChamberRegistry: _isChamber[chamber] = true
     
-    Registry-->>User: emit ChamberCreated(...)
-    Registry-->>User: return chamber address
+    ChamberRegistry-->>User: emit ChamberCreated(...)
+    ChamberRegistry-->>User: return chamber address
 ```
 
 ---

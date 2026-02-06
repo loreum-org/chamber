@@ -214,6 +214,9 @@ interface IChamber is IERC4626, IBoard, IWallet {
     /// @notice Thrown when transaction is invalid
     error InvalidTransaction();
 
+    /// @notice Thrown when upgrade is unauthorized
+    error NotAuthorized();
+
     /// @notice Thrown when signature is invalid
     error InvalidSignature();
 }

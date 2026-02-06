@@ -2,7 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
-import {Registry} from "src/Registry.sol";
+import {ChamberRegistry} from "src/ChamberRegistry.sol";
 import {Chamber} from "src/Chamber.sol";
 import {IChamber} from "src/interfaces/IChamber.sol";
 import {MockERC20} from "test/mock/MockERC20.sol";
@@ -11,8 +11,8 @@ import {DeployRegistry} from "test/utils/DeployRegistry.sol";
 import {ProxyAdmin} from "lib/openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 import {Clones} from "lib/openzeppelin-contracts/contracts/proxy/Clones.sol";
 
-contract RegistryTest is Test {
-    Registry public registry;
+contract ChamberRegistryTest is Test {
+    ChamberRegistry public registry;
     Chamber public implementation;
     MockERC20 public token;
     MockERC721 public nft;
@@ -37,20 +37,20 @@ contract RegistryTest is Test {
 
     function test_Registry_Initialize_ZeroAdmin_Reverts() public {
         // Use a minimal proxy to test initialization with zero admin
-        address payable proxy = payable(Clones.clone(address(new Registry())));
-        Registry proxyRegistry = Registry(proxy);
+        address payable proxy = payable(Clones.clone(address(new ChamberRegistry())));
+        ChamberRegistry proxyRegistry = ChamberRegistry(proxy);
 
-        vm.expectRevert(Registry.ZeroAddress.selector);
-        proxyRegistry.initialize(address(implementation), address(0), address(0));
+        vm.expectRevert(ChamberRegistry.ZeroAddress.selector);
+        proxyRegistry.initialize(address(implementation), address(0), address(0), address(0));
     }
 
     function test_Registry_Initialize_ZeroImplementation_Reverts() public {
         // Use a minimal proxy to test initialization with zero implementation
-        address payable proxy = payable(Clones.clone(address(new Registry())));
-        Registry proxyRegistry = Registry(proxy);
+        address payable proxy = payable(Clones.clone(address(new ChamberRegistry())));
+        ChamberRegistry proxyRegistry = ChamberRegistry(proxy);
 
-        vm.expectRevert(Registry.ZeroAddress.selector);
-        proxyRegistry.initialize(address(0), address(0), admin);
+        vm.expectRevert(ChamberRegistry.ZeroAddress.selector);
+        proxyRegistry.initialize(address(0), address(0), address(0), admin);
     }
 
     function test_Registry_CreateChamber() public {
@@ -65,22 +65,22 @@ contract RegistryTest is Test {
     }
 
     function test_Registry_CreateChamber_ZeroERC20_Reverts() public {
-        vm.expectRevert(Registry.ZeroAddress.selector);
+        vm.expectRevert(ChamberRegistry.ZeroAddress.selector);
         registry.createChamber(address(0), address(nft), 5, "Chamber Token", "CHMB");
     }
 
     function test_Registry_CreateChamber_ZeroERC721_Reverts() public {
-        vm.expectRevert(Registry.ZeroAddress.selector);
+        vm.expectRevert(ChamberRegistry.ZeroAddress.selector);
         registry.createChamber(address(token), address(0), 5, "Chamber Token", "CHMB");
     }
 
     function test_Registry_CreateChamber_ZeroSeats_Reverts() public {
-        vm.expectRevert(Registry.InvalidSeats.selector);
+        vm.expectRevert(ChamberRegistry.InvalidSeats.selector);
         registry.createChamber(address(token), address(nft), 0, "Chamber Token", "CHMB");
     }
 
     function test_Registry_CreateChamber_TooManySeats_Reverts() public {
-        vm.expectRevert(Registry.InvalidSeats.selector);
+        vm.expectRevert(ChamberRegistry.InvalidSeats.selector);
         registry.createChamber(address(token), address(nft), 21, "Chamber Token", "CHMB");
     }
 

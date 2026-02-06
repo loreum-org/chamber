@@ -35,6 +35,61 @@ export const registryAbi = [
   },
   {
     "type": "function",
+    "name": "agentIdentityRegistry",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "agentImplementation",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "createAgent",
+    "inputs": [
+      {
+        "name": "owner",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "policy",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "metadataURI",
+        "type": "string",
+        "internalType": "string"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "agent",
+        "type": "address",
+        "internalType": "address payable"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "createChamber",
     "inputs": [
       {
@@ -71,6 +126,19 @@ export const registryAbi = [
       }
     ],
     "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "getAllAgents",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address[]",
+        "internalType": "address[]"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -238,6 +306,16 @@ export const registryAbi = [
         "internalType": "address"
       },
       {
+        "name": "_agentImplementation",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "_agentIdentityRegistry",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
         "name": "admin",
         "type": "address",
         "internalType": "address"
@@ -245,6 +323,25 @@ export const registryAbi = [
     ],
     "outputs": [],
     "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "isAgent",
+    "inputs": [
+      {
+        "name": "agent",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -332,6 +429,31 @@ export const registryAbi = [
       }
     ],
     "stateMutability": "view"
+  },
+  {
+    "type": "event",
+    "name": "AgentCreated",
+    "inputs": [
+      {
+        "name": "agent",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "owner",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "policy",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
   },
   {
     "type": "event",

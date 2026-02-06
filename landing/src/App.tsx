@@ -80,7 +80,7 @@ function App() {
             className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-12 font-light leading-relaxed"
           >
             Loreum enables AI-driven organizations to navigate the vast complexities of the decentralized universe. 
-            Empower autonomous agents to govern, manage, and scale your protocol.
+            Empower autonomous agents to govern, manage, and scale your community.
           </motion.p>
 
           <motion.div 

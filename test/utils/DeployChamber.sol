@@ -2,7 +2,9 @@
 pragma solidity ^0.8.30;
 
 import {Chamber} from "src/Chamber.sol";
-import {TransparentUpgradeableProxy} from "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {
+    TransparentUpgradeableProxy
+} from "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 library DeployChamber {
     function deploy(
@@ -15,14 +17,14 @@ library DeployChamber {
     ) internal returns (Chamber) {
         // Deploy implementation
         Chamber implementation = new Chamber();
-        
+
         // Deploy proxy
         TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
             address(implementation),
             address(admin),
             abi.encodeWithSelector(Chamber.initialize.selector, erc20Token, erc721Token, seats, name, symbol)
         );
-        
+
         return Chamber(payable(address(proxy)));
     }
-} 
+}

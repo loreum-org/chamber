@@ -1,5 +1,5 @@
 import { useReadContract, useWriteContract, useWaitForTransactionReceipt, useChainId } from 'wagmi'
-import { registryAbi } from '@/contracts/abis'
+import { chamberRegistryAbi } from '@/contracts/abis'
 import { getContractAddresses, hasValidAddresses } from '@/lib/wagmi'
 
 export function useRegistryAddress() {
@@ -24,7 +24,7 @@ export function useAllChambers() {
   
   const { data, isLoading, error, refetch } = useReadContract({
     address: isValidRegistry ? registryAddress : undefined,
-    abi: registryAbi,
+    abi: chamberRegistryAbi,
     functionName: 'getAllChambers',
     query: { 
       enabled: !!isValidRegistry,
@@ -69,7 +69,7 @@ export function useChamberCount() {
   
   const { data, refetch, isLoading, error } = useReadContract({
     address: isValidRegistry ? registryAddress : undefined,
-    abi: registryAbi,
+    abi: chamberRegistryAbi,
     functionName: 'getChamberCount',
     query: { 
       enabled: !!isValidRegistry,
@@ -100,7 +100,7 @@ export function useIsChamber(address: `0x${string}` | undefined) {
   
   const { data } = useReadContract({
     address: registryAddress,
-    abi: registryAbi,
+    abi: chamberRegistryAbi,
     functionName: 'isChamber',
     args: address ? [address] : undefined,
     query: { enabled: !!address && registryAddress !== '0x0000000000000000000000000000000000000000' },
@@ -114,7 +114,7 @@ export function useChambersByAsset(asset: `0x${string}` | undefined) {
   
   const { data, isLoading, error, refetch } = useReadContract({
     address: registryAddress,
-    abi: registryAbi,
+    abi: chamberRegistryAbi,
     functionName: 'getChambersByAsset',
     args: asset ? [asset] : undefined,
     query: { enabled: !!asset && registryAddress !== '0x0000000000000000000000000000000000000000' },
@@ -133,7 +133,7 @@ export function useAssets() {
   
   const { data, isLoading, error, refetch } = useReadContract({
     address: registryAddress,
-    abi: registryAbi,
+    abi: chamberRegistryAbi,
     functionName: 'getAssets',
     query: { enabled: registryAddress !== '0x0000000000000000000000000000000000000000' },
   })
@@ -160,7 +160,7 @@ export function useCreateChamber() {
   ) => {
     writeContract({
       address: registryAddress,
-      abi: registryAbi,
+      abi: chamberRegistryAbi,
       functionName: 'createChamber',
       args: [erc20Token, erc721Token, BigInt(seats), name, symbol],
     })

@@ -176,7 +176,12 @@ abstract contract Board {
      * @param amount The delegation amount for the node
      */
     function _insert(uint256 tokenId, uint256 amount) internal {
-        if (size >= MAX_NODES) revert IBoard.MaxNodesReached();
+        if (size >= MAX_NODES) {
+            // If board is full, only insert if new amount > tail amount
+            if (amount <= nodes[tail].amount) revert IBoard.MaxNodesReached();
+            // Remove tail to make space
+            _remove(tail);
+        }
 
         if (head == 0) {
             _initializeFirstNode(tokenId, amount);

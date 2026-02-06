@@ -1,5 +1,7 @@
 export { default as Dashboard } from './Dashboard'
 export { default as DeployChamber } from './DeployChamber'
+export { default as DeployAgent } from './DeployAgent'
+export { default as AgentProfile } from './AgentProfile'
 export { default as ChamberDetail } from './ChamberDetail'
 export { default as TransactionQueue } from './TransactionQueue'
 export { default as Docs } from './Docs'

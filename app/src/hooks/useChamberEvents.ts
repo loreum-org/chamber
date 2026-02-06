@@ -1,8 +1,6 @@
-import { useEffect } from 'react'
 import { useWatchContractEvent, usePublicClient } from 'wagmi'
 import { useQueryClient } from '@tanstack/react-query'
 import { chamberAbi } from '@/contracts/abis'
-import { Log } from 'viem'
 
 type RefetchCallback = () => void
 

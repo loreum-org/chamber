@@ -14,14 +14,20 @@ contract WalletFuzzTest is Test {
         wallet = new MockWallet();
     }
 
+    address constant CONSOLE_ADDRESS = 0x000000000000000000636F6e736F6c652e6c6f67;
+
     /// @notice Fuzz test for submitting transactions with random data
     function testFuzz_SubmitTransaction(uint256 tokenId, address target, uint256 value, bytes memory data) public {
         // Bound inputs
         tokenId = bound(tokenId, 1, type(uint256).max);
         value = bound(value, 0, 100 ether);
-        // Don't allow zero address or self
-        if (target == address(0) || target == address(wallet)) {
-            target = address(0x3);
+
+        // Don't allow zero address, self, console, precompiles, or contracts
+        if (
+            target == address(0) || target == address(wallet) || uint160(target) < 0x10 || target.code.length > 0
+                || target == CONSOLE_ADDRESS
+        ) {
+            target = address(0x100);
         }
 
         // Fund wallet if value > 0
@@ -34,10 +40,10 @@ contract WalletFuzzTest is Test {
 
         // Verify transaction was submitted
         assertEq(wallet.getTransactionCount(), initialCount + 1);
-        
-        (bool executed, uint8 confirmations, address trxTarget, uint256 trxValue, bytes memory trxData) = 
+
+        (bool executed, uint8 confirmations, address trxTarget, uint256 trxValue, bytes memory trxData) =
             wallet.getTransaction(initialCount);
-        
+
         assertEq(executed, false);
         assertEq(confirmations, 1); // Auto-confirmed by submitter
         assertEq(trxTarget, target);
@@ -50,9 +56,13 @@ contract WalletFuzzTest is Test {
         // Bound inputs
         tokenId1 = bound(tokenId1, 1, type(uint256).max);
         tokenId2 = bound(tokenId2, 1, type(uint256).max);
-        if (tokenId1 == tokenId2) tokenId2 = tokenId1 + 1;
+        if (tokenId1 == tokenId2) {
+            unchecked {
+                tokenId2 = tokenId1 + 1;
+            }
+        }
         value = bound(value, 0, 100 ether);
-        if (target == address(0) || target == address(wallet)) {
+        if (target == address(0) || target == address(wallet) || target == CONSOLE_ADDRESS) {
             target = address(0x3);
         }
 
@@ -79,7 +89,7 @@ contract WalletFuzzTest is Test {
         // Bound inputs
         tokenId = bound(tokenId, 1, type(uint256).max);
         value = bound(value, 0, 100 ether);
-        if (target == address(0) || target == address(wallet)) {
+        if (target == address(0) || target == address(wallet) || target == CONSOLE_ADDRESS) {
             target = address(0x3);
         }
 
@@ -105,8 +115,15 @@ contract WalletFuzzTest is Test {
         // Bound inputs
         tokenId = bound(tokenId, 1, type(uint256).max);
         value = bound(value, 1, 100 ether); // Must have value for execution test
-        if (target == address(0) || target == address(wallet)) {
-            target = address(0x3);
+
+        // Use a payable address that can receive ETH (exclude precompiles, contracts, and special addresses)
+        // Precompiles are addresses 0x1-0x9, so we exclude addresses < 0x10
+        if (
+            target == address(0) || target == address(wallet) || uint160(target) < 0x10 || target.code.length > 0
+                || target == CONSOLE_ADDRESS
+        ) {
+            // forge-lint: disable-next-line(unsafe-typecast)
+            target = payable(address(0x100)); // Use address >= 0x100 to avoid precompiles
         }
 
         // Fund wallet
@@ -128,12 +145,19 @@ contract WalletFuzzTest is Test {
     }
 
     /// @notice Fuzz test for multiple transactions
-    function testFuzz_MultipleTransactions(uint256[5] memory tokenIds, address[5] memory targets, uint256[5] memory values) public {
+    function testFuzz_MultipleTransactions(
+        uint256[5] memory tokenIds,
+        address[5] memory targets,
+        uint256[5] memory values
+    ) public {
         // Bound inputs
         for (uint256 i = 0; i < 5; i++) {
             tokenIds[i] = bound(tokenIds[i], 1, type(uint256).max);
             values[i] = bound(values[i], 0, 20 ether);
-            if (targets[i] == address(0) || targets[i] == address(wallet)) {
+            if (
+                targets[i] == address(0) || targets[i] == address(wallet) || uint160(targets[i]) < 0x10
+                    || targets[i].code.length > 0 || targets[i] == CONSOLE_ADDRESS
+            ) {
                 targets[i] = address(uint160(i + 100));
             }
         }
@@ -156,9 +180,8 @@ contract WalletFuzzTest is Test {
 
         // Verify each transaction
         for (uint256 i = 0; i < 5; i++) {
-            (bool executed, uint8 confirmations, address trxTarget, uint256 trxValue,) = 
-                wallet.getTransaction(i);
-            
+            (bool executed, uint8 confirmations, address trxTarget, uint256 trxValue,) = wallet.getTransaction(i);
+
             assertEq(executed, false);
             assertEq(confirmations, 1);
             assertEq(trxTarget, targets[i]);
@@ -192,7 +215,7 @@ contract WalletFuzzTest is Test {
     /// @notice Fuzz test for already confirmed transaction (should revert)
     function testFuzz_ConfirmAlreadyConfirmed(uint256 tokenId, address target) public {
         tokenId = bound(tokenId, 1, type(uint256).max);
-        if (target == address(0) || target == address(wallet)) {
+        if (target == address(0) || target == address(wallet) || target == CONSOLE_ADDRESS) {
             target = address(0x3);
         }
 
@@ -217,8 +240,15 @@ contract WalletFuzzTest is Test {
     function testFuzz_ExecuteAlreadyExecuted(uint256 tokenId, address target, uint256 value) public {
         tokenId = bound(tokenId, 1, type(uint256).max);
         value = bound(value, 1, 100 ether);
-        if (target == address(0) || target == address(wallet)) {
-            target = address(0x3);
+
+        // Use a payable address that can receive ETH (exclude precompiles, contracts, and special addresses)
+        // Precompiles are addresses 0x1-0x9, so we exclude addresses < 0x10
+        if (
+            target == address(0) || target == address(wallet) || uint160(target) < 0x10 || target.code.length > 0
+                || target == CONSOLE_ADDRESS
+        ) {
+            // forge-lint: disable-next-line(unsafe-typecast)
+            target = payable(address(0x100)); // Use address >= 0x100 to avoid precompiles
         }
 
         deal(address(wallet), value);
@@ -238,8 +268,12 @@ contract WalletFuzzTest is Test {
     function testFuzz_RevokeNonConfirmed(uint256 tokenId1, uint256 tokenId2, address target) public {
         tokenId1 = bound(tokenId1, 1, type(uint256).max);
         tokenId2 = bound(tokenId2, 1, type(uint256).max);
-        if (tokenId1 == tokenId2) tokenId2 = tokenId1 + 1;
-        if (target == address(0) || target == address(wallet)) {
+        if (tokenId1 == tokenId2) {
+            unchecked {
+                tokenId2 = tokenId1 + 1;
+            }
+        }
+        if (target == address(0) || target == address(wallet) || target == CONSOLE_ADDRESS) {
             target = address(0x3);
         }
 
@@ -279,6 +313,7 @@ contract WalletFuzzTest is Test {
 
         // Submit and execute transactions
         for (uint256 i = 0; i < 3; i++) {
+            // Use address >= 0x100 to avoid precompiles and ensure EOA behavior
             address target = address(uint160(i + 100));
             wallet.submitTransaction(tokenIds[i], target, values[i], "");
             wallet.executeTransaction(tokenIds[i], i);
@@ -296,13 +331,26 @@ contract WalletFuzzTest is Test {
         for (uint256 i = 0; i < 5; i++) {
             tokenIds[i] = bound(tokenIds[i], 1, type(uint256).max);
             // Ensure unique tokenIds
-            for (uint256 j = 0; j < i; j++) {
-                if (tokenIds[i] == tokenIds[j]) {
-                    tokenIds[i] = tokenIds[i] + 1;
+            bool unique = false;
+            while (!unique) {
+                unique = true;
+                if (tokenIds[i] == 0) {
+                    tokenIds[i] = 1;
+                    unique = false;
+                    continue;
+                }
+                for (uint256 j = 0; j < i; j++) {
+                    if (tokenIds[i] == tokenIds[j]) {
+                        unchecked {
+                            tokenIds[i]++;
+                        }
+                        unique = false;
+                        break;
+                    }
                 }
             }
         }
-        if (target == address(0) || target == address(wallet)) {
+        if (target == address(0) || target == address(wallet) || target == CONSOLE_ADDRESS) {
             target = address(0x3);
         }
 

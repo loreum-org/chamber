@@ -10,10 +10,11 @@ names = false
 offline = false
 optimizer = true
 optimizer_runs = 200
+via_ir = true
 out = 'out'
 src = 'src'
 script = 'script'
-test = 'test/unit'
+test = 'test'
 
 # Allow scripts to write deployment addresses to the app directory
 fs_permissions = [{ access = "read-write", path = "./app" }]

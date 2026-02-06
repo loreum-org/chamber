@@ -30,14 +30,7 @@ contract ChamberFuzzTest is Test {
 
         address admin = address(0x9);
         seats = 5;
-        chamber = DeployChamber.deploy(
-            address(token),
-            address(nft),
-            seats,
-            name,
-            symbol,
-            admin
-        );
+        chamber = DeployChamber.deploy(address(token), address(nft), seats, name, symbol, admin);
     }
 
     /// @notice Fuzz test for delegate with random amounts
@@ -63,7 +56,12 @@ contract ChamberFuzzTest is Test {
     }
 
     /// @notice Fuzz test for undelegate with random amounts
-    function testFuzz_Undelegate(uint256 tokenId, uint256 depositAmount, uint256 delegateAmount, uint256 undelegateAmount) public {
+    function testFuzz_Undelegate(
+        uint256 tokenId,
+        uint256 depositAmount,
+        uint256 delegateAmount,
+        uint256 undelegateAmount
+    ) public {
         // Bound inputs
         tokenId = bound(tokenId, 1, type(uint256).max);
         depositAmount = bound(depositAmount, 1, MAX_AMOUNT);
@@ -95,20 +93,35 @@ contract ChamberFuzzTest is Test {
     }
 
     /// @notice Fuzz test for multiple delegations
-    function testFuzz_MultipleDelegations(uint256[5] memory tokenIds, uint256[5] memory amounts, uint256 totalDeposit) public {
+    function testFuzz_MultipleDelegations(uint256[5] memory tokenIds, uint256[5] memory amounts, uint256 totalDeposit)
+        public
+    {
         // Bound inputs
-        totalDeposit = bound(totalDeposit, 1, MAX_AMOUNT);
+        totalDeposit = bound(totalDeposit, 5, MAX_AMOUNT); // Min 5 to ensure non-zero division
         uint256 sum = 0;
-        
+
         for (uint256 i = 0; i < 5; i++) {
             tokenIds[i] = bound(tokenIds[i], 1, type(uint256).max);
             amounts[i] = bound(amounts[i], 1, totalDeposit / 5);
             sum += amounts[i];
-            
+
             // Ensure unique tokenIds
-            for (uint256 j = 0; j < i; j++) {
-                if (tokenIds[i] == tokenIds[j]) {
-                    tokenIds[i] = tokenIds[i] + 1;
+            bool unique = false;
+            while (!unique) {
+                unique = true;
+                if (tokenIds[i] == 0) {
+                    tokenIds[i] = 1;
+                    unique = false;
+                    continue;
+                }
+                for (uint256 j = 0; j < i; j++) {
+                    if (tokenIds[i] == tokenIds[j]) {
+                        unchecked {
+                            tokenIds[i]++;
+                        }
+                        unique = false;
+                        break;
+                    }
                 }
             }
         }
@@ -156,27 +169,29 @@ contract ChamberFuzzTest is Test {
 
         vm.startPrank(user1);
         token.approve(address(chamber), depositAmount);
-        
+
         uint256 beforeBalance = chamber.balanceOf(user1);
         chamber.deposit(depositAmount, user1);
         uint256 afterDepositBalance = chamber.balanceOf(user1);
-        
+
         assertEq(afterDepositBalance, beforeBalance + depositAmount);
 
         // Withdraw
         chamber.withdraw(withdrawAmount, user1, user1);
         uint256 afterWithdrawBalance = chamber.balanceOf(user1);
-        
+
         assertEq(afterWithdrawBalance, afterDepositBalance - withdrawAmount);
         vm.stopPrank();
     }
 
     /// @notice Fuzz test for transfer with delegation constraints
-    function testFuzz_TransferWithDelegation(uint256 depositAmount, uint256 delegateAmount, uint256 transferAmount) public {
+    function testFuzz_TransferWithDelegation(uint256 depositAmount, uint256 delegateAmount, uint256 transferAmount)
+        public
+    {
         // Bound inputs
-        depositAmount = bound(depositAmount, 1, MAX_AMOUNT);
-        delegateAmount = bound(delegateAmount, 1, depositAmount);
-        transferAmount = bound(transferAmount, 1, depositAmount - delegateAmount); // Can't transfer more than available
+        depositAmount = bound(depositAmount, 2, MAX_AMOUNT);
+        delegateAmount = bound(delegateAmount, 1, depositAmount - 1); // Ensure deposit > delegate
+        transferAmount = bound(transferAmount, 1, depositAmount - delegateAmount);
 
         uint256 tokenId = 1;
 
@@ -191,7 +206,7 @@ contract ChamberFuzzTest is Test {
         vm.stopPrank();
 
         uint256 availableBalance = chamber.balanceOf(user1) - delegateAmount;
-        
+
         if (transferAmount <= availableBalance) {
             // Should succeed
             vm.prank(user1);
@@ -233,26 +248,43 @@ contract ChamberFuzzTest is Test {
         assertEq(topAmounts.length, expectedCount);
 
         // Verify sorted order
-        for (uint256 i = 0; i < topTokenIds.length - 1; i++) {
-            assertGe(topAmounts[i], topAmounts[i + 1], "Results should be sorted");
+        if (topTokenIds.length > 1) {
+            for (uint256 i = 0; i < topTokenIds.length - 1; i++) {
+                assertGe(topAmounts[i], topAmounts[i + 1], "Results should be sorted");
+            }
         }
     }
 
     /// @notice Fuzz test for getDelegations
-    function testFuzz_GetDelegations(uint256[3] memory tokenIds, uint256[3] memory amounts, uint256 totalDeposit) public {
+    function testFuzz_GetDelegations(uint256[3] memory tokenIds, uint256[3] memory amounts, uint256 totalDeposit)
+        public
+    {
         // Bound inputs
-        totalDeposit = bound(totalDeposit, 1, MAX_AMOUNT);
+        totalDeposit = bound(totalDeposit, 3, MAX_AMOUNT); // Min 3
         uint256 sum = 0;
-        
+
         for (uint256 i = 0; i < 3; i++) {
             tokenIds[i] = bound(tokenIds[i], 1, type(uint256).max);
             amounts[i] = bound(amounts[i], 1, totalDeposit / 3);
             sum += amounts[i];
-            
+
             // Ensure unique tokenIds
-            for (uint256 j = 0; j < i; j++) {
-                if (tokenIds[i] == tokenIds[j]) {
-                    tokenIds[i] = tokenIds[i] + 1;
+            bool unique = false;
+            while (!unique) {
+                unique = true;
+                if (tokenIds[i] == 0) {
+                    tokenIds[i] = 1;
+                    unique = false;
+                    continue;
+                }
+                for (uint256 j = 0; j < i; j++) {
+                    if (tokenIds[i] == tokenIds[j]) {
+                        unchecked {
+                            tokenIds[i]++;
+                        }
+                        unique = false;
+                        break;
+                    }
                 }
             }
         }
@@ -308,7 +340,9 @@ contract ChamberFuzzTest is Test {
     }
 
     /// @notice Fuzz test for insufficient balance delegation
-    function testFuzz_DelegateInsufficientBalance(uint256 tokenId, uint256 depositAmount, uint256 delegateAmount) public {
+    function testFuzz_DelegateInsufficientBalance(uint256 tokenId, uint256 depositAmount, uint256 delegateAmount)
+        public
+    {
         tokenId = bound(tokenId, 1, type(uint256).max);
         depositAmount = bound(depositAmount, 1, MAX_AMOUNT);
         delegateAmount = bound(delegateAmount, depositAmount + 1, type(uint256).max);
@@ -327,9 +361,9 @@ contract ChamberFuzzTest is Test {
 
     /// @notice Invariant: Total delegations should never exceed user balance
     function testFuzz_Invariant_DelegationBalance(uint256 depositAmount, uint256[3] memory delegateAmounts) public {
-        depositAmount = bound(depositAmount, 1, MAX_AMOUNT);
+        depositAmount = bound(depositAmount, 3, MAX_AMOUNT); // Min 3
         uint256 sum = 0;
-        
+
         for (uint256 i = 0; i < 3; i++) {
             delegateAmounts[i] = bound(delegateAmounts[i], 1, depositAmount / 3);
             sum += delegateAmounts[i];
@@ -359,19 +393,34 @@ contract ChamberFuzzTest is Test {
     }
 
     /// @notice Invariant: Board size should match number of nodes with non-zero amounts
-    function testFuzz_Invariant_BoardSize(uint256[5] memory tokenIds, uint256[5] memory amounts, uint256 totalDeposit) public {
-        totalDeposit = bound(totalDeposit, 1, MAX_AMOUNT);
+    function testFuzz_Invariant_BoardSize(uint256[5] memory tokenIds, uint256[5] memory amounts, uint256 totalDeposit)
+        public
+    {
+        totalDeposit = bound(totalDeposit, 5, MAX_AMOUNT); // Min 5
         uint256 sum = 0;
-        
+
         for (uint256 i = 0; i < 5; i++) {
             tokenIds[i] = bound(tokenIds[i], 1, type(uint256).max);
             amounts[i] = bound(amounts[i], 1, totalDeposit / 5);
             sum += amounts[i];
-            
+
             // Ensure unique tokenIds
-            for (uint256 j = 0; j < i; j++) {
-                if (tokenIds[i] == tokenIds[j]) {
-                    tokenIds[i] = tokenIds[i] + 1;
+            bool unique = false;
+            while (!unique) {
+                unique = true;
+                if (tokenIds[i] == 0) {
+                    tokenIds[i] = 1;
+                    unique = false;
+                    continue;
+                }
+                for (uint256 j = 0; j < i; j++) {
+                    if (tokenIds[i] == tokenIds[j]) {
+                        unchecked {
+                            tokenIds[i]++;
+                        }
+                        unique = false;
+                        break;
+                    }
                 }
             }
         }

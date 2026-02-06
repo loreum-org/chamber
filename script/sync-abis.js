@@ -18,7 +18,7 @@ const rootDir = join(__dirname, '..');
 
 // Contracts to sync ABIs for
 const contracts = [
-  { name: 'Registry', path: 'src/Registry.sol' },
+  { name: 'ChamberRegistry', path: 'src/ChamberRegistry.sol' },
   { name: 'Chamber', path: 'src/Chamber.sol' },
   { name: 'MockERC20', path: 'test/mock/MockERC20.sol' },
   { name: 'MockERC721', path: 'test/mock/MockERC721.sol' },

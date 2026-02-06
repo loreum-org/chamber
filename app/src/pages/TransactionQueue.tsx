@@ -646,7 +646,7 @@ function NewTransactionForm({ chamberAddress, userTokenId, onSuccess }: NewTrans
       
       if (hasAllParams || parsedFunction.params.length === 0) {
         const encoded = encodeFunctionData({
-          abi,
+          abi: abi as any,
           functionName: parsedFunction.name,
           args,
         })

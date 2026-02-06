@@ -105,6 +105,11 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
         agentDelegation[msg.sender][tokenId] += amount;
         totalAgentDelegations[msg.sender] += amount;
 
+        // Check if total delegation exceeds balance
+        if (balanceOf(msg.sender) < totalAgentDelegations[msg.sender]) {
+            revert IChamber.InsufficientChamberBalance();
+        }
+
         // Update board state
         _delegate(tokenId, amount);
 
@@ -584,6 +589,7 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
      * @param data Optional initialization data for the new implementation
      */
     function upgradeImplementation(address newImplementation, bytes calldata data) external override {
+        if (msg.sender != address(this)) revert IChamber.NotAuthorized();
         // Only the ProxyAdmin owner (this Chamber) can call this
         address proxyAdminAddress = this.getProxyAdmin();
         if (proxyAdminAddress == address(0)) revert IChamber.ZeroAddress();

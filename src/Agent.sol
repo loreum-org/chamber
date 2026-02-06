@@ -2,6 +2,7 @@
 pragma solidity 0.8.30;
 
 import {IERC1271} from "lib/openzeppelin-contracts/contracts/interfaces/IERC1271.sol";
+import {ECDSA} from "lib/openzeppelin-contracts/contracts/utils/cryptography/ECDSA.sol";
 import {ERC165} from "lib/openzeppelin-contracts/contracts/utils/introspection/ERC165.sol";
 import {Initializable} from "lib/openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 import {
@@ -23,6 +24,11 @@ interface IAgentPolicy {
     function canApprove(address chamber, uint256 transactionId) external view returns (bool);
 }
 
+import {AgentIdentityRegistry} from "./AgentIdentityRegistry.sol";
+import {IChamberRegistry} from "./interfaces/IChamberRegistry.sol";
+
+import {StorageSlot} from "lib/openzeppelin-contracts/contracts/utils/StorageSlot.sol";
+
 /**
  * @title Agent
  * @notice A smart contract acting as a Director in a Chamber
@@ -34,6 +40,9 @@ contract Agent is ERC165, IERC1271, Initializable, ReentrancyGuardUpgradeable {
 
     /// @notice The active policy module
     IAgentPolicy public policy;
+
+    /// @notice The Registry address
+    address public registry;
 
     /// @notice Emitted when the policy is updated
     event PolicyUpdated(address indexed oldPolicy, address indexed newPolicy);
@@ -55,12 +64,25 @@ contract Agent is ERC165, IERC1271, Initializable, ReentrancyGuardUpgradeable {
      * @notice Initializes the Agent
      * @param _owner The owner of the agent
      * @param _policy The initial policy contract (can be address(0))
+     * @param _registry The address of the Registry contract
      */
-    function initialize(address _owner, address _policy) external initializer {
+    function initialize(address _owner, address _policy, address _registry) external initializer {
         if (_owner == address(0)) revert("Zero address owner");
         owner = _owner;
         policy = IAgentPolicy(_policy);
+        registry = _registry;
         __ReentrancyGuard_init();
+    }
+
+    /**
+     * @notice Returns the Agent Identity Token ID from the Registry
+     * @return uint256 The Identity Token ID (0 if not registered)
+     */
+    function getIdentityId() external view returns (uint256) {
+        if (registry == address(0)) return 0;
+        address identityRegistry = IChamberRegistry(registry).agentIdentityRegistry();
+        if (identityRegistry == address(0)) return 0;
+        return AgentIdentityRegistry(identityRegistry).agentToIdentityId(address(this));
     }
 
     /**
@@ -136,21 +158,29 @@ contract Agent is ERC165, IERC1271, Initializable, ReentrancyGuardUpgradeable {
     /**
      * @notice EIP-1271 Signature Validation
      * @dev Allows this contract to sign off-chain messages (e.g. Permit, Snapshot)
-     *      Currently validates if the OWNER signed it.
+     *      Also supports Chamber's custom authorization pattern (signature = encoded sender address)
+     * @param hash The hash of the data to be signed
+     * @param signature The signature byte array
+     * @return magicValue IERC1271.isValidSignature.selector if valid, else 0xffffffff
      */
-    function isValidSignature(
-        bytes32,
-        /* _hash */
-        bytes memory /* _signature */
-    )
-        external
-        pure
-        override
-        returns (bytes4)
-    {
-        // Simple implementation: Check if signature is from owner
-        // In a real Agent, this might check a session key or policy signature
-        return IERC1271.isValidSignature.selector; // TODO: Implement actual ecrecover logic for owner
+    function isValidSignature(bytes32 hash, bytes memory signature) external view override returns (bytes4) {
+        // 1. Chamber Mode: Authorization Check (signature is 32 bytes encoded address)
+        // This allows the Owner to act on behalf of the Agent in the Chamber
+        if (signature.length == 32) {
+            address authorizedSender = abi.decode(signature, (address));
+            if (authorizedSender == owner) {
+                return IERC1271.isValidSignature.selector;
+            }
+        }
+
+        // 2. Standard Mode: Cryptographic Signature Check
+        // Validates if the signature was signed by the Owner
+        (address signer, ECDSA.RecoverError err,) = ECDSA.tryRecover(hash, signature);
+        if (err == ECDSA.RecoverError.NoError && signer == owner) {
+            return IERC1271.isValidSignature.selector;
+        }
+
+        return 0xffffffff;
     }
 
     /**
@@ -179,4 +209,14 @@ contract Agent is ERC165, IERC1271, Initializable, ReentrancyGuardUpgradeable {
 
     /// @notice Receive ETH
     receive() external payable {}
+
+    /**
+     * @notice Returns the ProxyAdmin address for this Agent proxy
+     * @return The ProxyAdmin address stored in ERC1967 admin slot
+     */
+    function getProxyAdmin() external view returns (address) {
+        // ERC1967 admin slot: keccak256("eip1967.proxy.admin") - 1
+        bytes32 adminSlot = 0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
+        return StorageSlot.getAddressSlot(adminSlot).value;
+    }
 }

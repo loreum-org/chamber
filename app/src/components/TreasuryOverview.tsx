@@ -404,7 +404,7 @@ export default function TreasuryOverview({ chamberAddress, chamberInfo, userBala
             ) : (
               <button
                 onClick={handleDeposit}
-                disabled={isDepositing || isDepositConfirming || !depositAmount || (depositAmount && !isDepositValid && !isDepositSimulating)}
+                disabled={isDepositing || isDepositConfirming || !depositAmount || !!(depositAmount && !isDepositValid && !isDepositSimulating)}
                 className="btn btn-primary w-full"
               >
                 {isDepositing || isDepositConfirming ? (
@@ -482,7 +482,7 @@ export default function TreasuryOverview({ chamberAddress, chamberInfo, userBala
 
             <button
               onClick={handleWithdraw}
-              disabled={isWithdrawing || isWithdrawConfirming || !withdrawAmount || (withdrawAmount && !isWithdrawValid && !isWithdrawSimulating)}
+              disabled={isWithdrawing || isWithdrawConfirming || !withdrawAmount || !!(withdrawAmount && !isWithdrawValid && !isWithdrawSimulating)}
               className="btn btn-secondary w-full border-red-500/30 hover:border-red-500/50 hover:text-red-400"
             >
               {isWithdrawing || isWithdrawConfirming ? (

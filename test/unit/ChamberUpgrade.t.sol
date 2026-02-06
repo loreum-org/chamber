@@ -2,7 +2,7 @@
 pragma solidity ^0.8.30;
 
 import {Test} from "forge-std/Test.sol";
-import {Registry} from "src/Registry.sol";
+import {ChamberRegistry} from "src/ChamberRegistry.sol";
 import {Chamber} from "src/Chamber.sol";
 import {IChamber} from "src/interfaces/IChamber.sol";
 import {MockERC20} from "test/mock/MockERC20.sol";
@@ -11,7 +11,7 @@ import {DeployRegistry} from "test/utils/DeployRegistry.sol";
 import {ProxyAdmin} from "lib/openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 
 contract ChamberUpgradeTest is Test {
-    Registry public registry;
+    ChamberRegistry public registry;
     Chamber public implementation;
     Chamber public newImplementation;
     MockERC20 public token;
@@ -235,10 +235,8 @@ contract ChamberUpgradeTest is Test {
 
     function test_Chamber_UpgradeDirectly_Unauthorized_Reverts() public {
         // Try to upgrade directly without going through transaction system
-        // This should work since the chamber owns the ProxyAdmin, but we verify
-        // that the upgrade actually happens (it doesn't revert)
-        // Note: In production, this function should only be callable via executeTransaction
-        // but currently it's callable by anyone. This test verifies current behavior.
+        // This MUST revert because upgradeImplementation checks for msg.sender == address(this)
+
         address currentImpl = address(
             uint160(
                 uint256(
@@ -250,11 +248,11 @@ contract ChamberUpgradeTest is Test {
             )
         );
 
-        // Call directly - this will succeed because chamber owns ProxyAdmin
-        // This exposes a potential security issue: upgradeImplementation should check msg.sender
+        // Call directly - this will revert
+        vm.expectRevert(IChamber.NotAuthorized.selector);
         chamber.upgradeImplementation(address(newImplementation), "");
 
-        // Verify upgrade happened
+        // Verify upgrade did NOT happen
         address newImpl = address(
             uint160(
                 uint256(
@@ -265,8 +263,7 @@ contract ChamberUpgradeTest is Test {
                 )
             )
         );
-        assertEq(newImpl, address(newImplementation));
-        assertNotEq(newImpl, currentImpl);
+        assertEq(newImpl, currentImpl, "Implementation should remain unchanged");
     }
 
     function test_Chamber_UpgradePreservesState() public {
