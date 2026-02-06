@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { ArrowRight, ChevronRight, Layers, Shield, Cpu, TrendingUp, ShieldAlert, Search, Radio } from 'lucide-react';
 
 const FadeIn = ({ children, delay = 0, className = "" }: { children: React.ReactNode, delay?: number, className?: string }) => (
@@ -92,9 +93,12 @@ function App() {
               START MISSION
               <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </button>
-            <button className="w-full sm:w-auto px-8 py-4 border border-white/20 hover:border-white hover:bg-white/5 transition-all rounded-none text-sm tracking-widest font-bold">
+            <Link 
+              to="/whitepaper"
+              className="w-full sm:w-auto px-8 py-4 border border-white/20 hover:border-white hover:bg-white/5 transition-all rounded-none text-sm tracking-widest font-bold text-center inline-block"
+            >
               READ WHITEPAPER
-            </button>
+            </Link>
           </motion.div>
         </div>
       </section>
@@ -283,12 +287,12 @@ function App() {
             </FadeIn>
           </div>
           
-          <div className="flex-1 relative">
+          <div className="flex-1 relative w-full">
             <motion.div 
               initial={{ opacity: 0, x: 50 }}
               whileInView={{ opacity: 1, x: 0 }}
               transition={{ duration: 1 }}
-              className="relative aspect-square max-w-[500px] mx-auto"
+              className="relative aspect-square max-w-[500px] mx-auto mb-8 md:mb-0"
             >
               {/* Abstract Representation of AI/Core */}
               <div className="absolute inset-0 border border-white/20 rounded-full animate-[spin_10s_linear_infinite]" />
@@ -302,12 +306,12 @@ function App() {
                 </div>
               </div>
               
-              {/* Floating Elements - Fleet Agents */}
+              {/* Floating Elements - Fleet Agents (Desktop Only) */}
               {/* Yield Miner */}
               <motion.div 
                 animate={{ y: [0, -15, 0] }}
                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute top-0 right-0 bg-space-800 border border-white/10 p-3 rounded-lg backdrop-blur-md flex items-center gap-3"
+                className="hidden md:flex absolute top-0 right-0 bg-space-800 border border-white/10 p-3 rounded-lg backdrop-blur-md items-center gap-3"
               >
                 <div className="p-2 bg-blue-500/20 rounded-md">
                   <TrendingUp className="w-4 h-4 text-blue-400" />
@@ -322,7 +326,7 @@ function App() {
               <motion.div 
                 animate={{ y: [0, 20, 0] }}
                 transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                className="absolute bottom-10 left-0 bg-space-800 border border-white/10 p-3 rounded-lg backdrop-blur-md flex items-center gap-3"
+                className="hidden md:flex absolute bottom-10 left-0 bg-space-800 border border-white/10 p-3 rounded-lg backdrop-blur-md items-center gap-3"
               >
                 <div className="p-2 bg-red-500/20 rounded-md">
                    <ShieldAlert className="w-4 h-4 text-red-400" />
@@ -337,7 +341,7 @@ function App() {
               <motion.div 
                 animate={{ x: [0, 10, 0], y: [0, -10, 0] }}
                 transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-                className="absolute top-20 left-[-20px] bg-space-800 border border-white/10 p-3 rounded-lg backdrop-blur-md flex items-center gap-3"
+                className="hidden md:flex absolute top-20 left-[-20px] bg-space-800 border border-white/10 p-3 rounded-lg backdrop-blur-md items-center gap-3"
               >
                 <div className="p-2 bg-purple-500/20 rounded-md">
                    <Search className="w-4 h-4 text-purple-400" />
@@ -352,7 +356,7 @@ function App() {
               <motion.div 
                 animate={{ x: [0, -10, 0], y: [0, 10, 0] }}
                 transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 3 }}
-                className="absolute bottom-20 right-[-10px] bg-space-800 border border-white/10 p-3 rounded-lg backdrop-blur-md flex items-center gap-3"
+                className="hidden md:flex absolute bottom-20 right-[-10px] bg-space-800 border border-white/10 p-3 rounded-lg backdrop-blur-md items-center gap-3"
               >
                 <div className="p-2 bg-pink-500/20 rounded-md">
                    <Radio className="w-4 h-4 text-pink-400" />
@@ -364,6 +368,73 @@ function App() {
               </motion.div>
 
             </motion.div>
+
+            {/* Mobile Agent Cards Grid */}
+            <div className="grid grid-cols-2 gap-4 md:hidden mt-8">
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6 }}
+                className="bg-space-800 border border-white/10 p-3 rounded-lg backdrop-blur-md flex items-center gap-3"
+              >
+                <div className="p-2 bg-blue-500/20 rounded-md">
+                  <TrendingUp className="w-4 h-4 text-blue-400" />
+                </div>
+                <div>
+                  <div className="text-xs text-gray-400">Yield Miner</div>
+                  <div className="text-white text-xs font-mono">+12.4% APY</div>
+                </div>
+              </motion.div>
+
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: 0.1 }}
+                className="bg-space-800 border border-white/10 p-3 rounded-lg backdrop-blur-md flex items-center gap-3"
+              >
+                <div className="p-2 bg-red-500/20 rounded-md">
+                  <ShieldAlert className="w-4 h-4 text-red-400" />
+                </div>
+                <div>
+                  <div className="text-xs text-gray-400">Risk Agent</div>
+                  <div className="text-white text-xs font-mono">Auditing...</div>
+                </div>
+              </motion.div>
+
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="bg-space-800 border border-white/10 p-3 rounded-lg backdrop-blur-md flex items-center gap-3"
+              >
+                <div className="p-2 bg-purple-500/20 rounded-md">
+                  <Search className="w-4 h-4 text-purple-400" />
+                </div>
+                <div>
+                  <div className="text-xs text-gray-400">Research Agent</div>
+                  <div className="text-white text-xs font-mono">Analyzing</div>
+                </div>
+              </motion.div>
+
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: 0.3 }}
+                className="bg-space-800 border border-white/10 p-3 rounded-lg backdrop-blur-md flex items-center gap-3"
+              >
+                <div className="p-2 bg-pink-500/20 rounded-md">
+                  <Radio className="w-4 h-4 text-pink-400" />
+                </div>
+                <div>
+                  <div className="text-xs text-gray-400">Media Agent</div>
+                  <div className="text-white text-xs font-mono">Broadcasting</div>
+                </div>
+              </motion.div>
+            </div>
           </div>
         </div>
       </section>
