@@ -27,6 +27,10 @@ contract ValidationRegistry is Initializable, AccessControlUpgradeable {
     /// @notice Mapping from Agent Identity Token ID to list of Validations
     mapping(uint256 => Validation[]) private _validations;
 
+    /// @notice Mapping from (agentId, validationTypeHash) to latest valid expiry timestamp
+    /// @dev Enables O(1) lookups for hasValidAttestation instead of iterating the full array
+    mapping(uint256 => mapping(bytes32 => uint256)) private _latestValidExpiry;
+
     /// @notice Event emitted when a new validation is posted
     event ValidationPosted(uint256 indexed agentId, address indexed validator, string validationType, bool isValid);
 
@@ -60,6 +64,8 @@ contract ValidationRegistry is Initializable, AccessControlUpgradeable {
         string memory data,
         uint256 duration
     ) external onlyRole(VALIDATOR_ROLE) {
+        uint256 expiry = block.timestamp + duration;
+
         _validations[agentId].push(
             Validation({
                 validator: msg.sender,
@@ -67,15 +73,51 @@ contract ValidationRegistry is Initializable, AccessControlUpgradeable {
                 isValid: isValid,
                 data: data,
                 timestamp: block.timestamp,
-                expiry: block.timestamp + duration
+                expiry: expiry
             })
         );
+
+        // Update latest valid expiry for O(1) lookups
+        if (isValid) {
+            bytes32 typeHash = keccak256(bytes(validationType));
+            if (expiry > _latestValidExpiry[agentId][typeHash]) {
+                _latestValidExpiry[agentId][typeHash] = expiry;
+            }
+        }
 
         emit ValidationPosted(agentId, msg.sender, validationType, isValid);
     }
 
     /**
-     * @notice Retrieves all validations for an agent
+     * @notice Retrieves validations for an agent with pagination
+     * @param agentId The Identity Token ID
+     * @param offset The starting index
+     * @param limit The maximum number of entries to return
+     * @return An array of Validation structs
+     */
+    function getValidations(uint256 agentId, uint256 offset, uint256 limit)
+        external
+        view
+        returns (Validation[] memory)
+    {
+        uint256 total = _validations[agentId].length;
+        if (offset >= total) {
+            return new Validation[](0);
+        }
+        uint256 remaining = total - offset;
+        uint256 count = remaining < limit ? remaining : limit;
+        Validation[] memory result = new Validation[](count);
+        for (uint256 i = 0; i < count;) {
+            result[i] = _validations[agentId][offset + i];
+            unchecked {
+                ++i;
+            }
+        }
+        return result;
+    }
+
+    /**
+     * @notice Retrieves all validations for an agent (legacy, use paginated version for large arrays)
      * @param agentId The Identity Token ID
      * @return An array of Validation structs
      */
@@ -84,21 +126,23 @@ contract ValidationRegistry is Initializable, AccessControlUpgradeable {
     }
 
     /**
+     * @notice Returns the total number of validations for an agent
+     * @param agentId The Identity Token ID
+     * @return The count of validations
+     */
+    function getValidationCount(uint256 agentId) external view returns (uint256) {
+        return _validations[agentId].length;
+    }
+
+    /**
      * @notice Checks if an agent has a valid (non-expired) validation of a specific type
+     * @dev Fix for Finding 10: Uses O(1) lookup via _latestValidExpiry mapping
      * @param agentId The Identity Token ID
      * @param validationType The type of validation to check
      * @return bool True if a valid attestation exists
      */
     function hasValidAttestation(uint256 agentId, string memory validationType) external view returns (bool) {
-        Validation[] memory validations = _validations[agentId];
-        for (uint256 i = 0; i < validations.length; i++) {
-            if (
-                keccak256(bytes(validations[i].validationType)) == keccak256(bytes(validationType))
-                    && validations[i].isValid && validations[i].expiry > block.timestamp
-            ) {
-                return true;
-            }
-        }
-        return false;
+        bytes32 typeHash = keccak256(bytes(validationType));
+        return _latestValidExpiry[agentId][typeHash] > block.timestamp;
     }
 }

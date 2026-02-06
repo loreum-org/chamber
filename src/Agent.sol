@@ -50,8 +50,17 @@ contract Agent is ERC165, IERC1271, Initializable, ReentrancyGuardUpgradeable {
     /// @notice Emitted when the agent auto-confirms a transaction
     event AutoConfirmed(address indexed chamber, uint256 indexed transactionId);
 
+    /// @notice Mapping of authorized keepers who can trigger autoConfirm
+    mapping(address => bool) public authorizedKeepers;
+
+    /// @notice Emitted when a keeper is added or removed
+    event KeeperUpdated(address indexed keeper, bool authorized);
+
     /// @notice Thrown when caller is not owner
     error NotOwner();
+
+    /// @notice Thrown when caller is not authorized (not owner or keeper)
+    error NotAuthorized();
 
     /// @notice Thrown when policy rejects a transaction
     error PolicyRejection();
@@ -95,56 +104,25 @@ contract Agent is ERC165, IERC1271, Initializable, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice Automatically confirms a transaction if it passes the policy check
-     * @dev Can be called by anyone (e.g., Gelato, Chainlink Automation, or any keeper)
-     * @param chamber The Chamber address
-     * @param transactionId The transaction ID to vote on
+     * @notice Adds or removes an authorized keeper
+     * @dev Only owner can manage keepers
+     * @param keeper The keeper address
+     * @param authorized Whether to authorize or revoke
      */
-    function autoConfirm(address chamber, uint256 transactionId) external nonReentrant {
-        if (address(policy) == address(0)) revert("No policy set");
-
-        // 1. Check Policy
-        if (!policy.canApprove(chamber, transactionId)) {
-            revert PolicyRejection();
-        }
-
-        // 2. Execute Vote on Chamber
-        // Note: The Chamber must see msg.sender as this Agent contract
-        // We assume the Agent holds the Director NFT (or delegation)
-        IChamber(chamber).confirmTransaction(getDirectorTokenId(chamber), transactionId);
-
-        emit AutoConfirmed(chamber, transactionId);
+    function setKeeper(address keeper, bool authorized) external onlyOwner {
+        authorizedKeepers[keeper] = authorized;
+        emit KeeperUpdated(keeper, authorized);
     }
 
     /**
-     * @notice Helper to find which NFT ID this Agent is using to govern
-     * @dev This is a simplified lookup. In production, we might store this mapping or query the Chamber.
-     *      For now, we assume the Agent owns the NFT directly or we pass it in.
-     *      TODO: Refactor to accept tokenId as param if Agent holds multiple NFTs.
+     * @notice Automatically confirms a transaction if it passes the policy check
+     * @dev Fix for Findings 5 & 8: Removed broken two-parameter overload (getDirectorTokenId
+     *      always returned 0). Added access control so only owner or authorized keepers can call.
+     * @param chamber The Chamber address
+     * @param transactionId The transaction ID to vote on
+     * @param tokenId The NFT token ID this Agent uses for directorship
      */
-    function getDirectorTokenId(
-        address /* chamber */
-    )
-        public
-        pure
-        returns (uint256)
-    {
-        // Implementation depends on how Agent holds directorship.
-        // Option A: Agent owns the ERC721 directly.
-        // Option B: Agent is a delegatee (if Chamber supports wallet delegation).
-
-        // Assuming Option A for this MVP: Agent owns the NFT.
-        // We need to find the token ID owned by this address in the Chamber's NFT contract.
-        // This is expensive to do on-chain without an indexer or specific storage.
-        // Ideally, this should be passed as a parameter to autoConfirm.
-
-        // For MVP, we will return a placeholder or require it passed in.
-        // Let's modify autoConfirm to take tokenId for clarity.
-        return 0;
-    }
-
-    // Overloaded autoConfirm with tokenId
-    function autoConfirm(address chamber, uint256 transactionId, uint256 tokenId) external nonReentrant {
+    function autoConfirm(address chamber, uint256 transactionId, uint256 tokenId) external nonReentrant onlyAuthorized {
         if (address(policy) == address(0)) revert("No policy set");
 
         if (!policy.canApprove(chamber, transactionId)) {
@@ -198,8 +176,18 @@ contract Agent is ERC165, IERC1271, Initializable, ReentrancyGuardUpgradeable {
         _;
     }
 
+    /// @notice Modifier restricting access to owner or authorized keepers
+    modifier onlyAuthorized() {
+        _onlyAuthorized();
+        _;
+    }
+
     function _onlyOwner() internal view {
         if (msg.sender != owner) revert NotOwner();
+    }
+
+    function _onlyAuthorized() internal view {
+        if (msg.sender != owner && !authorizedKeepers[msg.sender]) revert NotAuthorized();
     }
 
     /// @notice Support for ERC-165

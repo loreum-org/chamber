@@ -291,6 +291,11 @@ contract BoardTest is Test {
 
     function test_Board_ExecuteSeatsUpdate_Success() public {
         // Need quorum of 3 for 5 seats (1 + 5*51/100 = 3)
+        // Supporters must be in top seats for validation
+        board.insert(1, 100);
+        board.insert(2, 100);
+        board.insert(3, 100);
+
         board.setSeats(1, 7);
         board.setSeats(2, 7);
         board.setSeats(3, 7);

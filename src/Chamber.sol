@@ -323,6 +323,7 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
     function submitTransaction(uint256 tokenId, address target, uint256 value, bytes memory data)
         public
         override
+        nonReentrant
         isDirector(tokenId)
     {
         if (target == address(0)) revert IChamber.ZeroAddress();
@@ -352,7 +353,12 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
      * @param tokenId The tokenId confirming the transaction
      * @param transactionId The ID of the transaction to confirm
      */
-    function confirmTransaction(uint256 tokenId, uint256 transactionId) public override isDirector(tokenId) {
+    function confirmTransaction(uint256 tokenId, uint256 transactionId)
+        public
+        override
+        nonReentrant
+        isDirector(tokenId)
+    {
         if (transactionId >= transactions.length) revert IWallet.TransactionDoesNotExist();
         Transaction storage transaction = transactions[transactionId];
         if (transaction.executed) revert IWallet.TransactionAlreadyExecuted();
@@ -388,7 +394,12 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
      * @param tokenId The tokenId revoking the confirmation
      * @param transactionId The ID of the transaction to revoke confirmation for
      */
-    function revokeConfirmation(uint256 tokenId, uint256 transactionId) public override isDirector(tokenId) {
+    function revokeConfirmation(uint256 tokenId, uint256 transactionId)
+        public
+        override
+        nonReentrant
+        isDirector(tokenId)
+    {
         _revokeConfirmation(tokenId, transactionId);
     }
 
@@ -405,7 +416,7 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
         address[] memory targets,
         uint256[] memory values,
         bytes[] memory data
-    ) public override isDirector(tokenId) {
+    ) public override nonReentrant isDirector(tokenId) {
         if (targets.length != values.length || values.length != data.length) {
             revert IChamber.ArrayLengthsMustMatch();
         }
@@ -452,6 +463,7 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
     function confirmBatchTransactions(uint256 tokenId, uint256[] memory transactionIds)
         public
         override
+        nonReentrant
         isDirector(tokenId)
     {
         if (transactionIds.length == 0) revert IChamber.ZeroAmount();
@@ -610,8 +622,38 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
     /// ERC20 OVERRIDES ///
 
     /**
+     * @notice Internal override to enforce delegation constraints on ALL token movements
+     * @dev This catches transfers, burns (withdraw/redeem), and any other _update path.
+     *      Fixes Finding 4: ERC4626 withdraw/redeem previously bypassed delegation checks.
+     * @param from The sender address (address(0) for mints)
+     * @param to The recipient address (address(0) for burns)
+     * @param value The amount of tokens being moved
+     */
+    function _update(address from, address to, uint256 value) internal override {
+        // Enforce delegation constraints on all outgoing movements (transfers and burns)
+        if (from != address(0) && value > 0) {
+            uint256 fromBalance = balanceOf(from);
+            if (fromBalance >= value && fromBalance - value < totalAgentDelegations[from]) {
+                revert IChamber.ExceedsDelegatedAmount();
+            }
+        }
+        super._update(from, to, value);
+    }
+
+    /**
+     * @notice Returns the decimals offset for virtual share protection
+     * @dev Fixes Finding 6: Prevents first-depositor inflation/donation attacks
+     *      by adding 10^3 = 1000 virtual shares to the share calculation
+     * @return The decimals offset (3)
+     */
+    function _decimalsOffset() internal pure override returns (uint8) {
+        return 3;
+    }
+
+    /**
      * @notice Transfers tokens to a specified address
-     * @dev Overrides the ERC20 transfer function to include delegation checks
+     * @dev Overrides the ERC20 transfer function with input validation
+     *      Delegation check is enforced in _update()
      * @param to The recipient address
      * @param value The amount of tokens to transfer
      * @return true if the transfer is successful
@@ -628,12 +670,7 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
             revert IChamber.InsufficientChamberBalance();
         }
 
-        // Check delegation before transfer
-        if (ownerBalance - value < totalAgentDelegations[owner]) {
-            revert IChamber.ExceedsDelegatedAmount();
-        }
-
-        // Perform transfer
+        // Perform transfer (delegation check enforced in _update)
         _transfer(owner, to, value);
 
         return true;
@@ -641,7 +678,8 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
 
     /**
      * @notice Transfers tokens from one address to another
-     * @dev Overrides the ERC20 transferFrom function to include delegation checks
+     * @dev Overrides the ERC20 transferFrom function with input validation
+     *      Delegation check is enforced in _update()
      * @param from The address to transfer tokens from
      * @param to The address to transfer tokens to
      * @param value The amount of tokens to transfer
@@ -663,12 +701,8 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
             revert IChamber.InsufficientChamberBalance();
         }
 
-        // Check delegation before transfer
-        if (fromBalance - value < totalAgentDelegations[from]) {
-            revert IChamber.ExceedsDelegatedAmount();
-        }
-
         _spendAllowance(from, spender, value);
+        // Perform transfer (delegation check enforced in _update)
         _transfer(from, to, value);
 
         return true;

@@ -9,6 +9,10 @@ import {MockERC20} from "test/mock/MockERC20.sol";
 import {MockERC721} from "test/mock/MockERC721.sol";
 import {DeployChamber} from "test/utils/DeployChamber.sol";
 
+/**
+ * @notice Vault tests updated for _decimalsOffset() = 3
+ *         With offset=3, shares = assets * 1000 (virtual shares ratio)
+ */
 contract ChamberVaultTest is Test {
     Chamber public chamber;
     IERC20 public token;
@@ -18,6 +22,9 @@ contract ChamberVaultTest is Test {
     address public user1 = address(0x1);
     address public user2 = address(0x2);
     address public user3 = address(0x3);
+
+    /// @dev Virtual share multiplier from _decimalsOffset() = 3
+    uint256 constant SHARE_MULTIPLIER = 1000;
 
     function setUp() public {
         token = new MockERC20("Mock Token", "MCK", 1000000e18);
@@ -42,33 +49,36 @@ contract ChamberVaultTest is Test {
     }
 
     function test_Vault_ConvertToShares() public {
-        // Test 1:1 conversion when totalSupply is 0
-        assertEq(chamber.convertToShares(100e18), 100e18);
+        // With offset=3, empty vault: shares = assets * 1000
+        assertEq(chamber.convertToShares(100e18), 100e18 * SHARE_MULTIPLIER);
 
-        // Give user some shares
+        // Deposit to establish ratio
         deal(address(token), user1, 100e18);
         vm.startPrank(user1);
         token.approve(address(chamber), 100e18);
-        chamber.mint(100e18, user1);
+        chamber.deposit(100e18, user1);
         vm.stopPrank();
 
-        // Should still be 1:1 in this case
-        assertEq(chamber.convertToShares(50e18), 50e18);
+        // After deposit, ratio is approximately 1:1000
+        uint256 shares = chamber.convertToShares(50e18);
+        // shares ≈ 50e18 * (100e21 + 1000) / (100e18 + 1) ≈ 50e21
+        assertApproxEqRel(shares, 50e18 * SHARE_MULTIPLIER, 1e14); // 0.01% tolerance
     }
 
     function test_Vault_ConvertToAssets() public {
-        // Test 1:1 conversion when totalSupply is 0
-        assertEq(chamber.convertToAssets(100e18), 100e18);
+        // With offset=3, empty vault: assets = shares / 1000
+        assertEq(chamber.convertToAssets(100e18), 100e18 / SHARE_MULTIPLIER);
 
-        // Give user some shares
+        // Deposit to establish ratio
         deal(address(token), user1, 100e18);
         vm.startPrank(user1);
         token.approve(address(chamber), 100e18);
-        chamber.mint(100e18, user1);
+        chamber.deposit(100e18, user1);
         vm.stopPrank();
 
-        // Should still be 1:1 in this case
-        assertEq(chamber.convertToAssets(50e18), 50e18);
+        // After deposit, ratio is approximately 1:1000
+        uint256 assets = chamber.convertToAssets(50e18 * SHARE_MULTIPLIER);
+        assertApproxEqRel(assets, 50e18, 1e14); // 0.01% tolerance
     }
 
     function test_Vault_MaxDeposit() public view {
@@ -76,8 +86,8 @@ contract ChamberVaultTest is Test {
     }
 
     function test_Vault_PreviewDeposit() public view {
-        // Should return same amount of shares as assets when ratio is 1:1
-        assertEq(chamber.previewDeposit(100e18), 100e18);
+        // With offset=3: shares = assets * 1000
+        assertEq(chamber.previewDeposit(100e18), 100e18 * SHARE_MULTIPLIER);
     }
 
     function test_Vault_MaxMint() public view {
@@ -85,47 +95,51 @@ contract ChamberVaultTest is Test {
     }
 
     function test_Vault_PreviewMint() public view {
-        // Should return same amount of assets as shares when ratio is 1:1
-        assertEq(chamber.previewMint(100e18), 100e18);
+        // With offset=3: assets = ceil(shares / 1000)
+        // previewMint(100e18 shares) = ceil(100e18 / 1000) = 1e17
+        assertEq(chamber.previewMint(100e18), 100e18 / SHARE_MULTIPLIER);
     }
 
     function test_Vault_MaxWithdraw() public {
         // User should be able to withdraw 0 when they have no shares
         assertEq(chamber.maxWithdraw(user1), 0);
 
-        // Give user some shares
+        // Deposit assets
         deal(address(token), user1, 100e18);
         vm.startPrank(user1);
         token.approve(address(chamber), 100e18);
-        chamber.mint(100e18, user1);
+        chamber.deposit(100e18, user1);
         vm.stopPrank();
-        // Should be able to withdraw full amount
-        assertEq(chamber.maxWithdraw(user1), 100e18);
+
+        // Should be able to withdraw approximately full amount
+        uint256 maxWith = chamber.maxWithdraw(user1);
+        assertApproxEqAbs(maxWith, 100e18, 1); // Within 1 wei due to rounding
     }
 
     function test_Vault_PreviewWithdraw() public view {
-        // Should return same amount of shares as assets when ratio is 1:1
-        assertEq(chamber.previewWithdraw(100e18), 100e18);
+        // With offset=3: shares = assets * 1000
+        assertEq(chamber.previewWithdraw(100e18), 100e18 * SHARE_MULTIPLIER);
     }
 
     function test_Vault_MaxRedeem() public {
         // User should be able to redeem 0 when they have no shares
         assertEq(chamber.maxRedeem(user1), 0);
 
-        // Give user some shares
+        // Deposit assets
         deal(address(token), user1, 100e18);
         vm.startPrank(user1);
         token.approve(address(chamber), 100e18);
-        chamber.mint(100e18, user1);
+        chamber.deposit(100e18, user1);
         vm.stopPrank();
 
-        // Should be able to redeem full amount
-        assertEq(chamber.maxRedeem(user1), 100e18);
+        // Should be able to redeem full share amount
+        uint256 expectedShares = 100e18 * SHARE_MULTIPLIER;
+        assertEq(chamber.maxRedeem(user1), expectedShares);
     }
 
     function test_Vault_Vault_PreviewRedeem() public view {
-        // Should return same amount of assets as shares when ratio is 1:1
-        assertEq(chamber.previewRedeem(100e18), 100e18);
+        // With offset=3: assets = shares / 1000
+        assertEq(chamber.previewRedeem(100e18), 100e18 / SHARE_MULTIPLIER);
     }
 
     function test_Vault_Deposit() public {
@@ -137,12 +151,13 @@ contract ChamberVaultTest is Test {
         vm.startPrank(user1);
         token.approve(address(chamber), depositAmount);
 
-        // Check return value
+        // With offset=3, shares received = depositAmount * 1000
+        uint256 expectedShares = depositAmount * SHARE_MULTIPLIER;
         uint256 sharesReceived = chamber.deposit(depositAmount, user1);
-        assertEq(sharesReceived, depositAmount);
+        assertEq(sharesReceived, expectedShares);
 
         // Check balances
-        assertEq(chamber.balanceOf(user1), depositAmount);
+        assertEq(chamber.balanceOf(user1), expectedShares);
         assertEq(chamber.totalAssets(), depositAmount);
         assertEq(token.balanceOf(address(chamber)), depositAmount);
         assertEq(token.balanceOf(user1), 0);
@@ -150,22 +165,23 @@ contract ChamberVaultTest is Test {
     }
 
     function test_Vault_Mint() public {
-        uint256 mintAmount = 100e18;
+        // Minting 100e18 shares costs 100e18/1000 = 1e17 assets
+        uint256 mintShares = 100e18 * SHARE_MULTIPLIER; // Mint 100e21 shares = 100e18 assets
+        uint256 expectedAssets = 100e18;
 
-        // Mint tokens to user
-        deal(address(token), user1, mintAmount);
+        // Mint tokens to user (enough to cover)
+        deal(address(token), user1, expectedAssets);
 
         vm.startPrank(user1);
-        token.approve(address(chamber), mintAmount);
+        token.approve(address(chamber), expectedAssets);
 
-        // Check return value
-        uint256 assetsDeposited = chamber.mint(mintAmount, user1);
-        assertEq(assetsDeposited, mintAmount);
+        uint256 assetsDeposited = chamber.mint(mintShares, user1);
+        assertEq(assetsDeposited, expectedAssets);
 
         // Check balances
-        assertEq(chamber.balanceOf(user1), mintAmount);
-        assertEq(chamber.totalAssets(), mintAmount);
-        assertEq(token.balanceOf(address(chamber)), mintAmount);
+        assertEq(chamber.balanceOf(user1), mintShares);
+        assertEq(chamber.totalAssets(), expectedAssets);
+        assertEq(token.balanceOf(address(chamber)), expectedAssets);
         assertEq(token.balanceOf(user1), 0);
         vm.stopPrank();
     }
@@ -180,11 +196,13 @@ contract ChamberVaultTest is Test {
         chamber.deposit(depositAmount, user1);
         vm.stopPrank();
 
+        uint256 expectedShares = depositAmount * SHARE_MULTIPLIER;
+
         vm.prank(user1);
         uint256 sharesRedeemed = chamber.withdraw(depositAmount, user1, user1);
 
         // Check return value and balances
-        assertEq(sharesRedeemed, depositAmount);
+        assertEq(sharesRedeemed, expectedShares);
         assertEq(chamber.balanceOf(user1), 0);
         assertEq(chamber.totalAssets(), 0);
         assertEq(token.balanceOf(address(chamber)), 0);
@@ -201,8 +219,10 @@ contract ChamberVaultTest is Test {
         chamber.deposit(depositAmount, user1);
         vm.stopPrank();
 
+        uint256 sharesToRedeem = depositAmount * SHARE_MULTIPLIER;
+
         vm.prank(user1);
-        uint256 assetsReceived = chamber.redeem(depositAmount, user1, user1);
+        uint256 assetsReceived = chamber.redeem(sharesToRedeem, user1, user1);
 
         // Check return value and balances
         assertEq(assetsReceived, depositAmount);

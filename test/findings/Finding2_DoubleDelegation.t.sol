@@ -38,21 +38,21 @@ contract DoubleDelegationTest is Test {
         token.approve(chamberAddress, 100e18);
         chamber.deposit(100e18, attacker);
 
-        // Attacker has 100 tokens deposited
-        // Delegate 100 to ID 1
-        chamber.delegate(1, 100e18);
+        // Attacker delegates full share balance to ID 1
+        uint256 shares = chamber.balanceOf(attacker);
+        chamber.delegate(1, shares);
 
-        // Delegate another 100 to ID 2 (using the SAME tokens)
-        // This should fail now
+        // Delegate the same amount to ID 2 (using the SAME tokens)
+        // This should fail because total delegation would exceed balance
         vm.expectRevert(IChamber.InsufficientChamberBalance.selector);
-        chamber.delegate(2, 100e18);
+        chamber.delegate(2, shares);
         vm.stopPrank();
 
         // Verify total delegation is correct
         uint256 totalDelegated = chamber.getTotalAgentDelegations(attacker);
         uint256 balance = chamber.balanceOf(attacker);
 
-        assertEq(totalDelegated, 100e18, "Delegated amount should NOT be inflated");
-        assertEq(balance, 100e18, "Balance should remain 100");
+        assertEq(totalDelegated, shares, "Delegated amount should NOT be inflated");
+        assertEq(balance, shares, "Balance should remain equal to shares");
     }
 }

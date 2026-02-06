@@ -25,6 +25,12 @@ contract ReputationRegistry is Initializable, AccessControlUpgradeable {
     /// @notice Mapping from Agent Identity Token ID to list of Signals
     mapping(uint256 => Signal[]) private _signals;
 
+    /// @notice Running total score per agent for O(1) average calculation
+    mapping(uint256 => uint256) private _totalScore;
+
+    /// @notice Running signal count per agent for O(1) average calculation
+    mapping(uint256 => uint256) private _signalCount;
+
     /// @notice Event emitted when a new signal is posted
     event SignalPosted(uint256 indexed agentId, address indexed provider, uint8 score, string comment);
 
@@ -61,11 +67,39 @@ contract ReputationRegistry is Initializable, AccessControlUpgradeable {
             Signal({provider: msg.sender, score: score, comment: comment, timestamp: block.timestamp})
         );
 
+        // Update running totals for O(1) average calculation
+        _totalScore[agentId] += score;
+        _signalCount[agentId] += 1;
+
         emit SignalPosted(agentId, msg.sender, score, comment);
     }
 
     /**
-     * @notice Retrieves all signals for an agent
+     * @notice Retrieves signals for an agent with pagination
+     * @param agentId The Identity Token ID
+     * @param offset The starting index
+     * @param limit The maximum number of entries to return
+     * @return An array of Signal structs
+     */
+    function getSignals(uint256 agentId, uint256 offset, uint256 limit) external view returns (Signal[] memory) {
+        uint256 total = _signals[agentId].length;
+        if (offset >= total) {
+            return new Signal[](0);
+        }
+        uint256 remaining = total - offset;
+        uint256 count = remaining < limit ? remaining : limit;
+        Signal[] memory result = new Signal[](count);
+        for (uint256 i = 0; i < count;) {
+            result[i] = _signals[agentId][offset + i];
+            unchecked {
+                ++i;
+            }
+        }
+        return result;
+    }
+
+    /**
+     * @notice Retrieves all signals for an agent (legacy, use paginated version for large arrays)
      * @param agentId The Identity Token ID
      * @return An array of Signal structs
      */
@@ -74,19 +108,23 @@ contract ReputationRegistry is Initializable, AccessControlUpgradeable {
     }
 
     /**
+     * @notice Returns the total number of signals for an agent
+     * @param agentId The Identity Token ID
+     * @return The count of signals
+     */
+    function getSignalCount(uint256 agentId) external view returns (uint256) {
+        return _signalCount[agentId];
+    }
+
+    /**
      * @notice Calculates the average reputation score for an agent
+     * @dev Fix for Finding 10: Uses running totals for O(1) calculation
      * @param agentId The Identity Token ID
      * @return The average score (0 if no signals)
      */
     function getAverageScore(uint256 agentId) external view returns (uint256) {
-        Signal[] memory signals = _signals[agentId];
-        if (signals.length == 0) return 0;
-
-        uint256 totalScore = 0;
-        for (uint256 i = 0; i < signals.length; i++) {
-            totalScore += signals[i].score;
-        }
-
-        return totalScore / signals.length;
+        uint256 count = _signalCount[agentId];
+        if (count == 0) return 0;
+        return _totalScore[agentId] / count;
     }
 }

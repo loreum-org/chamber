@@ -160,8 +160,8 @@ contract ChamberFuzzTest is Test {
 
     /// @notice Fuzz test for deposit and withdraw
     function testFuzz_DepositWithdraw(uint256 depositAmount, uint256 withdrawAmount) public {
-        // Bound inputs
-        depositAmount = bound(depositAmount, 1, MAX_AMOUNT);
+        // Bound inputs - limit to avoid overflow with 1000x share multiplier
+        depositAmount = bound(depositAmount, 1, MAX_AMOUNT / 1000);
         withdrawAmount = bound(withdrawAmount, 1, depositAmount);
 
         // Setup
@@ -171,16 +171,18 @@ contract ChamberFuzzTest is Test {
         token.approve(address(chamber), depositAmount);
 
         uint256 beforeBalance = chamber.balanceOf(user1);
+        uint256 expectedShares = chamber.previewDeposit(depositAmount);
         chamber.deposit(depositAmount, user1);
         uint256 afterDepositBalance = chamber.balanceOf(user1);
 
-        assertEq(afterDepositBalance, beforeBalance + depositAmount);
+        assertEq(afterDepositBalance, beforeBalance + expectedShares);
 
         // Withdraw
         chamber.withdraw(withdrawAmount, user1, user1);
         uint256 afterWithdrawBalance = chamber.balanceOf(user1);
 
-        assertEq(afterWithdrawBalance, afterDepositBalance - withdrawAmount);
+        uint256 sharesForWithdraw = chamber.previewWithdraw(withdrawAmount);
+        assertApproxEqAbs(afterWithdrawBalance, afterDepositBalance - sharesForWithdraw, 1);
         vm.stopPrank();
     }
 
@@ -344,8 +346,8 @@ contract ChamberFuzzTest is Test {
         public
     {
         tokenId = bound(tokenId, 1, type(uint256).max);
-        depositAmount = bound(depositAmount, 1, MAX_AMOUNT);
-        delegateAmount = bound(delegateAmount, depositAmount + 1, type(uint256).max);
+        // Limit deposit to avoid overflow with 1000x share multiplier
+        depositAmount = bound(depositAmount, 1, MAX_AMOUNT / 1000);
 
         MockERC721(address(nft)).mintWithTokenId(user1, tokenId);
         MockERC20(address(token)).mint(user1, depositAmount);
@@ -353,6 +355,11 @@ contract ChamberFuzzTest is Test {
         vm.startPrank(user1);
         token.approve(address(chamber), depositAmount);
         chamber.deposit(depositAmount, user1);
+
+        // With _decimalsOffset()=3, shares = depositAmount * 1000
+        // delegateAmount must exceed actual share balance to fail
+        uint256 shareBalance = chamber.balanceOf(user1);
+        delegateAmount = bound(delegateAmount, shareBalance + 1, type(uint256).max);
 
         vm.expectRevert(IChamber.InsufficientChamberBalance.selector);
         chamber.delegate(tokenId, delegateAmount);

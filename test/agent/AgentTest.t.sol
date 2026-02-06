@@ -101,8 +101,9 @@ contract AgentTest is Test {
             ""
         );
 
-        // 6. Test Auto-Confirm (Triggered by anyone)
+        // 6. Test Auto-Confirm (Triggered by owner)
         // The transaction ID should be 0
+        vm.prank(user);
         agent.autoConfirm(chamberAddr, 0, 1);
 
         // 7. Verify Confirmation
@@ -135,7 +136,8 @@ contract AgentTest is Test {
         bytes memory submitData = abi.encodeWithSelector(Chamber.submitTransaction.selector, 1, address(0x888), 0, "");
         agent.execute(chamberAddr, 0, submitData);
 
-        // Expect Revert on Auto-Confirm
+        // Expect Revert on Auto-Confirm (owner calls)
+        vm.prank(user);
         vm.expectRevert(Agent.PolicyRejection.selector);
         agent.autoConfirm(chamberAddr, 0, 1);
     }

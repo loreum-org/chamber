@@ -381,6 +381,7 @@ abstract contract Board {
     /**
      * @notice Executes a pending seat update proposal
      * @dev Requires proposal to exist, timelock expired, and quorum maintained
+     *      Fix for Finding 7: Validates supporters are still in top seats at execution time
      * @param tokenId The token ID executing the update
      */
     function _executeSeatsUpdate(uint256 tokenId) internal {
@@ -390,14 +391,43 @@ abstract contract Board {
         if (proposal.timestamp == 0) revert IBoard.InvalidProposal();
         if (block.timestamp < proposal.timestamp + 7 days) revert IBoard.TimelockNotExpired();
 
-        // Verify quorum is maintained using proposal-time quorum, not current quorum
-        if (proposal.supporters.length < proposal.requiredQuorum) {
+        // Verify quorum is maintained using only supporters still in top seats
+        uint256 validSupport = 0;
+        for (uint256 i = 0; i < proposal.supporters.length;) {
+            if (_isInTopSeats(proposal.supporters[i])) {
+                unchecked {
+                    ++validSupport;
+                }
+            }
+            unchecked {
+                ++i;
+            }
+        }
+        if (validSupport < proposal.requiredQuorum) {
             revert IBoard.InsufficientVotes();
         }
 
         seats = proposal.proposedSeats;
         delete seatUpdate;
         emit IBoard.ExecuteSetSeats(tokenId, proposal.proposedSeats);
+    }
+
+    /**
+     * @notice Checks if a tokenId is currently in the top seats
+     * @param tokenId The token ID to check
+     * @return True if the tokenId is in the top seats
+     */
+    function _isInTopSeats(uint256 tokenId) internal view returns (bool) {
+        uint256 current = head;
+        uint256 remaining = seats;
+        while (current != 0 && remaining > 0) {
+            if (current == tokenId) return true;
+            current = nodes[current].next;
+            unchecked {
+                --remaining;
+            }
+        }
+        return false;
     }
 
     /// @dev Storage gap for future upgrades
