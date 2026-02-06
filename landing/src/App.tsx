@@ -140,7 +140,7 @@ function App() {
           <FadeIn>
             <h2 className="text-4xl md:text-5xl font-display mb-8">Our Mission</h2>
             <p className="text-2xl md:text-4xl text-white font-light max-w-4xl leading-relaxed">
-              "To enable protocol teams to <span className="text-space-accent">maximize their potential</span>."
+              "To enable people to <span className="text-space-accent">maximize their potential</span>."
             </p>
           </FadeIn>
         </div>
