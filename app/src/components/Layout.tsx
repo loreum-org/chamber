@@ -1,11 +1,11 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { motion } from 'framer-motion'
-import { FiHome, FiPlus, FiGithub, FiBook } from 'react-icons/fi'
+import { FiHome, FiGithub, FiBook, FiCpu } from 'react-icons/fi'
 
 const navItems = [
   { path: '/', label: 'Chambers', icon: FiHome },
-  { path: '/deploy', label: 'Deploy', icon: FiPlus },
+  { path: '/deploy-agent', label: 'Deploy Agent', icon: FiCpu },
   { path: '/docs', label: 'Docs', icon: FiBook },
 ]
 
