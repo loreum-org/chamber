@@ -1,0 +1,154 @@
+{
+  "external_public_functions": {
+    "Chamber": [
+      "initialize(address,address,uint256,string,string)",
+      "delegate(uint256,uint256)",
+      "undelegate(uint256,uint256)",
+      "getMember(uint256)",
+      "getTop(uint256)",
+      "getSize()",
+      "getQuorum()",
+      "getSeats()",
+      "getDirectors()",
+      "getDelegations(address)",
+      "getAgentDelegation(address,uint256)",
+      "getTotalAgentDelegations(address)",
+      "getSeatUpdate()",
+      "updateSeats(uint256,uint256)",
+      "executeSeatsUpdate(uint256)",
+      "submitTransaction(uint256,address,uint256,bytes)",
+      "confirmTransaction(uint256,uint256)",
+      "executeTransaction(uint256,uint256)",
+      "revokeConfirmation(uint256,uint256)",
+      "submitBatchTransactions(uint256,address[],uint256[],bytes[])",
+      "confirmBatchTransactions(uint256,uint256[])",
+      "executeBatchTransactions(uint256,uint256[])",
+      "getProxyAdmin()",
+      "acceptAdmin()",
+      "upgradeImplementation(address,bytes)",
+      "transfer(address,uint256)",
+      "transferFrom(address,address,uint256)",
+      "getNextTransactionId()",
+      "getTransaction(uint256)",
+      "getTransactionCount()",
+      "getConfirmation(uint256,uint256)"
+    ],
+    "Board": [
+      "_delegate(uint256,uint256)",
+      "_undelegate(uint256,uint256)",
+      "_reposition(uint256)",
+      "_insert(uint256,uint256)",
+      "_remove(uint256)",
+      "_getTop(uint256)",
+      "_getQuorum()",
+      "_getSeats()",
+      "_setSeats(uint256,uint256)",
+      "_executeSeatsUpdate(uint256)",
+      "_isInTopSeats(uint256)"
+    ],
+    "Wallet": [
+      "_submitTransaction(uint256,address,uint256,bytes)",
+      "_confirmTransaction(uint256,uint256)",
+      "_revokeConfirmation(uint256,uint256)",
+      "_executeTransaction(uint256,uint256)",
+      "getTransactionCount()",
+      "getTransaction(uint256)",
+      "getConfirmation(uint256,uint256)",
+      "getNextTransactionId()"
+    ]
+  },
+  "payable_paths": [
+    {
+      "function": "receive()",
+      "contract": "Chamber",
+      "description": "Accepts ETH deposits to the vault"
+    },
+    {
+      "function": "submitTransaction(uint256,address,uint256,bytes)",
+      "contract": "Chamber",
+      "description": "Can submit transactions with ETH value for execution"
+    },
+    {
+      "function": "submitBatchTransactions(uint256,address[],uint256[],bytes[])",
+      "contract": "Chamber",
+      "description": "Can submit batch transactions with ETH values"
+    }
+  ],
+  "external_calls": [
+    {
+      "location": "Chamber.sol:146",
+      "type": "low-level call",
+      "target": "transaction.target",
+      "description": "Executes approved transactions via target.call{value: value}(data)",
+      "context": "_executeTransaction function"
+    },
+    {
+      "location": "Chamber.sol:95-102",
+      "type": "external view call",
+      "target": "nft.ownerOf(tokenId)",
+      "description": "Validates NFT ownership with try-catch error handling",
+      "context": "delegate function"
+    },
+    {
+      "location": "Chamber.sol:200-206",
+      "type": "external view call",
+      "target": "nft.ownerOf(topTokenIds[i])",
+      "description": "Gets director addresses from NFT ownership",
+      "context": "getDirectors function"
+    },
+    {
+      "location": "Chamber.sol:543-555",
+      "type": "external view call",
+      "target": "IERC1271(owner).isValidSignature(hash, encoded)",
+      "description": "EIP-1271 signature validation for smart contract directors",
+      "context": "_isDirector function"
+    },
+    {
+      "location": "Chamber.sol:618",
+      "type": "external call",
+      "target": "ProxyAdmin.upgradeAndCall(proxy, newImplementation, data)",
+      "description": "Upgrades contract implementation via ProxyAdmin",
+      "context": "upgradeImplementation function"
+    }
+  ],
+  "delegatecall_sites": [],
+  "access_patterns": {
+    "director_only": [
+      "updateSeats(uint256,uint256)",
+      "executeSeatsUpdate(uint256)",
+      "submitTransaction(uint256,address,uint256,bytes)",
+      "confirmTransaction(uint256,uint256)",
+      "executeTransaction(uint256,uint256)",
+      "revokeConfirmation(uint256,uint256)",
+      "submitBatchTransactions(uint256,address[],uint256[],bytes[])",
+      "confirmBatchTransactions(uint256,uint256[])",
+      "executeBatchTransactions(uint256,uint256[])"
+    ],
+    "internal_only": [
+      "_delegate(uint256,uint256)",
+      "_undelegate(uint256,uint256)",
+      "_reposition(uint256)",
+      "_insert(uint256,uint256)",
+      "_remove(uint256)",
+      "_setSeats(uint256,uint256)",
+      "_executeSeatsUpdate(uint256)",
+      "_isDirector(uint256)"
+    ],
+    "public_view": [
+      "getMember(uint256)",
+      "getTop(uint256)",
+      "getSize()",
+      "getQuorum()",
+      "getSeats()",
+      "getDirectors()",
+      "getDelegations(address)",
+      "getAgentDelegation(address,uint256)",
+      "getTotalAgentDelegations(address)",
+      "getSeatUpdate()",
+      "getTransaction(uint256)",
+      "getTransactionCount()",
+      "getConfirmation(uint256,uint256)",
+      "getNextTransactionId()"
+    ]
+  }
+}

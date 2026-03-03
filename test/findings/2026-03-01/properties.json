@@ -1,0 +1,167 @@
+[
+  {
+    "function": "delegate(uint256,uint256)",
+    "properties": [
+      {
+        "property": "balance_integrity",
+        "description": "User balance >= total delegations after delegation",
+        "expression": "balanceOf(msg.sender) >= totalAgentDelegations[msg.sender]"
+      },
+      {
+        "property": "delegation_consistency",
+        "description": "Individual delegations sum to total",
+        "expression": "sum(agentDelegation[msg.sender]) == totalAgentDelegations[msg.sender]"
+      },
+      {
+        "property": "board_sorted",
+        "description": "Board remains sorted after insertion",
+        "expression": "isSorted(board) && containsNewDelegation(board)"
+      }
+    ]
+  },
+  {
+    "function": "undelegate(uint256,uint256)",
+    "properties": [
+      {
+        "property": "balance_integrity",
+        "description": "User balance >= total delegations after undelegation",
+        "expression": "balanceOf(msg.sender) >= totalAgentDelegations[msg.sender]"
+      },
+      {
+        "property": "delegation_consistency",
+        "description": "Individual delegations sum to total",
+        "expression": "sum(agentDelegation[msg.sender]) == totalAgentDelegations[msg.sender]"
+      },
+      {
+        "property": "board_sorted",
+        "description": "Board remains sorted after removal/repositioning",
+        "expression": "isSorted(board)"
+      }
+    ]
+  },
+  {
+    "function": "submitTransaction(uint256,address,uint256,bytes)",
+    "properties": [
+      {
+        "property": "director_only",
+        "description": "Only directors can submit transactions",
+        "expression": "isDirector(msg.sender)"
+      },
+      {
+        "property": "transaction_created",
+        "description": "Transaction is added to transactions array",
+        "expression": "transactions.length == old(transactions.length) + 1"
+      },
+      {
+        "property": "auto_confirmation",
+        "description": "Submitter automatically confirms",
+        "expression": "isConfirmed[txId][tokenId] == true"
+      }
+    ]
+  },
+  {
+    "function": "executeTransaction(uint256,uint256)",
+    "properties": [
+      {
+        "property": "director_only",
+        "description": "Only directors can execute",
+        "expression": "isDirector(msg.sender)"
+      },
+      {
+        "property": "quorum_required",
+        "description": "Transaction has sufficient confirmations",
+        "expression": "transaction.confirmations >= getQuorum()"
+      },
+      {
+        "property": "executes_once",
+        "description": "Transaction not already executed",
+        "expression": "transaction.executed == false"
+      },
+      {
+        "property": "atomic_execution",
+        "description": "Execution succeeds or state reverts",
+        "expression": "(success == true && executed == true) || (success == false && executed == false)"
+      }
+    ]
+  },
+  {
+    "function": "transfer(address,uint256)",
+    "properties": [
+      {
+        "property": "delegation_constraint",
+        "description": "Transfer respects delegation limits",
+        "expression": "balanceOf(from) - amount >= totalAgentDelegations[from]"
+      },
+      {
+        "property": "balance_update",
+        "description": "Balances update correctly",
+        "expression": "balanceOf(to) == old(balanceOf(to)) + amount && balanceOf(from) == old(balanceOf(from)) - amount"
+      }
+    ]
+  },
+  {
+    "function": "_update(address,address,uint256)",
+    "properties": [
+      {
+        "property": "outgoing_constraint",
+        "description": "Outgoing transfers check delegation limits",
+        "expression": "from == address(0) || balanceOf(from) - value >= totalAgentDelegations[from]"
+      },
+      {
+        "property": "erc4626_compliance",
+        "description": "Follows ERC4626 _update semantics",
+        "expression": "super._update(from, to, value) is called"
+      }
+    ]
+  },
+  {
+    "function": "getDirectors()",
+    "properties": [
+      {
+        "property": "current_ownership",
+        "description": "Returns current NFT owners (or address(0) on error)",
+        "expression": "forall i: directors[i] == nft.ownerOf(topTokenIds[i]) || directors[i] == address(0)"
+      },
+      {
+        "property": "top_delegates",
+        "description": "Returns owners of top delegated tokenIds",
+        "expression": "directors == ownersOf(getTop(seats))"
+      }
+    ]
+  },
+  {
+    "function": "_getQuorum()",
+    "properties": [
+      {
+        "property": "calculation_correct",
+        "description": "Quorum is 51% + 1 of seats",
+        "expression": "return == 1 + (seats * 51) / 100"
+      },
+      {
+        "property": "minimum_security",
+        "description": "Always requires at least 1 confirmation",
+        "expression": "return >= 1"
+      }
+    ]
+  },
+  {
+    "function": "upgradeImplementation(address,bytes)",
+    "properties": [
+      {
+        "property": "authorized_caller",
+        "description": "Only Chamber contract can call",
+        "expression": "msg.sender == address(this)"
+      },
+      {
+        "property": "proxy_ownership",
+        "description": "Chamber owns ProxyAdmin",
+        "expression": "proxyAdmin.owner() == address(this)"
+      },
+      {
+        "property": "implementation_valid",
+        "description": "New implementation is not zero address",
+        "expression": "newImplementation != address(0)"
+      }
+    ]
+  }
+]

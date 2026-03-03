@@ -1,0 +1,37 @@
+{
+  "contracts": ["Chamber"],
+  "invariant_functions": [
+    "balance_integrity_invariant()",
+    "delegation_consistency_invariant()",
+    "board_sorted_invariant()",
+    "quorum_calculation_invariant()",
+    "transaction_execution_invariant()",
+    "director_eligibility_invariant()"
+  ],
+  "target_functions": [
+    "delegate(uint256,uint256)",
+    "undelegate(uint256,uint256)",
+    "submitTransaction(uint256,address,uint256,bytes)",
+    "confirmTransaction(uint256,uint256)",
+    "executeTransaction(uint256,uint256)",
+    "transfer(address,uint256)",
+    "updateSeats(uint256,uint256)",
+    "executeSeatsUpdate(uint256)"
+  ],
+  "excluded_functions": [
+    "getMember(uint256)",
+    "getTop(uint256)",
+    "getSize()",
+    "getQuorum()",
+    "getSeats()",
+    "getDirectors()",
+    "getDelegations(address)",
+    "getAgentDelegation(address,uint256)",
+    "getTotalAgentDelegations(address)",
+    "getSeatUpdate()",
+    "getNextTransactionId()",
+    "getTransaction(uint256)",
+    "getTransactionCount()",
+    "getConfirmation(uint256,uint256)"
+  ]
+}

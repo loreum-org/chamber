@@ -1,0 +1,240 @@
+{
+  "roles": [],
+  "modifiers": [
+    {
+      "name": "isDirector",
+      "contract": "Chamber",
+      "description": "Restricts access to NFT holders in top seats with EIP-1271 support",
+      "checks": [
+        "tokenId != 0",
+        "nft.ownerOf(tokenId) ownership verification",
+        "EIP-1271 signature validation for smart contracts",
+        "tokenId in top _getSeats() positions"
+      ],
+      "functions_using": [
+        "updateSeats",
+        "executeSeatsUpdate",
+        "submitTransaction",
+        "confirmTransaction",
+        "executeTransaction",
+        "revokeConfirmation",
+        "submitBatchTransactions",
+        "confirmBatchTransactions",
+        "executeBatchTransactions"
+      ]
+    },
+    {
+      "name": "circuitBreaker",
+      "contract": "Board",
+      "description": "Prevents reentrancy during linked list operations",
+      "checks": [
+        "locked flag check",
+        "sets locked = true before execution",
+        "resets locked = false after execution"
+      ],
+      "functions_using": [
+        "_reposition"
+      ]
+    },
+    {
+      "name": "preventReentry",
+      "contract": "Board",
+      "description": "Prevents reentrancy for delegation operations",
+      "checks": [
+        "locked flag check"
+      ],
+      "functions_using": [
+        "_delegate",
+        "_undelegate"
+      ]
+    },
+    {
+      "name": "nonReentrant",
+      "contract": "Chamber",
+      "description": "OpenZeppelin ReentrancyGuard protection",
+      "checks": [
+        "Reentrancy status tracking"
+      ],
+      "functions_using": [
+        "submitTransaction",
+        "confirmTransaction",
+        "executeTransaction",
+        "revokeConfirmation",
+        "submitBatchTransactions",
+        "confirmBatchTransactions",
+        "executeBatchTransactions"
+      ]
+    },
+    {
+      "name": "initializer",
+      "contract": "Chamber",
+      "description": "Ensures initialize function called only once",
+      "checks": [
+        "initialization status"
+      ],
+      "functions_using": [
+        "initialize"
+      ]
+    },
+    {
+      "name": "txExists",
+      "contract": "Wallet",
+      "description": "Validates transaction index exists",
+      "checks": [
+        "nonce < transactions.length"
+      ],
+      "functions_using": [
+        "_confirmTransaction",
+        "_revokeConfirmation",
+        "_executeTransaction"
+      ]
+    },
+    {
+      "name": "notExecuted",
+      "contract": "Wallet",
+      "description": "Ensures transaction hasn't been executed",
+      "checks": [
+        "!transactions[nonce].executed"
+      ],
+      "functions_using": [
+        "_confirmTransaction",
+        "_executeTransaction"
+      ]
+    },
+    {
+      "name": "notConfirmed",
+      "contract": "Wallet",
+      "description": "Ensures transaction not already confirmed by this tokenId",
+      "checks": [
+        "!isConfirmed[nonce][tokenId]"
+      ],
+      "functions_using": [
+        "_confirmTransaction"
+      ]
+    }
+  ],
+  "access_checks": [
+    {
+      "type": "input_validation",
+      "checks": [
+        {
+          "field": "tokenId",
+          "validation": "!= 0",
+          "functions": ["delegate", "undelegate", "isDirector"]
+        },
+        {
+          "field": "amount",
+          "validation": "!= 0",
+          "functions": ["delegate", "undelegate", "transfer", "transferFrom"]
+        },
+        {
+          "field": "address",
+          "validation": "!= address(0)",
+          "functions": ["initialize", "submitTransaction", "submitBatchTransactions", "transfer", "transferFrom"]
+        },
+        {
+          "field": "erc20Token",
+          "validation": "!= address(0)",
+          "functions": ["initialize"]
+        },
+        {
+          "field": "erc721Token",
+          "validation": "!= address(0)",
+          "functions": ["initialize"]
+        }
+      ]
+    },
+    {
+      "type": "balance_validation",
+      "checks": [
+        {
+          "description": "Sufficient Chamber balance for delegation",
+          "validation": "balanceOf(msg.sender) >= amount",
+          "functions": ["delegate"]
+        },
+        {
+          "description": "Sufficient Chamber balance considering delegations",
+          "validation": "balanceOf(msg.sender) >= totalAgentDelegations[msg.sender] + amount",
+          "functions": ["delegate"]
+        },
+        {
+          "description": "Sufficient delegated amount for undelegation",
+          "validation": "currentDelegation >= amount",
+          "functions": ["undelegate"]
+        },
+        {
+          "description": "Sufficient balance for transfers",
+          "validation": "balanceOf(owner) >= value",
+          "functions": ["transfer", "transferFrom"]
+        },
+        {
+          "description": "Sufficient balance considering delegations",
+          "validation": "balanceOf(from) - value >= totalDelegatedAmount(from)",
+          "functions": ["_update"]
+        }
+      ]
+    },
+    {
+      "type": "ownership_validation",
+      "checks": [
+        {
+          "description": "NFT ownership verification with error handling",
+          "validation": "try nft.ownerOf(tokenId) catch revert",
+          "functions": ["delegate"]
+        },
+        {
+          "description": "Director ownership verification",
+          "validation": "nft.ownerOf(tokenId) == msg.sender OR EIP-1271 validation",
+          "functions": ["_isDirector"]
+        }
+      ]
+    },
+    {
+      "type": "authorization_checks",
+      "checks": [
+        {
+          "description": "Only contract itself can call upgradeImplementation",
+          "validation": "msg.sender == address(this)",
+          "functions": ["upgradeImplementation"]
+        },
+        {
+          "description": "Contract owns ProxyAdmin",
+          "validation": "proxyAdmin.owner() == address(this)",
+          "functions": ["upgradeImplementation"]
+        },
+        {
+          "description": "Sufficient confirmations for execution",
+          "validation": "transaction.confirmations >= getQuorum()",
+          "functions": ["executeTransaction", "executeBatchTransactions"]
+        },
+        {
+          "description": "Transaction not already executed",
+          "validation": "!transaction.executed",
+          "functions": ["confirmTransaction", "executeTransaction"]
+        },
+        {
+          "description": "Seat update timelock expired",
+          "validation": "block.timestamp >= proposal.timestamp + 7 days",
+          "functions": ["_executeSeatsUpdate"]
+        }
+      ]
+    }
+  ],
+  "privileged_functions": [
+    {
+      "function": "upgradeImplementation(address,bytes)",
+      "access": "Only callable by Chamber contract itself via multisig",
+      "risk": "Can change contract implementation"
+    },
+    {
+      "function": "updateSeats(uint256,uint256)",
+      "access": "Director only",
+      "risk": "Can change governance structure"
+    },
+    {
+      "function": "executeTransaction(uint256,uint256)",
+      "access": "Director only, requires quorum",
+      "risk": "Can execute arbitrary transactions"
+    }
+  ]
+}

@@ -2,7 +2,7 @@ import { useEffect, useCallback, useRef, useState } from 'react'
 import { useWaitForTransactionReceipt, useWatchPendingTransactions, useWriteContract } from 'wagmi'
 import { type Hash } from 'viem'
 import toast from 'react-hot-toast'
-import { chamberAbi, erc20Abi, registryAbi } from '@/contracts/abis'
+import { chamberAbi, erc20Abi, chamberRegistryAbi } from '@/contracts/abis'
 
 export type TransactionStatus = 'idle' | 'pending' | 'confirming' | 'success' | 'error'
 
@@ -567,7 +567,7 @@ export function useCreateChamberWithStatus(
       transactionStatus.reset()
       const txHash = await writeContract({
         address: registryAddress,
-        abi: registryAbi,
+        abi: chamberRegistryAbi,
         functionName: 'createChamber',
         args: [erc20Token, erc721Token, BigInt(seats), name, symbol],
       })

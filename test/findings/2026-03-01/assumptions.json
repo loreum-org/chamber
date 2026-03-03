@@ -1,0 +1,43 @@
+{
+  "oracle_assumptions": [
+    {
+      "description": "ERC721.ownerOf() calls are authoritative and return correct ownership",
+      "risk": "If NFT contract returns incorrect ownership, directors can be impersonated",
+      "mitigation": "Try-catch blocks around ownerOf calls, fallback to address(0) for invalid tokens"
+    },
+    {
+      "description": "ERC20.transfer/transferFrom follow standard behavior",
+      "risk": "Non-standard ERC20 could break accounting or enable reentrancy",
+      "mitigation": "SafeERC20 usage throughout codebase"
+    }
+  ],
+  "admin_assumptions": [
+    {
+      "description": "Chamber controls its own ProxyAdmin after deployment",
+      "risk": "If ProxyAdmin ownership not transferred, upgrades can be blocked or hijacked",
+      "mitigation": "Registry contract transfers ownership in acceptAdmin()"
+    },
+    {
+      "description": "Initial seat configuration is reasonable (not 0 or excessive)",
+      "risk": "Zero seats = no governance, excessive seats = governance dilution",
+      "mitigation": "Bounds checking in initialize() and updateSeats()"
+    }
+  ],
+  "trust_boundary_assumptions": [
+    {
+      "description": "NFT holders are distinct entities, not controlled by single adversary",
+      "risk": "Sybil attack where one entity controls majority of NFTs",
+      "mitigation": "No protocol-level mitigation, relies on NFT distribution"
+    },
+    {
+      "description": "Directors won't collude to drain funds",
+      "risk": "51%+ directors could approve malicious transactions",
+      "mitigation": "Quorum requirement (51%+1), revocable confirmations, timelocks"
+    },
+    {
+      "description": "EIP-1271 implementations are secure",
+      "risk": "Smart contract directors could have signature validation bugs",
+      "mitigation": "DirectorAuth hash validation, try-catch around isValidSignature"
+    }
+  ]
+}

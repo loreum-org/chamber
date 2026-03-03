@@ -1,0 +1,235 @@
+[
+  {
+    "id": "SEC-REENT-001",
+    "title": "Reentrancy Protection Analysis",
+    "severity": "LOW",
+    "likelihood": "LOW",
+    "impact": "Potential reentrancy if external calls made during state updates",
+    "component": "Chamber.sol",
+    "evidence": [
+      {
+        "file": "Chamber.sol",
+        "lineStart": 16,
+        "lineEnd": 17,
+        "note": "ReentrancyGuardUpgradeable imported and initialized"
+      },
+      {
+        "file": "Chamber.sol",
+        "lineStart": 326,
+        "lineEnd": 379,
+        "note": "Wallet functions use nonReentrant modifier"
+      },
+      {
+        "file": "Wallet.sol",
+        "lineStart": 142,
+        "lineEnd": 151,
+        "note": "CEI pattern used in _executeTransaction"
+      }
+    ],
+    "exploit_sketch": [],
+    "recommended_fix": "Already implemented correctly",
+    "status": "RESOLVED"
+  },
+  {
+    "id": "SEC-ARITH-001",
+    "title": "Quorum Calculation Division",
+    "severity": "LOW",
+    "likelihood": "LOW",
+    "impact": "Potential division by zero if seats = 0",
+    "component": "Board.sol",
+    "evidence": [
+      {
+        "file": "Board.sol",
+        "lineStart": 322,
+        "lineEnd": 324,
+        "note": "return 1 + (seats * 51) / 100; - division by 100 is safe but seats could be 0"
+      },
+      {
+        "file": "Chamber.sol",
+        "lineStart": 78,
+        "lineEnd": 78,
+        "note": "_setSeats(0, seats) called in initialize with seats parameter"
+      }
+    ],
+    "exploit_sketch": [
+      "If seats = 0, quorum calculation returns 1 + (0 * 51) / 100 = 1",
+      "This could allow single-director execution if seats somehow become 0"
+    ],
+    "recommended_fix": "Add seats > 0 check in _getQuorum()",
+    "status": "OPEN"
+  },
+  {
+    "id": "SEC-INPUT-001",
+    "title": "NFT OwnerOf External Call Error Handling",
+    "severity": "MEDIUM",
+    "likelihood": "MEDIUM",
+    "impact": "Potential DoS if NFT contract behaves unexpectedly",
+    "component": "Chamber.sol",
+    "evidence": [
+      {
+        "file": "Chamber.sol",
+        "lineStart": 95,
+        "lineEnd": 102,
+        "note": "try-catch around nft.ownerOf(tokenId) in delegate()"
+      },
+      {
+        "file": "Chamber.sol",
+        "lineStart": 200,
+        "lineEnd": 206,
+        "note": "try-catch around nft.ownerOf() in getDirectors()"
+      }
+    ],
+    "exploit_sketch": [
+      "Malicious NFT contract that reverts in ownerOf()",
+      "Could prevent delegation or director status checks",
+      "If NFT contract changes behavior, could break governance"
+    ],
+    "recommended_fix": "Consider additional validation or fallback mechanisms",
+    "status": "OPEN"
+  },
+  {
+    "id": "SEC-ACCESS-001",
+    "title": "EIP-1271 Signature Validation",
+    "severity": "MEDIUM",
+    "likelihood": "LOW",
+    "impact": "Smart contract directors could bypass ownership checks",
+    "component": "Chamber.sol",
+    "evidence": [
+      {
+        "file": "Chamber.sol",
+        "lineStart": 540,
+        "lineEnd": 555,
+        "note": "EIP-1271 validation allows smart contracts to act as directors"
+      },
+      {
+        "file": "Chamber.sol",
+        "lineStart": 546,
+        "lineEnd": 548,
+        "note": "Hash construction: keccak256(abi.encodePacked('DirectorAuth', address(this), tokenId, msg.sender))"
+      }
+    ],
+    "exploit_sketch": [
+      "Smart contract that implements isValidSignature incorrectly",
+      "Could allow unauthorized access to director functions",
+      "EIP-1271 implementation bugs in NFT contract itself"
+    ],
+    "recommended_fix": "Add timeout or additional validation for EIP-1271 signatures",
+    "status": "OPEN"
+  },
+  {
+    "id": "SEC-STATE-001",
+    "title": "Delegation Balance Constraint",
+    "severity": "HIGH",
+    "likelihood": "MEDIUM",
+    "impact": "Users could delegate more than their balance",
+    "component": "Chamber.sol",
+    "evidence": [
+      {
+        "file": "Chamber.sol",
+        "lineStart": 108,
+        "lineEnd": 112,
+        "note": "Checks total delegation doesn't exceed balance after new delegation"
+      },
+      {
+        "file": "Chamber.sol",
+        "lineStart": 632,
+        "lineEnd": 641,
+        "note": "_update() enforces delegation constraints on all transfers"
+      }
+    ],
+    "exploit_sketch": [
+      "User delegates amount, then transfers tokens away",
+      "Could leave negative delegation state",
+      "ERC4626 operations might bypass delegation checks"
+    ],
+    "recommended_fix": "Ensure all balance-changing operations respect delegation constraints",
+    "status": "RESOLVED"
+  },
+  {
+    "id": "SEC-EXTERNAL-001",
+    "title": "Low-Level Call in Transaction Execution",
+    "severity": "HIGH",
+    "likelihood": "MEDIUM",
+    "impact": "Arbitrary external calls with ETH transfer",
+    "component": "Wallet.sol",
+    "evidence": [
+      {
+        "file": "Wallet.sol",
+        "lineStart": 146,
+        "lineEnd": 151,
+        "note": "target.call{value: value}(data) with success check and state revert on failure"
+      },
+      {
+        "file": "Chamber.sol",
+        "lineStart": 332,
+        "lineEnd": 341,
+        "note": "Allows address(this) calls only for upgradeImplementation"
+      }
+    ],
+    "exploit_sketch": [
+      "Malicious transaction calling back into Chamber",
+      "Reentrancy through external contract callbacks",
+      "ETH drain if target contract has fallback issues"
+    ],
+    "recommended_fix": "Already protected by nonReentrant and CEI pattern",
+    "status": "RESOLVED"
+  },
+  {
+    "id": "SEC-UPGRADE-001",
+    "title": "Proxy Upgrade Authorization",
+    "severity": "CRITICAL",
+    "likelihood": "LOW",
+    "impact": "Unauthorized contract upgrades",
+    "component": "Chamber.sol",
+    "evidence": [
+      {
+        "file": "Chamber.sol",
+        "lineStart": 603,
+        "lineEnd": 620,
+        "note": "upgradeImplementation requires msg.sender == address(this)"
+      },
+      {
+        "file": "Chamber.sol",
+        "lineStart": 612,
+        "lineEnd": 615,
+        "note": "Verifies Chamber owns ProxyAdmin"
+      }
+    ],
+    "exploit_sketch": [
+      "If ProxyAdmin ownership not properly transferred",
+      "External actor could call ProxyAdmin.upgrade() directly",
+      "Bypasses governance multisig approval"
+    ],
+    "recommended_fix": "Ensure Registry properly transfers ProxyAdmin ownership",
+    "status": "OPEN"
+  },
+  {
+    "id": "SEC-GAS-001",
+    "title": "Linked List Operations Gas Limits",
+    "severity": "MEDIUM",
+    "likelihood": "LOW",
+    "impact": "DoS through excessive gas consumption",
+    "component": "Board.sol",
+    "evidence": [
+      {
+        "file": "Board.sol",
+        "lineStart": 178,
+        "lineEnd": 185,
+        "note": "MAX_NODES = 100 limit on linked list size"
+      },
+      {
+        "file": "Board.sol",
+        "lineStart": 218,
+        "lineEnd": 225,
+        "note": "Linear search in _insertNodeInOrder"
+      }
+    ],
+    "exploit_sketch": [
+      "Attacker creates many small delegations to fill MAX_NODES",
+      "Repositioning operations become expensive",
+      "Could prevent new delegations or cause out-of-gas"
+    ],
+    "recommended_fix": "Consider gas limits for operations or optimize data structure",
+    "status": "OPEN"
+  }
+]

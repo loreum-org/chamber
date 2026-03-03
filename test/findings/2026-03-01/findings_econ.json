@@ -1,0 +1,141 @@
+[
+  {
+    "id": "ECON-DELEGATION-FRONTRUNNING",
+    "title": "Delegation Frontrunning Attack",
+    "severity": "MEDIUM",
+    "likelihood": "HIGH",
+    "impact": "Manipulated board rankings, governance capture",
+    "component": "Delegation System",
+    "evidence": [
+      {
+        "file": "Board.sol",
+        "lineStart": 123,
+        "lineEnd": 134,
+        "note": "_delegate() updates board position immediately"
+      }
+    ],
+    "exploit_sketch": [
+      "Monitor pending delegations in mempool",
+      "Frontrun with larger delegation to steal board position",
+      "Victim's delegation pushes attacker down instead of up",
+      "Attacker becomes director, can manipulate subsequent transactions"
+    ],
+    "recommended_fix": "Consider commit-reveal scheme for delegations or minimum delay"
+  },
+  {
+    "id": "ECON-NFT-FLASH-LOAN",
+    "title": "NFT Flash Loan Board Takeover",
+    "severity": "HIGH",
+    "likelihood": "MEDIUM",
+    "impact": "Temporary governance control via flash loan",
+    "component": "Director Eligibility",
+    "evidence": [
+      {
+        "file": "Chamber.sol",
+        "lineStart": 530,
+        "lineEnd": 571,
+        "note": "_isDirector() checks current NFT ownership"
+      }
+    ],
+    "exploit_sketch": [
+      "Flash loan high-value NFTs from lending protocols",
+      "Delegate maximum amount to become director",
+      "Execute malicious transaction (drain funds, change parameters)",
+      "Undelegate and return NFTs in same transaction",
+      "Governance compromised for single transaction"
+    ],
+    "recommended_fix": "Add timelock for director status changes or stake requirements"
+  },
+  {
+    "id": "ECON-TRANSACTION-SANDWICH",
+    "title": "Transaction Sandwich Attacks",
+    "severity": "MEDIUM",
+    "likelihood": "MEDIUM",
+    "impact": "MEV extraction from approved transactions",
+    "component": "Multi-signature Execution",
+    "evidence": [
+      {
+        "file": "Wallet.sol",
+        "lineStart": 142,
+        "lineEnd": 151,
+        "note": "Transactions execute via low-level call"
+      }
+    ],
+    "exploit_sketch": [
+      "Monitor pending transaction executions in mempool",
+      "Sandwich attack: front-run with state-changing transaction",
+      "Execute victim's transaction which now behaves differently",
+      "Back-run to profit from state changes"
+    ],
+    "recommended_fix": "Transaction execution requires on-chain confirmation order"
+  },
+  {
+    "id": "ECON-SEAT-UPDATE-MANIPULATION",
+    "title": "Seat Update Economic Manipulation",
+    "severity": "MEDIUM",
+    "likelihood": "LOW",
+    "impact": "Forced governance structure changes",
+    "component": "Seat Management",
+    "evidence": [
+      {
+        "file": "Board.sol",
+        "lineStart": 387,
+        "lineEnd": 413,
+        "note": "_executeSeatsUpdate() requires ongoing quorum support"
+      }
+    ],
+    "exploit_sketch": [
+      "Accumulate just enough voting power to propose seat increase",
+      "During 7-day timelock, dilute other holders' power",
+      "Execute seat increase when quorum threshold is met",
+      "New seats controlled by attacker, permanent governance change"
+    ],
+    "recommended_fix": "Require supermajority for seat changes or stake-weighted voting"
+  },
+  {
+    "id": "ECON-ERC4626-INFLATION",
+    "title": "ERC4626 First-Depositor Inflation",
+    "severity": "LOW",
+    "likelihood": "LOW",
+    "impact": "Unfair share dilution for subsequent depositors",
+    "component": "ERC4626 Vault",
+    "evidence": [
+      {
+        "file": "Chamber.sol",
+        "lineStart": 649,
+        "lineEnd": 651,
+        "note": "_decimalsOffset() returns 3 (1000 virtual shares)"
+      }
+    ],
+    "exploit_sketch": [
+      "Be first depositor with small amount",
+      "Receive large share of total supply due to virtual shares",
+      "Subsequent depositors get diluted shares",
+      "Redeem large portion when others deposit"
+    ],
+    "recommended_fix": "Already mitigated with virtual shares"
+  },
+  {
+    "id": "ECON-DELEGATION-DOS",
+    "title": "Delegation Exhaustion DoS",
+    "severity": "LOW",
+    "likelihood": "MEDIUM",
+    "impact": "Prevent new delegations through gas exhaustion",
+    "component": "Board Management",
+    "evidence": [
+      {
+        "file": "Board.sol",
+        "lineStart": 178,
+        "lineEnd": 185,
+        "note": "MAX_NODES = 100 limit prevents unlimited growth"
+      }
+    ],
+    "exploit_sketch": [
+      "Create many small delegations to fill board to MAX_NODES",
+      "Each new delegation requires expensive repositioning",
+      "Gas costs become prohibitive for legitimate users",
+      "Board becomes unresponsive to new participants"
+    ],
+    "recommended_fix": "Increase MAX_NODES or implement more efficient data structure"
+  }
+]

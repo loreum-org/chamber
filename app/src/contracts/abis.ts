@@ -434,6 +434,70 @@ export const chamberAbi = [
       { name: 'value', type: 'uint256', indexed: false },
     ],
   },
+  // ERC4626 preview functions
+  {
+    type: 'function',
+    name: 'previewDeposit',
+    inputs: [{ name: 'assets', type: 'uint256' }],
+    outputs: [{ name: 'shares', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'previewMint',
+    inputs: [{ name: 'shares', type: 'uint256' }],
+    outputs: [{ name: 'assets', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'previewWithdraw',
+    inputs: [{ name: 'assets', type: 'uint256' }],
+    outputs: [{ name: 'shares', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'previewRedeem',
+    inputs: [{ name: 'shares', type: 'uint256' }],
+    outputs: [{ name: 'assets', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'convertToShares',
+    inputs: [{ name: 'assets', type: 'uint256' }],
+    outputs: [{ name: 'shares', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'convertToAssets',
+    inputs: [{ name: 'shares', type: 'uint256' }],
+    outputs: [{ name: 'assets', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'maxDeposit',
+    inputs: [{ name: 'receiver', type: 'address' }],
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'maxWithdraw',
+    inputs: [{ name: 'owner', type: 'address' }],
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'maxRedeem',
+    inputs: [{ name: 'owner', type: 'address' }],
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+  },
   // Custom Errors
   { type: 'error', name: 'InsufficientDelegatedAmount', inputs: [] },
   { type: 'error', name: 'InsufficientChamberBalance', inputs: [] },
@@ -457,6 +521,25 @@ export const chamberAbi = [
   { type: 'error', name: 'InvalidQuorum', inputs: [] },
   { type: 'error', name: 'InvalidTransaction', inputs: [] },
   { type: 'error', name: 'InvalidSignature', inputs: [] },
+  // OZ ERC20 errors for better error decoding
+  {
+    type: 'error',
+    name: 'ERC20InsufficientBalance',
+    inputs: [
+      { name: 'sender', type: 'address' },
+      { name: 'balance', type: 'uint256' },
+      { name: 'needed', type: 'uint256' },
+    ],
+  },
+  {
+    type: 'error',
+    name: 'ERC20InsufficientAllowance',
+    inputs: [
+      { name: 'spender', type: 'address' },
+      { name: 'allowance', type: 'uint256' },
+      { name: 'needed', type: 'uint256' },
+    ],
+  },
 ] as const
 
 // ChamberRegistry ABI - Factory for deploying chambers
@@ -466,6 +549,8 @@ export const chamberRegistryAbi = [
     name: 'initialize',
     inputs: [
       { name: '_implementation', type: 'address' },
+      { name: '_agentImplementation', type: 'address' },
+      { name: '_agentIdentityRegistry', type: 'address' },
       { name: 'admin', type: 'address' },
     ],
     outputs: [],
@@ -531,6 +616,20 @@ export const chamberRegistryAbi = [
     name: 'getChambersByAsset',
     inputs: [{ name: 'asset', type: 'address' }],
     outputs: [{ name: '', type: 'address[]' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'getChildChambers',
+    inputs: [{ name: 'chamber', type: 'address' }],
+    outputs: [{ name: '', type: 'address[]' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'getParentChamber',
+    inputs: [{ name: 'chamber', type: 'address' }],
+    outputs: [{ name: '', type: 'address' }],
     stateMutability: 'view',
   },
   {

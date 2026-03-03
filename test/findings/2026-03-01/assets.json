@@ -1,0 +1,166 @@
+{
+  "tracked_assets": [
+    {
+      "asset": "ERC20 Token",
+      "location": "External ERC20 contract",
+      "custody": "Chamber contract (ERC4626 vault)",
+      "accounting": "ERC4626 share system with virtual shares",
+      "constraints": "Cannot transfer/redeem if delegation constraints violated"
+    },
+    {
+      "asset": "ETH",
+      "location": "Chamber contract balance",
+      "custody": "Chamber contract",
+      "accounting": "address(this).balance",
+      "constraints": "Used for transaction execution"
+    }
+  ],
+  "accounting_variables": [
+    {
+      "variable": "agentDelegation[address][uint256]",
+      "type": "mapping(address => mapping(uint256 => uint256))",
+      "purpose": "Tracks individual delegation amounts per user per tokenId",
+      "invariants": "Sum across all tokenIds per user = totalAgentDelegations[user]"
+    },
+    {
+      "variable": "totalAgentDelegations[address]",
+      "type": "mapping(address => uint256)",
+      "purpose": "Tracks total delegated amount per user",
+      "invariants": "balanceOf(user) >= totalAgentDelegations[user]"
+    },
+    {
+      "variable": "nodes[uint256]",
+      "type": "mapping(uint256 => Node)",
+      "purpose": "Linked list nodes for sorted delegation tracking",
+      "invariants": "Linked list integrity maintained (next/prev pointers)"
+    },
+    {
+      "variable": "head",
+      "type": "uint256",
+      "purpose": "TokenId of highest delegated node",
+      "invariants": "Points to valid node or 0 if empty"
+    },
+    {
+      "variable": "tail",
+      "type": "uint256",
+      "purpose": "TokenId of lowest delegated node",
+      "invariants": "Points to valid node or 0 if empty"
+    },
+    {
+      "variable": "size",
+      "type": "uint256",
+      "purpose": "Number of nodes in delegation list",
+      "invariants": "Accurate count of nodes in linked list"
+    },
+    {
+      "variable": "transactions[uint256]",
+      "type": "Transaction[]",
+      "purpose": "Array of all submitted transactions",
+      "invariants": "Sequential nonces, executed flag prevents double execution"
+    },
+    {
+      "variable": "isConfirmed[uint256][uint256]",
+      "type": "mapping(uint256 => mapping(uint256 => bool))",
+      "purpose": "Tracks confirmations per transaction per tokenId",
+      "invariants": "Consistent with transactions[].confirmations count"
+    },
+    {
+      "variable": "seatUpdate",
+      "type": "SeatUpdate",
+      "purpose": "Tracks pending seat count changes",
+      "invariants": "Timelock and quorum requirements enforced"
+    }
+  ],
+  "custody_locations": [
+    {
+      "location": "Chamber Contract",
+      "assets": ["ERC20 tokens", "ETH"],
+      "access_control": "ERC4626 standard + delegation constraints",
+      "withdrawal_conditions": [
+        "Sufficient balance after accounting for delegations",
+        "ERC4626 share burning"
+      ]
+    },
+    {
+      "location": "External Calls",
+      "assets": ["ETH transfers via transactions"],
+      "access_control": "Multisig approval (51%+1 directors)",
+      "withdrawal_conditions": [
+        "Transaction submitted and confirmed by quorum",
+        "Executed by director"
+      ]
+    },
+    {
+      "location": "ProxyAdmin",
+      "assets": ["Contract implementation control"],
+      "access_control": "Chamber contract ownership",
+      "withdrawal_conditions": [
+        "Multisig upgrade transaction execution"
+      ]
+    }
+  ],
+  "invariant_checks": [
+    {
+      "invariant": "Balance Integrity",
+      "check": "balanceOf(user) >= totalAgentDelegations[user]",
+      "enforced_in": ["delegate", "undelegate", "_update"],
+      "violation_impact": "Users could delegate more than they own"
+    },
+    {
+      "invariant": "Linked List Integrity",
+      "check": "Node pointers form valid doubly-linked list",
+      "enforced_in": ["_insert", "_remove", "_reposition"],
+      "violation_impact": "Board ranking becomes corrupted"
+    },
+    {
+      "invariant": "Director Status Consistency",
+      "check": "getDirectors() returns owners of top N delegated tokenIds",
+      "enforced_in": ["getDirectors", "delegate", "undelegate"],
+      "violation_impact": "Wrong entities have governance control"
+    },
+    {
+      "invariant": "Transaction Execution",
+      "check": "Transactions execute only once with sufficient confirmations",
+      "enforced_in": ["_executeTransaction"],
+      "violation_impact": "Double execution or premature execution"
+    },
+    {
+      "invariant": "Quorum Enforcement",
+      "check": "Transactions require >51% director confirmations",
+      "enforced_in": ["executeTransaction"],
+      "violation_impact": "Insufficient approval for fund movements"
+    },
+    {
+      "invariant": "Seat Update Timelock",
+      "check": "Seat changes require 7-day delay",
+      "enforced_in": ["_executeSeatsUpdate"],
+      "violation_impact": "Governance changes without cooling period"
+    }
+  ],
+  "asset_flows": [
+    {
+      "flow": "Deposit",
+      "from": "User ERC20 balance",
+      "to": "Chamber ERC4626 vault",
+      "accounting": "Mint shares to depositor"
+    },
+    {
+      "flow": "Delegation",
+      "from": "User available balance",
+      "to": "Locked for governance",
+      "accounting": "Update delegation mappings and board"
+    },
+    {
+      "flow": "Transaction Execution",
+      "from": "Chamber balance",
+      "to": "External contract/user",
+      "accounting": "Low-level call with ETH transfer"
+    },
+    {
+      "flow": "Withdrawal",
+      "from": "Chamber vault",
+      "to": "User ERC20 balance",
+      "accounting": "Burn shares, transfer tokens"
+    }
+  ]
+}

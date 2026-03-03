@@ -54,6 +54,12 @@ contract ChamberRegistry is AccessControl, Initializable {
     /// @notice Mapping to check if an address is tracked as an asset
     mapping(address => bool) private _isAsset;
 
+    /// @notice Mapping from chamber address to its parent chamber address (if any)
+    mapping(address => address) private _parentChamber;
+
+    /// @notice Mapping from chamber address to array of its child chamber addresses
+    mapping(address => address[]) private _childChambers;
+
     /**
      * @notice Emitted when a new chamber is deployed
      * @param chamber The address of the newly deployed chamber
@@ -161,6 +167,12 @@ contract ChamberRegistry is AccessControl, Initializable {
             _assets.push(erc20Token);
         }
         _chambersByAsset[erc20Token].push(chamber);
+
+        // Track hierarchy: if asset is another chamber, this is a sub-chamber
+        if (_isChamber[erc20Token]) {
+            _parentChamber[chamber] = erc20Token;
+            _childChambers[erc20Token].push(chamber);
+        }
 
         emit ChamberCreated(chamber, seats, name, symbol, erc20Token, erc721Token);
     }
@@ -294,6 +306,24 @@ contract ChamberRegistry is AccessControl, Initializable {
      */
     function getAssets() external view returns (address[] memory) {
         return _assets;
+    }
+
+    /**
+     * @notice Returns the parent chamber address for a given chamber
+     * @param chamber The chamber address
+     * @return The parent chamber address, or address(0) if it's a root chamber
+     */
+    function getParentChamber(address chamber) external view returns (address) {
+        return _parentChamber[chamber];
+    }
+
+    /**
+     * @notice Returns all child chambers for a given parent chamber
+     * @param chamber The parent chamber address
+     * @return Array of child chamber addresses
+     */
+    function getChildChambers(address chamber) external view returns (address[] memory) {
+        return _childChambers[chamber];
     }
 
     /**

@@ -1,0 +1,53 @@
+[
+  {
+    "external_contract": "ERC20 Token",
+    "risk": "Non-standard ERC20 behavior",
+    "behavior_quirks": [
+      "Reentrant transfers",
+      "Fee-on-transfer tokens",
+      "Blacklisted addresses",
+      "Transfer returns false instead of reverting"
+    ],
+    "impact": "Broken accounting, failed deposits/withdrawals",
+    "mitigation": "SafeERC20 not used - potential issue",
+    "severity": "MEDIUM"
+  },
+  {
+    "external_contract": "ERC721 Token",
+    "risk": "Unexpected ownerOf() behavior",
+    "behavior_quirks": [
+      "Reverts instead of returning address(0) for burned tokens",
+      "Changes ownership without Transfer event",
+      "ownerOf() has side effects",
+      "Non-standard ERC721 implementation"
+    ],
+    "impact": "Director status checks fail, governance broken",
+    "mitigation": "try-catch blocks used in critical paths",
+    "severity": "MEDIUM"
+  },
+  {
+    "external_contract": "EIP-1271 Smart Contract Directors",
+    "risk": "Incorrect signature validation",
+    "behavior_quirks": [
+      "isValidSignature returns wrong magic value",
+      "Signature validation has side effects",
+      "Contract doesn't implement ERC-1271 properly"
+    ],
+    "impact": "Unauthorized access to director functions",
+    "mitigation": "DirectorAuth hash validation",
+    "severity": "HIGH"
+  },
+  {
+    "external_contract": "Transaction Targets",
+    "risk": "Malicious or broken target contracts",
+    "behavior_quirks": [
+      "Reentrant callbacks",
+      "Out-of-gas in fallback/receive",
+      "Unexpected state changes",
+      "Failed external calls"
+    ],
+    "impact": "Failed transactions, fund loss, reentrancy",
+    "mitigation": "CEI pattern, success check with state revert",
+    "severity": "HIGH"
+  }
+]

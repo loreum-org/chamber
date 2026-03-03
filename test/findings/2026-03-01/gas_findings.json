@@ -1,0 +1,37 @@
+[
+  {
+    "location": "Board.sol:_insertNodeInOrder()",
+    "current_usage": "O(n) traversal of linked list",
+    "optimized_usage": "O(log n) with heap/priority queue",
+    "savings_estimate": "50-80% gas savings for large boards",
+    "description": "Linear search through linked list during insertion/repositioning"
+  },
+  {
+    "location": "Chamber.sol:getDelegations()",
+    "current_usage": "O(n) traversal of entire board",
+    "optimized_usage": "O(k) where k is user's delegation count",
+    "savings_estimate": "Significant for large boards with few delegations per user",
+    "description": "Traverses entire linked list to find user's delegations"
+  },
+  {
+    "location": "Board.sol:_getTop()",
+    "current_usage": "O(k) traversal from head",
+    "optimized_usage": "Already optimal for sorted linked list",
+    "savings_estimate": "N/A - optimal implementation",
+    "description": "Efficient traversal of top k elements"
+  },
+  {
+    "location": "Chamber.sol:getDirectors()",
+    "current_usage": "O(seats) external calls to NFT contract",
+    "optimized_usage": "Cache director addresses with invalidation on transfer",
+    "savings_estimate": "90%+ gas savings for repeated calls",
+    "description": "Makes external ownerOf() calls for each director on every call"
+  },
+  {
+    "location": "Wallet.sol:batch operations",
+    "current_usage": "O(n) for n transactions",
+    "optimized_usage": "Already batched efficiently",
+    "savings_estimate": "N/A - optimal batching",
+    "description": "Batch operations process each transaction individually"
+  }
+]

@@ -146,6 +146,44 @@ export function useAssets() {
   }
 }
 
+export function useParentChamber(chamber: `0x${string}` | undefined) {
+  const registryAddress = useRegistryAddress()
+  
+  const { data, isLoading, error, refetch } = useReadContract({
+    address: registryAddress,
+    abi: chamberRegistryAbi,
+    functionName: 'getParentChamber',
+    args: chamber ? [chamber] : undefined,
+    query: { enabled: !!chamber && registryAddress !== '0x0000000000000000000000000000000000000000' },
+  })
+
+  return {
+    parentChamber: data as `0x${string}` | undefined,
+    isLoading,
+    error,
+    refetch,
+  }
+}
+
+export function useChildChambers(chamber: `0x${string}` | undefined) {
+  const registryAddress = useRegistryAddress()
+  
+  const { data, isLoading, error, refetch } = useReadContract({
+    address: registryAddress,
+    abi: chamberRegistryAbi,
+    functionName: 'getChildChambers',
+    args: chamber ? [chamber] : undefined,
+    query: { enabled: !!chamber && registryAddress !== '0x0000000000000000000000000000000000000000' },
+  })
+
+  return {
+    childChambers: data as `0x${string}`[] | undefined,
+    isLoading,
+    error,
+    refetch,
+  }
+}
+
 export function useCreateChamber() {
   const registryAddress = useRegistryAddress()
   const { writeContract, data: hash, isPending, error } = useWriteContract()
