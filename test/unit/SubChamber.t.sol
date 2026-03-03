@@ -22,22 +22,10 @@ contract SubChamberTest is Test {
 
     function test_SubChamber_Hierarchy() public {
         // 1. Create Root Chamber
-        address rootChamber = registry.createChamber(
-            address(rootAsset),
-            address(nft),
-            5,
-            "Root Vault Token",
-            "govROOT"
-        );
+        address rootChamber = registry.createChamber(address(rootAsset), address(nft), 5, "Root Vault Token", "govROOT");
 
         // 2. Create Sub Chamber using Root Chamber as asset
-        address subChamber = registry.createChamber(
-            rootChamber,
-            address(nft),
-            5,
-            "Sub Vault Token",
-            "yieldROOT"
-        );
+        address subChamber = registry.createChamber(rootChamber, address(nft), 5, "Sub Vault Token", "yieldROOT");
 
         // 3. Verify Hierarchy
         assertEq(registry.getParentChamber(subChamber), rootChamber);
@@ -54,10 +42,10 @@ contract SubChamberTest is Test {
     function test_DeepHierarchy() public {
         // Level 0
         address root = registry.createChamber(address(rootAsset), address(nft), 5, "L0", "L0");
-        
+
         // Level 1
         address level1 = registry.createChamber(root, address(nft), 5, "L1", "L1");
-        
+
         // Level 2
         address level2 = registry.createChamber(level1, address(nft), 5, "L2", "L2");
 
