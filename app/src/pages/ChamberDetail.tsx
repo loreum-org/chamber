@@ -1,6 +1,6 @@
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { useAccount, useBalance, useReadContract } from 'wagmi'
+import { useAccount, useBalance, useReadContract, useChainId } from 'wagmi'
 import { formatUnits } from 'viem'
 import { erc20Abi } from '@/contracts'
 import {
@@ -29,6 +29,7 @@ import {
 import BoardVisualization from '@/components/BoardVisualization'
 import TreasuryOverview from '@/components/TreasuryOverview'
 import DelegationManager from '@/components/DelegationManager'
+import { getBlockExplorerAddressUrl } from '@/lib/utils'
 
 type Tab = 'overview' | 'board' | 'treasury' | 'delegation'
 
@@ -39,6 +40,7 @@ export default function ChamberDetail() {
   const navigate = useNavigate()
   const chamberAddress = address as `0x${string}`
   const { address: userAddress } = useAccount()
+  const chainId = useChainId()
   
   // Derive active tab from URL, default to 'overview'
   const activeTab: Tab = tab && validTabs.includes(tab as Tab) ? (tab as Tab) : 'overview'
@@ -125,7 +127,7 @@ export default function ChamberDetail() {
                   <FiCopy className="w-4 h-4" />
                 </button>
                 <a
-                  href={`https://etherscan.io/address/${chamberAddress}`}
+                  href={chainId !== 31337 ? getBlockExplorerAddressUrl(chamberAddress, chainId) : '#'}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:text-cyan-400 transition-colors"
@@ -273,6 +275,7 @@ export default function ChamberDetail() {
             delegations={delegations}
             members={members}
             vaultSymbol={chamberInfo.symbol}
+            nftToken={chamberInfo.nftToken}
           />
         )}
       </motion.div>
@@ -291,7 +294,7 @@ interface OverviewTabProps {
 }
 
 function OverviewTab({ chamberAddress, chamberInfo, members, totalDelegated, userBalance, setActiveTab }: OverviewTabProps) {
-  const { chambers: relatedChambers, isLoading: isLoadingRelated } = useChambersByAsset(chamberInfo.assetToken as `0x${string}`)
+  const { chambers: relatedChambers } = useChambersByAsset(chamberInfo.assetToken as `0x${string}`)
   const { parentChamber, isLoading: isLoadingParent } = useParentChamber(chamberAddress)
   const { childChambers, isLoading: isLoadingChildren } = useChildChambers(chamberAddress)
   
@@ -400,11 +403,22 @@ function OverviewTab({ chamberAddress, chamberInfo, members, totalDelegated, use
 
       {/* Organization / Hierarchy */}
       <div className="panel lg:col-span-2">
-        <div className="p-4 border-b border-slate-700/30">
-          <h3 className="font-heading font-semibold text-slate-100">Organization (Sub Chambers)</h3>
-          <p className="text-slate-500 text-xs mt-0.5">
-            Hierarchy and related chambers in this organization
-          </p>
+        <div className="p-4 border-b border-slate-700/30 flex items-center justify-between gap-4">
+          <div>
+            <h3 className="font-heading font-semibold text-slate-100">Organization (Sub Chambers)</h3>
+            <p className="text-slate-500 text-xs mt-0.5">
+              Hierarchy and related chambers in this organization
+            </p>
+          </div>
+          {chamberInfo.nftToken && (
+            <Link
+              to={`/deploy?erc20=${chamberAddress}&erc721=${chamberInfo.nftToken}`}
+              className="btn btn-secondary shrink-0"
+            >
+              <FiPlus className="w-4 h-4" />
+              Sub Chamber
+            </Link>
+          )}
         </div>
         <div className="p-4 space-y-6">
           {/* Parent Chamber */}

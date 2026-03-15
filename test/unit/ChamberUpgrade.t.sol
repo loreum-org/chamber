@@ -5,6 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {ChamberRegistry} from "src/ChamberRegistry.sol";
 import {Chamber} from "src/Chamber.sol";
 import {IChamber} from "src/interfaces/IChamber.sol";
+import {IWallet} from "src/interfaces/IWallet.sol";
 import {MockERC20} from "test/mock/MockERC20.sol";
 import {MockERC721} from "test/mock/MockERC721.sol";
 import {DeployRegistry} from "test/utils/DeployRegistry.sol";
@@ -359,5 +360,55 @@ contract ChamberUpgradeTest is Test {
         // Verify second upgrade
         impl = address(uint160(uint256(vm.load(chamberAddress, implSlot))));
         assertEq(impl, address(impl2));
+    }
+
+    /**
+     * @notice Tests Chamber.upgradeImplementation line 601:
+     *   `if (proxyAdmin.owner() != address(this)) revert NotDirector()`
+     *
+     * Strategy:
+     *   1. Transfer ProxyAdmin ownership to an external address via governance tx.
+     *   2. Attempt an upgrade; upgradeImplementation reverts at line 601.
+     *   3. The outer executeTransaction catches the inner revert as TransactionFailed.
+     */
+    function test_Chamber_UpgradeImplementation_NotProxyAdminOwner_Reverts() public {
+        address proxyAdminAddress = chamber.getProxyAdmin();
+
+        // Step 1: Submit a governance tx that transfers ProxyAdmin ownership away from chamber
+        bytes memory transferData =
+            abi.encodeWithSignature("transferOwnership(address)", address(0xDEAD));
+
+        vm.prank(user1);
+        chamber.submitTransaction(1, proxyAdminAddress, 0, transferData);
+        uint256 transferTxId = chamber.getTransactionCount() - 1;
+
+        vm.prank(user2);
+        chamber.confirmTransaction(2, transferTxId);
+        vm.prank(user3);
+        chamber.confirmTransaction(3, transferTxId);
+        vm.prank(user1);
+        chamber.executeTransaction(1, transferTxId);
+
+        // Verify ProxyAdmin owner is now 0xDEAD
+        assertEq(ProxyAdmin(proxyAdminAddress).owner(), address(0xDEAD));
+
+        // Step 2: Submit an upgrade transaction — it will call upgradeImplementation on the chamber
+        bytes memory upgradeData =
+            abi.encodeWithSelector(IChamber.upgradeImplementation.selector, address(newImplementation), "");
+
+        vm.prank(user1);
+        chamber.submitTransaction(1, chamberAddress, 0, upgradeData);
+        uint256 upgradeTxId = chamber.getTransactionCount() - 1;
+
+        vm.prank(user2);
+        chamber.confirmTransaction(2, upgradeTxId);
+        vm.prank(user3);
+        chamber.confirmTransaction(3, upgradeTxId);
+
+        // Step 3: Execute — upgradeImplementation checks proxyAdmin.owner() != address(this)
+        //   → reverts at line 601 (NotDirector) → wrapped as TransactionFailed
+        vm.prank(user1);
+        vm.expectRevert();
+        chamber.executeTransaction(1, upgradeTxId);
     }
 }

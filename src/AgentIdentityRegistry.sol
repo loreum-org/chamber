@@ -24,14 +24,42 @@ contract AgentIdentityRegistry is
 {
     bytes32 public constant REGISTRAR_ROLE = keccak256("REGISTRAR_ROLE");
 
-    /// @notice Counter for token IDs
-    uint256 private _nextTokenId;
+    /**
+     * @notice ERC-7201 namespaced storage layout for AgentIdentityRegistry
+     * @dev `nextTokenId` is a uint256 (full slot). The two mappings each occupy a full slot.
+     * @custom:storage-location erc7201:loreum.AgentIdentityRegistry
+     */
+    struct AgentIdentityRegistryStorage {
+        uint256 nextTokenId;
+        mapping(address => uint256) agentToIdentityId;
+        mapping(uint256 => address) identityIdToAgent;
+    }
 
-    /// @notice Mapping from Agent Contract Address to Identity Token ID
-    mapping(address => uint256) public agentToIdentityId;
+    /// @dev keccak256(abi.encode(uint256(keccak256("erc7201:loreum.AgentIdentityRegistry")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 private constant _AGENTIDENTITYREGISTRY_STORAGE_SLOT =
+        0xcbbd7f406a7bce0cf07c65d3156625a5eb2bd8c4ff303cb9732533700afafd00;
 
-    /// @notice Mapping from Identity Token ID to Agent Contract Address
-    mapping(uint256 => address) public identityIdToAgent;
+    function _getAgentIdentityRegistryStorage()
+        internal
+        pure
+        returns (AgentIdentityRegistryStorage storage $)
+    {
+        assembly {
+            $.slot := _AGENTIDENTITYREGISTRY_STORAGE_SLOT
+        }
+    }
+
+    /// EXPLICIT GETTERS for formerly-public state variables ///
+
+    /// @notice Returns the identity token ID for a given agent address
+    function agentToIdentityId(address agent) external view returns (uint256) {
+        return _getAgentIdentityRegistryStorage().agentToIdentityId[agent];
+    }
+
+    /// @notice Returns the agent address for a given identity token ID
+    function identityIdToAgent(uint256 tokenId) external view returns (address) {
+        return _getAgentIdentityRegistryStorage().identityIdToAgent[tokenId];
+    }
 
     /// @notice Event emitted when a new Agent Identity is registered
     event AgentRegistered(uint256 indexed tokenId, address indexed agentAddress, string uri);
@@ -59,8 +87,7 @@ contract AgentIdentityRegistry is
 
     /**
      * @notice Mints a new Agent Identity NFT
-     * @dev Only callable by addresses with REGISTRAR_ROLE (e.g., the main Registry contract)
-     * @param to The address that will own the NFT (usually the Agent's owner or the Agent itself)
+     * @param to The address that will own the NFT
      * @param agentAddress The address of the Agent contract being identified
      * @param uri The metadata URI (Registration File)
      * @return tokenId The ID of the newly minted token
@@ -70,15 +97,16 @@ contract AgentIdentityRegistry is
         onlyRole(REGISTRAR_ROLE)
         returns (uint256)
     {
-        require(agentToIdentityId[agentAddress] == 0, "Agent already registered");
+        AgentIdentityRegistryStorage storage $ = _getAgentIdentityRegistryStorage();
+        require($.agentToIdentityId[agentAddress] == 0, "Agent already registered");
         require(agentAddress != address(0), "Invalid agent address");
 
-        uint256 tokenId = ++_nextTokenId;
+        uint256 tokenId = ++$.nextTokenId;
         _mint(to, tokenId);
         _setTokenURI(tokenId, uri);
 
-        agentToIdentityId[agentAddress] = tokenId;
-        identityIdToAgent[tokenId] = agentAddress;
+        $.agentToIdentityId[agentAddress] = tokenId;
+        $.identityIdToAgent[tokenId] = agentAddress;
 
         emit AgentRegistered(tokenId, agentAddress, uri);
 
@@ -87,7 +115,6 @@ contract AgentIdentityRegistry is
 
     /**
      * @notice Updates the metadata URI for an Agent
-     * @dev Only callable by the NFT owner
      * @param tokenId The token ID to update
      * @param newUri The new metadata URI
      */

@@ -1,12 +1,15 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAccount } from 'wagmi'
 import { useQueryClient } from '@tanstack/react-query'
+import { decodeEventLog } from 'viem'
 import { FiAlertCircle, FiCheck, FiLoader, FiCpu } from 'react-icons/fi'
+import toast from 'react-hot-toast'
 import { useCreateAgentWithStatus } from '@/hooks'
 import { useRegistryAddress } from '@/hooks/useRegistry'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
+import { chamberRegistryAbi } from '@/contracts/abis'
 
 export default function DeployAgent() {
   const navigate = useNavigate()
@@ -23,18 +26,38 @@ export default function DeployAgent() {
     hash,
     reset,
   } = useCreateAgentWithStatus(registryAddress, {
-    onSuccess: () => {
+    onSuccess: (receipt) => {
       // Invalidate queries if needed
-       if (registryAddress) {
+      if (registryAddress) {
         queryClient.invalidateQueries({
-          predicate: (_query) => {
-             // Should match agent related queries
-             return true
-          },
+          predicate: () => true,
         })
       }
-      // Navigate after successful deployment
-      setTimeout(() => navigate('/'), 2000)
+      // Decode AgentCreated event to get agent address
+      let agentAddress: string | null = null
+      if (receipt?.logs) {
+        for (const log of receipt.logs) {
+          try {
+            const decoded = decodeEventLog({
+              abi: chamberRegistryAbi,
+              data: log.data,
+              topics: log.topics,
+            })
+            if (decoded.eventName === 'AgentCreated') {
+              agentAddress = (decoded.args as { agent: `0x${string}` }).agent
+              break
+            }
+          } catch {
+            // Skip logs that don't match
+          }
+        }
+      }
+      if (agentAddress) {
+        setDeployedAgentAddress(agentAddress)
+        setTimeout(() => navigate(`/agent/${agentAddress}`), 1500)
+      } else {
+        setTimeout(() => navigate('/'), 2000)
+      }
     },
     onError: (err) => {
       console.error('Agent deployment failed:', err)
@@ -45,6 +68,7 @@ export default function DeployAgent() {
     showNotifications: true,
   })
 
+  const [deployedAgentAddress, setDeployedAgentAddress] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -224,6 +248,26 @@ export default function DeployAgent() {
                         <p className="text-green-400/80 text-sm">
                           Your agent has been successfully registered on the blockchain.
                         </p>
+                        {deployedAgentAddress && (
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            <Link
+                              to={`/agent/${deployedAgentAddress}`}
+                              className="text-cyan-400 hover:underline text-sm"
+                            >
+                              View Agent →
+                            </Link>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                navigator.clipboard.writeText(deployedAgentAddress)
+                                toast.success('Address copied!')
+                              }}
+                              className="text-slate-400 hover:text-slate-200 text-xs"
+                            >
+                              Copy address
+                            </button>
+                          </div>
+                        )}
                         {hash && (
                           <p className="text-green-400/60 text-xs mt-1 font-mono">
                             Tx: {hash.slice(0, 10)}...{hash.slice(-8)}

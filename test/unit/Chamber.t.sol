@@ -4,12 +4,40 @@ pragma solidity ^0.8.30;
 import {Test} from "forge-std/Test.sol";
 import {Chamber} from "src/Chamber.sol";
 import {IChamber} from "src/interfaces/IChamber.sol";
+import {IWallet} from "src/interfaces/IWallet.sol";
+import {IERC1271} from "lib/openzeppelin-contracts/contracts/interfaces/IERC1271.sol";
 import {IERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {IERC721} from "lib/openzeppelin-contracts/contracts/token/ERC721/IERC721.sol";
 import {MockERC20} from "test/mock/MockERC20.sol";
 import {MockERC721} from "test/mock/MockERC721.sol";
 import {DeployChamber} from "test/utils/DeployChamber.sol";
 import {Clones} from "lib/openzeppelin-contracts/contracts/proxy/Clones.sol";
+
+/// @dev A minimal ERC-1271 contract that authorises a single address
+contract MockERC1271Wallet {
+    address public authorizedAddress;
+
+    constructor(address _authorized) {
+        authorizedAddress = _authorized;
+    }
+
+    function isValidSignature(bytes32, bytes memory signature) external view returns (bytes4) {
+        if (signature.length == 32) {
+            address decoded = abi.decode(signature, (address));
+            if (decoded == authorizedAddress) {
+                return IERC1271.isValidSignature.selector;
+            }
+        }
+        return bytes4(0xffffffff);
+    }
+}
+
+/// @dev A contract that always reverts on isValidSignature
+contract RevertingERC1271 {
+    function isValidSignature(bytes32, bytes memory) external pure returns (bytes4) {
+        revert("always reverts");
+    }
+}
 
 contract ChamberTest is Test {
     Chamber public chamber;
@@ -1160,6 +1188,76 @@ contract ChamberTest is Test {
         assertEq(address(chamber).balance, 1 ether);
     }
 
+    function test_Chamber_ReceiveERC721() public {
+        // Use a separate ERC721 (not the governance NFT) to send to Chamber
+        MockERC721 otherNft = new MockERC721("Other NFT", "ONFT");
+        uint256 tokenId = otherNft.mint(user1);
+
+        vm.prank(user1);
+        otherNft.safeTransferFrom(user1, address(chamber), tokenId);
+
+        assertEq(otherNft.ownerOf(tokenId), address(chamber));
+    }
+
+    function test_Chamber_CancelTransaction_Quorum() public {
+        addDirectors();
+
+        vm.prank(user1);
+        chamber.submitTransaction(1, address(0x3), 0, "");
+
+        assertFalse(chamber.getCancelled(0));
+
+        // Quorum is 3 - need 3 directors to vote to cancel
+        vm.prank(user1);
+        chamber.cancelTransaction(1, 0);
+        assertFalse(chamber.getCancelled(0));
+
+        vm.prank(user2);
+        chamber.cancelTransaction(2, 0);
+        assertFalse(chamber.getCancelled(0));
+
+        vm.prank(user3);
+        chamber.cancelTransaction(3, 0);
+        assertTrue(chamber.getCancelled(0));
+
+        // Execute should revert
+        vm.prank(user1);
+        vm.expectRevert(IWallet.TransactionAlreadyCancelled.selector);
+        chamber.executeTransaction(1, 0);
+    }
+
+    function test_Chamber_CancelTransaction_AlreadyCancelled_Reverts() public {
+        addDirectors();
+
+        vm.prank(user1);
+        chamber.submitTransaction(1, address(0x3), 0, "");
+
+        vm.prank(user1);
+        chamber.cancelTransaction(1, 0);
+        vm.prank(user2);
+        chamber.cancelTransaction(2, 0);
+        vm.prank(user3);
+        chamber.cancelTransaction(3, 0);
+
+        vm.prank(user1);
+        vm.expectRevert(IWallet.TransactionAlreadyCancelled.selector);
+        chamber.cancelTransaction(1, 0);
+    }
+
+    function test_Chamber_CancelTransaction_DoubleVote_Reverts() public {
+        addDirectors();
+
+        vm.prank(user1);
+        chamber.submitTransaction(1, address(0x3), 0, "");
+
+        vm.prank(user1);
+        chamber.cancelTransaction(1, 0);
+
+        vm.prank(user1);
+        vm.expectRevert(IWallet.TransactionCancelAlreadyConfirmed.selector);
+        chamber.cancelTransaction(1, 0);
+    }
+
     function test_Chamber_IsDirector_ZeroTokenId_Reverts() public {
         addDirectors();
 
@@ -1391,5 +1489,148 @@ contract ChamberTest is Test {
 
     function test_Chamber_Version() public view {
         assertEq(chamber.version(), "1.1.3");
+    }
+
+    // ─── acceptAdmin (no-op) ───────────────────────────────────────────
+
+    function test_Chamber_AcceptAdmin_NoOp() public {
+        // acceptAdmin is a no-op; calling it should not revert
+        chamber.acceptAdmin();
+    }
+
+    // ─── submitTransaction: short data when target == self ─────────────
+
+    function test_Chamber_SubmitTransaction_ShortData_Reverts() public {
+        addDirectors();
+
+        // target == chamber with data < 4 bytes → InvalidTransaction
+        bytes memory shortData = hex"aabb"; // only 2 bytes
+
+        vm.prank(user1);
+        vm.expectRevert(IChamber.InvalidTransaction.selector);
+        chamber.submitTransaction(1, address(chamber), 0, shortData);
+    }
+
+    // ─── getDirectors: ownerOf reverts (burned NFT) ────────────────────
+
+    function test_Chamber_GetDirectors_BurnedNFT_ReturnsZeroAddress() public {
+        uint256 tokenId = 1;
+        MockERC721(address(nft)).mintWithTokenId(user1, tokenId);
+        MockERC20(address(token)).mint(user1, 1 ether);
+
+        vm.startPrank(user1);
+        token.approve(address(chamber), 1 ether);
+        chamber.deposit(1 ether, user1);
+        chamber.delegate(tokenId, 1 ether);
+        vm.stopPrank();
+
+        // Burn the NFT so ownerOf reverts
+        MockERC721(address(nft)).burn(tokenId);
+
+        // getDirectors should catch the revert and return address(0)
+        address[] memory directors = chamber.getDirectors();
+        assertEq(directors.length, 1);
+        assertEq(directors[0], address(0));
+    }
+
+    // ─── submitBatchTransactions: wrong selector when target == self ───
+
+    function test_Chamber_SubmitBatchTransactions_WrongSelector_Reverts() public {
+        addDirectors();
+
+        address[] memory targets = new address[](1);
+        targets[0] = address(chamber);
+
+        uint256[] memory values = new uint256[](1);
+        values[0] = 0;
+
+        bytes[] memory data = new bytes[](1);
+        // 4+ bytes with wrong selector
+        data[0] = abi.encodeWithSignature("wrongFunction()");
+
+        vm.prank(user1);
+        vm.expectRevert(IChamber.InvalidTransaction.selector);
+        chamber.submitBatchTransactions(1, targets, values, data);
+    }
+
+    // ─── submitBatchTransactions: short data when target == self ───────
+
+    function test_Chamber_SubmitBatchTransactions_ShortData_Reverts() public {
+        addDirectors();
+
+        address[] memory targets = new address[](1);
+        targets[0] = address(chamber);
+
+        uint256[] memory values = new uint256[](1);
+        values[0] = 0;
+
+        bytes[] memory data = new bytes[](1);
+        data[0] = hex"aa"; // 1 byte — too short
+
+        vm.prank(user1);
+        vm.expectRevert(IChamber.InvalidTransaction.selector);
+        chamber.submitBatchTransactions(1, targets, values, data);
+    }
+
+    // ─── _isDirector: ERC-1271 contract-owner authorisation ───────────
+
+    function test_Chamber_IsDirector_ERC1271_Valid() public {
+        // user1 owns the ERC1271 wallet; user1 can act as director via ERC-1271
+        address authorized = address(0xABCD);
+        MockERC1271Wallet wallet = new MockERC1271Wallet(authorized);
+
+        // Mint NFT to the wallet (contract)
+        uint256 tokenId = 10;
+        MockERC721(address(nft)).mintWithTokenId(address(wallet), tokenId);
+
+        // Mint tokens and deposit so the tokenId enters the board
+        MockERC20(address(token)).mint(address(this), 1 ether);
+        token.approve(address(chamber), 1 ether);
+        chamber.deposit(1 ether, address(this));
+        chamber.delegate(tokenId, 1 ether);
+
+        // authorized address submits a transaction using the contract's tokenId
+        // _isDirector: owner=wallet (contract), msg.sender=authorized ≠ wallet
+        //              → ERC1271 check → magic value → isOwner=true
+        vm.prank(authorized);
+        chamber.submitTransaction(tokenId, address(0x9999), 0, "");
+
+        assertEq(chamber.getTransactionCount(), 1);
+    }
+
+    function test_Chamber_IsDirector_ERC1271_Reverts_Unauthorized() public {
+        address authorized = address(0xABCD);
+        address unauthorized = address(0xDEAD);
+        MockERC1271Wallet wallet = new MockERC1271Wallet(authorized);
+
+        uint256 tokenId = 11;
+        MockERC721(address(nft)).mintWithTokenId(address(wallet), tokenId);
+
+        MockERC20(address(token)).mint(address(this), 1 ether);
+        token.approve(address(chamber), 1 ether);
+        chamber.deposit(1 ether, address(this));
+        chamber.delegate(tokenId, 1 ether);
+
+        // unauthorized address → ERC1271 returns 0xffffffff → NotDirector
+        vm.prank(unauthorized);
+        vm.expectRevert(IChamber.NotDirector.selector);
+        chamber.submitTransaction(tokenId, address(0x9999), 0, "");
+    }
+
+    function test_Chamber_IsDirector_ERC1271_CatchesRevert() public {
+        // When isValidSignature reverts, the catch block is hit → isOwner stays false
+        RevertingERC1271 revertingWallet = new RevertingERC1271();
+
+        uint256 tokenId = 12;
+        MockERC721(address(nft)).mintWithTokenId(address(revertingWallet), tokenId);
+
+        MockERC20(address(token)).mint(address(this), 1 ether);
+        token.approve(address(chamber), 1 ether);
+        chamber.deposit(1 ether, address(this));
+        chamber.delegate(tokenId, 1 ether);
+
+        vm.prank(address(0xCAFE));
+        vm.expectRevert(IChamber.NotDirector.selector);
+        chamber.submitTransaction(tokenId, address(0x9999), 0, "");
     }
 }

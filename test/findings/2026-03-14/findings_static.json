@@ -1,0 +1,131 @@
+[
+  {
+    "id": "SEC-DELEG-011",
+    "title": "Permanent Delegation Lock on Evicted Board Nodes",
+    "severity": "HIGH",
+    "likelihood": "MEDIUM",
+    "impact": "User funds (chamber shares) permanently locked — cannot withdraw or transfer",
+    "component": "Board.sol (_insert) + Chamber.sol (undelegate / _update)",
+    "evidence": [
+      {
+        "file": "src/Board.sol",
+        "lineStart": 184,
+        "lineEnd": 199,
+        "note": "_insert() evicts tail node when board is full (MAX_NODES = 100) and a higher-stake node arrives"
+      },
+      {
+        "file": "src/Board.sol",
+        "lineStart": 254,
+        "lineEnd": 285,
+        "note": "_remove() deletes $.nodes[tokenId] entirely"
+      },
+      {
+        "file": "src/Chamber.sol",
+        "lineStart": 141,
+        "lineEnd": 156,
+        "note": "undelegate() calls _undelegate() which reverts with NodeDoesNotExist if board node is gone"
+      },
+      {
+        "file": "src/Chamber.sol",
+        "lineStart": 617,
+        "lineEnd": 625,
+        "note": "_update() blocks transfers when fromBalance - value < totalAgentDelegations[from]"
+      }
+    ],
+    "exploit_sketch": [
+      "1. Board reaches 100 nodes (MAX_NODES)",
+      "2. User A has agentDelegation[A][tailTokenId] = 100 shares",
+      "3. User B delegates 101 shares to a NEW tokenId (> tail.amount)",
+      "4. _insert evicts tail: delete $.nodes[tailTokenId]",
+      "5. User A's totalAgentDelegations[A] = 100 (unchanged), agentDelegation[A][tailTokenId] = 100 (unchanged)",
+      "6. User A calls undelegate(tailTokenId, 100) → _undelegate reverts NodeDoesNotExist → transaction reverts",
+      "7. User A cannot transfer shares: _update check: balance - value < 100 reverts with ExceedsDelegatedAmount",
+      "8. User A's shares are permanently locked above their stranded delegation amount"
+    ],
+    "recommended_fix": "In Chamber.undelegate(), check if the board node exists before calling _undelegate. If the node does not exist, skip the board removal but still decrement agentDelegation and totalAgentDelegations:\n\nif ($.nodes[tokenId].tokenId == tokenId) {\n    _undelegate(tokenId, amount);\n}\n// Always update accounting regardless of board state",
+    "status": "OPEN"
+  },
+  {
+    "id": "SEC-POLICY-012",
+    "title": "Agent execute() Bypasses Governance Policy Enforcement",
+    "severity": "MEDIUM",
+    "likelihood": "HIGH",
+    "impact": "Policy system is advisory only; Agent owner can confirm any transaction without policy approval",
+    "component": "Agent.sol (execute)",
+    "evidence": [
+      {
+        "file": "src/Agent.sol",
+        "lineStart": 200,
+        "lineEnd": 204,
+        "note": "execute() allows arbitrary external calls with onlyOwner; no policy gate"
+      },
+      {
+        "file": "src/Agent.sol",
+        "lineStart": 160,
+        "lineEnd": 170,
+        "note": "autoConfirm() correctly enforces policy.canApprove() before confirmTransaction"
+      }
+    ],
+    "exploit_sketch": [
+      "1. Agent is deployed with a ConservativeYieldPolicy that only allows specific targets",
+      "2. Agent owner wants to confirm a transaction to a blacklisted target",
+      "3. autoConfirm() would revert with PolicyRejection",
+      "4. Owner instead calls: agent.execute(chamber, 0, abi.encodeWithSelector(chamber.confirmTransaction.selector, tokenId, txId))",
+      "5. Transaction is confirmed without policy approval"
+    ],
+    "recommended_fix": "Document clearly that execute() bypasses policy and is an owner escape hatch. Optionally: add a policyRequired flag or remove execute() if strict policy enforcement is desired. At minimum, add a NatSpec @dev warning on execute() and emit an event distinguishing policy-free confirmations.",
+    "status": "OPEN"
+  },
+  {
+    "id": "SEC-EIP1271-013",
+    "title": "Agent isValidSignature 32-Byte Path Ignores Hash Parameter",
+    "severity": "MEDIUM",
+    "likelihood": "MEDIUM",
+    "impact": "Non-standard EIP-1271 behavior; any message hash validated if signature encodes owner address",
+    "component": "Agent.sol (isValidSignature)",
+    "evidence": [
+      {
+        "file": "src/Agent.sol",
+        "lineStart": 181,
+        "lineEnd": 187,
+        "note": "32-byte signature path: checks authorizedSender == _owner without verifying hash"
+      }
+    ],
+    "exploit_sketch": [
+      "1. Agent owner address is 0xABCD...1234",
+      "2. External protocol calls Agent.isValidSignature(anyArbitraryHash, abi.encode(0xABCD...1234))",
+      "3. signature.length == 32: true",
+      "4. abi.decode(signature) == _owner: true",
+      "5. Returns IERC1271.isValidSignature.selector for ANY hash",
+      "6. External protocol accepts the signature as valid for a message the owner never signed"
+    ],
+    "recommended_fix": "Either (a) remove the 32-byte shortcut path and require full ECDSA signatures, or (b) scope the shortcut to a specific context (e.g., only accept when called from a known Chamber). The current shortcut is safe within the Chamber _isDirector flow (which constructs both hash and signature), but unsafe for external EIP-1271 consumers.",
+    "status": "OPEN"
+  },
+  {
+    "id": "SEC-GOV-014",
+    "title": "Seat Update Proposal Griefing by Minority Director",
+    "severity": "LOW",
+    "likelihood": "MEDIUM",
+    "impact": "Any single director can indefinitely cancel seat update proposals, blocking governance parameter changes",
+    "component": "Board.sol (_setSeats) + Chamber.sol (updateSeats)",
+    "evidence": [
+      {
+        "file": "src/Board.sol",
+        "lineStart": 356,
+        "lineEnd": 362,
+        "note": "If proposedSeats != numOfSeats in an existing proposal, the proposal is deleted (cancelled)"
+      }
+    ],
+    "exploit_sketch": [
+      "1. Majority of directors agree to reduce seats from 5 to 3 — three calls to updateSeats(tokenId, 3)",
+      "2. Proposal has 3 supporters, needs 2 more (quorum = 4 for 5 seats)",
+      "3. Dissident director calls updateSeats(dissidentTokenId, 4) — different numOfSeats",
+      "4. Proposal is immediately cancelled (delete $.seatUpdate)",
+      "5. Process must restart; dissident can repeat indefinitely",
+      "6. No cooldown or penalty for cancellation"
+    ],
+    "recommended_fix": "Require the cancelling director to propose a concrete alternative (emit a new proposal instead of deleting). Or add a cooldown period before a new proposal can be started after cancellation. Or require multi-director support to cancel a proposal.",
+    "status": "OPEN"
+  }
+]

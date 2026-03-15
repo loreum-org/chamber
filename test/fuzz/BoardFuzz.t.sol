@@ -8,7 +8,7 @@ import {IBoard} from "src/interfaces/IBoard.sol";
 contract BoardFuzzTest is Test {
     MockBoard board;
 
-    uint256 constant MAX_NODES = 100;
+    uint256 constant MAX_NODES = 50;
     uint256 constant MAX_AMOUNT = type(uint256).max / 2; // Avoid overflow
 
     function setUp() public {

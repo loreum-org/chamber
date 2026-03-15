@@ -2,6 +2,29 @@ export function cn(...inputs: (string | undefined | null | false)[]): string {
   return inputs.filter(Boolean).join(' ')
 }
 
+/** Chain ID to block explorer base URL */
+const BLOCK_EXPLORERS: Record<number, string> = {
+  1: 'https://etherscan.io',
+  11155111: 'https://sepolia.etherscan.io',
+  31337: 'http://localhost:8545', // Anvil - no block explorer by default
+}
+
+export function getBlockExplorerUrl(chainId: number): string {
+  return BLOCK_EXPLORERS[chainId] ?? 'https://etherscan.io'
+}
+
+export function getBlockExplorerAddressUrl(address: string, chainId: number): string {
+  const base = getBlockExplorerUrl(chainId)
+  if (chainId === 31337) return base
+  return `${base}/address/${address}`
+}
+
+export function getBlockExplorerTxUrl(txHash: string, chainId: number): string {
+  const base = getBlockExplorerUrl(chainId)
+  if (chainId === 31337) return base
+  return `${base}/tx/${txHash}`
+}
+
 export function shortenAddress(address: string, chars = 4): string {
   if (!address) return ''
   return `${address.slice(0, chars + 2)}...${address.slice(-chars)}`
@@ -55,7 +78,7 @@ export function parseDataField(data: string): { method?: string; decoded?: strin
     return { method: 'Native Transfer' }
   }
   
-  // Common method signatures
+  // Common method signatures (4-byte selectors)
   const methodSignatures: Record<string, string> = {
     '0xa9059cbb': 'transfer(address,uint256)',
     '0x23b872dd': 'transferFrom(address,address,uint256)',
@@ -67,6 +90,14 @@ export function parseDataField(data: string): { method?: string; decoded?: strin
     '0xd0e30db0': 'deposit()',
     '0x70a08231': 'balanceOf(address)',
     '0x18160ddd': 'totalSupply()',
+    '0x38ed1739': 'swapExactTokensForTokens(uint256,uint256,address[],address,uint256)',
+    '0x7ff36ab5': 'swapExactETHForTokens(uint256,address[],address,uint256)',
+    '0x18cbafe5': 'swapExactTokensForETH(uint256,uint256,address[],address,uint256)',
+    '0x5c11d795': 'swapExactTokensForTokensSupportingFeeOnTransferTokens(...)',
+    '0x4e71d92d': 'claim()',
+    '0x2e17de78': 'claim(uint256)',
+    '0x3d18b912': 'withdraw(uint256,uint256)',
+    '0xe2bbb158': 'deposit(uint256,uint256)',
   }
 
   const methodId = data.slice(0, 10).toLowerCase()

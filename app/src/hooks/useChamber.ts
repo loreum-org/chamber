@@ -1,5 +1,5 @@
-import { useReadContract, useWriteContract, useWaitForTransactionReceipt, useSimulateContract, useAccount } from 'wagmi'
-import { chamberAbi, erc20Abi } from '@/contracts/abis'
+import { useReadContract, useReadContracts, useWriteContract, useWaitForTransactionReceipt, useSimulateContract, useAccount } from 'wagmi'
+import { chamberAbi, erc20Abi, erc721Abi } from '@/contracts/abis'
 import type { Transaction, BoardMember, SeatUpdate } from '@/types'
 
 // ERC20 Allowance hook
@@ -278,6 +278,46 @@ export function useSeatUpdate(chamberAddress: `0x${string}` | undefined) {
   return { seatUpdate, refetch }
 }
 
+/**
+ * Fetches token IDs of NFTs owned by a user from an ERC721 contract.
+ * Uses tokenOfOwnerByIndex (ERC721Enumerable). Falls back to empty array if not supported.
+ */
+export function useUserNFTs(nftAddress: `0x${string}` | undefined, ownerAddress: `0x${string}` | undefined) {
+  const { data: balance } = useReadContract({
+    address: nftAddress,
+    abi: erc721Abi,
+    functionName: 'balanceOf',
+    args: ownerAddress ? [ownerAddress] : undefined,
+    query: { enabled: !!nftAddress && !!ownerAddress },
+  })
+
+  const balanceNum = balance ? Number(balance) : 0
+  const indices = Array.from({ length: Math.min(balanceNum, 50) }, (_, i) => i)
+
+  const { data: tokenIdsResults } = useReadContracts({
+    contracts: indices.map((i) => ({
+      address: nftAddress!,
+      abi: erc721Abi,
+      functionName: 'tokenOfOwnerByIndex',
+      args: [ownerAddress!, BigInt(i)],
+    })),
+    query: {
+      enabled: !!nftAddress && !!ownerAddress && balanceNum > 0 && balanceNum <= 50,
+    },
+  })
+
+  const tokenIds: bigint[] = []
+  if (tokenIdsResults) {
+    for (const r of tokenIdsResults) {
+      if (r.status === 'success' && r.result !== undefined) {
+        tokenIds.push(BigInt(r.result as string | number | bigint))
+      }
+    }
+  }
+
+  return { tokenIds, balance: balance ?? 0n, isLoading: balance === undefined }
+}
+
 export function useDelegations(chamberAddress: `0x${string}` | undefined, account: `0x${string}` | undefined) {
   const { data, refetch } = useReadContract({
     address: chamberAddress,
@@ -351,6 +391,76 @@ export function useExecuteTransaction(chamberAddress: `0x${string}` | undefined)
   }
 
   return { execute, isPending, isConfirming, isSuccess, error, hash }
+}
+
+export function useRevokeConfirmation(chamberAddress: `0x${string}` | undefined) {
+  const { writeContractAsync, data: hash, isPending, error } = useWriteContract()
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
+
+  const revoke = async (tokenId: bigint, transactionId: bigint) => {
+    if (!chamberAddress) return
+    return writeContractAsync({
+      address: chamberAddress,
+      abi: chamberAbi,
+      functionName: 'revokeConfirmation',
+      args: [tokenId, transactionId],
+    })
+  }
+
+  return { revoke, isPending, isConfirming, isSuccess, error, hash }
+}
+
+export function useCancelTransaction(chamberAddress: `0x${string}` | undefined) {
+  const { writeContract, data: hash, isPending, error } = useWriteContract()
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
+
+  const cancel = async (tokenId: bigint, transactionId: bigint) => {
+    if (!chamberAddress) return
+    writeContract({
+      address: chamberAddress,
+      abi: chamberAbi,
+      functionName: 'cancelTransaction',
+      args: [tokenId, transactionId],
+    })
+  }
+
+  return { cancel, isPending, isConfirming, isSuccess, error, hash }
+}
+
+export function useTransactionConfirmation(
+  chamberAddress: `0x${string}` | undefined,
+  tokenId: bigint | undefined,
+  transactionId: number | undefined
+) {
+  const { data: isConfirmed } = useReadContract({
+    address: chamberAddress,
+    abi: chamberAbi,
+    functionName: 'getConfirmation',
+    args: tokenId !== undefined && transactionId !== undefined ? [tokenId, BigInt(transactionId)] : undefined,
+    query: {
+      enabled: !!chamberAddress && tokenId !== undefined && transactionId !== undefined,
+    },
+  })
+
+  return { isConfirmed: isConfirmed as boolean | undefined }
+}
+
+export function useTransactionCancelConfirmation(
+  chamberAddress: `0x${string}` | undefined,
+  tokenId: bigint | undefined,
+  transactionId: number | undefined
+) {
+  const { data: hasVotedToCancel } = useReadContract({
+    address: chamberAddress,
+    abi: chamberAbi,
+    functionName: 'getCancelConfirmation',
+    args: tokenId !== undefined && transactionId !== undefined ? [tokenId, BigInt(transactionId)] : undefined,
+    query: {
+      enabled: !!chamberAddress && tokenId !== undefined && transactionId !== undefined,
+    },
+  })
+
+  return { hasVotedToCancel: hasVotedToCancel as boolean | undefined }
 }
 
 /**

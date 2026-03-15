@@ -1,0 +1,32 @@
+[
+  {
+    "id": "ECON-001",
+    "title": "Delegation Vote Sandwichability via Block Ordering",
+    "severity": "LOW",
+    "description": "An attacker who controls block ordering can front-run a delegate() call to fill the last remaining board slot with a low-value node, then back-run with a higher-stake new node to evict a target node. This allows strategic board manipulation.",
+    "preconditions": ["Board is near MAX_NODES (99-100 nodes)", "Attacker has stake to insert a node above tail"],
+    "impact": "Board seat manipulation; targeted node eviction causing delegation lock for victims",
+    "likelihood": "LOW",
+    "note": "Requires attacker to hold stake and have block-ordering capability (mev)"
+  },
+  {
+    "id": "ECON-002",
+    "title": "Flash Loan Board Seat Capture",
+    "severity": "LOW",
+    "description": "An attacker with access to flash loans could deposit large amounts to dominate the board during a single transaction, execute a governance action, and withdraw. However, ERC-4626 deposit mints shares and delegates in the same block — but the director check requires a pending on-chain transaction and confirmations which cannot complete in the same block.",
+    "preconditions": ["Flash loan available for the chamber asset token"],
+    "impact": "Flash loans cannot complete governance (submit + confirm + execute requires separate txns), so impact is limited to board position manipulation within one block",
+    "likelihood": "VERY LOW",
+    "note": "Cross-block governance requirement inherently prevents flash loan attacks on execution"
+  },
+  {
+    "id": "ECON-003",
+    "title": "Asymmetric Seat Proposal Economics",
+    "severity": "LOW",
+    "description": "Seat proposal cancellation is gas-cheap for the griefing director (single call to updateSeats with different value). Legitimate directors must pay gas to restart the proposal repeatedly. The economics favor the griefing attacker.",
+    "preconditions": ["Dissident director holds a board seat"],
+    "impact": "Governance liveness degradation; indefinite blocking of seat changes",
+    "likelihood": "MEDIUM",
+    "note": "See Finding SEC-GOV-014"
+  }
+]

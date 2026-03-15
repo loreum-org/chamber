@@ -1,0 +1,30 @@
+[
+  {
+    "id": "CENT-01",
+    "component": "Chamber Board",
+    "risk": "Plutocratic governance — top stake holders control all decisions",
+    "severity": "MEDIUM",
+    "mitigation": "By design; economic stake required for directorship reduces pure sybil attacks"
+  },
+  {
+    "id": "CENT-02",
+    "component": "Agent Owner",
+    "risk": "Single EOA controls Agent with no transferability or governance gate on execute()",
+    "severity": "MEDIUM",
+    "mitigation": "Agent owner should be a multisig or DAO; document the escape hatch clearly"
+  },
+  {
+    "id": "CENT-03",
+    "component": "ChamberRegistry Admin",
+    "risk": "Admin key controls the implementation address for all future Chamber deployments",
+    "severity": "LOW",
+    "mitigation": "Existing Chambers are unaffected; only new deployments use stored implementation"
+  },
+  {
+    "id": "CENT-04",
+    "component": "ValidationRegistry / ReputationRegistry",
+    "risk": "Admin controls who can issue attestations and reputation signals",
+    "severity": "LOW",
+    "mitigation": "Role-gated; admin can distribute VALIDATOR_ROLE to multiple parties"
+  }
+]

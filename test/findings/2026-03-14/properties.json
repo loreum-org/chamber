@@ -1,0 +1,69 @@
+[
+  {
+    "id": "PROP-01",
+    "name": "delegation_solvency",
+    "description": "totalAgentDelegations[user] <= balanceOf(user) always holds",
+    "type": "invariant",
+    "function_scope": ["delegate", "undelegate", "withdraw", "redeem", "transfer", "transferFrom"],
+    "foundry_invariant": "assert(chamber.getTotalAgentDelegations(user) <= chamber.balanceOf(user))",
+    "currently_holds": false,
+    "broken_by": "SEC-DELEG-011"
+  },
+  {
+    "id": "PROP-02",
+    "name": "board_sorted",
+    "description": "Board linked list is in descending order by node.amount",
+    "type": "invariant",
+    "function_scope": ["delegate", "undelegate"],
+    "foundry_invariant": "traverse list, assert each node.amount >= next.amount",
+    "currently_holds": true
+  },
+  {
+    "id": "PROP-03",
+    "name": "board_size_bounded",
+    "description": "Board.size <= 100",
+    "type": "invariant",
+    "function_scope": ["delegate", "undelegate"],
+    "foundry_invariant": "assert(chamber.getSize() <= 100)",
+    "currently_holds": true
+  },
+  {
+    "id": "PROP-04",
+    "name": "quorum_enforced_on_execute",
+    "description": "executeTransaction reverts if confirmations < quorum",
+    "type": "property",
+    "function_scope": ["executeTransaction", "executeBatchTransactions"],
+    "foundry_test": "fuzz confirmations below quorum, assert revert NotEnoughConfirmations",
+    "currently_holds": true
+  },
+  {
+    "id": "PROP-05",
+    "name": "upgrade_requires_self_call",
+    "description": "upgradeImplementation() reverts for any caller != address(this)",
+    "type": "property",
+    "function_scope": ["upgradeImplementation"],
+    "foundry_test": "prank(arbitrary), call upgradeImplementation, assert revert NotAuthorized",
+    "currently_holds": true
+  },
+  {
+    "id": "PROP-06",
+    "name": "delegation_accounting_consistency",
+    "description": "agentDelegation[user][tokenId] sums to totalAgentDelegations[user] across all tokenIds",
+    "type": "invariant",
+    "function_scope": ["delegate", "undelegate"],
+    "foundry_invariant": "sum all agentDelegation[user][*] == totalAgentDelegations[user]",
+    "currently_holds": false,
+    "broken_by": "SEC-DELEG-011",
+    "note": "After eviction, agentDelegation[user][evictedId] persists but may not be reflected in getDelegations()"
+  },
+  {
+    "id": "PROP-07",
+    "name": "undelegate_always_succeeds_if_delegated",
+    "description": "If agentDelegation[user][tokenId] >= amount, undelegate(tokenId, amount) must succeed",
+    "type": "property",
+    "function_scope": ["undelegate"],
+    "foundry_test": "delegate then evict then undelegate; assert no revert",
+    "currently_holds": false,
+    "broken_by": "SEC-DELEG-011"
+  }
+]

@@ -283,6 +283,16 @@ export const chamberAbi = [
   },
   {
     type: 'function',
+    name: 'cancelTransaction',
+    inputs: [
+      { name: 'tokenId', type: 'uint256' },
+      { name: 'transactionId', type: 'uint256' },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
     name: 'submitBatchTransactions',
     inputs: [
       { name: 'tokenId', type: 'uint256' },
@@ -345,6 +355,30 @@ export const chamberAbi = [
   },
   {
     type: 'function',
+    name: 'getCancelled',
+    inputs: [{ name: 'nonce', type: 'uint256' }],
+    outputs: [{ name: '', type: 'bool' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'getCancelConfirmation',
+    inputs: [
+      { name: 'tokenId', type: 'uint256' },
+      { name: 'nonce', type: 'uint256' },
+    ],
+    outputs: [{ name: '', type: 'bool' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'getCancelConfirmations',
+    inputs: [{ name: 'nonce', type: 'uint256' }],
+    outputs: [{ name: '', type: 'uint8' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
     name: 'getNextTransactionId',
     inputs: [],
     outputs: [{ name: '', type: 'uint256' }],
@@ -384,6 +418,19 @@ export const chamberAbi = [
       { name: 'transactionId', type: 'uint256', indexed: true },
       { name: 'executor', type: 'address', indexed: true },
     ],
+  },
+  {
+    type: 'event',
+    name: 'CancelTransaction',
+    inputs: [
+      { name: 'tokenId', type: 'uint256', indexed: true },
+      { name: 'nonce', type: 'uint256', indexed: true },
+    ],
+  },
+  {
+    type: 'event',
+    name: 'TransactionCancelled',
+    inputs: [{ name: 'nonce', type: 'uint256', indexed: true }],
   },
   {
     type: 'event',

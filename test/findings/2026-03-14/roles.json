@@ -1,0 +1,94 @@
+{
+  "roles": [
+    {
+      "id": "DIRECTOR",
+      "defined_by": "Chamber._isDirector() / isDirector modifier",
+      "description": "NFT holder in top-seats of the Board. Controls multisig governance.",
+      "privileges": [
+        "submitTransaction",
+        "confirmTransaction",
+        "executeTransaction",
+        "revokeConfirmation",
+        "submitBatchTransactions",
+        "confirmBatchTransactions",
+        "executeBatchTransactions",
+        "updateSeats",
+        "executeSeatsUpdate"
+      ],
+      "how_acquired": "Hold NFT tokenId and have delegated stake ranked in top-seats by share amount"
+    },
+    {
+      "id": "AGENT_OWNER",
+      "defined_by": "Agent.onlyOwner",
+      "description": "Owner of an Agent contract. Can call execute() arbitrarily.",
+      "privileges": [
+        "setPolicy",
+        "setKeeper",
+        "execute (arbitrary calls)"
+      ],
+      "how_acquired": "Set at Agent.initialize(); not transferable"
+    },
+    {
+      "id": "AGENT_KEEPER",
+      "defined_by": "Agent.onlyAuthorized",
+      "description": "Authorized keeper for an Agent. Can trigger autoConfirm.",
+      "privileges": ["autoConfirm"],
+      "how_acquired": "Granted by Agent owner via setKeeper()"
+    },
+    {
+      "id": "REGISTRY_ADMIN",
+      "defined_by": "ChamberRegistry.ADMIN_ROLE / DEFAULT_ADMIN_ROLE",
+      "description": "Admin of the ChamberRegistry. Set at initialization.",
+      "privileges": ["AccessControl role management"],
+      "how_acquired": "Set at initialize()"
+    },
+    {
+      "id": "VALIDATOR_ROLE",
+      "defined_by": "ValidationRegistry.VALIDATOR_ROLE",
+      "description": "Can post validation attestations for Agents.",
+      "privileges": ["postValidation"],
+      "how_acquired": "Granted by DEFAULT_ADMIN_ROLE"
+    },
+    {
+      "id": "REPUTATION_MANAGER_ROLE",
+      "defined_by": "ReputationRegistry.REPUTATION_MANAGER_ROLE",
+      "description": "Can post reputation signals for Agents.",
+      "privileges": ["postSignal"],
+      "how_acquired": "Granted by DEFAULT_ADMIN_ROLE"
+    },
+    {
+      "id": "REGISTRAR_ROLE",
+      "defined_by": "AgentIdentityRegistry.REGISTRAR_ROLE",
+      "description": "Can mint Agent Identity NFTs.",
+      "privileges": ["registerAgent"],
+      "how_acquired": "Granted by DEFAULT_ADMIN_ROLE; ChamberRegistry is granted this role"
+    }
+  ],
+  "modifiers": [
+    {"name": "isDirector(tokenId)", "contract": "Chamber", "checks": ["tokenId != 0", "NFT.ownerOf(tokenId) == msg.sender OR EIP-1271 approval", "tokenId in top seats"]},
+    {"name": "nonReentrant", "contract": "Chamber", "checks": ["ReentrancyGuardUpgradeable storage flag"]},
+    {"name": "circuitBreaker", "contract": "Board", "checks": ["Board.locked == false; sets locked=true during execution"]},
+    {"name": "preventReentry", "contract": "Board", "checks": ["Board.locked == false (read-only check)"]},
+    {"name": "onlyOwner", "contract": "Agent", "checks": ["msg.sender == AgentStorage.owner"]},
+    {"name": "onlyAuthorized", "contract": "Agent", "checks": ["msg.sender == owner OR authorizedKeepers[msg.sender]"]},
+    {"name": "initializer", "contract": "Various", "checks": ["Initializable: can only run once"]},
+    {"name": "onlyRole(VALIDATOR_ROLE)", "contract": "ValidationRegistry", "checks": ["AccessControl role check"]},
+    {"name": "onlyRole(REPUTATION_MANAGER_ROLE)", "contract": "ReputationRegistry", "checks": ["AccessControl role check"]},
+    {"name": "onlyRole(REGISTRAR_ROLE)", "contract": "AgentIdentityRegistry", "checks": ["AccessControl role check"]}
+  ],
+  "access_check_gaps": [
+    {
+      "id": "ACG-01",
+      "function": "Chamber.delegate()",
+      "gap": "No nonReentrant modifier. External call to NFT.ownerOf() occurs before state update.",
+      "severity": "LOW",
+      "note": "Reentrancy limited by msg.sender context change; full transaction reverts if state is exploited."
+    },
+    {
+      "id": "ACG-02",
+      "function": "Agent.execute()",
+      "gap": "onlyOwner but can call chamber.confirmTransaction() directly, bypassing policy.",
+      "severity": "MEDIUM"
+    }
+  ]
+}

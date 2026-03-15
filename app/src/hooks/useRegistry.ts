@@ -1,5 +1,5 @@
-import { useReadContract, useWriteContract, useWaitForTransactionReceipt, useChainId } from 'wagmi'
-import { chamberRegistryAbi } from '@/contracts/abis'
+import { useReadContract, useReadContracts, useWriteContract, useWaitForTransactionReceipt, useChainId } from 'wagmi'
+import { chamberRegistryAbi, chamberAbi } from '@/contracts/abis'
 import { getContractAddresses, hasValidAddresses } from '@/lib/wagmi'
 
 export function useRegistryAddress() {
@@ -143,6 +143,56 @@ export function useAssets() {
     isLoading,
     error,
     refetch,
+  }
+}
+
+/**
+ * Groups chambers by their membership NFT (ERC721).
+ * Organizations are defined by shared membership token.
+ */
+export function useOrganizationsByNFT() {
+  const { chambers, isLoading: chambersLoading } = useAllChambers()
+  
+  const validChambers = (chambers ?? []).filter(
+    (addr): addr is `0x${string}` =>
+      !!addr &&
+      addr !== '0x0000000000000000000000000000000000000000' &&
+      addr.startsWith('0x') &&
+      addr.length === 42
+  )
+
+  const { data: nftResults, isLoading: nftsLoading } = useReadContracts({
+    contracts: validChambers.map((addr) => ({
+      address: addr,
+      abi: chamberAbi,
+      functionName: 'nft',
+    })) as readonly { address: `0x${string}`; abi: typeof chamberAbi; functionName: 'nft' }[],
+    query: {
+      enabled: validChambers.length > 0,
+    },
+  })
+
+  const organizations = (() => {
+    if (!nftResults || nftResults.length !== validChambers.length) return []
+    const byNft = new Map<string, `0x${string}`[]>()
+    for (let i = 0; i < validChambers.length; i++) {
+      const r = nftResults[i]
+      const chamber = validChambers[i]
+      if (r?.status === 'success' && r.result && chamber) {
+        const nft = (r.result as string).toLowerCase() as `0x${string}`
+        if (!byNft.has(nft)) byNft.set(nft, [])
+        byNft.get(nft)!.push(chamber)
+      }
+    }
+    return Array.from(byNft.entries()).map(([nft, chams]) => ({
+      nft: nft as `0x${string}`,
+      chambers: chams,
+    }))
+  })()
+
+  return {
+    organizations,
+    isLoading: chambersLoading || nftsLoading,
   }
 }
 

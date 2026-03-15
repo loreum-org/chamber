@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { motion } from 'framer-motion'
+import { useAccount } from 'wagmi'
 import { formatUnits, parseUnits } from 'viem'
 import {
   FiSend,
@@ -17,6 +18,7 @@ import {
   useChamberEventRefresh,
   useSimulateDelegate,
   useSimulateUndelegate,
+  useUserNFTs,
 } from '@/hooks'
 import type { BoardMember } from '@/types'
 
@@ -26,6 +28,7 @@ interface DelegationManagerProps {
   delegations: { tokenId: bigint; amount: bigint }[]
   members: BoardMember[]
   vaultSymbol?: string
+  nftToken?: `0x${string}`
 }
 
 export default function DelegationManager({
@@ -34,7 +37,10 @@ export default function DelegationManager({
   delegations,
   members,
   vaultSymbol,
+  nftToken,
 }: DelegationManagerProps) {
+  const { address: userAddress } = useAccount()
+  const { tokenIds: userNFTTokenIds } = useUserNFTs(nftToken, userAddress)
   const [delegateTokenId, setDelegateTokenId] = useState('')
   const [delegateAmount, setDelegateAmount] = useState('')
   const [undelegateTokenId, setUndelegateTokenId] = useState('')
@@ -229,14 +235,34 @@ export default function DelegationManager({
               <label className="block text-slate-300 text-sm font-medium mb-2">
                 NFT Token ID
               </label>
-              <input
-                type="number"
-                placeholder="Enter token ID"
-                className="input"
-                value={delegateTokenId}
-                onChange={(e) => setDelegateTokenId(e.target.value)}
-                min="1"
-              />
+              {userNFTTokenIds.length > 0 ? (
+                <select
+                  className="input"
+                  value={delegateTokenId}
+                  onChange={(e) => setDelegateTokenId(e.target.value)}
+                >
+                  <option value="">Select your NFT...</option>
+                  {userNFTTokenIds.map((id) => (
+                    <option key={id.toString()} value={id.toString()}>
+                      #{id.toString()} {members.find(m => m.tokenId === id) ? `(Rank #${members.find(m => m.tokenId === id)?.rank})` : ''}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type="number"
+                  placeholder="Enter token ID"
+                  className="input"
+                  value={delegateTokenId}
+                  onChange={(e) => setDelegateTokenId(e.target.value)}
+                  min="1"
+                />
+              )}
+              {userNFTTokenIds.length > 0 && (
+                <p className="text-slate-500 text-xs mt-1">
+                  Select an NFT you own to delegate voting power to it
+                </p>
+              )}
             </div>
 
             <div>

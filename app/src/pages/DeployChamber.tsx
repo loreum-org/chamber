@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAccount } from 'wagmi'
 import { useQueryClient } from '@tanstack/react-query'
@@ -76,6 +76,7 @@ export default function DeployChamber() {
     autoReset: false, // Don't auto-reset so we can show success state
   })
 
+  const [searchParams] = useSearchParams()
   const [formData, setFormData] = useState({
     erc20Token: '',
     erc721Token: '',
@@ -83,6 +84,19 @@ export default function DeployChamber() {
     name: '',
     symbol: '',
   })
+
+  // Pre-populate from URL when creating a sub chamber (e.g. from + Sub Chamber button)
+  useEffect(() => {
+    const erc20 = searchParams.get('erc20')
+    const erc721 = searchParams.get('erc721')
+    if (erc20 && erc721 && /^0x[a-fA-F0-9]{40}$/.test(erc20) && /^0x[a-fA-F0-9]{40}$/.test(erc721)) {
+      setFormData((prev) => ({
+        ...prev,
+        erc20Token: erc20,
+        erc721Token: erc721,
+      }))
+    }
+  }, [searchParams])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

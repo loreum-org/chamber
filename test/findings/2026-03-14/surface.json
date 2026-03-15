@@ -1,0 +1,67 @@
+{
+  "external_public_functions": {
+    "Chamber": [
+      {"name": "initialize", "visibility": "external", "payable": false, "modifiers": ["initializer"]},
+      {"name": "delegate", "visibility": "external", "payable": false, "modifiers": [], "note": "No nonReentrant; external NFT call before state update"},
+      {"name": "undelegate", "visibility": "external", "payable": false, "modifiers": []},
+      {"name": "getMember", "visibility": "public", "payable": false, "modifiers": []},
+      {"name": "getTop", "visibility": "public", "payable": false, "modifiers": []},
+      {"name": "getSize", "visibility": "public", "payable": false, "modifiers": []},
+      {"name": "getQuorum", "visibility": "public", "payable": false, "modifiers": []},
+      {"name": "getSeats", "visibility": "public", "payable": false, "modifiers": []},
+      {"name": "getDirectors", "visibility": "public", "payable": false, "modifiers": []},
+      {"name": "getDelegations", "visibility": "public", "payable": false, "modifiers": []},
+      {"name": "getAgentDelegation", "visibility": "external", "payable": false, "modifiers": []},
+      {"name": "getTotalAgentDelegations", "visibility": "external", "payable": false, "modifiers": []},
+      {"name": "getSeatUpdate", "visibility": "public", "payable": false, "modifiers": []},
+      {"name": "updateSeats", "visibility": "public", "payable": false, "modifiers": ["isDirector(tokenId)"]},
+      {"name": "executeSeatsUpdate", "visibility": "public", "payable": false, "modifiers": ["isDirector(tokenId)"]},
+      {"name": "submitTransaction", "visibility": "public", "payable": false, "modifiers": ["nonReentrant", "isDirector(tokenId)"]},
+      {"name": "confirmTransaction", "visibility": "public", "payable": false, "modifiers": ["nonReentrant", "isDirector(tokenId)"]},
+      {"name": "executeTransaction", "visibility": "public", "payable": false, "modifiers": ["nonReentrant", "isDirector(tokenId)"]},
+      {"name": "revokeConfirmation", "visibility": "public", "payable": false, "modifiers": ["nonReentrant", "isDirector(tokenId)"]},
+      {"name": "submitBatchTransactions", "visibility": "public", "payable": false, "modifiers": ["nonReentrant", "isDirector(tokenId)"]},
+      {"name": "confirmBatchTransactions", "visibility": "public", "payable": false, "modifiers": ["nonReentrant", "isDirector(tokenId)"]},
+      {"name": "executeBatchTransactions", "visibility": "public", "payable": false, "modifiers": ["nonReentrant", "isDirector(tokenId)"]},
+      {"name": "upgradeImplementation", "visibility": "external", "payable": false, "modifiers": ["msg.sender == address(this)"], "note": "Self-call only; no role modifier"},
+      {"name": "acceptAdmin", "visibility": "external", "payable": false, "modifiers": [], "note": "No-op"},
+      {"name": "getProxyAdmin", "visibility": "external", "payable": false, "modifiers": []},
+      {"name": "receive", "visibility": "external", "payable": true, "modifiers": []},
+      {"name": "transfer", "visibility": "public", "payable": false, "modifiers": []},
+      {"name": "transferFrom", "visibility": "public", "payable": false, "modifiers": []}
+    ],
+    "Agent": [
+      {"name": "initialize", "visibility": "external", "payable": false, "modifiers": ["initializer"]},
+      {"name": "setPolicy", "visibility": "external", "payable": false, "modifiers": ["onlyOwner"]},
+      {"name": "setKeeper", "visibility": "external", "payable": false, "modifiers": ["onlyOwner"]},
+      {"name": "autoConfirm", "visibility": "external", "payable": false, "modifiers": ["nonReentrant", "onlyAuthorized"]},
+      {"name": "isValidSignature", "visibility": "external", "payable": false, "modifiers": [], "note": "EIP-1271; 32-byte path ignores hash"},
+      {"name": "execute", "visibility": "external", "payable": false, "modifiers": ["onlyOwner"], "note": "Arbitrary call; bypasses policy"},
+      {"name": "getProxyAdmin", "visibility": "external", "payable": false, "modifiers": []},
+      {"name": "receive", "visibility": "external", "payable": true, "modifiers": []}
+    ],
+    "ChamberRegistry": [
+      {"name": "initialize", "visibility": "external", "payable": false, "modifiers": ["initializer"]},
+      {"name": "createChamber", "visibility": "external", "payable": false, "modifiers": [], "note": "Permissionless — anyone can deploy a Chamber"},
+      {"name": "createAgent", "visibility": "external", "payable": false, "modifiers": [], "note": "Permissionless — anyone can deploy an Agent"}
+    ]
+  },
+  "payable_paths": [
+    {"contract": "Chamber", "function": "receive()", "note": "Accepts ETH; tracked by address(this).balance"},
+    {"contract": "Agent", "function": "receive()", "note": "Accepts ETH for Agent execution"}
+  ],
+  "external_calls": [
+    {"caller": "Chamber.delegate", "callee": "IERC721.ownerOf(tokenId)", "timing": "before state update", "trust": "untrusted NFT"},
+    {"caller": "Chamber._isDirector", "callee": "IERC721.ownerOf(tokenId)", "timing": "access control check"},
+    {"caller": "Chamber._isDirector", "callee": "IERC1271.isValidSignature(hash, sig)", "timing": "only for contract-owned NFTs"},
+    {"caller": "Chamber.getDirectors", "callee": "IERC721.ownerOf(tokenId)", "timing": "view only"},
+    {"caller": "Wallet._executeTransaction", "callee": "target.call{value}(data)", "timing": "after state update (CEI)", "trust": "arbitrary"},
+    {"caller": "ChamberRegistry.createChamber", "callee": "new TransparentUpgradeableProxy(...)", "timing": "deployment"},
+    {"caller": "ChamberRegistry._transferChamberAdmin", "callee": "IChamber.getProxyAdmin()", "timing": "post-deploy"},
+    {"caller": "ChamberRegistry._transferChamberAdmin", "callee": "ProxyAdmin.transferOwnership(chamber)", "timing": "post-deploy"},
+    {"caller": "Agent.autoConfirm", "callee": "IAgentPolicy.canApprove(chamber, txId)", "timing": "before confirmTransaction", "trust": "untrusted policy"},
+    {"caller": "Agent.autoConfirm", "callee": "IChamber.confirmTransaction(tokenId, txId)", "timing": "after policy approval"},
+    {"caller": "Agent.execute", "callee": "target.call{value}(data)", "timing": "arbitrary", "trust": "untrusted"}
+  ],
+  "delegatecall_sites": []
+}

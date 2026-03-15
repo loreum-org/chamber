@@ -8,7 +8,7 @@ import {IBoard} from "src/interfaces/IBoard.sol";
 contract BoardTest is Test {
     MockBoard board;
 
-    uint256 constant MAX_NODES = 100;
+    uint256 constant MAX_NODES = 50;
 
     function setUp() public {
         board = new MockBoard();
@@ -160,7 +160,7 @@ contract BoardTest is Test {
     }
 
     function test_Board_DelegateMaxNodes() public {
-        uint256 maxNodes = 100;
+        uint256 maxNodes = MAX_NODES;
         uint256 amount = 100;
 
         for (uint256 i = 1; i <= maxNodes; i++) {
@@ -242,13 +242,23 @@ contract BoardTest is Test {
         assertGt(timestamp, 0);
     }
 
-    function test_Board_SetSeats_DifferentSeats_CancelsProposal() public {
+    function test_Board_SetSeats_ProposerCanCancel() public {
         board.setSeats(1, 7);
-        board.setSeats(2, 8); // Different seats - cancels
+        board.setSeats(2, 7);
+        // Proposer (tokenId 1) cancels by proposing different seats
+        board.setSeats(1, 8);
 
         (uint256 proposedSeats, uint256 timestamp,,) = board.getSeatUpdate();
         assertEq(proposedSeats, 0);
         assertEq(timestamp, 0);
+    }
+
+    function test_Board_SetSeats_NonProposerCannotCancel() public {
+        board.setSeats(1, 7);
+        board.setSeats(2, 7);
+        // Non-proposer (tokenId 2) cannot cancel — Fix Finding 14
+        vm.expectRevert(IBoard.OnlyProposerCanCancel.selector);
+        board.setSeats(2, 8);
     }
 
     function test_Board_SetSeats_AlreadyVoted_Reverts() public {
@@ -362,5 +372,99 @@ contract BoardTest is Test {
         // All same amount - should maintain insertion order
         (uint256[] memory tokenIds,) = board.getTop(3);
         assertEq(tokenIds.length, 3);
+    }
+
+    // ─── Eviction when at MAX_NODES ────────────────────────────────────
+
+    function test_Board_Insert_EvictsTailWhenFullAndAmountHigher() public {
+        // Fill board to MAX_NODES with amount=100 each
+        for (uint256 i = 1; i <= MAX_NODES; i++) {
+            board.insert(i, 100);
+        }
+        assertEq(board.getSize(), MAX_NODES);
+
+        // Insert a new node with amount > 100 → should evict the tail and succeed
+        uint256 newTokenId = MAX_NODES + 1;
+        board.insert(newTokenId, 200);
+
+        assertEq(board.getSize(), MAX_NODES);
+
+        // The new high-value node is now the head
+        assertEq(board.getHead(), newTokenId);
+    }
+
+    function test_Board_Insert_MaxNodesReached_LowerAmount_Reverts() public {
+        for (uint256 i = 1; i <= MAX_NODES; i++) {
+            board.insert(i, 100);
+        }
+
+        vm.expectRevert(IBoard.MaxNodesReached.selector);
+        board.insert(MAX_NODES + 1, 50); // lower than tail → reverts
+    }
+
+    // ─── Empty board ───────────────────────────────────────────────────
+
+    function test_Board_GetTop_EmptyBoard() public {
+        MockBoard emptyBoard = new MockBoard();
+        (uint256[] memory tokenIds, uint256[] memory amounts) = emptyBoard.getTop(5);
+        assertEq(tokenIds.length, 0);
+        assertEq(amounts.length, 0);
+    }
+
+    // ─── Circuit breaker ───────────────────────────────────────────────
+
+    function test_Board_CircuitBreakerActive_Delegate_Reverts() public {
+        board.exposed_delegate(1, 100);
+        board.lockBoard(); // manually set locked = true
+
+        vm.expectRevert(IBoard.CircuitBreakerActive.selector);
+        board.exposed_delegate(2, 100);
+    }
+
+    function test_Board_CircuitBreakerActive_Undelegate_Reverts() public {
+        board.exposed_delegate(1, 100);
+        board.lockBoard();
+
+        vm.expectRevert(IBoard.CircuitBreakerActive.selector);
+        board.exposed_undelegate(1, 50);
+    }
+
+    function test_Board_CircuitBreakerActive_Reposition_Reverts() public {
+        board.exposed_delegate(1, 100);
+        board.lockBoard();
+
+        vm.expectRevert(IBoard.CircuitBreakerActive.selector);
+        board.reposition(1);
+    }
+
+    // ─── executeSeatsUpdate: supporter no longer in top seats ──────────
+
+    // ─── _remove on non-existent node returns false ────────────────────
+
+    function test_Board_Remove_NonExistent_ReturnsFalse() public {
+        // Removing a tokenId that was never inserted → _remove returns false (ignored by public wrapper)
+        board.remove(9999); // should not revert, just silently returns false
+        assertEq(board.getSize(), 0);
+    }
+
+    function test_Board_ExecuteSeatsUpdate_SupporterEvicted_InsufficientVotes() public {
+        // Fill board so 3 nodes exist in top 5 seats
+        board.insert(1, 300);
+        board.insert(2, 200);
+        board.insert(3, 100);
+
+        board.setSeats(1, 7);
+        board.setSeats(2, 7);
+        board.setSeats(3, 7);
+
+        // Now remove node 1 from the board so it's no longer in top seats
+        board.remove(1);
+        board.remove(2);
+        board.remove(3);
+
+        vm.warp(block.timestamp + 8 days);
+
+        vm.expectRevert(IBoard.InsufficientVotes.selector);
+        board.executeSeatsUpdate(1);
     }
 }
