@@ -1,6 +1,6 @@
 # Overview
 
-Loreum Chamber is a secure shared vault for communities. NFT holders elect a board of leaders who work together to manage funds and approve transactions through a unique delegation mechanism.
+Loreum Chamber is enterprise treasury infrastructure for organizations. Chambers function as corporate entities with an elected board of directors who oversee fiduciary operations and approve transactions through multi-signature governance.
 
 The Chamber represents a novel smart account architecture that fundamentally reimagines organizational governance through three integrated components:
 - **Board management**

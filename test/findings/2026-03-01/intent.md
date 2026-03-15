@@ -2,7 +2,7 @@
 
 ## System Overview
 
-The Chamber protocol is a secure shared vault for communities where NFT holders elect a board of leaders who manage funds through a unique delegation mechanism and multi-signature governance.
+The Chamber protocol is enterprise treasury infrastructure for organizations. Chambers function as corporate entities with an elected board of directors who oversee fiduciary operations and approve transactions through multi-signature governance.
 
 ## Key Claims
 

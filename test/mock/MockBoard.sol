@@ -29,11 +29,11 @@ contract MockBoard is Board {
     }
 
     function getSize() public view returns (uint256) {
-        return size;
+        return _getBoardStorage().size;
     }
 
     function getHead() public view returns (uint256) {
-        return head;
+        return _getBoardStorage().head;
     }
 
     function getTop(uint256 count) public view returns (uint256[] memory, uint256[] memory) {
@@ -57,7 +57,12 @@ contract MockBoard is Board {
     }
 
     function getSeatUpdate() public view returns (uint256, uint256, uint256, uint256[] memory) {
-        SeatUpdate storage proposal = seatUpdate;
+        SeatUpdate storage proposal = _getBoardStorage().seatUpdate;
         return (proposal.proposedSeats, proposal.timestamp, proposal.requiredQuorum, proposal.supporters);
+    }
+
+    /// @notice Manually sets the circuit breaker lock (for testing CircuitBreakerActive revert)
+    function lockBoard() public {
+        _getBoardStorage().locked = true;
     }
 }

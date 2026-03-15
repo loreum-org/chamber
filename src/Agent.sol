@@ -9,6 +9,10 @@ import {
     ReentrancyGuardUpgradeable
 } from "lib/openzeppelin-contracts-upgradeable/contracts/utils/ReentrancyGuardUpgradeable.sol";
 import {IChamber} from "./interfaces/IChamber.sol";
+import {AgentIdentityRegistry} from "./AgentIdentityRegistry.sol";
+import {IChamberRegistry} from "./interfaces/IChamberRegistry.sol";
+
+import {StorageSlot} from "lib/openzeppelin-contracts/contracts/utils/StorageSlot.sol";
 
 /**
  * @title IAgentPolicy
@@ -24,10 +28,7 @@ interface IAgentPolicy {
     function canApprove(address chamber, uint256 transactionId) external view returns (bool);
 }
 
-import {AgentIdentityRegistry} from "./AgentIdentityRegistry.sol";
-import {IChamberRegistry} from "./interfaces/IChamberRegistry.sol";
 
-import {StorageSlot} from "lib/openzeppelin-contracts/contracts/utils/StorageSlot.sol";
 
 /**
  * @title Agent
@@ -35,23 +36,25 @@ import {StorageSlot} from "lib/openzeppelin-contracts/contracts/utils/StorageSlo
  * @dev Implements a basic "Policy" system for automated governance
  */
 contract Agent is ERC165, IERC1271, Initializable, ReentrancyGuardUpgradeable {
-    /// @notice The owner of this agent (can upgrade policies)
-    address public owner;
-
-    /// @notice The active policy module
-    IAgentPolicy public policy;
-
-    /// @notice The Registry address
-    address public registry;
+    /**
+     * @notice ERC-7201 namespaced storage layout for Agent
+     * @dev Packing: `owner` and `registry` are both addresses (20 bytes each); they cannot share
+     *      a 32-byte slot. `policy` is an interface type backed by an address (20 bytes).
+     *      No sub-slot packing is possible without mixed-size fields.
+     * @custom:storage-location erc7201:loreum.Agent
+     */
+    struct AgentStorage {
+        address owner;
+        address registry;
+        IAgentPolicy policy;
+        mapping(address => bool) authorizedKeepers;
+    }
 
     /// @notice Emitted when the policy is updated
     event PolicyUpdated(address indexed oldPolicy, address indexed newPolicy);
 
     /// @notice Emitted when the agent auto-confirms a transaction
     event AutoConfirmed(address indexed chamber, uint256 indexed transactionId);
-
-    /// @notice Mapping of authorized keepers who can trigger autoConfirm
-    mapping(address => bool) public authorizedKeepers;
 
     /// @notice Emitted when a keeper is added or removed
     event KeeperUpdated(address indexed keeper, bool authorized);
@@ -65,6 +68,38 @@ contract Agent is ERC165, IERC1271, Initializable, ReentrancyGuardUpgradeable {
     /// @notice Thrown when policy rejects a transaction
     error PolicyRejection();
 
+    /// @dev keccak256(abi.encode(uint256(keccak256("erc7201:loreum.Agent")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 private constant _AGENT_STORAGE_SLOT =
+        0xd17d9af033c589679060d936d824fe1c6bfe1b41fa932922f10e866c7e4fd700;
+
+    function _getAgentStorage() internal pure returns (AgentStorage storage $) {
+        assembly {
+            $.slot := _AGENT_STORAGE_SLOT
+        }
+    }
+
+    /// EXPLICIT GETTERS for formerly-public state variables ///
+
+    /// @notice The owner of this agent (can upgrade policies)
+    function owner() external view returns (address) {
+        return _getAgentStorage().owner;
+    }
+
+    /// @notice The active policy module
+    function policy() external view returns (IAgentPolicy) {
+        return _getAgentStorage().policy;
+    }
+
+    /// @notice The Registry address
+    function registry() external view returns (address) {
+        return _getAgentStorage().registry;
+    }
+
+    /// @notice Whether a given address is an authorized keeper
+    function authorizedKeepers(address keeper) external view returns (bool) {
+        return _getAgentStorage().authorizedKeepers[keeper];
+    }
+
     constructor() {
         _disableInitializers();
     }
@@ -77,9 +112,10 @@ contract Agent is ERC165, IERC1271, Initializable, ReentrancyGuardUpgradeable {
      */
     function initialize(address _owner, address _policy, address _registry) external initializer {
         if (_owner == address(0)) revert("Zero address owner");
-        owner = _owner;
-        policy = IAgentPolicy(_policy);
-        registry = _registry;
+        AgentStorage storage $ = _getAgentStorage();
+        $.owner = _owner;
+        $.policy = IAgentPolicy(_policy);
+        $.registry = _registry;
         __ReentrancyGuard_init();
     }
 
@@ -88,8 +124,9 @@ contract Agent is ERC165, IERC1271, Initializable, ReentrancyGuardUpgradeable {
      * @return uint256 The Identity Token ID (0 if not registered)
      */
     function getIdentityId() external view returns (uint256) {
-        if (registry == address(0)) return 0;
-        address identityRegistry = IChamberRegistry(registry).agentIdentityRegistry();
+        AgentStorage storage $ = _getAgentStorage();
+        if ($.registry == address(0)) return 0;
+        address identityRegistry = IChamberRegistry($.registry).agentIdentityRegistry();
         if (identityRegistry == address(0)) return 0;
         return AgentIdentityRegistry(identityRegistry).agentToIdentityId(address(this));
     }
@@ -99,33 +136,33 @@ contract Agent is ERC165, IERC1271, Initializable, ReentrancyGuardUpgradeable {
      * @param _policy The new policy contract
      */
     function setPolicy(address _policy) external onlyOwner {
-        emit PolicyUpdated(address(policy), _policy);
-        policy = IAgentPolicy(_policy);
+        AgentStorage storage $ = _getAgentStorage();
+        emit PolicyUpdated(address($.policy), _policy);
+        $.policy = IAgentPolicy(_policy);
     }
 
     /**
      * @notice Adds or removes an authorized keeper
-     * @dev Only owner can manage keepers
      * @param keeper The keeper address
      * @param authorized Whether to authorize or revoke
      */
     function setKeeper(address keeper, bool authorized) external onlyOwner {
-        authorizedKeepers[keeper] = authorized;
+        _getAgentStorage().authorizedKeepers[keeper] = authorized;
         emit KeeperUpdated(keeper, authorized);
     }
 
     /**
      * @notice Automatically confirms a transaction if it passes the policy check
-     * @dev Fix for Findings 5 & 8: Removed broken two-parameter overload (getDirectorTokenId
-     *      always returned 0). Added access control so only owner or authorized keepers can call.
+     * @dev Fix for Findings 5 & 8: access control so only owner or authorized keepers can call.
      * @param chamber The Chamber address
      * @param transactionId The transaction ID to vote on
      * @param tokenId The NFT token ID this Agent uses for directorship
      */
     function autoConfirm(address chamber, uint256 transactionId, uint256 tokenId) external nonReentrant onlyAuthorized {
-        if (address(policy) == address(0)) revert("No policy set");
+        AgentStorage storage $ = _getAgentStorage();
+        if (address($.policy) == address(0)) revert("No policy set");
 
-        if (!policy.canApprove(chamber, transactionId)) {
+        if (!$.policy.canApprove(chamber, transactionId)) {
             revert PolicyRejection();
         }
 
@@ -135,26 +172,25 @@ contract Agent is ERC165, IERC1271, Initializable, ReentrancyGuardUpgradeable {
 
     /**
      * @notice EIP-1271 Signature Validation
-     * @dev Allows this contract to sign off-chain messages (e.g. Permit, Snapshot)
-     *      Also supports Chamber's custom authorization pattern (signature = encoded sender address)
      * @param hash The hash of the data to be signed
      * @param signature The signature byte array
      * @return magicValue IERC1271.isValidSignature.selector if valid, else 0xffffffff
+     * @dev The 32-byte path (signature = abi.encode(address)) is Chamber-specific for contract-owned
+     *      NFT directorship. Do NOT use this Agent with external EIP-1271 protocols (permits,
+     *      order books, bridges) — the 32-byte path ignores hash and would accept arbitrary messages.
      */
     function isValidSignature(bytes32 hash, bytes memory signature) external view override returns (bytes4) {
-        // 1. Chamber Mode: Authorization Check (signature is 32 bytes encoded address)
-        // This allows the Owner to act on behalf of the Agent in the Chamber
+        address _owner = _getAgentStorage().owner;
+
         if (signature.length == 32) {
             address authorizedSender = abi.decode(signature, (address));
-            if (authorizedSender == owner) {
+            if (authorizedSender == _owner) {
                 return IERC1271.isValidSignature.selector;
             }
         }
 
-        // 2. Standard Mode: Cryptographic Signature Check
-        // Validates if the signature was signed by the Owner
         (address signer, ECDSA.RecoverError err,) = ECDSA.tryRecover(hash, signature);
-        if (err == ECDSA.RecoverError.NoError && signer == owner) {
+        if (err == ECDSA.RecoverError.NoError && signer == _owner) {
             return IERC1271.isValidSignature.selector;
         }
 
@@ -163,7 +199,9 @@ contract Agent is ERC165, IERC1271, Initializable, ReentrancyGuardUpgradeable {
 
     /**
      * @notice Executes arbitrary transactions (Standard Smart Account feature)
-     * @dev Only owner can trigger manual execution
+     * @dev Only owner can trigger manual execution.
+     *      WARNING: This function bypasses the governance policy set in autoConfirm().
+     *      Owner escape hatch for emergency use. Use autoConfirm() for policy-governed confirmations.
      */
     function execute(address target, uint256 value, bytes calldata data) external onlyOwner returns (bytes memory) {
         (bool success, bytes memory result) = target.call{value: value}(data);
@@ -183,11 +221,12 @@ contract Agent is ERC165, IERC1271, Initializable, ReentrancyGuardUpgradeable {
     }
 
     function _onlyOwner() internal view {
-        if (msg.sender != owner) revert NotOwner();
+        if (msg.sender != _getAgentStorage().owner) revert NotOwner();
     }
 
     function _onlyAuthorized() internal view {
-        if (msg.sender != owner && !authorizedKeepers[msg.sender]) revert NotAuthorized();
+        AgentStorage storage $ = _getAgentStorage();
+        if (msg.sender != $.owner && !$.authorizedKeepers[msg.sender]) revert NotAuthorized();
     }
 
     /// @notice Support for ERC-165
@@ -203,7 +242,6 @@ contract Agent is ERC165, IERC1271, Initializable, ReentrancyGuardUpgradeable {
      * @return The ProxyAdmin address stored in ERC1967 admin slot
      */
     function getProxyAdmin() external view returns (address) {
-        // ERC1967 admin slot: keccak256("eip1967.proxy.admin") - 1
         bytes32 adminSlot = 0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
         return StorageSlot.getAddressSlot(adminSlot).value;
     }

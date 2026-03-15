@@ -14,22 +14,37 @@ import {Initializable} from "lib/openzeppelin-contracts-upgradeable/contracts/pr
 contract ReputationRegistry is Initializable, AccessControlUpgradeable {
     bytes32 public constant REPUTATION_MANAGER_ROLE = keccak256("REPUTATION_MANAGER_ROLE");
 
-    /// @notice Structure for a Reputation Signal
+    /**
+     * @notice Structure for a Reputation Signal
+     * @dev Packing: `provider` (address, 20 bytes) + `score` (uint8, 1 byte) = 21 bytes in slot 0.
+     *      `comment` (string, dynamic) and `timestamp` (uint256) each occupy their own slots.
+     */
     struct Signal {
         address provider;
-        uint8 score; // 0-100
-        string comment; // Optional comment or IPFS hash
+        uint8 score;
+        string comment;
         uint256 timestamp;
     }
 
-    /// @notice Mapping from Agent Identity Token ID to list of Signals
-    mapping(uint256 => Signal[]) private _signals;
+    /**
+     * @notice ERC-7201 namespaced storage layout for ReputationRegistry
+     * @custom:storage-location erc7201:loreum.ReputationRegistry
+     */
+    struct ReputationRegistryStorage {
+        mapping(uint256 => Signal[]) signals;
+        mapping(uint256 => uint256) totalScore;
+        mapping(uint256 => uint256) signalCount;
+    }
 
-    /// @notice Running total score per agent for O(1) average calculation
-    mapping(uint256 => uint256) private _totalScore;
+    /// @dev keccak256(abi.encode(uint256(keccak256("erc7201:loreum.ReputationRegistry")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 private constant _REPUTATIONREGISTRY_STORAGE_SLOT =
+        0x3231d253bf82f17e7e1cb03127bee3f2f842f7b78a15e3ac5797c02a37223300;
 
-    /// @notice Running signal count per agent for O(1) average calculation
-    mapping(uint256 => uint256) private _signalCount;
+    function _getReputationRegistryStorage() internal pure returns (ReputationRegistryStorage storage $) {
+        assembly {
+            $.slot := _REPUTATIONREGISTRY_STORAGE_SLOT
+        }
+    }
 
     /// @notice Event emitted when a new signal is posted
     event SignalPosted(uint256 indexed agentId, address indexed provider, uint8 score, string comment);
@@ -51,8 +66,6 @@ contract ReputationRegistry is Initializable, AccessControlUpgradeable {
 
     /**
      * @notice Posts a reputation signal for an agent
-     * @dev Currently restricted to REPUTATION_MANAGER_ROLE for curated reputation.
-     *      In the future, this could be open or stake-gated.
      * @param agentId The Identity Token ID of the agent
      * @param score The reputation score (0-100)
      * @param comment Optional comment or URI
@@ -63,13 +76,14 @@ contract ReputationRegistry is Initializable, AccessControlUpgradeable {
     {
         require(score <= 100, "Score must be 0-100");
 
-        _signals[agentId].push(
+        ReputationRegistryStorage storage $ = _getReputationRegistryStorage();
+
+        $.signals[agentId].push(
             Signal({provider: msg.sender, score: score, comment: comment, timestamp: block.timestamp})
         );
 
-        // Update running totals for O(1) average calculation
-        _totalScore[agentId] += score;
-        _signalCount[agentId] += 1;
+        $.totalScore[agentId] += score;
+        $.signalCount[agentId] += 1;
 
         emit SignalPosted(agentId, msg.sender, score, comment);
     }
@@ -82,7 +96,8 @@ contract ReputationRegistry is Initializable, AccessControlUpgradeable {
      * @return An array of Signal structs
      */
     function getSignals(uint256 agentId, uint256 offset, uint256 limit) external view returns (Signal[] memory) {
-        uint256 total = _signals[agentId].length;
+        Signal[] storage all = _getReputationRegistryStorage().signals[agentId];
+        uint256 total = all.length;
         if (offset >= total) {
             return new Signal[](0);
         }
@@ -90,7 +105,7 @@ contract ReputationRegistry is Initializable, AccessControlUpgradeable {
         uint256 count = remaining < limit ? remaining : limit;
         Signal[] memory result = new Signal[](count);
         for (uint256 i = 0; i < count;) {
-            result[i] = _signals[agentId][offset + i];
+            result[i] = all[offset + i];
             unchecked {
                 ++i;
             }
@@ -104,7 +119,7 @@ contract ReputationRegistry is Initializable, AccessControlUpgradeable {
      * @return An array of Signal structs
      */
     function getSignals(uint256 agentId) external view returns (Signal[] memory) {
-        return _signals[agentId];
+        return _getReputationRegistryStorage().signals[agentId];
     }
 
     /**
@@ -113,7 +128,7 @@ contract ReputationRegistry is Initializable, AccessControlUpgradeable {
      * @return The count of signals
      */
     function getSignalCount(uint256 agentId) external view returns (uint256) {
-        return _signalCount[agentId];
+        return _getReputationRegistryStorage().signalCount[agentId];
     }
 
     /**
@@ -123,8 +138,9 @@ contract ReputationRegistry is Initializable, AccessControlUpgradeable {
      * @return The average score (0 if no signals)
      */
     function getAverageScore(uint256 agentId) external view returns (uint256) {
-        uint256 count = _signalCount[agentId];
+        ReputationRegistryStorage storage $ = _getReputationRegistryStorage();
+        uint256 count = $.signalCount[agentId];
         if (count == 0) return 0;
-        return _totalScore[agentId] / count;
+        return $.totalScore[agentId] / count;
     }
 }

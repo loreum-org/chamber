@@ -25,27 +25,6 @@ abstract contract Board {
         uint256 prev;
     }
 
-    /// @notice Maximum number of nodes allowed in the linked list
-    uint256 internal constant MAX_NODES = 100;
-
-    /// @notice Number of board seats
-    uint256 private seats;
-
-    /// @notice Mapping from tokenId to Node data
-    mapping(uint256 => Node) internal nodes;
-
-    /// @notice TokenId of the first node (highest amount)
-    uint256 internal head;
-
-    /// @notice TokenId of the last node (lowest amount)
-    uint256 internal tail;
-
-    /// @notice Total number of nodes in the list
-    uint256 internal size;
-
-    /// circuit breaker
-    bool private locked;
-
     /**
      * @notice Structure representing a proposal to update the number of board seats
      * @param proposedSeats The proposed new number of seats
@@ -60,8 +39,34 @@ abstract contract Board {
         uint256[] supporters;
     }
 
-    /// @notice Seat update proposal
-    SeatUpdate internal seatUpdate;
+    /**
+     * @notice ERC-7201 namespaced storage layout for Board
+     * @dev Packing: `seats` and `locked` share a slot (uint256 + bool = 33 bytes, separate slots).
+     *      Mappings and dynamic arrays always occupy a full slot regardless of ordering.
+     * @custom:storage-location erc7201:loreum.Board
+     */
+    struct BoardStorage {
+        mapping(uint256 => Node) nodes;
+        SeatUpdate seatUpdate;
+        uint256 head;
+        uint256 tail;
+        uint256 size;
+        uint256 seats;
+        bool locked;
+    }
+
+    /// @notice Maximum number of nodes allowed in the linked list
+    uint256 internal constant MAX_NODES = 50;
+
+    /// @dev keccak256(abi.encode(uint256(keccak256("erc7201:loreum.Board")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 private constant _BOARD_STORAGE_SLOT =
+        0xae916af301d5dc481b59b170e7db23e36b830da7017e456f99549768499c8800;
+
+    function _getBoardStorage() internal pure returns (BoardStorage storage $) {
+        assembly {
+            $.slot := _BOARD_STORAGE_SLOT
+        }
+    }
 
     /// @dev Events and errors are defined in IBoard interface
 
@@ -79,12 +84,13 @@ abstract contract Board {
     }
 
     function _circuitBreakerBefore() internal {
-        if (locked) revert IBoard.CircuitBreakerActive();
-        locked = true;
+        BoardStorage storage $ = _getBoardStorage();
+        if ($.locked) revert IBoard.CircuitBreakerActive();
+        $.locked = true;
     }
 
     function _circuitBreakerAfter() internal {
-        locked = false;
+        _getBoardStorage().locked = false;
     }
 
     /**
@@ -98,7 +104,7 @@ abstract contract Board {
     }
 
     function _preventReentry() internal view {
-        if (locked) revert IBoard.CircuitBreakerActive();
+        if (_getBoardStorage().locked) revert IBoard.CircuitBreakerActive();
     }
 
     /// @dev CircuitBreakerActive error is defined in IBoard interface
@@ -111,7 +117,7 @@ abstract contract Board {
      * @return Node struct containing the node's data
      */
     function _getNode(uint256 tokenId) internal view returns (Node memory) {
-        return nodes[tokenId];
+        return _getBoardStorage().nodes[tokenId];
     }
 
     /**
@@ -121,13 +127,12 @@ abstract contract Board {
      * @param amount The amount of tokens to delegate
      */
     function _delegate(uint256 tokenId, uint256 amount) internal preventReentry {
-        Node storage node = nodes[tokenId];
+        BoardStorage storage $ = _getBoardStorage();
+        Node storage node = $.nodes[tokenId];
         if (node.tokenId == tokenId) {
-            // Update existing node
             node.amount += amount;
             _reposition(tokenId);
         } else {
-            // Create new node
             _insert(tokenId, amount);
         }
         emit IBoard.Delegate(msg.sender, tokenId, amount);
@@ -140,7 +145,8 @@ abstract contract Board {
      * @param amount The amount of tokens to undelegate
      */
     function _undelegate(uint256 tokenId, uint256 amount) internal preventReentry {
-        Node storage node = nodes[tokenId];
+        BoardStorage storage $ = _getBoardStorage();
+        Node storage node = $.nodes[tokenId];
         if (node.tokenId != tokenId) revert IBoard.NodeDoesNotExist();
         if (amount > node.amount) revert IBoard.AmountExceedsDelegation();
 
@@ -160,7 +166,7 @@ abstract contract Board {
      * @param tokenId The token ID to reposition
      */
     function _reposition(uint256 tokenId) internal circuitBreaker {
-        Node memory node = nodes[tokenId];
+        Node memory node = _getBoardStorage().nodes[tokenId];
         if (node.tokenId != tokenId) revert IBoard.NodeDoesNotExist();
 
         bool success = _remove(tokenId);
@@ -176,20 +182,19 @@ abstract contract Board {
      * @param amount The delegation amount for the node
      */
     function _insert(uint256 tokenId, uint256 amount) internal {
-        if (size >= MAX_NODES) {
-            // If board is full, only insert if new amount > tail amount
-            if (amount <= nodes[tail].amount) revert IBoard.MaxNodesReached();
-            // Remove tail to make space
-            _remove(tail);
+        BoardStorage storage $ = _getBoardStorage();
+        if ($.size >= MAX_NODES) {
+            if (amount <= $.nodes[$.tail].amount) revert IBoard.MaxNodesReached();
+            _remove($.tail);
         }
 
-        if (head == 0) {
+        if ($.head == 0) {
             _initializeFirstNode(tokenId, amount);
         } else {
             _insertNodeInOrder(tokenId, amount);
         }
         unchecked {
-            size++;
+            $.size++;
         }
     }
 
@@ -199,9 +204,10 @@ abstract contract Board {
      * @param amount The delegation amount
      */
     function _initializeFirstNode(uint256 tokenId, uint256 amount) private {
-        nodes[tokenId] = Node({tokenId: tokenId, amount: amount, next: 0, prev: 0});
-        head = tokenId;
-        tail = tokenId;
+        BoardStorage storage $ = _getBoardStorage();
+        $.nodes[tokenId] = Node({tokenId: tokenId, amount: amount, next: 0, prev: 0});
+        $.head = tokenId;
+        $.tail = tokenId;
     }
 
     /**
@@ -211,38 +217,31 @@ abstract contract Board {
      * @param amount The delegation amount
      */
     function _insertNodeInOrder(uint256 tokenId, uint256 amount) private {
-        // Cache head value
-        uint256 current = head;
+        BoardStorage storage $ = _getBoardStorage();
+        uint256 current = $.head;
         uint256 previous;
 
-        // Use unchecked for gas savings since we control node linking
         unchecked {
-            // Find insertion point
-            while (current != 0 && amount <= nodes[current].amount) {
+            while (current != 0 && amount <= $.nodes[current].amount) {
                 previous = current;
-                current = nodes[current].next;
+                current = $.nodes[current].next;
             }
 
-            // Create new node
-            Node storage newNode = nodes[tokenId];
+            Node storage newNode = $.nodes[tokenId];
             newNode.tokenId = tokenId;
             newNode.amount = amount;
             newNode.next = current;
             newNode.prev = previous;
 
-            // Update links
             if (current == 0) {
-                // Insert at tail
-                nodes[previous].next = tokenId;
-                tail = tokenId;
+                $.nodes[previous].next = tokenId;
+                $.tail = tokenId;
             } else if (previous == 0) {
-                // Insert at head
-                nodes[current].prev = tokenId;
-                head = tokenId;
+                $.nodes[current].prev = tokenId;
+                $.head = tokenId;
             } else {
-                // Insert in middle
-                nodes[previous].next = tokenId;
-                nodes[current].prev = tokenId;
+                $.nodes[previous].next = tokenId;
+                $.nodes[current].prev = tokenId;
             }
         }
     }
@@ -253,9 +252,9 @@ abstract contract Board {
      * @return True if removal was successful
      */
     function _remove(uint256 tokenId) internal returns (bool) {
-        Node storage node = nodes[tokenId];
+        BoardStorage storage $ = _getBoardStorage();
+        Node storage node = $.nodes[tokenId];
 
-        // Check if node exists
         if (node.tokenId != tokenId) {
             return false;
         }
@@ -264,23 +263,22 @@ abstract contract Board {
         uint256 next = node.next;
 
         if (prev != 0) {
-            nodes[prev].next = next;
+            $.nodes[prev].next = next;
         } else {
-            head = next;
+            $.head = next;
         }
 
         if (next != 0) {
-            nodes[next].prev = prev;
+            $.nodes[next].prev = prev;
         } else {
-            tail = prev;
+            $.tail = prev;
         }
 
-        delete nodes[tokenId];
+        delete $.nodes[tokenId];
 
-        // Ensure size doesn't underflow
-        if (size > 0) {
+        if ($.size > 0) {
             unchecked {
-                size--;
+                $.size--;
             }
         }
         return true;
@@ -293,9 +291,9 @@ abstract contract Board {
      * @return amounts Array of corresponding delegation amounts
      */
     function _getTop(uint256 count) internal view returns (uint256[] memory, uint256[] memory) {
-        uint256 _size = size;
+        BoardStorage storage $ = _getBoardStorage();
+        uint256 _size = $.size;
 
-        // Handle empty board
         if (_size == 0) {
             return (new uint256[](0), new uint256[](0));
         }
@@ -304,11 +302,11 @@ abstract contract Board {
         uint256[] memory tokenIds = new uint256[](resultCount);
         uint256[] memory amounts = new uint256[](resultCount);
 
-        uint256 current = head;
+        uint256 current = $.head;
         for (uint256 i = 0; i < resultCount && current != 0; i++) {
             tokenIds[i] = current;
-            amounts[i] = nodes[current].amount;
-            current = nodes[current].next;
+            amounts[i] = $.nodes[current].amount;
+            current = $.nodes[current].next;
         }
 
         return (tokenIds, amounts);
@@ -320,7 +318,7 @@ abstract contract Board {
      * @return The number of confirmations required for quorum
      */
     function _getQuorum() internal view returns (uint256) {
-        return 1 + (seats * 51) / 100;
+        return 1 + (_getBoardStorage().seats * 51) / 100;
     }
 
     /**
@@ -328,7 +326,7 @@ abstract contract Board {
      * @return The number of seats
      */
     function _getSeats() internal view returns (uint256) {
-        return seats;
+        return _getBoardStorage().seats;
     }
 
     /**
@@ -340,29 +338,31 @@ abstract contract Board {
     function _setSeats(uint256 tokenId, uint256 numOfSeats) internal {
         if (numOfSeats <= 0) revert IBoard.InvalidNumSeats();
 
-        // Initial setup case
-        if (seats == 0) {
-            seats = numOfSeats;
+        BoardStorage storage $ = _getBoardStorage();
+
+        if ($.seats == 0) {
+            $.seats = numOfSeats;
             emit IBoard.ExecuteSetSeats(tokenId, numOfSeats);
             return;
         }
 
-        SeatUpdate storage proposal = seatUpdate;
+        SeatUpdate storage proposal = $.seatUpdate;
 
-        // New proposal
         if (proposal.timestamp == 0) {
             proposal.proposedSeats = numOfSeats;
             proposal.timestamp = block.timestamp;
-            proposal.requiredQuorum = _getQuorum(); // Store quorum at proposal time
+            proposal.requiredQuorum = _getQuorum();
         } else {
-            // Delete the proposal if numOfSeats doesn't match
             if (proposal.proposedSeats != numOfSeats) {
-                delete seatUpdate;
+                // Only proposer can cancel (Fix Finding 14 — prevents minority griefing)
+                if (proposal.supporters.length == 0 || proposal.supporters[0] != tokenId) {
+                    revert IBoard.OnlyProposerCanCancel();
+                }
+                delete $.seatUpdate;
                 emit IBoard.SeatUpdateCancelled(tokenId);
                 return;
             }
 
-            // Check if caller already voted on seat update
             for (uint256 i; i < proposal.supporters.length;) {
                 if (proposal.supporters[i] == tokenId) {
                     revert IBoard.AlreadySentUpdateRequest();
@@ -373,7 +373,6 @@ abstract contract Board {
             }
         }
 
-        // Add support
         proposal.supporters.push(tokenId);
         emit IBoard.SetSeats(tokenId, numOfSeats);
     }
@@ -385,13 +384,12 @@ abstract contract Board {
      * @param tokenId The token ID executing the update
      */
     function _executeSeatsUpdate(uint256 tokenId) internal {
-        SeatUpdate storage proposal = seatUpdate;
+        BoardStorage storage $ = _getBoardStorage();
+        SeatUpdate storage proposal = $.seatUpdate;
 
-        // Require proposal exists and delay has passed
         if (proposal.timestamp == 0) revert IBoard.InvalidProposal();
         if (block.timestamp < proposal.timestamp + 7 days) revert IBoard.TimelockNotExpired();
 
-        // Verify quorum is maintained using only supporters still in top seats
         uint256 validSupport = 0;
         for (uint256 i = 0; i < proposal.supporters.length;) {
             if (_isInTopSeats(proposal.supporters[i])) {
@@ -407,9 +405,10 @@ abstract contract Board {
             revert IBoard.InsufficientVotes();
         }
 
-        seats = proposal.proposedSeats;
-        delete seatUpdate;
-        emit IBoard.ExecuteSetSeats(tokenId, proposal.proposedSeats);
+        uint256 newSeats = proposal.proposedSeats;
+        $.seats = newSeats;
+        delete $.seatUpdate;
+        emit IBoard.ExecuteSetSeats(tokenId, newSeats);
     }
 
     /**
@@ -418,18 +417,16 @@ abstract contract Board {
      * @return True if the tokenId is in the top seats
      */
     function _isInTopSeats(uint256 tokenId) internal view returns (bool) {
-        uint256 current = head;
-        uint256 remaining = seats;
+        BoardStorage storage $ = _getBoardStorage();
+        uint256 current = $.head;
+        uint256 remaining = $.seats;
         while (current != 0 && remaining > 0) {
             if (current == tokenId) return true;
-            current = nodes[current].next;
+            current = $.nodes[current].next;
             unchecked {
                 --remaining;
             }
         }
         return false;
     }
-
-    /// @dev Storage gap for future upgrades
-    uint256[50] private _gap;
 }

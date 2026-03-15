@@ -1,0 +1,75 @@
+{
+  "erc20_token_assumptions": [
+    {
+      "id": "INT-ERC20-01",
+      "assumption": "Asset token returns correct balances (not rebasing)",
+      "risk": "Rebasing tokens would cause share/asset accounting drift in ERC-4626",
+      "severity": "HIGH",
+      "test": "Test with mock rebasing token"
+    },
+    {
+      "id": "INT-ERC20-02",
+      "assumption": "Asset token does not charge fees on transfer",
+      "risk": "Fee-on-transfer tokens: deposited amount != received amount; vault under-collateralized",
+      "severity": "HIGH",
+      "test": "Test with FeeOnTransferToken mock"
+    },
+    {
+      "id": "INT-ERC20-03",
+      "assumption": "Asset token does not have ERC-777-style receive hooks",
+      "risk": "Reentrancy during deposit/withdrawal via token callback",
+      "severity": "MEDIUM",
+      "test": "Test with ERC-777-compatible token; ReentrancyGuard on Chamber should protect"
+    },
+    {
+      "id": "INT-ERC20-04",
+      "assumption": "transfer/transferFrom reverts on failure (standard ERC-20)",
+      "risk": "Non-reverting transfers (e.g., early USDT) could succeed but transfer 0",
+      "severity": "LOW",
+      "test": "SafeERC20 not used in Chamber — verify all paths handle non-reverting tokens",
+      "note": "ERC-4626 deposit/withdraw paths use the asset token's own transfer calls via _asset.safeTransfer in OZ implementation — verify OZ uses SafeERC20 internally"
+    }
+  ],
+  "erc721_nft_assumptions": [
+    {
+      "id": "INT-ERC721-01",
+      "assumption": "NFT ownerOf reverts for burned/non-existent tokenIds",
+      "risk": "If ownerOf returns address(0) instead of reverting, the try/catch in delegate() and _isDirector() succeeds, allowing delegation to non-owned tokens",
+      "severity": "MEDIUM",
+      "test": "Test with non-standard NFT that returns address(0) for burned tokens"
+    },
+    {
+      "id": "INT-ERC721-02",
+      "assumption": "NFT ownerOf is non-reentrant / does not call back into Chamber",
+      "risk": "Malicious NFT could re-enter during delegate(); state partially updated",
+      "severity": "LOW",
+      "test": "Test with malicious re-entering NFT; full transaction should revert",
+      "note": "Reentrancy via ownerOf is limited because msg.sender changes in nested call"
+    }
+  ],
+  "erc4626_vault": [
+    {
+      "id": "INT-4626-01",
+      "assumption": "_decimalsOffset = 3 prevents inflation attacks",
+      "risk": "Attacker needs to donate 1000x more capital — economically infeasible",
+      "severity": "INFO",
+      "status": "Mitigated by Finding 6 fix"
+    },
+    {
+      "id": "INT-4626-02",
+      "assumption": "Chamber shares (ERC-20) can be freely transferred between depositors",
+      "risk": "Transfers bypass delegation lock only if _update() check passes",
+      "severity": "INFO",
+      "status": "Mitigated by Finding 4 fix (_update override)"
+    }
+  ],
+  "proxy_and_registry": [
+    {
+      "id": "INT-PROXY-01",
+      "assumption": "TransparentUpgradeableProxy correctly isolates admin and user calls",
+      "risk": "Admin selector clash could prevent non-admin calls (OZ handles this via TRANSPARENT proxy pattern)",
+      "severity": "LOW",
+      "status": "SAFE — OZ Transparent proxy correctly routes calls"
+    }
+  ]
+}

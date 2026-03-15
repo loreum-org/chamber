@@ -143,11 +143,26 @@ interface IChamber is IERC4626, IBoard, IWallet {
     event TransactionExecuted(uint256 indexed transactionId, address indexed executor);
 
     /**
+     * @notice Emitted when a director votes to cancel a transaction
+     * @param transactionId The ID of the transaction
+     * @param voter The address of the director voting to cancel
+     */
+    event TransactionCancelVoted(uint256 indexed transactionId, address indexed voter);
+
+    /**
      * @notice Emitted when the contract receives Ether
      * @param sender The address that sent the Ether
      * @param amount The amount of Ether received
      */
     event Received(address indexed sender, uint256 amount);
+
+    /**
+     * @notice Emitted when the contract receives an ERC721 token via safeTransferFrom
+     * @param token The ERC721 contract address
+     * @param from The address that sent the token
+     * @param tokenId The token ID received
+     */
+    event ReceivedERC721(address indexed token, address indexed from, uint256 indexed tokenId);
 
     /// Errors
     /// @notice Thrown when there is insufficient delegated amount

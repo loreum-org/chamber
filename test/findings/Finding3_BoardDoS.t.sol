@@ -46,32 +46,32 @@ contract BoardDoSTest is Test {
         token.approve(chamberAddress, 1000e18);
         chamber.deposit(1000e18, attacker);
 
-        // Fill up the board with 100 nodes of 1 wei each
-        for (uint256 i = 1; i <= 100; i++) {
+        // Fill up the board with 50 nodes of 1 wei each (MAX_NODES)
+        for (uint256 i = 1; i <= 50; i++) {
             nft.mintWithTokenId(attacker, i);
             chamber.delegate(i, 1);
         }
         vm.stopPrank();
 
         // Verify board is full
-        assertEq(chamber.getSize(), 100, "Board should be full");
+        assertEq(chamber.getSize(), 50, "Board should be full");
 
         // Victim tries to join with a massive stake
         vm.startPrank(victim);
         token.approve(chamberAddress, 1000000e18);
         chamber.deposit(1000000e18, victim);
-        nft.mintWithTokenId(victim, 101);
+        nft.mintWithTokenId(victim, 51);
 
         // This should SUCCEED now because we evict the lowest node
-        chamber.delegate(101, 1000000e18);
+        chamber.delegate(51, 1000000e18);
         vm.stopPrank();
 
         // Verify victim is on the board
         (uint256[] memory topIds, uint256[] memory topAmounts) = chamber.getTop(1);
-        assertEq(topIds[0], 101, "Victim should be top 1");
+        assertEq(topIds[0], 51, "Victim should be top 1");
         assertEq(topAmounts[0], 1000000e18, "Victim amount should be correct");
 
         // Verify size is still 100
-        assertEq(chamber.getSize(), 100, "Board size should stay at max");
+        assertEq(chamber.getSize(), 50, "Board size should stay at max");
     }
 }

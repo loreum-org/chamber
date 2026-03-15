@@ -1,0 +1,60 @@
+{
+  "tracked_assets": [
+    {
+      "id": "ASSET-01",
+      "name": "ERC-20 Asset Token",
+      "custody": "Chamber proxy contract (ERC-4626 vault)",
+      "accounting_variables": [
+        "ERC20Upgradeable._balances (total supply and per-account via ERC-4626)",
+        "ERC4626Upgradeable._asset (underlying token address)"
+      ],
+      "operations": ["deposit", "withdraw", "redeem", "mint"],
+      "risk": "Fee-on-transfer tokens would cause share/asset accounting mismatch"
+    },
+    {
+      "id": "ASSET-02",
+      "name": "Chamber Shares (ERC-20)",
+      "custody": "Depositors; locked portions tracked in totalAgentDelegations",
+      "accounting_variables": [
+        "ERC20Upgradeable._balances[user]",
+        "ChamberStorage.totalAgentDelegations[user]",
+        "ChamberStorage.agentDelegation[user][tokenId]"
+      ],
+      "operations": ["delegate", "undelegate", "transfer", "transferFrom", "withdraw", "redeem"],
+      "risk": "Evicted node delegation lock (Finding 11): totalAgentDelegations can exceed recoverable amount"
+    },
+    {
+      "id": "ASSET-03",
+      "name": "ETH (Ether)",
+      "custody": "Chamber proxy contract (via receive())",
+      "accounting_variables": ["address(this).balance"],
+      "operations": ["submitTransaction with value", "executeTransaction"],
+      "risk": "Arbitrary ETH transfers via multisig; no per-recipient limit"
+    },
+    {
+      "id": "ASSET-04",
+      "name": "Board Delegation Votes",
+      "custody": "Board linked list (BoardStorage.nodes)",
+      "accounting_variables": [
+        "BoardStorage.nodes[tokenId].amount",
+        "BoardStorage.head / tail / size"
+      ],
+      "operations": ["delegate → _insert/_reposition", "undelegate → _remove/_reposition"],
+      "risk": "Node eviction can strand delegations; max 100 nodes enforced"
+    },
+    {
+      "id": "ASSET-05",
+      "name": "Agent Identity NFTs",
+      "custody": "AgentIdentityRegistry (ERC-721)",
+      "accounting_variables": ["AgentIdentityRegistryStorage.agentToIdentityId", "AgentIdentityRegistryStorage.identityIdToAgent"],
+      "operations": ["registerAgent (mint)", "updateAgentURI"],
+      "risk": "Minting restricted to REGISTRAR_ROLE; no burn mechanism"
+    }
+  ],
+  "invariants": [
+    "balanceOf(user) >= totalAgentDelegations[user] at all times (enforced by _update)",
+    "Board.size <= MAX_NODES (100)",
+    "Board nodes are sorted descending by amount",
+    "quorum = 1 + (seats * 51) / 100"
+  ]
+}

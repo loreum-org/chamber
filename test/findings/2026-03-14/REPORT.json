@@ -1,0 +1,73 @@
+{
+  "report_date": "2026-03-14",
+  "protocol": "Chamber",
+  "version": "1.1.3",
+  "pipeline_version": "v0.5",
+  "ship_approved": false,
+  "ship_blocked_by": ["SEC-DELEG-011"],
+  "summary": {
+    "CRITICAL": 0,
+    "HIGH": 1,
+    "MEDIUM": 2,
+    "LOW": 1,
+    "INFO": 0
+  },
+  "findings": [
+    {
+      "id": "SEC-DELEG-011",
+      "title": "Permanent Delegation Lock on Evicted Board Nodes",
+      "severity": "HIGH",
+      "likelihood": "MEDIUM",
+      "component": "Board.sol + Chamber.sol",
+      "functions": ["_insert", "undelegate", "_update"],
+      "release_blocker": true,
+      "status": "OPEN",
+      "fix_effort": "LOW"
+    },
+    {
+      "id": "SEC-POLICY-012",
+      "title": "Agent execute() Bypasses Governance Policy",
+      "severity": "MEDIUM",
+      "likelihood": "HIGH",
+      "component": "Agent.sol",
+      "functions": ["execute"],
+      "release_blocker": false,
+      "status": "OPEN",
+      "fix_effort": "LOW"
+    },
+    {
+      "id": "SEC-EIP1271-013",
+      "title": "Agent isValidSignature 32-Byte Path Ignores Hash",
+      "severity": "MEDIUM",
+      "likelihood": "MEDIUM",
+      "component": "Agent.sol",
+      "functions": ["isValidSignature"],
+      "release_blocker": false,
+      "status": "OPEN",
+      "fix_effort": "LOW"
+    },
+    {
+      "id": "SEC-GOV-014",
+      "title": "Seat Update Proposal Griefing by Minority Director",
+      "severity": "LOW",
+      "likelihood": "MEDIUM",
+      "component": "Board.sol",
+      "functions": ["_setSeats"],
+      "release_blocker": false,
+      "status": "OPEN",
+      "fix_effort": "MEDIUM"
+    }
+  ],
+  "confirmed_fixed": [
+    "Finding1_UnauthorizedUpgrade",
+    "Finding2_DoubleDelegation",
+    "Finding3_BoardDoS",
+    "Finding4_DelegationBypassViaWithdraw",
+    "Finding5_AgentDeadCodePath",
+    "Finding6_FirstDepositorAttack",
+    "Finding7_StaleSeatUpdateSupporters",
+    "Finding8_PermissionlessAutoConfirm",
+    "Finding9_WalletReentrancy",
+    "Finding10_UnboundedArrayDoS"
+  ]
+}

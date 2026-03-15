@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAccount, useReadContract } from 'wagmi'
-import { FiArrowRight, FiUsers, FiLayers, FiShield, FiPlus, FiAlertTriangle, FiGrid, FiBriefcase } from 'react-icons/fi'
-import { useAllChambers, useChamberCount, useHasValidConfig, useAssets, useChambersByAsset } from '@/hooks'
-import { erc20Abi } from '@/contracts'
+import { FiArrowRight, FiLayers, FiPlus, FiAlertTriangle, FiGrid, FiBriefcase } from 'react-icons/fi'
+import { useAllChambers, useChamberCount, useHasValidConfig, useOrganizationsByNFT } from '@/hooks'
+import { erc721Abi } from '@/contracts'
 import ChamberCard from '@/components/ChamberCard'
 
 export default function Dashboard() {
@@ -14,7 +14,7 @@ export default function Dashboard() {
   
   const { chambers, isLoading, refetch: refetchChambers, error: chambersError } = useAllChambers()
   const { count: chamberCount, refetch: refetchCount, isLoading: countLoading, error: countError, registryAddress } = useChamberCount()
-  const { assets, isLoading: assetsLoading } = useAssets()
+  const { organizations, isLoading: orgsLoading } = useOrganizationsByNFT()
   const { isValid, chainId } = useHasValidConfig()
 
   // Debug logging
@@ -81,8 +81,8 @@ export default function Dashboard() {
         </motion.div>
       )}
 
-      {/* Debug Info - Remove in production */}
-      {(countError || chambersError || !isValid) && (
+      {/* Debug Info - dev only */}
+      {import.meta.env.DEV && (countError || chambersError || !isValid) && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -113,121 +113,74 @@ export default function Dashboard() {
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-radial from-cyan-500/10 via-transparent to-transparent pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-radial from-violet-500/10 via-transparent to-transparent pointer-events-none" />
         
-        <div className="relative max-w-3xl">
-          <div className="flex items-center gap-4 mb-6">
-            <img src="/logo.svg" alt="Chamber Logo" className="w-20 h-20 object-contain" />
+        <div className="relative flex flex-col md:flex-row md:items-start md:justify-between gap-8">
+          <div className="max-w-3xl">
+            <div className="flex items-center gap-4 mb-6">
+              <img src="/logo.svg" alt="Chamber Logo" className="w-20 h-20 object-contain" />
+              <div>
+                <p className="text-cyan-400 text-sm font-semibold uppercase tracking-wider">Treasury Governance</p>
+                <h1 className="font-heading text-3xl md:text-4xl font-bold text-slate-100 tracking-tight">
+                  Chamber Protocol
+                </h1>
+              </div>
+            </div>
+            
+            <p className="text-slate-400 text-lg mb-8 leading-relaxed max-w-2xl">
+              Enterprise treasury infrastructure for organizations. Chambers function as corporate entities with an elected board of directors who oversee fiduciary operations and approve transactions through multi-signature governance.
+            </p>
+
+            <div className="flex flex-wrap gap-3">
+              <Link to="/deploy" className="btn btn-primary">
+                <FiPlus className="w-4 h-4" />
+                Deploy Chamber
+              </Link>
+              <a href="#chambers" className="btn btn-secondary">
+                <FiLayers className="w-4 h-4" />
+                View Chambers
+              </a>
+            </div>
+          </div>
+
+          {/* Stats - right side column */}
+          <div className="flex flex-col gap-6 md:min-w-[200px] md:pt-2">
             <div>
-              <p className="text-cyan-400 text-sm font-semibold uppercase tracking-wider">Treasury Governance</p>
-              <h1 className="font-heading text-3xl md:text-4xl font-bold text-slate-100 tracking-tight">
-                Chamber Protocol
-              </h1>
-            </div>
-          </div>
-          
-          <p className="text-slate-400 text-lg mb-8 leading-relaxed max-w-2xl">
-            A secure shared vault for communities. NFT holders elect a board of leaders 
-            who work together to manage funds and approve transactions.
-          </p>
-
-          <div className="flex flex-wrap gap-3">
-            <Link to="/deploy" className="btn btn-primary">
-              <FiPlus className="w-4 h-4" />
-              Deploy Chamber
-            </Link>
-            <a href="#chambers" className="btn btn-secondary">
-              <FiLayers className="w-4 h-4" />
-              View Chambers
-            </a>
-          </div>
-        </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-6 mt-10 pt-8 border-t border-slate-700/30">
-          <div>
-            <div className="text-3xl font-heading font-bold gradient-text">
-              {countLoading ? '...' : chamberCount}
-            </div>
-            <div className="text-slate-500 text-sm mt-1">Active Chambers</div>
-            {countError && (
-              <div className="text-red-400 text-xs mt-1">
-                Error: {countError.message}
+              <div className="text-3xl font-heading font-bold gradient-text">
+                {countLoading ? '...' : chamberCount}
               </div>
-            )}
-            {!isValid && (
-              <div className="text-amber-400 text-xs mt-1">
-                Registry not configured
-              </div>
-            )}
-          </div>
-          <div className="border-l border-slate-700/30 pl-6">
-            <div className="flex items-center gap-2">
-              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500' : 'bg-slate-600'}`} />
-              <span className="text-xl font-heading font-semibold text-slate-100">
-                {isConnected ? 'Connected' : 'Not Connected'}
-              </span>
+              <div className="text-slate-500 text-sm mt-1">Active Chambers</div>
+              {countError && (
+                <div className="text-red-400 text-xs mt-1">
+                  Error: {countError.message}
+                </div>
+              )}
+              {!isValid && (
+                <div className="text-amber-400 text-xs mt-1">
+                  Registry not configured
+                </div>
+              )}
             </div>
-            <div className="text-slate-500 text-sm mt-1">Wallet Status</div>
-          </div>
-          <div className="border-l border-slate-700/30 pl-6">
-            <div className="text-3xl font-heading font-bold gradient-text">v1.1.3</div>
-            <div className="text-slate-500 text-sm mt-1">Protocol Version</div>
+            <div>
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500' : 'bg-slate-600'}`} />
+                <span className="text-xl font-heading font-semibold text-slate-100">
+                  {isConnected ? 'Connected' : 'Not Connected'}
+                </span>
+              </div>
+              <div className="text-slate-500 text-sm mt-1">Wallet Status</div>
+            </div>
+            <div>
+              <div className="text-3xl font-heading font-bold gradient-text">v1.1.3</div>
+              <div className="text-slate-500 text-sm mt-1">Protocol Version</div>
+            </div>
           </div>
         </div>
       </motion.div>
-
-      {/* Feature Cards */}
-      <div className="grid md:grid-cols-3 gap-5">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="card group"
-        >
-          <div className="icon-container-emerald mb-4">
-            <FiLayers className="w-5 h-5" />
-          </div>
-          <h3 className="font-heading text-lg font-semibold text-slate-100 mb-2">ERC4626 Vault</h3>
-          <p className="text-slate-400 text-sm leading-relaxed">
-            Standard tokenized vault for managing treasury assets with share-based accounting.
-          </p>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="card group"
-        >
-          <div className="icon-container-accent mb-4">
-            <FiUsers className="w-5 h-5" />
-          </div>
-          <h3 className="font-heading text-lg font-semibold text-slate-100 mb-2">Board Governance</h3>
-          <p className="text-slate-400 text-sm leading-relaxed">
-            Delegate voting power to NFT holders who compete for board seats based on stake.
-          </p>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="card group"
-        >
-          <div className="icon-container-violet mb-4">
-            <FiShield className="w-5 h-5" />
-          </div>
-          <h3 className="font-heading text-lg font-semibold text-slate-100 mb-2">Multi-Sig Wallet</h3>
-          <p className="text-slate-400 text-sm leading-relaxed">
-            Execute transactions with quorum-based approval from board directors.
-          </p>
-        </motion.div>
-      </div>
 
       {/* Chambers List */}
       <section id="chambers" className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h2 className="font-heading text-2xl font-bold text-slate-100">Chambers</h2>
+            <h2 className="font-heading text-2xl font-bold text-slate-100">Chamber Registry</h2>
             <p className="text-slate-500 text-sm mt-1">Active treasury governance instances</p>
           </div>
           
@@ -310,7 +263,7 @@ export default function Dashboard() {
               transition={{ duration: 0.2 }}
               className="space-y-8"
             >
-              {assetsLoading ? (
+              {orgsLoading ? (
                 <div className="space-y-8">
                   {[1, 2].map(i => (
                     <div key={i} className="space-y-4">
@@ -323,9 +276,9 @@ export default function Dashboard() {
                     </div>
                   ))}
                 </div>
-              ) : assets && assets.length > 0 ? (
-                assets.map((asset, index) => (
-                  <OrganizationGroup key={asset} asset={asset} index={index} />
+              ) : organizations && organizations.length > 0 ? (
+                organizations.map((org, index) => (
+                  <OrganizationGroup key={org.nft} nftToken={org.nft} chambers={org.chambers} index={index} />
                 ))
               ) : (
                 <EmptyChambers />
@@ -338,20 +291,19 @@ export default function Dashboard() {
   )
 }
 
-function OrganizationGroup({ asset, index }: { asset: `0x${string}`, index: number }) {
-  const { chambers, isLoading } = useChambersByAsset(asset)
+function OrganizationGroup({ nftToken, chambers, index }: { nftToken: `0x${string}`; chambers: `0x${string}`[]; index: number }) {
   const { data: symbol } = useReadContract({
-    address: asset,
-    abi: erc20Abi,
+    address: nftToken,
+    abi: erc721Abi,
     functionName: 'symbol',
   })
   const { data: name } = useReadContract({
-    address: asset,
-    abi: erc20Abi,
+    address: nftToken,
+    abi: erc721Abi,
     functionName: 'name',
   })
 
-  if (!isLoading && (!chambers || chambers.length === 0)) return null
+  if (!chambers || chambers.length === 0) return null
 
   return (
     <motion.div
@@ -369,15 +321,13 @@ function OrganizationGroup({ asset, index }: { asset: `0x${string}`, index: numb
             {name as string || 'Loading...'} 
             <span className="text-slate-500 text-sm font-normal">({symbol as string || '...'})</span>
           </h3>
-          <p className="text-slate-500 text-xs font-mono">{asset}</p>
+          <p className="text-slate-500 text-xs font-mono">Membership NFT: {nftToken}</p>
         </div>
       </div>
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {isLoading ? (
-          [1, 2].map(i => <div key={i} className="card h-40 animate-pulse" />)
-        ) : chambers?.map((address) => (
-          <ChamberCard key={address} address={address as `0x${string}`} />
+        {chambers.map((address) => (
+          <ChamberCard key={address} address={address} />
         ))}
       </div>
     </motion.div>

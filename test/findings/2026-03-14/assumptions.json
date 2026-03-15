@@ -1,0 +1,43 @@
+{
+  "oracle_assumptions": [],
+  "admin_assumptions": [
+    {
+      "id": "AA-01",
+      "assumption": "DEFAULT_ADMIN_ROLE on ChamberRegistry is held by a trusted EOA or multisig",
+      "risk": "Admin can update implementation address for future Chamber deployments",
+      "severity": "HIGH"
+    },
+    {
+      "id": "AA-02",
+      "assumption": "Chamber upgrade path requires multisig quorum via executeTransaction → upgradeImplementation",
+      "risk": "If board becomes inoperable (empty), upgrade is permanently blocked",
+      "severity": "MEDIUM"
+    }
+  ],
+  "trust_boundaries": [
+    {
+      "id": "TB-01",
+      "component": "IERC721 nft",
+      "trust": "Trusted by Chamber — ownerOf is called with try/catch but result accepted as authoritative",
+      "attack_surface": "Malicious NFT could re-enter during delegate(); EIP-1271 callback path in _isDirector"
+    },
+    {
+      "id": "TB-02",
+      "component": "ERC-20 asset token",
+      "trust": "Trusted by Chamber (ERC-4626); SafeERC20 not used — standard ERC-20 assumed",
+      "attack_surface": "Fee-on-transfer or rebasing tokens would cause accounting errors in ERC-4626"
+    },
+    {
+      "id": "TB-03",
+      "component": "IAgentPolicy",
+      "trust": "Policy is untrusted — any address can be set as policy by Agent owner",
+      "attack_surface": "Malicious policy could return false to block governance, or true for all to rubberstamp"
+    },
+    {
+      "id": "TB-04",
+      "component": "Agent.execute() target",
+      "trust": "Completely untrusted — arbitrary external call",
+      "attack_surface": "Agent owner can call any contract including Chamber, bypassing policy"
+    }
+  ]
+}

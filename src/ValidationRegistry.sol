@@ -14,22 +14,40 @@ import {Initializable} from "lib/openzeppelin-contracts-upgradeable/contracts/pr
 contract ValidationRegistry is Initializable, AccessControlUpgradeable {
     bytes32 public constant VALIDATOR_ROLE = keccak256("VALIDATOR_ROLE");
 
-    /// @notice Structure for a Validation Attestation
+    /**
+     * @notice Structure for a Validation Attestation
+     * @dev Packing: `validator` (address, 20 bytes) + `isValid` (bool, 1 byte) = 21 bytes in slot 0,
+     *      saving one storage slot versus placing `isValid` after the dynamic string fields.
+     *      `validationType` and `data` (dynamic strings) each occupy their own slots.
+     *      `timestamp` and `expiry` (uint256) each occupy their own slots.
+     */
     struct Validation {
         address validator;
-        string validationType; // e.g., "TEE_VERIFICATION", "CODE_AUDIT", "KYC"
         bool isValid;
-        string data; // Additional data, IPFS hash, or proof
+        string validationType;
+        string data;
         uint256 timestamp;
         uint256 expiry;
     }
 
-    /// @notice Mapping from Agent Identity Token ID to list of Validations
-    mapping(uint256 => Validation[]) private _validations;
+    /**
+     * @notice ERC-7201 namespaced storage layout for ValidationRegistry
+     * @custom:storage-location erc7201:loreum.ValidationRegistry
+     */
+    struct ValidationRegistryStorage {
+        mapping(uint256 => Validation[]) validations;
+        mapping(uint256 => mapping(bytes32 => uint256)) latestValidExpiry;
+    }
 
-    /// @notice Mapping from (agentId, validationTypeHash) to latest valid expiry timestamp
-    /// @dev Enables O(1) lookups for hasValidAttestation instead of iterating the full array
-    mapping(uint256 => mapping(bytes32 => uint256)) private _latestValidExpiry;
+    /// @dev keccak256(abi.encode(uint256(keccak256("erc7201:loreum.ValidationRegistry")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 private constant _VALIDATIONREGISTRY_STORAGE_SLOT =
+        0x1c072998540d8d53a3af13cf9ee8f92e95a7932529e99f51550d48280ce74e00;
+
+    function _getValidationRegistryStorage() internal pure returns (ValidationRegistryStorage storage $) {
+        assembly {
+            $.slot := _VALIDATIONREGISTRY_STORAGE_SLOT
+        }
+    }
 
     /// @notice Event emitted when a new validation is posted
     event ValidationPosted(uint256 indexed agentId, address indexed validator, string validationType, bool isValid);
@@ -66,22 +84,23 @@ contract ValidationRegistry is Initializable, AccessControlUpgradeable {
     ) external onlyRole(VALIDATOR_ROLE) {
         uint256 expiry = block.timestamp + duration;
 
-        _validations[agentId].push(
+        ValidationRegistryStorage storage $ = _getValidationRegistryStorage();
+
+        $.validations[agentId].push(
             Validation({
                 validator: msg.sender,
-                validationType: validationType,
                 isValid: isValid,
+                validationType: validationType,
                 data: data,
                 timestamp: block.timestamp,
                 expiry: expiry
             })
         );
 
-        // Update latest valid expiry for O(1) lookups
         if (isValid) {
             bytes32 typeHash = keccak256(bytes(validationType));
-            if (expiry > _latestValidExpiry[agentId][typeHash]) {
-                _latestValidExpiry[agentId][typeHash] = expiry;
+            if (expiry > $.latestValidExpiry[agentId][typeHash]) {
+                $.latestValidExpiry[agentId][typeHash] = expiry;
             }
         }
 
@@ -100,7 +119,8 @@ contract ValidationRegistry is Initializable, AccessControlUpgradeable {
         view
         returns (Validation[] memory)
     {
-        uint256 total = _validations[agentId].length;
+        Validation[] storage all = _getValidationRegistryStorage().validations[agentId];
+        uint256 total = all.length;
         if (offset >= total) {
             return new Validation[](0);
         }
@@ -108,7 +128,7 @@ contract ValidationRegistry is Initializable, AccessControlUpgradeable {
         uint256 count = remaining < limit ? remaining : limit;
         Validation[] memory result = new Validation[](count);
         for (uint256 i = 0; i < count;) {
-            result[i] = _validations[agentId][offset + i];
+            result[i] = all[offset + i];
             unchecked {
                 ++i;
             }
@@ -122,7 +142,7 @@ contract ValidationRegistry is Initializable, AccessControlUpgradeable {
      * @return An array of Validation structs
      */
     function getValidations(uint256 agentId) external view returns (Validation[] memory) {
-        return _validations[agentId];
+        return _getValidationRegistryStorage().validations[agentId];
     }
 
     /**
@@ -131,18 +151,18 @@ contract ValidationRegistry is Initializable, AccessControlUpgradeable {
      * @return The count of validations
      */
     function getValidationCount(uint256 agentId) external view returns (uint256) {
-        return _validations[agentId].length;
+        return _getValidationRegistryStorage().validations[agentId].length;
     }
 
     /**
      * @notice Checks if an agent has a valid (non-expired) validation of a specific type
-     * @dev Fix for Finding 10: Uses O(1) lookup via _latestValidExpiry mapping
+     * @dev Fix for Finding 10: Uses O(1) lookup via latestValidExpiry mapping
      * @param agentId The Identity Token ID
      * @param validationType The type of validation to check
      * @return bool True if a valid attestation exists
      */
     function hasValidAttestation(uint256 agentId, string memory validationType) external view returns (bool) {
         bytes32 typeHash = keccak256(bytes(validationType));
-        return _latestValidExpiry[agentId][typeHash] > block.timestamp;
+        return _getValidationRegistryStorage().latestValidExpiry[agentId][typeHash] > block.timestamp;
     }
 }

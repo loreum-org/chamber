@@ -12,6 +12,8 @@ import {IWallet} from "./interfaces/IWallet.sol";
 abstract contract Wallet {
     /**
      * @notice Structure representing a transaction in the wallet
+     * @dev Packing: `executed` (bool, 1 byte) + `confirmations` (uint8, 1 byte) + `target` (address, 20 bytes)
+     *      = 22 bytes in slot 0. `value` and `data` each occupy their own slots.
      * @param executed Whether the transaction has been executed
      * @param confirmations Number of confirmations received for this transaction
      * @param target The destination address for the transaction
@@ -26,11 +28,27 @@ abstract contract Wallet {
         bytes data;
     }
 
-    /// @notice Array of all transactions submitted to the wallet
-    Transaction[] internal transactions;
+    /**
+     * @notice ERC-7201 namespaced storage layout for Wallet
+     * @custom:storage-location erc7201:loreum.Wallet
+     */
+    struct WalletStorage {
+        Transaction[] transactions;
+        mapping(uint256 nonce => mapping(uint256 tokenId => bool)) isConfirmed;
+        mapping(uint256 nonce => bool) cancelled;
+        mapping(uint256 nonce => uint8) cancelConfirmations;
+        mapping(uint256 nonce => mapping(uint256 tokenId => bool)) isCancelConfirmed;
+    }
 
-    /// @notice Mapping from transaction nonce to tokenId to confirmation status
-    mapping(uint256 => mapping(uint256 => bool)) internal isConfirmed;
+    /// @dev keccak256(abi.encode(uint256(keccak256("erc7201:loreum.Wallet")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 private constant _WALLET_STORAGE_SLOT =
+        0x471e5819b63496fc9e7b0c9d30efc265f73588bc9e02c472310feaa7f9bb8000;
+
+    function _getWalletStorage() internal pure returns (WalletStorage storage $) {
+        assembly {
+            $.slot := _WALLET_STORAGE_SLOT
+        }
+    }
 
     /// @dev Events and errors are defined in IWallet interface
 
@@ -42,7 +60,7 @@ abstract contract Wallet {
     }
 
     function _txExists(uint256 nonce) internal view {
-        if (nonce >= transactions.length) revert IWallet.TransactionDoesNotExist();
+        if (nonce >= _getWalletStorage().transactions.length) revert IWallet.TransactionDoesNotExist();
     }
 
     /// @notice Modifier to check if a transaction has not been executed
@@ -53,7 +71,17 @@ abstract contract Wallet {
     }
 
     function _notExecuted(uint256 nonce) internal view {
-        if (transactions[nonce].executed) revert IWallet.TransactionAlreadyExecuted();
+        if (_getWalletStorage().transactions[nonce].executed) revert IWallet.TransactionAlreadyExecuted();
+    }
+
+    /// @notice Modifier to check if a transaction has not been cancelled
+    modifier notCancelled(uint256 nonce) {
+        _notCancelled(nonce);
+        _;
+    }
+
+    function _notCancelled(uint256 nonce) internal view {
+        if (_getWalletStorage().cancelled[nonce]) revert IWallet.TransactionAlreadyCancelled();
     }
 
     /// @notice Modifier to check if a transaction has not been confirmed by a specific tokenId
@@ -65,7 +93,7 @@ abstract contract Wallet {
     }
 
     function _notConfirmed(uint256 tokenId, uint256 nonce) internal view {
-        if (isConfirmed[nonce][tokenId]) revert IWallet.TransactionAlreadyConfirmed();
+        if (_getWalletStorage().isConfirmed[nonce][tokenId]) revert IWallet.TransactionAlreadyConfirmed();
     }
 
     /**
@@ -76,9 +104,10 @@ abstract contract Wallet {
      * @param data The calldata to execute
      */
     function _submitTransaction(uint256 tokenId, address target, uint256 value, bytes memory data) internal {
-        uint256 nonce = transactions.length;
+        WalletStorage storage $ = _getWalletStorage();
+        uint256 nonce = $.transactions.length;
 
-        transactions.push(Transaction({target: target, value: value, data: data, executed: false, confirmations: 0}));
+        $.transactions.push(Transaction({target: target, value: value, data: data, executed: false, confirmations: 0}));
         _confirmTransaction(tokenId, nonce);
         emit IWallet.SubmitTransaction(tokenId, nonce, target, value, data);
     }
@@ -94,9 +123,10 @@ abstract contract Wallet {
         notExecuted(nonce)
         notConfirmed(tokenId, nonce)
     {
-        Transaction storage transaction = transactions[nonce];
+        WalletStorage storage $ = _getWalletStorage();
+        Transaction storage transaction = $.transactions[nonce];
         transaction.confirmations += 1;
-        isConfirmed[nonce][tokenId] = true;
+        $.isConfirmed[nonce][tokenId] = true;
 
         emit IWallet.ConfirmTransaction(tokenId, nonce);
     }
@@ -107,19 +137,45 @@ abstract contract Wallet {
      * @param nonce The transaction index to revoke confirmation for
      */
     function _revokeConfirmation(uint256 tokenId, uint256 nonce) internal txExists(nonce) notExecuted(nonce) {
-        if (!isConfirmed[nonce][tokenId]) revert IWallet.TransactionNotConfirmed();
+        WalletStorage storage $ = _getWalletStorage();
+        if (!$.isConfirmed[nonce][tokenId]) revert IWallet.TransactionNotConfirmed();
 
-        Transaction storage transaction = transactions[nonce];
+        Transaction storage transaction = $.transactions[nonce];
 
-        // Prevent underflow
         if (transaction.confirmations > 0) {
             unchecked {
                 transaction.confirmations -= 1;
             }
         }
-        isConfirmed[nonce][tokenId] = false;
+        $.isConfirmed[nonce][tokenId] = false;
 
         emit IWallet.RevokeConfirmation(tokenId, nonce);
+    }
+
+    /**
+     * @notice Records a director's vote to cancel a transaction. When quorum directors have voted, the transaction is cancelled.
+     * @param tokenId The token ID voting to cancel
+     * @param nonce The transaction index to cancel
+     * @param quorum The number of cancel votes required to cancel
+     */
+    function _recordCancelVote(uint256 tokenId, uint256 nonce, uint256 quorum)
+        internal
+        txExists(nonce)
+        notExecuted(nonce)
+    {
+        WalletStorage storage $ = _getWalletStorage();
+        if ($.cancelled[nonce]) revert IWallet.TransactionAlreadyCancelled();
+        if ($.isCancelConfirmed[nonce][tokenId]) revert IWallet.TransactionCancelAlreadyConfirmed();
+
+        $.isCancelConfirmed[nonce][tokenId] = true;
+        $.cancelConfirmations[nonce] += 1;
+
+        emit IWallet.CancelTransaction(tokenId, nonce);
+
+        if ($.cancelConfirmations[nonce] >= quorum) {
+            $.cancelled[nonce] = true;
+            emit IWallet.TransactionCancelled(nonce);
+        }
     }
 
     /**
@@ -128,13 +184,17 @@ abstract contract Wallet {
      * @param tokenId The token ID executing the transaction
      * @param nonce The transaction index to execute
      */
-    function _executeTransaction(uint256 tokenId, uint256 nonce) internal txExists(nonce) notExecuted(nonce) {
-        Transaction storage transaction = transactions[nonce];
+    function _executeTransaction(uint256 tokenId, uint256 nonce)
+        internal
+        txExists(nonce)
+        notExecuted(nonce)
+        notCancelled(nonce)
+    {
+        WalletStorage storage $ = _getWalletStorage();
+        Transaction storage transaction = $.transactions[nonce];
 
-        // Add zero address check
         if (transaction.target == address(0)) revert IWallet.InvalidTarget();
 
-        // Store values locally to prevent multiple storage reads
         address target = transaction.target;
         uint256 value = transaction.value;
         bytes memory data = transaction.data;
@@ -142,10 +202,8 @@ abstract contract Wallet {
         // CEI pattern: Update state BEFORE external call to prevent reentrancy
         transaction.executed = true;
 
-        // Make external call after state changes
         (bool success, bytes memory returnData) = target.call{value: value}(data);
         if (!success) {
-            // Revert state on failure
             transaction.executed = false;
             revert IWallet.TransactionFailed(returnData);
         }
@@ -158,7 +216,7 @@ abstract contract Wallet {
      * @return The total number of transactions
      */
     function getTransactionCount() public view virtual returns (uint256) {
-        return transactions.length;
+        return _getWalletStorage().transactions.length;
     }
 
     /**
@@ -176,7 +234,7 @@ abstract contract Wallet {
         virtual
         returns (bool executed, uint8 confirmations, address target, uint256 value, bytes memory data)
     {
-        Transaction storage transaction = transactions[nonce];
+        Transaction storage transaction = _getWalletStorage().transactions[nonce];
         return
             (transaction.executed, transaction.confirmations, transaction.target, transaction.value, transaction.data);
     }
@@ -188,7 +246,35 @@ abstract contract Wallet {
      * @return True if the transaction is confirmed by the director, false otherwise
      */
     function getConfirmation(uint256 tokenId, uint256 nonce) public view virtual returns (bool) {
-        return isConfirmed[nonce][tokenId];
+        return _getWalletStorage().isConfirmed[nonce][tokenId];
+    }
+
+    /**
+     * @notice Returns whether a transaction has been cancelled
+     * @param nonce The index of the transaction to check
+     * @return True if the transaction is cancelled
+     */
+    function getCancelled(uint256 nonce) public view virtual returns (bool) {
+        return _getWalletStorage().cancelled[nonce];
+    }
+
+    /**
+     * @notice Checks if a director has voted to cancel a transaction
+     * @param tokenId The tokenId of the director to check
+     * @param nonce The index of the transaction to check
+     * @return True if the director has voted to cancel
+     */
+    function getCancelConfirmation(uint256 tokenId, uint256 nonce) public view virtual returns (bool) {
+        return _getWalletStorage().isCancelConfirmed[nonce][tokenId];
+    }
+
+    /**
+     * @notice Returns the number of directors who have voted to cancel a transaction
+     * @param nonce The index of the transaction to check
+     * @return The count of cancel votes
+     */
+    function getCancelConfirmations(uint256 nonce) public view virtual returns (uint8) {
+        return _getWalletStorage().cancelConfirmations[nonce];
     }
 
     /**
@@ -196,7 +282,7 @@ abstract contract Wallet {
      * @return uint256 The next transaction ID that will be assigned
      */
     function getNextTransactionId() public view virtual returns (uint256) {
-        return transactions.length;
+        return _getWalletStorage().transactions.length;
     }
 
     /**
@@ -205,9 +291,7 @@ abstract contract Wallet {
      * @dev Deprecated: Use getNextTransactionId() instead
      */
     function getCurrentNonce() public view returns (uint256) {
-        return transactions.length > 0 ? transactions.length - 1 : 0;
+        uint256 len = _getWalletStorage().transactions.length;
+        return len > 0 ? len - 1 : 0;
     }
-
-    /// @dev Storage gap for future upgrades
-    uint256[50] private _gap;
 }

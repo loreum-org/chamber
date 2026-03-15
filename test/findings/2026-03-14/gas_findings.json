@@ -1,0 +1,42 @@
+[
+  {
+    "id": "GAS-001",
+    "title": "getDelegations() allocates O(board.size) memory regardless of actual delegations",
+    "location": "Chamber.sol:getDelegations()",
+    "severity": "LOW",
+    "description": "getDelegations() allocates two arrays of size $b.size (up to 100) to collect results, then copies matching entries to exactly-sized arrays. This double-allocation is wasteful when an agent has delegations to only a few tokenIds.",
+    "current_usage": "O(n) memory allocation where n = board.size",
+    "optimized_usage": "Count matching entries first in a single pass, then allocate exact-size arrays",
+    "savings_estimate": "Up to 100 * 2 * 32 = 6400 bytes avoided for agents with few delegations",
+    "note": "Bounded at MAX_NODES = 100; not a DoS risk in current form"
+  },
+  {
+    "id": "GAS-002",
+    "title": "_isDirector loop traverses up to seats nodes on each privileged call",
+    "location": "Chamber.sol:_isDirector()",
+    "severity": "INFO",
+    "description": "Every director-gated function traverses up to MAX_SEATS (20) board nodes to verify membership. With 20 seats, this is 20 SLOAD operations per modifier invocation.",
+    "current_usage": "O(seats) SLOADs per privileged call",
+    "optimized_usage": "Cache a 'isDirector' flag per tokenId in a mapping updated on delegation changes",
+    "savings_estimate": "Save ~15-19 warm SLOADs per call for boards with many seats",
+    "note": "Acceptable at MAX_SEATS = 20; optimization worthwhile if seats cap is raised"
+  },
+  {
+    "id": "GAS-003",
+    "title": "SeatUpdate.supporters dynamic array grows with each supporter",
+    "location": "Board.sol:_setSeats()",
+    "severity": "INFO",
+    "description": "The supporters array in SeatUpdate is pushed to for each new supporter. With quorum up to 11 (for MAX_SEATS = 20), the array grows to at most 20 entries. No gas concern in practice.",
+    "current_usage": "Bounded at MAX_SEATS = 20 entries",
+    "note": "Acceptable"
+  },
+  {
+    "id": "GAS-004",
+    "title": "confirmations stored as uint8 but could be packed with executed bool",
+    "location": "Wallet.sol:Transaction struct",
+    "severity": "INFO",
+    "description": "The Transaction struct packs executed (bool), confirmations (uint8), and target (address) into slot 0. This is already optimal packing — no change needed.",
+    "current_usage": "Optimal — 22 bytes in slot 0",
+    "note": "Already packed correctly"
+  }
+]

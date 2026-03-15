@@ -38,6 +38,13 @@ interface IWallet {
     function revokeConfirmation(uint256 tokenId, uint256 transactionId) external;
 
     /**
+     * @notice Records a director's vote to cancel a transaction. Requires quorum of directors to cancel.
+     * @param tokenId The tokenId voting to cancel
+     * @param transactionId The ID of the transaction to cancel
+     */
+    function cancelTransaction(uint256 tokenId, uint256 transactionId) external;
+
+    /**
      * @notice Submits multiple transactions for approval in a single call
      * @param tokenId The tokenId submitting the transactions
      * @param targets The array of addresses to send the transactions to
@@ -91,6 +98,28 @@ interface IWallet {
     function getConfirmation(uint256 tokenId, uint256 nonce) external view returns (bool);
 
     /**
+     * @notice Returns whether a transaction has been cancelled
+     * @param nonce The index of the transaction to check
+     * @return True if the transaction is cancelled
+     */
+    function getCancelled(uint256 nonce) external view returns (bool);
+
+    /**
+     * @notice Checks if a director has voted to cancel a transaction
+     * @param tokenId The tokenId of the director to check
+     * @param nonce The index of the transaction to check
+     * @return True if the director has voted to cancel
+     */
+    function getCancelConfirmation(uint256 tokenId, uint256 nonce) external view returns (bool);
+
+    /**
+     * @notice Returns the number of directors who have voted to cancel a transaction
+     * @param nonce The index of the transaction to check
+     * @return The count of cancel votes
+     */
+    function getCancelConfirmations(uint256 nonce) external view returns (uint8);
+
+    /**
      * @notice Returns the next transaction ID (current nonce)
      * @return uint256 The next transaction ID
      */
@@ -130,6 +159,19 @@ interface IWallet {
      */
     event ExecuteTransaction(uint256 indexed tokenId, uint256 indexed nonce);
 
+    /**
+     * @notice Emitted when a director votes to cancel a transaction
+     * @param tokenId The tokenId of the director voting to cancel
+     * @param nonce The identifier of the transaction
+     */
+    event CancelTransaction(uint256 indexed tokenId, uint256 indexed nonce);
+
+    /**
+     * @notice Emitted when a transaction is cancelled (quorum of cancel votes reached)
+     * @param nonce The identifier of the cancelled transaction
+     */
+    event TransactionCancelled(uint256 indexed nonce);
+
     /// Errors
     /// @notice Thrown when a transaction does not exist
     error TransactionDoesNotExist();
@@ -142,6 +184,12 @@ interface IWallet {
 
     /// @notice Thrown when trying to revoke a confirmation that doesn't exist
     error TransactionNotConfirmed();
+
+    /// @notice Thrown when a transaction has already been cancelled
+    error TransactionAlreadyCancelled();
+
+    /// @notice Thrown when a director has already voted to cancel
+    error TransactionCancelAlreadyConfirmed();
 
     /// @notice Thrown when a transaction execution fails
     /// @param reason The reason for the failure

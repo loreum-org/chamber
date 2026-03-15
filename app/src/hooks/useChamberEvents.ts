@@ -149,6 +149,31 @@ export function useChamberEvents(
     enabled: watchEnabled,
   })
 
+  // Watch for CancelTransaction and TransactionCancelled events
+  useWatchContractEvent({
+    address: isValidAddress ? chamberAddress : undefined,
+    abi: chamberAbi,
+    eventName: 'CancelTransaction',
+    onLogs: (logs) => {
+      console.log('Chamber CancelTransaction event:', logs)
+      invalidateChamberQueries()
+      onTransactionEvent?.()
+    },
+    enabled: watchEnabled,
+  })
+
+  useWatchContractEvent({
+    address: isValidAddress ? chamberAddress : undefined,
+    abi: chamberAbi,
+    eventName: 'TransactionCancelled',
+    onLogs: (logs) => {
+      console.log('Chamber TransactionCancelled event:', logs)
+      invalidateChamberQueries()
+      onTransactionEvent?.()
+    },
+    enabled: watchEnabled,
+  })
+
   // Watch for SetSeats events (board size changes)
   useWatchContractEvent({
     address: isValidAddress ? chamberAddress : undefined,

@@ -124,4 +124,7 @@ interface IBoard {
 
     /// @notice Thrown when circuit breaker is active
     error CircuitBreakerActive();
+
+    /// @notice Thrown when a non-proposer attempts to cancel a seat update proposal (Fix Finding 14)
+    error OnlyProposerCanCancel();
 }
