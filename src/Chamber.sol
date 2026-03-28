@@ -113,8 +113,7 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
     function delegate(uint256 tokenId, uint256 amount) external override {
         if (tokenId == 0) revert IChamber.ZeroTokenId();
         if (amount == 0) revert IChamber.ZeroAmount();
-        if (balanceOf(msg.sender) < amount) revert IChamber.InsufficientChamberBalance();
-
+        
         ChamberStorage storage $ = _getChamberStorage();
 
         try $.nft.ownerOf(tokenId) returns (address) {
@@ -122,10 +121,15 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
             revert IChamber.InvalidTokenId();
         }
 
+        // Cache balance to avoid multiple SLOADs
+        uint256 senderBalance = balanceOf(msg.sender);
+        if (senderBalance < amount) revert IChamber.InsufficientChamberBalance();
+
         $.agentDelegation[msg.sender][tokenId] += amount;
         $.totalAgentDelegations[msg.sender] += amount;
 
-        if (balanceOf(msg.sender) < $.totalAgentDelegations[msg.sender]) {
+        // Validate the balance constraint one final time after updates to reduce SLOADs 
+        if (senderBalance < $.totalAgentDelegations[msg.sender]) {
             revert IChamber.InsufficientChamberBalance();
         }
 
@@ -265,6 +269,7 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
 
         tokenIds = new uint256[](count);
         amounts = new uint256[](count);
+        // Use unchecked loop for better gas efficiency on the final copy
         for (uint256 i = 0; i < count;) {
             tokenIds[i] = tempTokenIds[i];
             amounts[i] = tempAmounts[i];
