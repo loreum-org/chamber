@@ -51,7 +51,7 @@ function Whitepaper() {
           <div className="mb-12 text-center">
             <h1 className="text-5xl md:text-6xl font-display mb-4">Chamber Protocol</h1>
             <p className="text-xl text-gray-400 font-light">A Technical Framework for Agentic Organizational Governance</p>
-            <p className="text-sm text-gray-500 mt-4">Version 1.1.3 | February 2026</p>
+            <p className="text-sm text-gray-500 mt-4">Version 1.2.0 | April 2026</p>
           </div>
         </FadeIn>
 
@@ -62,20 +62,30 @@ function Whitepaper() {
             <section className="mb-16">
               <h2 className="text-3xl font-display mb-6 text-space-accent">Abstract</h2>
               <p className="text-gray-300 leading-relaxed mb-4">
-                This paper presents the Chamber Protocol, a novel smart contract architecture that enables autonomous 
-                agents to participate in decentralized organizational governance. The protocol combines three core 
-                primitives: an ERC4626-compliant vault for asset management, a dynamic board governance system based 
-                on token delegation, and a quorum-based multisig wallet for transaction execution. Through a unique 
-                sorted linked list data structure, the protocol maintains a real-time leaderboard of governance 
-                participants, enabling fluid director selection based on delegated voting power.
+                Under the proposed U.S. <strong className="text-white font-normal">Digital Asset Market CLARITY Act of 2025</strong>{" "}
+                (H.R. 3633, § 104), a digital asset can only mature past certain securities classifications when its host
+                blockchain is governed by a statutorily defined <strong className="text-space-accent font-normal">
+                Decentralized Governance System</strong>: a transparent, rules-based process where no single person — and
+                no coordinated group — retains effective control. Most on-chain communities today rely on multisigs,
+                informal off-chain signaling, opaque admin capabilities, or plutocratic token voting that do not satisfy
+                that bar, leaving protocols in regulatory limbo and exposing participants to residual control risk.
+              </p>
+              <p className="text-gray-300 leading-relaxed mb-4">
+                This paper presents the <strong className="text-white font-normal">Chamber Protocol</strong>, a smart
+                contract architecture designed so that consensus, treasury action, and upgrade authority are exercised
+                <em> solely</em> through pre-established on-chain logic: an ERC4626-compliant vault for asset management,
+                a delegation-driven board ranked by transparent rules (sorted linked list), and quorum-based multisig-style
+                execution. The design targets the Act&apos;s functional requirements — programmatic transparency, dispersed
+                authority, and impartial, rules-bound execution — while enabling autonomous agents and humans to act as
+                first-class directors.
               </p>
               <p className="text-gray-300 leading-relaxed">
-                The Chamber Protocol introduces several innovations: (1) NFT-based directorship with EIP-1271 signature 
-                validation for smart contract agents, (2) liquid delegation mechanisms that allow agents to 
-                redelegate voting power without lockup periods, (3) a circuit breaker pattern for safe linked list 
-                operations, and (4) self-sovereign upgradeability where chambers govern their own implementation 
-                upgrades. We provide a complete technical specification, security analysis, and implementation 
-                details for each component.
+                Technical contributions include: (1) NFT-based directorship with EIP-1271 validation for contract agents,
+                (2) liquid delegation without governance lockups, subject to solvency checks on delegated balances, 
+                (3) circuit-safe linked list repositioning for the governance leaderboard, and (4) self-sovereign
+                upgrade paths executed only through quorum-approved transactions. We provide specifications, security
+                analysis, and implementation guidance. <span className="text-gray-500">Nothing herein is legal advice;
+                statutory text and final rules may change.</span>
               </p>
             </section>
           </FadeIn>
@@ -84,23 +94,65 @@ function Whitepaper() {
           <FadeIn delay={0.2}>
             <section className="mb-16">
               <h2 className="text-3xl font-display mb-6 text-space-accent">1. Introduction</h2>
+
+              <h3 className="text-2xl font-display mb-4 mt-8 text-white">1.1 The CLARITY Act and the decentralized governance gap</h3>
               <p className="text-gray-300 leading-relaxed mb-4">
-                Decentralized Autonomous Organizations (DAOs) have emerged as a paradigm for collective decision-making 
-                in blockchain ecosystems. However, existing governance models face significant limitations: static 
-                membership structures, rigid voting mechanisms, and limited composability with autonomous agents. The 
-                Chamber Protocol addresses these limitations by introducing a flexible, agent-centric governance 
-                framework built on Ethereum.
+                The CLARITY framework conditions regulatory relief on a blockchain system implementing a credible{" "}
+                <em>Decentralized Governance System</em> rather than nominal decentralization (e.g. marketing claims or
+                hand-wavy forum votes). Practical failure modes — founder-controlled multisigs, upgrade keys held by a
+                single entity, discretionary treasuries, vote buying, or unchecked concentration of delegated power —
+                all re-introduce identifiable control, which defeats the statute&apos;s objective and perpetuates uncertain
+                treatment of the asset and its protocol layer.
               </p>
               <p className="text-gray-300 leading-relaxed mb-4">
-                The protocol's name derives from its core abstraction: a <em>Chamber</em> represents a self-contained 
-                organizational unit that manages assets, executes decisions, and maintains governance state. Each 
-                Chamber operates as an upgradeable smart contract proxy, combining three distinct functionalities into 
-                a unified interface.
+                Chamber treats that gap as an engineering constraint: governance outcomes must be{" "}
+                <em>observable</em>, <em>rule-bound</em>, and <em>structurally dispersive</em> so that custody of economic and upgrade
+                decisions does not collapse to a small clique. The primitives in §2 onward — on-chain proposal and
+                execution paths, director sets derived from transparent delegation math, and quorum-gated calls — are
+                chosen to make &quot;who can move the money and the code&quot; answerable from contract state and event logs,
+                not from Discord moderators or invisible deployer keys.
+              </p>
+
+              <div className="bg-space-800/40 border border-amber-300/20 rounded-xl p-6 mb-6 backdrop-blur-md">
+                <p className="text-xs font-mono tracking-widest text-amber-200/80 mb-3">DEFINITION · CLARITY ACT § 104 (ABRIDGED)</p>
+                <p className="text-gray-300 leading-relaxed italic text-sm md:text-base">
+                  &quot;The term &apos;decentralized governance system&apos; means, with respect to a blockchain system, any
+                  transparent, rules-based system permitting persons to form consensus or reach agreement in the
+                  development, provision, publication, management, or administration of such blockchain system, where
+                  participation is not limited to, or under the effective control of, any person or group of persons
+                  under common control.&quot;
+                </p>
+              </div>
+
+              <p className="text-gray-300 leading-relaxed mb-4">
+                Mapping from requirement to mechanism (non-exhaustive): <strong className="text-space-accent font-normal">
+                Transparent &amp; programmatic operation</strong> (cf. § 104(c)(2)(D)) — every material action flows through
+                Chamber&apos;s audited solidity; <strong className="text-space-accent font-normal">dispersed authority</strong>{" "}
+                (cf. § 104(c)(2)(E–G)) — liquid delegation to a ranked board plus majority quorum on execution resists
+                single-actor capture when parameters and seat counts are tuned to policy; <strong className="text-space-accent font-normal">
+                agent parity</strong> — EIP-1271 allows smart contract directors to participate under the same validation
+                rules as EOAs, supporting autonomous but rule-bound participants rather than off-chain AI promises.
+              </p>
+
+              <h3 className="text-2xl font-display mb-4 mt-10 text-white">1.2 Chamber as protocol response</h3>
+              <p className="text-gray-300 leading-relaxed mb-4">
+                Decentralized Autonomous Organizations (DAOs) have emerged as a paradigm for collective decision-making
+                in blockchain ecosystems. However, many stacks remain ill-suited to the CLARITY bar: static membership,
+                off-chain voting with on-chain rubber-stamping, or agent-hostile signature models. Chamber addresses
+                these limitations with a flexible, agent-centric governance framework built on Ethereum where the
+                enforcement layer is the contract system itself.
+              </p>
+              <p className="text-gray-300 leading-relaxed mb-4">
+                The protocol&apos;s name derives from its core abstraction: a <em>Chamber</em> represents a self-contained
+                organizational unit that manages assets, executes decisions, and maintains governance state. Each
+                Chamber operates as an upgradeable smart contract proxy, combining vault, board, and wallet
+                functionality into a unified interface.
               </p>
               <p className="text-gray-300 leading-relaxed">
-                This paper contributes: (1) a formal specification of the Chamber architecture, (2) analysis of the 
-                sorted linked list delegation mechanism, (3) security properties and attack surface evaluation, 
-                (4) gas optimization strategies, and (5) implementation details for agentic governance use cases.
+                This paper contributes: (1) a formal specification of the Chamber architecture aligned to decentralized
+                governance requirements, (2) analysis of the sorted linked list delegation mechanism, (3) security
+                properties and attack surface evaluation, (4) gas optimization strategies, and (5) implementation details
+                for agentic governance use cases.
               </p>
             </section>
           </FadeIn>
@@ -579,21 +631,22 @@ Node: 4 × uint256 = 4 storage slots (optimal for linked list operations)`}
             <section className="mb-16">
               <h2 className="text-3xl font-display mb-6 text-space-accent">10. Conclusion</h2>
               <p className="text-gray-300 leading-relaxed mb-4">
-                The Chamber Protocol presents a novel architecture for agentic organizational governance on Ethereum. 
-                By combining ERC4626 vault functionality, dynamic board governance, and quorum-based execution, the 
-                protocol enables autonomous agents to participate in decentralized decision-making while maintaining 
-                security and composability.
+                The Chamber Protocol presents a novel architecture for agentic organizational governance on Ethereum
+                with the CLARITY Act&apos;s <em>Decentralized Governance System</em> threshold in view. By combining ERC4626
+                vault functionality, dynamic board governance, and quorum-based execution enforced entirely in contract
+                code, the protocol enables autonomous agents and humans to participate in decentralized decision-making
+                while keeping control legible and diffuse — not dependent on informal social layers for enforcement.
               </p>
               <p className="text-gray-300 leading-relaxed mb-4">
-                Key innovations include the sorted linked list delegation mechanism, EIP-1271 agent integration, 
-                liquid delegation patterns, and self-sovereign upgradeability. The protocol's modular design 
-                enables flexible organizational structures while maintaining predictable gas costs and security 
-                properties.
+                Key innovations include the sorted linked list delegation mechanism, EIP-1271 agent integration,
+                liquid delegation patterns, and self-sovereign upgradeability gated by the same transaction flow as
+                other chamber actions. The modular design supports Sub-Chamber topologies that further distribute
+                authority across specialized bodies.
               </p>
               <p className="text-gray-300 leading-relaxed">
-                Future work will explore multi-asset support, advanced governance strategies, and cross-chain 
-                coordination mechanisms. The protocol's upgradeable architecture ensures it can evolve to meet 
-                emerging requirements in the decentralized governance space.
+                Future work will explore multi-asset support, advanced governance strategies, and cross-chain
+                coordination mechanisms. The upgradeable architecture allows adaptation as statutory definitions and
+                market practice around decentralized governance continue to evolve.
               </p>
             </section>
           </FadeIn>
@@ -631,6 +684,16 @@ Node: 4 × uint256 = 4 storage slots (optimal for linked list operations)`}
                   [5] Chamber Protocol Source Code. <em>GitHub Repository</em>.
                   <a href="https://github.com/loreum-org/chamber" className="text-space-accent hover:underline ml-1">
                     https://github.com/loreum-org/chamber
+                  </a>
+                </p>
+                <p>
+                  [6] U.S. House, Digital Asset Market Clarity Act of 2025 (CLARITY Act), H.R. 3633, 119th Cong. (as
+                  introduced; § 104 decentralized governance provisions).{" "}
+                  <a
+                    href="https://www.congress.gov/bill/119th-congress/house-bill/3633"
+                    className="text-space-accent hover:underline ml-1"
+                  >
+                    https://www.congress.gov/bill/119th-congress/house-bill/3633
                   </a>
                 </p>
               </div>
