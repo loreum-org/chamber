@@ -39,11 +39,7 @@ contract AgentIdentityRegistry is
     bytes32 private constant _AGENTIDENTITYREGISTRY_STORAGE_SLOT =
         0xcbbd7f406a7bce0cf07c65d3156625a5eb2bd8c4ff303cb9732533700afafd00;
 
-    function _getAgentIdentityRegistryStorage()
-        internal
-        pure
-        returns (AgentIdentityRegistryStorage storage $)
-    {
+    function _getAgentIdentityRegistryStorage() internal pure returns (AgentIdentityRegistryStorage storage $) {
         assembly {
             $.slot := _AGENTIDENTITYREGISTRY_STORAGE_SLOT
         }

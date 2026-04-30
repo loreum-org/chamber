@@ -42,8 +42,7 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
     }
 
     /// @dev keccak256(abi.encode(uint256(keccak256("erc7201:loreum.Chamber")) - 1)) & ~bytes32(uint256(0xff))
-    bytes32 private constant _CHAMBER_STORAGE_SLOT =
-        0x6859c8344c1b514e5663b471fb3ef74d69055f0a732aeacba684a8480d92bd00;
+    bytes32 private constant _CHAMBER_STORAGE_SLOT = 0x6859c8344c1b514e5663b471fb3ef74d69055f0a732aeacba684a8480d92bd00;
 
     function _getChamberStorage() internal pure returns (ChamberStorage storage $) {
         assembly {
@@ -113,11 +112,11 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
     function delegate(uint256 tokenId, uint256 amount) external override {
         if (tokenId == 0) revert IChamber.ZeroTokenId();
         if (amount == 0) revert IChamber.ZeroAmount();
-        
+
         ChamberStorage storage $ = _getChamberStorage();
 
-        try $.nft.ownerOf(tokenId) returns (address) {
-        } catch {
+        try $.nft.ownerOf(tokenId) returns (address) {}
+        catch {
             revert IChamber.InvalidTokenId();
         }
 
@@ -128,7 +127,7 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
         $.agentDelegation[msg.sender][tokenId] += amount;
         $.totalAgentDelegations[msg.sender] += amount;
 
-        // Validate the balance constraint one final time after updates to reduce SLOADs 
+        // Validate the balance constraint one final time after updates to reduce SLOADs
         if (senderBalance < $.totalAgentDelegations[msg.sender]) {
             revert IChamber.InsufficientChamberBalance();
         }
@@ -746,7 +745,12 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
     }
 
     /// @inheritdoc IWallet
-    function getCancelConfirmation(uint256 tokenId, uint256 nonce) public view override(IWallet, Wallet) returns (bool) {
+    function getCancelConfirmation(uint256 tokenId, uint256 nonce)
+        public
+        view
+        override(IWallet, Wallet)
+        returns (bool)
+    {
         return super.getCancelConfirmation(tokenId, nonce);
     }
 

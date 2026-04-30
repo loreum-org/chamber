@@ -41,8 +41,7 @@ abstract contract Wallet {
     }
 
     /// @dev keccak256(abi.encode(uint256(keccak256("erc7201:loreum.Wallet")) - 1)) & ~bytes32(uint256(0xff))
-    bytes32 private constant _WALLET_STORAGE_SLOT =
-        0x471e5819b63496fc9e7b0c9d30efc265f73588bc9e02c472310feaa7f9bb8000;
+    bytes32 private constant _WALLET_STORAGE_SLOT = 0x471e5819b63496fc9e7b0c9d30efc265f73588bc9e02c472310feaa7f9bb8000;
 
     function _getWalletStorage() internal pure returns (WalletStorage storage $) {
         assembly {

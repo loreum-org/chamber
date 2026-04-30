@@ -375,8 +375,7 @@ contract ChamberUpgradeTest is Test {
         address proxyAdminAddress = chamber.getProxyAdmin();
 
         // Step 1: Submit a governance tx that transfers ProxyAdmin ownership away from chamber
-        bytes memory transferData =
-            abi.encodeWithSignature("transferOwnership(address)", address(0xDEAD));
+        bytes memory transferData = abi.encodeWithSignature("transferOwnership(address)", address(0xDEAD));
 
         vm.prank(user1);
         chamber.submitTransaction(1, proxyAdminAddress, 0, transferData);

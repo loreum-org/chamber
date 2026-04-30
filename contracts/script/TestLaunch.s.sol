@@ -10,13 +10,10 @@ interface ILiquidityLauncher {
         uint128 amount;
         bytes configData;
     }
-    
-    function distributeToken(
-        address token,
-        Distribution calldata distribution,
-        bool payerIsUser,
-        bytes32 salt
-    ) external returns (address);
+
+    function distributeToken(address token, Distribution calldata distribution, bool payerIsUser, bytes32 salt)
+        external
+        returns (address);
 }
 
 interface IERC20 {
@@ -41,17 +38,17 @@ struct MigratorParameters {
 contract TestLaunch is Script {
     address LIQUIDITY_LAUNCHER = 0x00000008412db3394C91A5CbD01635c6d140637C;
     address STRATEGY = 0x89Dd5691e53Ea95d19ED2AbdEdCf4cBbE50da1ff;
-    
+
     function run() public {
         address mockToken = 0xD4aA8Dc4B38673142C9b082b57c193eBB3690C37; // User's deployed token
-        
+
         uint128 amount = 100 * 1e18;
-        
+
         vm.startBroadcast();
-        
+
         // 1. Transfer tokens directly to LiquidityLauncher
         IERC20(mockToken).transfer(LIQUIDITY_LAUNCHER, amount);
-        
+
         MigratorParameters memory params = MigratorParameters({
             migrationBlock: 0,
             currency: address(0),
@@ -67,18 +64,16 @@ contract TestLaunch is Script {
 
         bytes memory configData = abi.encode(params, new bytes(0));
 
-        ILiquidityLauncher.Distribution memory dist = ILiquidityLauncher.Distribution({
-            strategy: STRATEGY,
-            amount: amount,
-            configData: configData
-        });
-        
-        ILiquidityLauncher(LIQUIDITY_LAUNCHER).distributeToken(
-            mockToken,
-            dist,
-            false, // payerIsUser = false
-            bytes32(0)
-        );
+        ILiquidityLauncher.Distribution memory dist =
+            ILiquidityLauncher.Distribution({strategy: STRATEGY, amount: amount, configData: configData});
+
+        ILiquidityLauncher(LIQUIDITY_LAUNCHER)
+            .distributeToken(
+                mockToken,
+                dist,
+                false, // payerIsUser = false
+                bytes32(0)
+            );
         vm.stopBroadcast();
     }
 }

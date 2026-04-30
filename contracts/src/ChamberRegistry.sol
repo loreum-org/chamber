@@ -149,11 +149,7 @@ contract ChamberRegistry is AccessControl, Initializable {
         bytes memory initData =
             abi.encodeWithSelector(IChamber.initialize.selector, erc20Token, erc721Token, seats, name, symbol);
 
-        TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
-            $.implementation,
-            address(this),
-            initData
-        );
+        TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy($.implementation, address(this), initData);
 
         chamber = payable(address(proxy));
 

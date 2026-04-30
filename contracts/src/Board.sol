@@ -59,8 +59,7 @@ abstract contract Board {
     uint256 internal constant MAX_NODES = 50;
 
     /// @dev keccak256(abi.encode(uint256(keccak256("erc7201:loreum.Board")) - 1)) & ~bytes32(uint256(0xff))
-    bytes32 private constant _BOARD_STORAGE_SLOT =
-        0xae916af301d5dc481b59b170e7db23e36b830da7017e456f99549768499c8800;
+    bytes32 private constant _BOARD_STORAGE_SLOT = 0xae916af301d5dc481b59b170e7db23e36b830da7017e456f99549768499c8800;
 
     function _getBoardStorage() internal pure returns (BoardStorage storage $) {
         assembly {
