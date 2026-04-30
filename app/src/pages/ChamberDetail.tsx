@@ -14,6 +14,7 @@ import {
   FiSend,
   FiPlus,
   FiCheck,
+  FiTrendingUp,
 } from 'react-icons/fi'
 import toast from 'react-hot-toast'
 import {
@@ -29,11 +30,12 @@ import {
 import BoardVisualization from '@/components/BoardVisualization'
 import TreasuryOverview from '@/components/TreasuryOverview'
 import DelegationManager from '@/components/DelegationManager'
+import AuctionTab from '@/components/Launchpad/AuctionTab'
 import { getBlockExplorerAddressUrl } from '@/lib/utils'
 
-type Tab = 'overview' | 'board' | 'treasury' | 'delegation'
+type Tab = 'overview' | 'board' | 'treasury' | 'delegation' | 'launchpad'
 
-const validTabs: Tab[] = ['overview', 'board', 'treasury', 'delegation']
+const validTabs: Tab[] = ['overview', 'board', 'treasury', 'delegation', 'launchpad']
 
 export default function ChamberDetail() {
   const { address, tab } = useParams<{ address: string; tab?: string }>()
@@ -91,6 +93,7 @@ export default function ChamberDetail() {
     { id: 'board', label: 'Board', icon: FiUsers },
     { id: 'treasury', label: 'Treasury', icon: FiLayers },
     { id: 'delegation', label: 'Delegation', icon: FiSend },
+    { id: 'launchpad', label: 'Launchpad', icon: FiTrendingUp },
   ] as const
 
   return (
@@ -276,6 +279,15 @@ export default function ChamberDetail() {
             members={members}
             vaultSymbol={chamberInfo.symbol}
             nftToken={chamberInfo.nftToken}
+          />
+        )}
+        
+        {activeTab === 'launchpad' && (
+          <AuctionTab
+            chamberAddress={chamberAddress}
+            chamberInfo={chamberInfo}
+            userBalance={userBalance}
+            members={members}
           />
         )}
       </motion.div>

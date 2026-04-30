@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { ArrowRight, ChevronRight, Layers, Shield, Cpu, TrendingUp, ShieldAlert, Search, Radio } from 'lucide-react';
+import { ArrowRight, ChevronRight, Layers, Shield, Cpu, TrendingUp, ShieldAlert, Search, Radio, Scale, Eye, Network } from 'lucide-react';
 
 const FadeIn = ({ children, delay = 0, className = "" }: { children: React.ReactNode, delay?: number, className?: string }) => (
   <motion.div
@@ -37,6 +37,7 @@ function App() {
           <span className="text-2xl font-display tracking-wider">LOREUM</span>
         </div>
         <div className="hidden md:flex items-center gap-8 font-light tracking-wide text-sm">
+          <a href="#clarity" className="hover:text-space-accent transition-colors">CLARITY</a>
           <a href="#mission" className="hover:text-space-accent transition-colors">MISSION</a>
           <a href="#technology" className="hover:text-space-accent transition-colors">TECHNOLOGY</a>
           <a href="#governance" className="hover:text-space-accent transition-colors">GOVERNANCE</a>
@@ -59,7 +60,7 @@ function App() {
             className="mb-6 inline-block"
           >
             <span className="px-4 py-1.5 rounded-full border border-space-accent/30 bg-space-accent/10 text-space-accent text-xs tracking-[0.2em] backdrop-blur-sm">
-              THE NEXT ERA OF GOVERNANCE
+              A DECENTRALIZED GOVERNANCE SYSTEM
             </span>
           </motion.div>
           
@@ -79,8 +80,10 @@ function App() {
             transition={{ duration: 0.8, delay: 0.4 }}
             className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-12 font-light leading-relaxed"
           >
-            Loreum enables AI-driven organizations to navigate the vast complexities of the decentralized universe. 
-            Empower autonomous agents to govern, manage, and scale your community.
+            The Chamber Protocol gives DAOs and autonomous agents the on-chain rules,
+            distributed authority, and verifiable consensus required to operate as a
+            <span className="text-space-accent"> Decentralized Governance System</span> under
+            the U.S. CLARITY Act of 2025.
           </motion.p>
 
           <motion.div 
@@ -134,6 +137,97 @@ function App() {
         </div>
       </section>
 
+      {/* The CLARITY Mandate — Problem Section */}
+      <section id="clarity" className="relative z-10 py-32 px-6 border-b border-white/5">
+        <div className="max-w-7xl mx-auto">
+          <FadeIn className="mb-20 max-w-4xl">
+            <div className="mb-6 inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-amber-300/30 bg-amber-300/10 text-amber-200 text-xs tracking-[0.2em]">
+              <Scale className="w-3 h-3" />
+              THE CLARITY MANDATE
+            </div>
+            <h2 className="text-4xl md:text-6xl font-display mb-8 leading-tight">
+              Governance is no longer<br />
+              <span className="text-gradient">optional infrastructure.</span>
+            </h2>
+            <p className="text-lg md:text-xl text-gray-400 font-light leading-relaxed mb-6">
+              Under the U.S. <span className="text-white">Digital Asset Market CLARITY Act of 2025</span> (H.R. 3633, § 104),
+              a digital asset can only graduate out of securities oversight when its blockchain
+              system is governed by a <span className="text-space-accent">Decentralized Governance System</span>:
+              a transparent, rules-based process for forming consensus where no person — and no
+              group of persons under common control — retains effective control.
+            </p>
+            <p className="text-lg md:text-xl text-gray-400 font-light leading-relaxed">
+              Most "DAOs" do not meet that bar. Founder multisigs, off-chain Discord votes, opaque
+              admin keys, and concentrated voting power all fail the test — leaving protocols
+              stuck in regulatory limbo, exposed to enforcement risk, and unable to mature.
+            </p>
+          </FadeIn>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              {
+                icon: <Eye className="w-7 h-7 text-amber-300" />,
+                tag: "§ 104(c)(2)(D)",
+                title: "Transparent & Programmatic",
+                desc: "The Act requires a system that operates and enforces decisions solely from pre-established, transparent rules encoded in source code. Chamber executes every governance action — proposal, vote, and treasury transfer — through audited on-chain logic.",
+                glow: "bg-amber-400/10"
+              },
+              {
+                icon: <Shield className="w-7 h-7 text-purple-300" />,
+                tag: "§ 104(c)(2)(E)",
+                title: "No Unilateral Control",
+                desc: "No party may direct, alter, or aggregate more than 20% of effective voting power. Chamber's liquid delegation, sorted leaderboard of directors, and quorum-based execution make concentration of authority structurally impossible.",
+                glow: "bg-purple-500/10"
+              },
+              {
+                icon: <Network className="w-7 h-7 text-emerald-300" />,
+                tag: "§ 104(c)(2)(F–G)",
+                title: "Distributed & Impartial",
+                desc: "Authority must be distributed and the system impartial. Chamber's Sub-Chamber architecture splits authority across specialized bodies, while NFT-based directorship and EIP-1271 signatures let humans, multisigs, and AI agents participate as equals.",
+                glow: "bg-emerald-500/10"
+              }
+            ].map((item, i) => (
+              <FadeIn key={i} delay={i * 0.15} className="group relative">
+                <div className="relative h-full p-8 bg-space-800/40 backdrop-blur-md border border-white/10 rounded-xl overflow-hidden group-hover:border-white/20 transition-all duration-500 hover:translate-y-[-4px] hover:shadow-2xl">
+                  <div className={`absolute -top-10 -right-10 w-32 h-32 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 ${item.glow}`} />
+
+                  <div className="relative flex items-start justify-between mb-6">
+                    <div className="p-4 bg-white/5 inline-block rounded-lg group-hover:scale-110 group-hover:bg-white/10 transition-all duration-500 border border-white/5">
+                      {item.icon}
+                    </div>
+                    <span className="font-mono text-[10px] tracking-widest text-amber-200/70 border border-amber-200/20 rounded-full px-2 py-1">
+                      {item.tag}
+                    </span>
+                  </div>
+
+                  <h3 className="relative text-xl md:text-2xl font-display mb-4 tracking-wide text-white group-hover:text-space-accent transition-colors">{item.title}</h3>
+                  <p className="relative text-gray-400 leading-relaxed text-sm group-hover:text-gray-300 transition-colors">
+                    {item.desc}
+                  </p>
+                </div>
+              </FadeIn>
+            ))}
+          </div>
+
+          <FadeIn delay={0.4} className="mt-16 max-w-4xl">
+            <div className="p-6 md:p-8 border border-white/10 rounded-xl bg-space-800/30 backdrop-blur-sm">
+              <p className="text-sm md:text-base text-gray-400 font-light leading-relaxed">
+                <span className="text-white font-mono text-xs tracking-widest">DEFINITION · CLARITY ACT § 104 </span>
+                <br />
+                <span className="italic text-gray-300">
+                  "The term 'decentralized governance system' means, with respect to a blockchain
+                  system, any transparent, rules-based system permitting persons to form consensus
+                  or reach agreement in the development, provision, publication, management, or
+                  administration of such blockchain system, where participation is not limited to,
+                  or under the effective control of, any person or group of persons under common
+                  control."
+                </span>
+              </p>
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+
       {/* Mission Section */}
       <section id="mission" className="relative z-10 py-32 px-6">
         <div className="max-w-7xl mx-auto flex flex-col items-center text-center">
@@ -142,6 +236,11 @@ function App() {
             <p className="text-2xl md:text-4xl text-white font-light max-w-4xl leading-relaxed">
               "To enable people to <span className="text-space-accent">maximize their potential</span>."
             </p>
+            <p className="mt-8 text-base md:text-lg text-gray-400 max-w-2xl mx-auto font-light leading-relaxed">
+              By giving every community a credibly neutral home for capital, decisions, and
+              autonomous agents — built to satisfy the legal threshold of a Decentralized
+              Governance System from day one.
+            </p>
           </FadeIn>
         </div>
       </section>
@@ -149,10 +248,12 @@ function App() {
       {/* Core Features */}
       <section id="technology" className="relative z-10 py-32 px-6">
         <div className="max-w-7xl mx-auto">
-          <FadeIn className="mb-20">
+          <FadeIn className="mb-20 max-w-2xl">
             <h2 className="text-4xl md:text-5xl font-display mb-6">Autonomous Architecture</h2>
-            <p className="text-gray-400 max-w-xl text-lg font-light">
-              Built on the Chamber Protocol, Loreum introduces a new standard for organizational intelligence.
+            <p className="text-gray-400 text-lg font-light leading-relaxed">
+              Each Chamber primitive is designed to satisfy a specific clause of CLARITY Act § 104 —
+              not as compliance theater, but as the structural property that makes
+              autonomous, agent-driven governance possible.
             </p>
           </FadeIn>
 
@@ -161,19 +262,19 @@ function App() {
               {
                 icon: <Cpu className="w-8 h-8 text-blue-400" />,
                 title: "Agent Directors",
-                desc: "Smart contracts that can propose, vote, and execute transactions based on programmed policies and AI inference.",
+                desc: "Smart contracts that propose, vote, and execute on-chain through pre-established rules — humans, multisigs, and AI agents seated as equal directors via NFT-based delegation and EIP-1271 signatures.",
                 glow: "bg-blue-500/20"
               },
               {
                 icon: <Shield className="w-8 h-8 text-purple-400" />,
                 title: "Policy Modules",
-                desc: "Modular governance guardrails that ensure safety while enabling autonomous operation.",
+                desc: "Modular guardrails that enforce voting caps, quorum thresholds, and execution limits — preventing any single party from accruing the unilateral or 20% effective control disqualified by the Act.",
                 glow: "bg-purple-500/20"
               },
               {
                 icon: <Layers className="w-8 h-8 text-emerald-400" />,
                 title: "Sub-Chambers",
-                desc: "Fractal organizational structures allowing for specialized departments and efficient resource allocation.",
+                desc: "Fractal organizational units that distribute authority across specialized bodies — Treasury, Ops, R&D — so power, capital, and decision rights are dispersed by design rather than concentrated in a founding team.",
                 glow: "bg-emerald-500/20"
               }
             ].map((feature, i) => (
@@ -204,8 +305,11 @@ function App() {
         <div className="max-w-7xl mx-auto">
           <FadeIn className="text-center mb-20">
             <h2 className="text-4xl md:text-5xl font-display mb-6">Ecosystem Governance</h2>
-            <p className="text-gray-400 max-w-2xl mx-auto text-lg font-light">
-              Loreum utilizes a unique Chamber and Sub-Chamber architecture to create efficient, specialized, and scalable organizations.
+            <p className="text-gray-400 max-w-2xl mx-auto text-lg font-light leading-relaxed">
+              Chambers and Sub-Chambers compose into a verifiable
+              <span className="text-space-accent"> Decentralized Governance System</span> —
+              a transparent, rules-based topology where authority is distributed by structure,
+              not by promise.
             </p>
           </FadeIn>
 
@@ -245,14 +349,20 @@ function App() {
                 <div className="group">
                    <h3 className="text-2xl font-display mb-3 text-white group-hover:text-space-accent transition-colors">The Chamber</h3>
                    <p className="text-gray-400 leading-relaxed font-light">
-                      The central governing body that holds ultimate authority. It sets global policies, manages the main treasury, and orchestrates the broader mission of the organization.
+                      The root governing body where global policies are set, the main treasury is
+                      held, and consensus is formed. Authority is exercised exclusively through
+                      on-chain rules — never through admin keys or off-chain channels — so the
+                      system remains transparent and rules-based as the Act requires.
                    </p>
                 </div>
-                
+
                 <div className="group">
                    <h3 className="text-2xl font-display mb-3 text-white group-hover:text-space-accent transition-colors">Sub-Chambers</h3>
                    <p className="text-gray-400 leading-relaxed font-light">
-                      Specialized departments with delegated authority. Each Sub-Chamber operates with its own budget and mandate, allowing for parallel execution and faster decision-making without bottling up at the top.
+                      Specialized bodies with delegated mandates and independent budgets. By
+                      splitting authority across Treasury, Ops, R&D, and beyond, no single seat or
+                      coalition can unilaterally direct the protocol — closing the
+                      common-control loophole that disqualifies most legacy DAOs.
                    </p>
                 </div>
              </FadeIn>
@@ -448,7 +558,8 @@ function App() {
               <span className="text-2xl font-display tracking-wider">LOREUM</span>
             </div>
             <p className="text-gray-500 max-w-xs font-light">
-              Pioneering the future of decentralized autonomous organizations through AI and programmable governance.
+              The Chamber Protocol — infrastructure for credibly neutral, agent-driven
+              Decentralized Governance Systems in the CLARITY era.
             </p>
           </div>
           

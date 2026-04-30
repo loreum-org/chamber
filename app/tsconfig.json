@@ -16,9 +16,11 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "paths": {
+      "@/contracts": ["../contracts/index.ts"],
+      "@/contracts/*": ["../contracts/*"],
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src"],
+  "include": ["src", "../contracts"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

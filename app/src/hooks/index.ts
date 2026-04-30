@@ -3,3 +3,5 @@ export * from './useRegistry'
 export * from './useTransactionStatus'
 export * from './useChamberEvents'
 export * from './useCreateAgentWithStatus'
+export * from './useLaunchpad'
+

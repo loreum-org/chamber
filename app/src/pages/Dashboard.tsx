@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAccount, useReadContract } from 'wagmi'
-import { FiArrowRight, FiLayers, FiPlus, FiAlertTriangle, FiGrid, FiBriefcase } from 'react-icons/fi'
+import { FiLayers, FiPlus, FiAlertTriangle, FiGrid, FiBriefcase } from 'react-icons/fi'
 import { useAllChambers, useChamberCount, useHasValidConfig, useOrganizationsByNFT } from '@/hooks'
 import { erc721Abi } from '@/contracts'
 import ChamberCard from '@/components/ChamberCard'
@@ -116,7 +116,7 @@ export default function Dashboard() {
         <div className="relative flex flex-col md:flex-row md:items-start md:justify-between gap-8">
           <div className="max-w-3xl">
             <div className="flex items-center gap-4 mb-6">
-              <img src="/logo.svg" alt="Chamber Logo" className="w-20 h-20 object-contain" />
+              <img src="https://cdn.loreum.org/logos/white.svg" alt="Chamber Logo" className="w-20 h-20 object-contain" />
               <div>
                 <p className="text-cyan-400 text-sm font-semibold uppercase tracking-wider">Treasury Governance</p>
                 <h1 className="font-heading text-3xl md:text-4xl font-bold text-slate-100 tracking-tight">
@@ -125,20 +125,9 @@ export default function Dashboard() {
               </div>
             </div>
             
-            <p className="text-slate-400 text-lg mb-8 leading-relaxed max-w-2xl">
-              Enterprise treasury infrastructure for organizations. Chambers function as corporate entities with an elected board of directors who oversee fiduciary operations and approve transactions through multi-signature governance.
+            <p className="text-slate-400 text-lg leading-relaxed max-w-2xl">
+              Agentic treasury infrastructure for organizations. Chambers function as corporate entities with an elected board of directors who oversee fiduciary operations and approve transactions through multi-signature governance.
             </p>
-
-            <div className="flex flex-wrap gap-3">
-              <Link to="/deploy" className="btn btn-primary">
-                <FiPlus className="w-4 h-4" />
-                Deploy Chamber
-              </Link>
-              <a href="#chambers" className="btn btn-secondary">
-                <FiLayers className="w-4 h-4" />
-                View Chambers
-              </a>
-            </div>
           </div>
 
           {/* Stats - right side column */}
@@ -345,14 +334,9 @@ function EmptyChambers() {
         <FiLayers className="w-8 h-8 text-slate-600" />
       </div>
       <h3 className="font-heading text-xl font-semibold text-slate-300 mb-2">No Chambers Yet</h3>
-      <p className="text-slate-500 mb-6 max-w-md mx-auto">
-        Deploy your first Chamber to start managing treasury assets with board governance.
+      <p className="text-slate-500 max-w-md mx-auto">
+        No Chambers have been deployed yet.
       </p>
-      <Link to="/deploy" className="btn btn-primary inline-flex">
-        <FiPlus className="w-4 h-4" />
-        Deploy Chamber
-        <FiArrowRight className="w-4 h-4 rotate-0 ml-2" />
-      </Link>
     </motion.div>
   )
 }
