@@ -28,8 +28,6 @@ interface IAgentPolicy {
     function canApprove(address chamber, uint256 transactionId) external view returns (bool);
 }
 
-
-
 /**
  * @title Agent
  * @notice A smart contract acting as a Director in a Chamber
@@ -69,8 +67,7 @@ contract Agent is ERC165, IERC1271, Initializable, ReentrancyGuardUpgradeable {
     error PolicyRejection();
 
     /// @dev keccak256(abi.encode(uint256(keccak256("erc7201:loreum.Agent")) - 1)) & ~bytes32(uint256(0xff))
-    bytes32 private constant _AGENT_STORAGE_SLOT =
-        0xd17d9af033c589679060d936d824fe1c6bfe1b41fa932922f10e866c7e4fd700;
+    bytes32 private constant _AGENT_STORAGE_SLOT = 0xd17d9af033c589679060d936d824fe1c6bfe1b41fa932922f10e866c7e4fd700;
 
     function _getAgentStorage() internal pure returns (AgentStorage storage $) {
         assembly {

@@ -133,8 +133,7 @@ contract AgentExecutePolicyBypassTest is Test {
         assertFalse(chamber.getConfirmation(AGENT_TOKEN_ID, txId), "Not yet confirmed");
 
         // But execute() bypasses policy entirely — directly calls confirmTransaction
-        bytes memory confirmCalldata =
-            abi.encodeWithSelector(IWallet.confirmTransaction.selector, AGENT_TOKEN_ID, txId);
+        bytes memory confirmCalldata = abi.encodeWithSelector(IWallet.confirmTransaction.selector, AGENT_TOKEN_ID, txId);
 
         vm.prank(agentOwner);
         agentContract.execute(chamberAddress, 0, confirmCalldata);
