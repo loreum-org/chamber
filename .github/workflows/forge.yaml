@@ -5,6 +5,9 @@ on: push
 jobs:
   tests:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: contracts
     steps:
       - uses: actions/checkout@v3
 
@@ -12,6 +15,7 @@ jobs:
         uses: foundry-rs/foundry-toolchain@v1
 
       - name: Checkout submodules
+        working-directory: ${{ github.workspace }}
         run: |
           git config --global url."https://github.com/".insteadOf "git@github.com:"
           git submodule update --init --recursive
