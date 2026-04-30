@@ -37,6 +37,37 @@ export function useTokenApprove(tokenAddress: `0x${string}` | undefined) {
   return { approve, isPending, isConfirming, isSuccess, error, hash }
 }
 
+// Permit2 Approve hook
+export function usePermit2Approve() {
+  const PERMIT2_ADDRESS = '0x000000000022D473030F116dDEE9F6B43aC78BA3'
+  const { writeContractAsync, data: hash, isPending, error } = useWriteContract()
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
+
+  const approvePermit2 = async (token: `0x${string}`, spender: `0x${string}`, amount: bigint, expiration: number) => {
+    return writeContractAsync({
+      address: PERMIT2_ADDRESS,
+      abi: [
+        {
+          type: 'function',
+          name: 'approve',
+          inputs: [
+            { name: 'token', type: 'address' },
+            { name: 'spender', type: 'address' },
+            { name: 'amount', type: 'uint160' },
+            { name: 'expiration', type: 'uint48' },
+          ],
+          outputs: [],
+          stateMutability: 'nonpayable',
+        },
+      ] as const,
+      functionName: 'approve',
+      args: [token, spender, amount, expiration],
+    })
+  }
+
+  return { approvePermit2, isPending, isConfirming, isSuccess, error, hash }
+}
+
 // ERC20 Balance hook
 export function useTokenBalance(tokenAddress: `0x${string}` | undefined, account: `0x${string}` | undefined) {
   const { data: balance, refetch } = useReadContract({
@@ -357,6 +388,23 @@ export function useSubmitTransaction(chamberAddress: `0x${string}` | undefined) 
   }
 
   return { submit, isPending, isConfirming, isSuccess, error, hash }
+}
+
+export function useSubmitBatchTransactions(chamberAddress: `0x${string}` | undefined) {
+  const { writeContractAsync, data: hash, isPending, error } = useWriteContract()
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
+
+  const submitBatch = async (tokenId: bigint, targets: `0x${string}`[], values: bigint[], data: `0x${string}`[]) => {
+    if (!chamberAddress) return
+    return writeContractAsync({
+      address: chamberAddress,
+      abi: chamberAbi,
+      functionName: 'submitBatchTransactions',
+      args: [tokenId, targets, values, data],
+    })
+  }
+
+  return { submitBatch, isPending, isConfirming, isSuccess, error, hash }
 }
 
 export function useConfirmTransaction(chamberAddress: `0x${string}` | undefined) {

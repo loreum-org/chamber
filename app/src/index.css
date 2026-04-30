@@ -4,11 +4,13 @@
 
 @layer base {
   body {
-    @apply bg-slate-950 text-slate-100 font-sans antialiased;
+    @apply bg-black text-slate-100 font-sans antialiased;
+    background-color: #030014;
     background-image: 
-      radial-gradient(ellipse at top, rgba(6, 182, 212, 0.08) 0%, transparent 50%),
-      radial-gradient(ellipse at 80% 50%, rgba(139, 92, 246, 0.05) 0%, transparent 40%),
-      radial-gradient(ellipse at bottom, rgba(15, 23, 42, 1) 0%, rgba(2, 6, 23, 1) 100%);
+      radial-gradient(ellipse at top right, rgba(29, 78, 216, 0.15), transparent 50%),
+      radial-gradient(ellipse at bottom left, rgba(88, 28, 135, 0.15), transparent 50%),
+      radial-gradient(circle at 50% 50%, rgba(14, 165, 233, 0.05), transparent 50%),
+      url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='30' cy='30' r='1' fill='rgba(255,255,255,0.1)'/%3E%3Ccircle cx='10' cy='50' r='0.5' fill='rgba(255,255,255,0.05)'/%3E%3Ccircle cx='50' cy='10' r='0.8' fill='rgba(255,255,255,0.15)'/%3E%3C/svg%3E");
     min-height: 100vh;
   }
 
@@ -30,9 +32,9 @@
 @layer components {
   /* Modern panel styling */
   .panel {
-    @apply bg-slate-900/60 backdrop-blur-xl border border-slate-700/50 rounded-2xl;
+    @apply bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl;
     box-shadow: 
-      0 4px 20px rgba(0, 0, 0, 0.25),
+      0 4px 20px rgba(0, 0, 0, 0.5),
       inset 0 1px 0 rgba(255, 255, 255, 0.05);
   }
 
@@ -55,7 +57,7 @@
   }
 
   .btn-secondary {
-    @apply bg-slate-800/80 text-slate-100 border border-slate-600/50 hover:border-cyan-500/50 hover:bg-slate-800;
+    @apply bg-black/60 text-slate-100 border border-white/10 hover:border-cyan-500/50 hover:bg-slate-900/80;
   }
 
   .btn-ghost {
@@ -64,7 +66,7 @@
 
   /* Input styling */
   .input {
-    @apply w-full px-4 py-3 bg-slate-800/50 border border-slate-600/50 rounded-xl text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20 transition-all;
+    @apply w-full px-4 py-3 bg-black/40 border border-white/10 rounded-xl text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20 transition-all;
   }
 
   /* Card styling */
@@ -147,7 +149,7 @@
 
   /* Stat card */
   .stat-card {
-    @apply bg-slate-800/40 rounded-xl p-4 border border-slate-700/30;
+    @apply bg-black/40 rounded-xl p-4 border border-white/10;
   }
 
   /* Icon container */

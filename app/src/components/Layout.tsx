@@ -2,6 +2,10 @@ import { Outlet, Link, useLocation } from 'react-router-dom'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { motion } from 'framer-motion'
 import { FiHome, FiGithub, FiBook, FiCpu, FiPlus } from 'react-icons/fi'
+import { useAccount, useWriteContract } from 'wagmi'
+import { getContractAddresses } from '@/lib/wagmi'
+import { erc721Abi } from '@/contracts'
+import toast from 'react-hot-toast'
 
 const navItems = [
   { path: '/', label: 'Chambers', icon: FiHome },
@@ -12,17 +16,35 @@ const navItems = [
 
 export default function Layout() {
   const location = useLocation()
+  const { chainId, address } = useAccount()
+  const { writeContract, isPending } = useWriteContract()
+
+  const handleMintLocal = () => {
+    if (!address || chainId !== 31337) return
+    const addresses = getContractAddresses(chainId)
+    if (!addresses.mockERC721) return
+    
+    writeContract({
+      address: addresses.mockERC721 as `0x${string}`,
+      abi: erc721Abi,
+      functionName: 'mint',
+      args: [address],
+    }, {
+      onSuccess: () => toast.success('Test NFT minted successfully!'),
+      onError: (err) => toast.error('Failed to mint: ' + err.message)
+    })
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
       {/* Modern Header */}
-      <header className="sticky top-0 z-50 border-b border-slate-700/50 bg-slate-900/80 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-black/50 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-3 group">
               <div className="relative">
-                <img src="/logo.svg" alt="Chamber Logo" className="w-10 h-10 object-contain transition-all" />
+                <img src="https://cdn.loreum.org/logos/white.svg" alt="Chamber Logo" className="w-10 h-10 object-contain transition-all" />
               </div>
             </Link>
 
@@ -57,6 +79,15 @@ export default function Layout() {
 
             {/* Connect Button */}
             <div className="flex items-center gap-4">
+              {chainId === 31337 && address && (
+                <button 
+                  onClick={handleMintLocal} 
+                  disabled={isPending} 
+                  className="hidden md:block text-xs px-3 py-1.5 bg-cyan-500/10 text-cyan-400 rounded-lg border border-cyan-500/20 hover:bg-cyan-500/20 transition-colors whitespace-nowrap"
+                >
+                  {isPending ? 'Minting...' : 'Mint Test NFT'}
+                </button>
+              )}
               <ConnectButton 
                 chainStatus="icon"
                 showBalance={false}
@@ -74,11 +105,11 @@ export default function Layout() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-800/50 bg-slate-950/50 backdrop-blur-sm">
+      <footer className="border-t border-white/10 bg-black/50 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3 text-slate-500 text-sm">
-              <img src="/logo.svg" alt="Chamber Logo" className="w-6 h-6 object-contain opacity-80" />
+              <img src="https://cdn.loreum.org/logos/white.svg" alt="Chamber Logo" className="w-6 h-6 object-contain opacity-80" />
               <span className="font-medium">Chamber Protocol</span>
               <span className="text-slate-700">|</span>
               <span>Decentralized Treasury Governance</span>

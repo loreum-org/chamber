@@ -6,6 +6,8 @@ export function cn(...inputs: (string | undefined | null | false)[]): string {
 const BLOCK_EXPLORERS: Record<number, string> = {
   1: 'https://etherscan.io',
   11155111: 'https://sepolia.etherscan.io',
+  8453: 'https://basescan.org',
+  42161: 'https://arbiscan.io',
   31337: 'http://localhost:8545', // Anvil - no block explorer by default
 }
 

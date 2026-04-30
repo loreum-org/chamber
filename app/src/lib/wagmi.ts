@@ -1,11 +1,14 @@
 import { getDefaultConfig } from '@rainbow-me/rainbowkit'
-import { mainnet, sepolia, Chain } from 'wagmi/chains'
-import localDeployments from '../contracts/deployments.json'
+import { mainnet, sepolia, base, arbitrum, Chain } from 'wagmi/chains'
+import localDeployments from '@/contracts/deployments.json'
+
+// Use the chain ID from deployments.json so that localhost accurately matches Anvil forks
+const localChainId = localDeployments.chainId || 31337
 
 // Define localhost chain explicitly with correct chain ID
 const localhost: Chain = {
-  id: 31337,
-  name: 'Localhost',
+  id: localChainId,
+  name: localChainId === 11155111 ? 'Local Sepolia Fork' : 'Localhost',
   nativeCurrency: {
     decimals: 18,
     name: 'Ether',
@@ -32,7 +35,7 @@ if (!import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || walletConnectProjectId ===
 export const config = getDefaultConfig({
   appName: 'Chamber',
   projectId: walletConnectProjectId,
-  chains: [mainnet, sepolia, localhost],
+  chains: [mainnet, sepolia, base, arbitrum, localhost],
   ssr: false,
 })
 
@@ -50,6 +53,18 @@ export const CONTRACT_ADDRESSES = {
   mainnet: {
     registry: (import.meta.env.VITE_MAINNET_REGISTRY || '0x0000000000000000000000000000000000000000') as `0x${string}`,
     chamberImplementation: (import.meta.env.VITE_MAINNET_CHAMBER_IMPL || '0x0000000000000000000000000000000000000000') as `0x${string}`,
+    mockERC20: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+    mockERC721: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+  },
+  base: {
+    registry: (import.meta.env.VITE_BASE_REGISTRY || '0x0000000000000000000000000000000000000000') as `0x${string}`,
+    chamberImplementation: (import.meta.env.VITE_BASE_CHAMBER_IMPL || '0x0000000000000000000000000000000000000000') as `0x${string}`,
+    mockERC20: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+    mockERC721: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+  },
+  arbitrum: {
+    registry: (import.meta.env.VITE_ARBITRUM_REGISTRY || '0x0000000000000000000000000000000000000000') as `0x${string}`,
+    chamberImplementation: (import.meta.env.VITE_ARBITRUM_CHAMBER_IMPL || '0x0000000000000000000000000000000000000000') as `0x${string}`,
     mockERC20: '0x0000000000000000000000000000000000000000' as `0x${string}`,
     mockERC721: '0x0000000000000000000000000000000000000000' as `0x${string}`,
   },
@@ -72,11 +87,21 @@ export const localhostDeployment = {
 }
 
 export function getContractAddresses(chainId: number) {
+  // If the active chain matches the local deployments chain, prioritize local addresses
+  // This allows overriding Sepolia testnet with local Sepolia fork addresses
+  if (chainId === localDeployments.chainId) {
+    return CONTRACT_ADDRESSES.localhost
+  }
+
   switch (chainId) {
     case 1:
       return CONTRACT_ADDRESSES.mainnet
     case 11155111:
       return CONTRACT_ADDRESSES.sepolia
+    case 8453:
+      return CONTRACT_ADDRESSES.base
+    case 42161:
+      return CONTRACT_ADDRESSES.arbitrum
     case 31337:
       return CONTRACT_ADDRESSES.localhost
     default:

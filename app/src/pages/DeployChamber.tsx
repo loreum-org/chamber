@@ -6,11 +6,12 @@ import { useQueryClient } from '@tanstack/react-query'
 import { FiAlertCircle, FiCheck, FiLoader } from 'react-icons/fi'
 import { useCreateChamberWithStatus } from '@/hooks'
 import { useRegistryAddress } from '@/hooks/useRegistry'
+import { getContractAddresses } from '@/lib/wagmi'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 
 export default function DeployChamber() {
   const navigate = useNavigate()
-  const { isConnected } = useAccount()
+  const { isConnected, chainId } = useAccount()
   const registryAddress = useRegistryAddress()
   const queryClient = useQueryClient()
   
@@ -86,6 +87,7 @@ export default function DeployChamber() {
   })
 
   // Pre-populate from URL when creating a sub chamber (e.g. from + Sub Chamber button)
+  // Or auto-fill local mock tokens when running on Anvil (localhost)
   useEffect(() => {
     const erc20 = searchParams.get('erc20')
     const erc721 = searchParams.get('erc721')
@@ -95,8 +97,17 @@ export default function DeployChamber() {
         erc20Token: erc20,
         erc721Token: erc721,
       }))
+    } else if (chainId === 31337) {
+      const addresses = getContractAddresses(chainId)
+      if (addresses.mockERC20 && addresses.mockERC721) {
+        setFormData((prev) => ({
+          ...prev,
+          erc20Token: prev.erc20Token || addresses.mockERC20,
+          erc721Token: prev.erc721Token || addresses.mockERC721,
+        }))
+      }
     }
-  }, [searchParams])
+  }, [searchParams, chainId])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -135,7 +146,7 @@ export default function DeployChamber() {
       >
         {/* Header */}
         <div className="text-center">
-          <img src="/logo.svg" alt="Chamber Logo" className="w-20 h-20 object-contain mx-auto mb-5" />
+          <img src="https://cdn.loreum.org/logos/white.svg" alt="Chamber Logo" className="w-20 h-20 object-contain mx-auto mb-5" />
           <h1 className="font-heading text-3xl font-bold text-slate-100 mb-2 tracking-tight">
             Deploy New Chamber
           </h1>
@@ -358,7 +369,7 @@ export default function DeployChamber() {
                   </>
                 ) : (
                   <>
-                    <img src="/logo.svg" alt="" className="w-5 h-5 object-contain" />
+                    <img src="https://cdn.loreum.org/logos/white.svg" alt="" className="w-5 h-5 object-contain" />
                     Deploy Chamber
                   </>
                 )}
