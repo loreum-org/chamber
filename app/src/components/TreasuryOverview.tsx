@@ -38,46 +38,8 @@ export default function TreasuryOverview({ chamberAddress, chamberInfo, userBala
   const { address: userAddress } = useAccount()
   const [depositAmount, setDepositAmount] = useState('')
   const [withdrawAmount, setWithdrawAmount] = useState('')
-  
-  // Get asset token symbol
-  const { data: assetSymbol } = useReadContract({
-    address: chamberInfo.assetToken,
-    abi: erc20Abi,
-    functionName: 'symbol',
-    query: { enabled: !!chamberInfo.assetToken },
-  })
+  const [pollAllowanceAfterApprove, setPollAllowanceAfterApprove] = useState(false)
 
-  // Get user's token balance and allowance
-  const { balance: tokenBalance, refetch: refetchTokenBalance } = useTokenBalance(
-    chamberInfo.assetToken,
-    userAddress
-  )
-  const { allowance, refetch: refetchAllowance } = useTokenAllowance(
-    chamberInfo.assetToken,
-    userAddress,
-    chamberAddress
-  )
-  
-  const { approve, isPending: isApproving, isConfirming: isApproveConfirming, isSuccess: isApproveSuccess } = useTokenApprove(chamberInfo.assetToken)
-  const { deposit, isPending: isDepositing, isConfirming: isDepositConfirming } = useDeposit(chamberAddress)
-  const { withdraw, isPending: isWithdrawing, isConfirming: isWithdrawConfirming } = useWithdraw(chamberAddress)
-
-  // Watch for vault events and refresh data when transactions are mined
-  useChamberEvents(chamberAddress, {
-    onVaultEvent: () => {
-      refetchTokenBalance()
-      refetchAllowance()
-    },
-  })
-
-  // Refetch allowance after approval succeeds
-  useEffect(() => {
-    if (isApproveSuccess) {
-      refetchAllowance()
-    }
-  }, [isApproveSuccess, refetchAllowance])
-
-  // Parse amounts for simulation
   const depositAmountBigInt = useMemo(() => {
     try {
       return depositAmount ? parseUnits(depositAmount, 18) : 0n
@@ -94,8 +56,67 @@ export default function TreasuryOverview({ chamberAddress, chamberInfo, userBala
     }
   }, [withdrawAmount])
 
+  // Get asset token symbol
+  const { data: assetSymbol } = useReadContract({
+    address: chamberInfo.assetToken,
+    abi: erc20Abi,
+    functionName: 'symbol',
+    query: { enabled: !!chamberInfo.assetToken },
+  })
+
+  // Get user's token balance and allowance
+  const { balance: tokenBalance, refetch: refetchTokenBalance } = useTokenBalance(
+    chamberInfo.assetToken,
+    userAddress
+  )
+  const { allowance, refetch: refetchAllowance } = useTokenAllowance(
+    chamberInfo.assetToken,
+    userAddress,
+    chamberAddress,
+    {
+      refetchInterval:
+        pollAllowanceAfterApprove && depositAmountBigInt > 0n ? 2500 : false,
+    }
+  )
+
+  const { approve, isPending: isApproving, isConfirming: isApproveConfirming, isSuccess: isApproveSuccess } = useTokenApprove(chamberInfo.assetToken)
+  const { deposit, isPending: isDepositing, isConfirming: isDepositConfirming } = useDeposit(chamberAddress)
+  const { withdraw, isPending: isWithdrawing, isConfirming: isWithdrawConfirming } = useWithdraw(chamberAddress)
+
+  // Watch for vault events and refresh data when transactions are mined
+  useChamberEvents(chamberAddress, {
+    onVaultEvent: () => {
+      refetchTokenBalance()
+      refetchAllowance()
+    },
+  })
+
+  // Refetch allowance after approval succeeds
+  useEffect(() => {
+    if (isApproveSuccess) {
+      void refetchAllowance()
+    }
+  }, [isApproveSuccess, refetchAllowance])
+
+  useEffect(() => {
+    if (isApproveSuccess) setPollAllowanceAfterApprove(true)
+  }, [isApproveSuccess])
+
   // Calculate if approval is needed
   const needsApproval = allowance !== undefined && depositAmountBigInt > 0n && allowance < depositAmountBigInt
+
+  const syncingAllowanceAfterApprove =
+    pollAllowanceAfterApprove && needsApproval && !isApproving && !isApproveConfirming
+
+  useEffect(() => {
+    if (!needsApproval) setPollAllowanceAfterApprove(false)
+  }, [needsApproval])
+
+  useEffect(() => {
+    if (!pollAllowanceAfterApprove || depositAmountBigInt === 0n) return
+    const t = window.setTimeout(() => setPollAllowanceAfterApprove(false), 120_000)
+    return () => window.clearTimeout(t)
+  }, [pollAllowanceAfterApprove, depositAmountBigInt])
 
   // Simulate transactions to catch errors before user submits
   const { 
@@ -105,7 +126,11 @@ export default function TreasuryOverview({ chamberAddress, chamberInfo, userBala
   } = useSimulateDeposit(
     chamberAddress,
     depositAmountBigInt > 0n ? depositAmountBigInt : undefined,
-    userAddress
+    userAddress,
+    {
+      queryEnabled:
+        !needsApproval && !isDepositing && !isDepositConfirming,
+    }
   )
 
   const { 
@@ -116,7 +141,8 @@ export default function TreasuryOverview({ chamberAddress, chamberInfo, userBala
     chamberAddress,
     withdrawAmountBigInt > 0n ? withdrawAmountBigInt : undefined,
     userAddress,
-    userAddress
+    userAddress,
+    { queryEnabled: !isWithdrawing && !isWithdrawConfirming }
   )
 
   // Helper to extract readable error message
@@ -360,7 +386,12 @@ export default function TreasuryOverview({ chamberAddress, chamberInfo, userBala
               <div className="min-h-[2.75rem] flex items-center">
                 {depositAmount ? (
                   <div className="flex items-center gap-2 text-sm">
-                    {needsApproval ? (
+                    {syncingAllowanceAfterApprove ? (
+                      <>
+                        <FiLoader className="w-4 h-4 text-amber-400 shrink-0 animate-spin" />
+                        <span className="text-amber-400/95">Updating allowance on-chain…</span>
+                      </>
+                    ) : needsApproval ? (
                       <>
                         <FiUnlock className="w-4 h-4 text-amber-400 shrink-0" />
                         <span className="text-amber-400/95">Approval required before deposit</span>
@@ -393,13 +424,22 @@ export default function TreasuryOverview({ chamberAddress, chamberInfo, userBala
                 <button
                   type="button"
                   onClick={handleApprove}
-                  disabled={isApproving || isApproveConfirming}
+                  disabled={
+                    isApproving ||
+                    isApproveConfirming ||
+                    syncingAllowanceAfterApprove
+                  }
                   className="btn w-full border border-amber-500/40 bg-amber-600/85 text-white hover:bg-amber-500 shadow-sm"
                 >
                   {isApproving || isApproveConfirming ? (
                     <>
                       <FiLoader className="w-4 h-4 animate-spin" />
                       {isApproving ? 'Confirm...' : 'Approving...'}
+                    </>
+                  ) : syncingAllowanceAfterApprove ? (
+                    <>
+                      <FiLoader className="w-4 h-4 animate-spin" />
+                      Updating allowance…
                     </>
                   ) : (
                     <>

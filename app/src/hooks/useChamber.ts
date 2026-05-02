@@ -5,18 +5,34 @@ import { chamberAbi, erc20Abi, erc721Abi } from '@/contracts/abis'
 import { chamberVersionBytes32ToLabel } from '@/lib/utils'
 import type { Transaction, BoardMember, SeatUpdate } from '@/types'
 
+/** Public RPC / long block times: retry eth_call simulation and refresh state after txs. */
+const SLOW_CHAIN_SIMULATE_QUERY = {
+  staleTime: 0 as const,
+  retry: 5,
+  retryDelay: (attemptIndex: number) => Math.min(3000 * 2 ** attemptIndex, 45_000),
+}
+
+export type SimulateQueryOpts = { queryEnabled?: boolean }
+
 // ERC20 Allowance hook
 export function useTokenAllowance(
   tokenAddress: `0x${string}` | undefined,
   ownerAddress: `0x${string}` | undefined,
-  spenderAddress: `0x${string}` | undefined
+  spenderAddress: `0x${string}` | undefined,
+  opts?: { refetchInterval?: number | false }
 ) {
   const { data: allowance, refetch } = useReadContract({
     address: tokenAddress,
     abi: erc20Abi,
     functionName: 'allowance',
     args: ownerAddress && spenderAddress ? [ownerAddress, spenderAddress] : undefined,
-    query: { enabled: !!tokenAddress && !!ownerAddress && !!spenderAddress },
+    query: {
+      enabled: !!tokenAddress && !!ownerAddress && !!spenderAddress,
+      refetchInterval: opts?.refetchInterval,
+      staleTime: 0,
+      retry: 4,
+      retryDelay: (attemptIndex: number) => Math.min(2000 * 2 ** attemptIndex, 30_000),
+    },
   })
 
   return { allowance: allowance as bigint | undefined, refetch }
@@ -594,17 +610,26 @@ export function useDelegate(chamberAddress: `0x${string}` | undefined) {
 export function useSimulateDelegate(
   chamberAddress: `0x${string}` | undefined,
   tokenId: bigint | undefined,
-  amount: bigint | undefined
+  amount: bigint | undefined,
+  opts?: SimulateQueryOpts
 ) {
   const { address: userAddress } = useAccount()
-  
+  const queryEnabled = opts?.queryEnabled !== false
+
   const { data, error, isLoading, refetch } = useSimulateContract({
     address: chamberAddress,
     abi: chamberAbi,
     functionName: 'delegate',
     args: tokenId !== undefined && amount !== undefined ? [tokenId, amount] : undefined,
     query: {
-      enabled: !!chamberAddress && !!userAddress && tokenId !== undefined && amount !== undefined && amount > 0n,
+      enabled:
+        queryEnabled &&
+        !!chamberAddress &&
+        !!userAddress &&
+        tokenId !== undefined &&
+        amount !== undefined &&
+        amount > 0n,
+      ...SLOW_CHAIN_SIMULATE_QUERY,
     },
   })
 
@@ -647,17 +672,26 @@ export function useUndelegate(chamberAddress: `0x${string}` | undefined) {
 export function useSimulateUndelegate(
   chamberAddress: `0x${string}` | undefined,
   tokenId: bigint | undefined,
-  amount: bigint | undefined
+  amount: bigint | undefined,
+  opts?: SimulateQueryOpts
 ) {
   const { address: userAddress } = useAccount()
-  
+  const queryEnabled = opts?.queryEnabled !== false
+
   const { data, error, isLoading, refetch } = useSimulateContract({
     address: chamberAddress,
     abi: chamberAbi,
     functionName: 'undelegate',
     args: tokenId !== undefined && amount !== undefined ? [tokenId, amount] : undefined,
     query: {
-      enabled: !!chamberAddress && !!userAddress && tokenId !== undefined && amount !== undefined && amount > 0n,
+      enabled:
+        queryEnabled &&
+        !!chamberAddress &&
+        !!userAddress &&
+        tokenId !== undefined &&
+        amount !== undefined &&
+        amount > 0n,
+      ...SLOW_CHAIN_SIMULATE_QUERY,
     },
   })
 
@@ -700,17 +734,26 @@ export function useDeposit(chamberAddress: `0x${string}` | undefined) {
 export function useSimulateDeposit(
   chamberAddress: `0x${string}` | undefined,
   assets: bigint | undefined,
-  receiver: `0x${string}` | undefined
+  receiver: `0x${string}` | undefined,
+  opts?: SimulateQueryOpts
 ) {
   const { address: userAddress } = useAccount()
-  
+  const queryEnabled = opts?.queryEnabled !== false
+
   const { data, error, isLoading, refetch } = useSimulateContract({
     address: chamberAddress,
     abi: chamberAbi,
     functionName: 'deposit',
     args: assets !== undefined && receiver ? [assets, receiver] : undefined,
     query: {
-      enabled: !!chamberAddress && !!userAddress && assets !== undefined && assets > 0n && !!receiver,
+      enabled:
+        queryEnabled &&
+        !!chamberAddress &&
+        !!userAddress &&
+        assets !== undefined &&
+        assets > 0n &&
+        !!receiver,
+      ...SLOW_CHAIN_SIMULATE_QUERY,
     },
   })
 
@@ -754,17 +797,27 @@ export function useSimulateWithdraw(
   chamberAddress: `0x${string}` | undefined,
   assets: bigint | undefined,
   receiver: `0x${string}` | undefined,
-  owner: `0x${string}` | undefined
+  owner: `0x${string}` | undefined,
+  opts?: SimulateQueryOpts
 ) {
   const { address: userAddress } = useAccount()
-  
+  const queryEnabled = opts?.queryEnabled !== false
+
   const { data, error, isLoading, refetch } = useSimulateContract({
     address: chamberAddress,
     abi: chamberAbi,
     functionName: 'withdraw',
     args: assets !== undefined && receiver && owner ? [assets, receiver, owner] : undefined,
     query: {
-      enabled: !!chamberAddress && !!userAddress && assets !== undefined && assets > 0n && !!receiver && !!owner,
+      enabled:
+        queryEnabled &&
+        !!chamberAddress &&
+        !!userAddress &&
+        assets !== undefined &&
+        assets > 0n &&
+        !!receiver &&
+        !!owner,
+      ...SLOW_CHAIN_SIMULATE_QUERY,
     },
   })
 

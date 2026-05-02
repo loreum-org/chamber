@@ -67,7 +67,10 @@ export default function DelegationManager({
       predicate: (q) => {
         try {
           const k = JSON.stringify(q.queryKey).toLowerCase()
-          return k.includes('nft-token-image') && k.includes(needle)
+          return (
+            (k.includes('nft-token-image') || k.includes('nft-image-map')) &&
+            k.includes(needle)
+          )
         } catch {
           return false
         }
@@ -103,7 +106,8 @@ export default function DelegationManager({
   } = useSimulateDelegate(
     chamberAddress,
     delegateTokenId ? BigInt(delegateTokenId) : undefined,
-    delegateAmountBigInt
+    delegateAmountBigInt,
+    { queryEnabled: !isDelegating && !isDelegateConfirming }
   )
 
   const { 
@@ -113,7 +117,8 @@ export default function DelegationManager({
   } = useSimulateUndelegate(
     chamberAddress,
     undelegateTokenId ? BigInt(undelegateTokenId) : undefined,
-    undelegateAmountBigInt
+    undelegateAmountBigInt,
+    { queryEnabled: !isUndelegating && !isUndelegateConfirming }
   )
 
   // Rank-impact preview: compute where the target token would land after delegation
@@ -534,6 +539,7 @@ export default function DelegationManager({
               return (
                 <div key={delegation.tokenId.toString()} className="p-4 flex items-center gap-4">
                   <DelegationMemberAvatar
+                    key={`${chamberAddress}-${delegation.tokenId.toString()}`}
                     nftToken={nftToken && nftToken !== zeroAddress ? nftToken : undefined}
                     tokenId={delegation.tokenId}
                     chamberAddress={chamberAddress}

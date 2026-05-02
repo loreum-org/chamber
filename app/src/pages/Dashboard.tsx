@@ -175,7 +175,7 @@ export default function Dashboard() {
             </div>
 
             <p className="text-slate-400 text-lg leading-relaxed max-w-2xl">
-              Rules-bound governance for organizations. Chambers combine vault custody with an elected board of directors who oversee fiduciary operations and approve transactions through configurable quorum and timelocked controls.
+              Chambers combine vault custody with an elected board of directors who oversee fiduciary operations and approve transactions through configurable quorum and timelocked controls.
             </p>
           </div>
 
