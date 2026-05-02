@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
     "target": "ES2020",
     "useDefineForClassFields": true,
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
@@ -16,11 +17,11 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "paths": {
-      "@/contracts": ["../contracts/index.ts"],
-      "@/contracts/*": ["../contracts/*"],
+      "@/contracts": ["./contracts/index.ts"],
+      "@/contracts/*": ["./contracts/*"],
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src", "../contracts"],
+  "include": ["src", "contracts"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

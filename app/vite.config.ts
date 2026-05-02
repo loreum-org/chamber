@@ -9,11 +9,11 @@ export default defineConfig({
     alias: [
       {
         find: /^@\/contracts\/(.+)$/,
-        replacement: `${path.resolve(__dirname, '../contracts')}/$1`,
+        replacement: `${path.resolve(__dirname, './contracts')}/$1`,
       },
       {
         find: /^@\/contracts$/,
-        replacement: path.resolve(__dirname, '../contracts'),
+        replacement: path.resolve(__dirname, './contracts'),
       },
       {
         find: '@',
