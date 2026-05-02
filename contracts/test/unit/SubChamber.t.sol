@@ -2,14 +2,14 @@
 pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
-import {ChamberRegistry} from "src/ChamberRegistry.sol";
+import {Registry} from "src/Registry.sol";
 import {Chamber} from "src/Chamber.sol";
 import {MockERC20} from "test/mock/MockERC20.sol";
 import {MockERC721} from "test/mock/MockERC721.sol";
 import {DeployRegistry} from "test/utils/DeployRegistry.sol";
 
 contract SubChamberTest is Test {
-    ChamberRegistry public registry;
+    Registry public registry;
     MockERC20 public rootAsset;
     MockERC721 public nft;
     address public admin = makeAddr("admin");

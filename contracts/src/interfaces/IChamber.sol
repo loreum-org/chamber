@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.30;
+pragma solidity ^0.8.30;
 
 import {IERC4626} from "lib/openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 import {IBoard} from "./IBoard.sol";
@@ -7,16 +7,19 @@ import {IWallet} from "./IWallet.sol";
 
 /**
  * @title IChamber
- * @notice Interface for Chamber contract combining ERC4626 vault, Board governance, and Wallet multisig
+ * @author xhad, Loreum DAO LLC
+ * @notice Interface for the Chamber: ERC-4626 vault, delegation-weighted board, and director multisig wallet.
+ * @dev Combines {IERC4626}, {IBoard}, and {IWallet}. Errors and events from those parents apply unless
+ *      overridden or extended below. Share token transfers enforce that delegated weight cannot be stranded.
  */
 interface IChamber is IERC4626, IBoard, IWallet {
     /**
-     * @notice Initializes the Chamber contract
-     * @param erc20Token The address of the ERC20 token
-     * @param erc721Token The address of the ERC721 token
-     * @param seats The initial number of seats
-     * @param name The name of the chamber's ERC20 token
-     * @param symbol The symbol of the chamber's ERC20 token
+     * @notice Initializes the proxy; callable once by the proxy during deployment.
+     * @param erc20Token Underlying ERC-20 asset for the ERC-4626 vault
+     * @param erc721Token Membership ERC-721 whose holders may be directors when in top seats
+     * @param seats Initial board seat count (must be 1..20 inclusive)
+     * @param name ERC-20 name for chamber share tokens
+     * @param symbol ERC-20 symbol for chamber share tokens
      */
     function initialize(
         address erc20Token,
@@ -41,27 +44,27 @@ interface IChamber is IERC4626, IBoard, IWallet {
     function undelegate(uint256 tokenId, uint256 amount) external;
 
     /**
-     * @notice Returns the list of tokenIds to which the agent has delegated tokens and the corresponding amounts
-     * @param agent The address of the agent
+     * @notice Returns the list of tokenIds to which the holder has delegated tokens and the corresponding amounts
+     * @param holder The address holding Chamber shares that delegated voting weight
      * @return tokenIds The list of tokenIds
      * @return amounts The list of amounts delegated to each tokenId
      */
-    function getDelegations(address agent) external view returns (uint256[] memory tokenIds, uint256[] memory amounts);
+    function getDelegations(address holder) external view returns (uint256[] memory tokenIds, uint256[] memory amounts);
 
     /**
-     * @notice Returns the amount delegated by a agent to a specific tokenId
-     * @param agent The address of the agent
+     * @notice Returns the amount delegated by a holder to a specific membership tokenId
+     * @param holder The delegating holder address
      * @param tokenId The token ID
      * @return amount The amount delegated
      */
-    function getAgentDelegation(address agent, uint256 tokenId) external view returns (uint256);
+    function getHolderDelegation(address holder, uint256 tokenId) external view returns (uint256);
 
     /**
-     * @notice Returns the total amount delegated by a agent across all tokenIds
-     * @param agent The address of the agent
+     * @notice Returns the total amount delegated by a holder across all tokenIds
+     * @param holder The delegating holder address
      * @return amount The total amount delegated
      */
-    function getTotalAgentDelegations(address agent) external view returns (uint256);
+    function getTotalHolderDelegations(address holder) external view returns (uint256);
 
     /**
      * @notice Updates the number of seats
@@ -77,46 +80,47 @@ interface IChamber is IERC4626, IBoard, IWallet {
     function executeSeatsUpdate(uint256 tokenId) external;
 
     /**
-     * @notice Accepts admin ownership of the ProxyAdmin (called by Registry after deployment)
-     * @dev Transfers ProxyAdmin ownership from Registry to this Chamber
+     * @notice Optional hook reserved for registry flows; current implementation is a no-op.
+     * @dev The registry transfers `ProxyAdmin` ownership to the chamber directly after deployment.
      */
     function acceptAdmin() external;
 
     /**
-     * @notice Returns the ProxyAdmin address for this Chamber proxy
-     * @return The ProxyAdmin address
+     * @notice Returns the `ProxyAdmin` contract address for this transparent proxy (ERC-1967 admin slot).
+     * @return adminContract The OpenZeppelin `ProxyAdmin` instance controlling upgrades for this chamber
      */
-    function getProxyAdmin() external view returns (address);
+    function getProxyAdmin() external view returns (address adminContract);
 
     /**
-     * @notice Upgrades the Chamber implementation (can be called via transaction system)
-     * @dev This function should be called via executeTransaction with proper governance
-     * @param newImplementation The new implementation address
-     * @param data Optional initialization data
+     * @notice Performs an implementation upgrade via the chamber-owned `ProxyAdmin`.
+     * @dev Must be called with `msg.sender == address(this)` (e.g. via `executeTransaction`). Requires
+     *      `ProxyAdmin.owner() == address(this)` and non-zero `newImplementation`.
+     * @param newImplementation Address of the new implementation contract
+     * @param data Optional data forwarded to `upgradeAndCall` (e.g. initializer on the new implementation)
      */
     function upgradeImplementation(address newImplementation, bytes calldata data) external;
 
     /// Events
     /**
      * @notice Emitted when delegation is updated
-     * @param agent The address of the agent delegating
+     * @param holder The address delegating Chamber shares
      * @param tokenId The tokenId being delegated to
      * @param amount The amount delegated
      */
-    event DelegationUpdated(address indexed agent, uint256 indexed tokenId, uint256 amount);
+    event DelegationUpdated(address indexed holder, uint256 indexed tokenId, uint256 amount);
 
     /**
-     * @notice Emitted when directorship changes
+     * @notice Reserved event for directorship transitions (not emitted by the current Chamber implementation).
      * @param account The account whose directorship changed
-     * @param tokenId The tokenId associated with the directorship
+     * @param tokenId The membership token ID associated with the directorship
      * @param isDirector Whether the account is now a director
      */
     event DirectorshipChanged(address indexed account, uint256 indexed tokenId, bool isDirector);
 
     /**
-     * @notice Emitted when quorum is updated
-     * @param oldQuorum The previous quorum value
-     * @param newQuorum The new quorum value
+     * @notice Reserved event for quorum changes (not emitted by the current Chamber implementation).
+     * @param oldQuorum Previous wallet confirmation threshold
+     * @param newQuorum New wallet confirmation threshold
      */
     event QuorumUpdated(uint256 oldQuorum, uint256 newQuorum);
 
@@ -207,8 +211,8 @@ interface IChamber is IERC4626, IBoard, IWallet {
     /// @notice Thrown when transfer cannot be performed
     error CannotTransfer();
 
-    /// @notice Thrown when address is not on leaderboard
-    /// @param account The account that is not on leaderboard
+    /// @notice Reserved error (not reverted by current Chamber source); kept for ABI compatibility.
+    /// @param account The account that would not be on the leaderboard
     error NotOnLeaderboard(address account);
 
     /// @notice Thrown when number of seats is zero

@@ -21,12 +21,12 @@ contract WalletTest is Test {
 
         wallet.submitTransaction(1, target, value, data);
 
-        (bool executed, uint8 confirmations, address trxTarget, uint256 trxValue, bytes memory trxData) =
+        (bool executed, uint8 confirmations, address trxTarget, uint256 trxValue, bytes32 trxDataHash) =
             wallet.getTransaction(0);
 
         assertEq(target, trxTarget);
         assertEq(value, trxValue);
-        assertEq(data, trxData);
+        assertEq(keccak256(data), trxDataHash);
         assertEq(false, executed);
         assertEq(1, confirmations);
     }
@@ -90,7 +90,7 @@ contract WalletTest is Test {
         deal(address(wallet), 1 ether);
 
         wallet.submitTransaction(1, target, 1 ether, data);
-        wallet.executeTransaction(1, 0);
+        wallet.executeTransaction(1, 0, data);
 
         vm.expectRevert(IWallet.TransactionAlreadyExecuted.selector);
         wallet.revokeConfirmation(1, 0);
@@ -103,7 +103,7 @@ contract WalletTest is Test {
         deal(address(wallet), 1 ether);
 
         wallet.submitTransaction(1, target, value, data);
-        wallet.executeTransaction(1, 0);
+        wallet.executeTransaction(1, 0, data);
 
         (bool executed,,,,) = wallet.getTransaction(0);
         assertEq(executed, true);
@@ -113,7 +113,7 @@ contract WalletTest is Test {
 
     function test_Wallet_ExecuteTransaction_NonExistent_Reverts() public {
         vm.expectRevert(IWallet.TransactionDoesNotExist.selector);
-        wallet.executeTransaction(1, 999);
+        wallet.executeTransaction(1, 999, "");
     }
 
     function test_Wallet_ExecuteTransaction_AlreadyExecuted_Reverts() public {
@@ -122,10 +122,10 @@ contract WalletTest is Test {
         deal(address(wallet), 1 ether);
 
         wallet.submitTransaction(1, target, 1 ether, data);
-        wallet.executeTransaction(1, 0);
+        wallet.executeTransaction(1, 0, data);
 
         vm.expectRevert(IWallet.TransactionAlreadyExecuted.selector);
-        wallet.executeTransaction(1, 0);
+        wallet.executeTransaction(1, 0, data);
     }
 
     function test_Wallet_ExecuteTransaction_ZeroAddress_Reverts() public {
@@ -133,17 +133,18 @@ contract WalletTest is Test {
         wallet.submitTransaction(1, address(0), 0, "");
 
         vm.expectRevert(IWallet.InvalidTarget.selector);
-        wallet.executeTransaction(1, 0);
+        wallet.executeTransaction(1, 0, "");
     }
 
     function test_Wallet_ExecuteTransaction_Failed_Reverts() public {
         // Create a contract that always reverts
         RevertingContract reverter = new RevertingContract();
 
-        wallet.submitTransaction(1, address(reverter), 0, abi.encodeWithSignature("alwaysReverts()"));
+        bytes memory revertData = abi.encodeWithSignature("alwaysReverts()");
+        wallet.submitTransaction(1, address(reverter), 0, revertData);
 
         vm.expectRevert();
-        wallet.executeTransaction(1, 0);
+        wallet.executeTransaction(1, 0, revertData);
     }
 
     function test_Wallet_GetTransactionCount() public {
@@ -209,7 +210,7 @@ contract WalletTest is Test {
         deal(address(wallet), 1 ether);
 
         wallet.submitTransaction(1, target, 1 ether, data);
-        wallet.executeTransaction(1, 0);
+        wallet.executeTransaction(1, 0, data);
 
         vm.expectRevert(IWallet.TransactionAlreadyExecuted.selector);
         wallet.confirmTransaction(2, 0);

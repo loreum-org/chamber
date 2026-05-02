@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.30;
+pragma solidity ^0.8.30;
 
 import {Board} from "src/Board.sol";
 import {Wallet} from "src/Wallet.sol";
@@ -36,9 +36,8 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
      */
     struct ChamberStorage {
         IERC721 nft;
-        string version;
-        mapping(address => mapping(uint256 => uint256)) agentDelegation;
-        mapping(address => uint256) totalAgentDelegations;
+        mapping(address => mapping(uint256 => uint256)) holderDelegation;
+        mapping(address => uint256) totalHolderDelegations;
     }
 
     /// @dev keccak256(abi.encode(uint256(keccak256("erc7201:loreum.Chamber")) - 1)) & ~bytes32(uint256(0xff))
@@ -55,6 +54,14 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
     /// Constants
     uint256 private constant MAX_SEATS = 20;
 
+    /**
+     * @notice Implementation version stored as a bytes32 constant.
+     * @dev Replaces `string version` in ChamberStorage — a dynamic string uses 2+ storage slots
+     *      (length word + data word) and incurs an SLOAD on every read. A bytes32 constant is
+     *      inlined at compile time: zero runtime gas, zero storage slots.
+     */
+    bytes32 public constant VERSION = "1.1.4";
+
     /// @notice Function selector for upgradeImplementation(address,bytes)
     bytes4 private constant UPGRADE_SELECTOR = 0xc89311b6;
 
@@ -64,11 +71,6 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
 
     /// EXPLICIT GETTERS for formerly-public state variables ///
 
-    /// @notice The implementation version
-    function version() external view returns (string memory) {
-        return _getChamberStorage().version;
-    }
-
     /// @notice ERC721 membership token
     function nft() external view returns (IERC721) {
         return _getChamberStorage().nft;
@@ -76,6 +78,7 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
 
     /**
      * @notice Initializes the Chamber contract with the given ERC20 and ERC721 tokens and sets the number of seats
+     * @dev `seats` must be between 1 and `MAX_SEATS` (20) inclusive; aligns with `Registry` validation.
      * @param erc20Token The address of the ERC20 token
      * @param erc721Token The address of the ERC721 token
      * @param seats The initial number of seats
@@ -92,6 +95,8 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
         if (erc20Token == address(0) || erc721Token == address(0)) {
             revert IChamber.ZeroAddress();
         }
+        if (seats == 0) revert IChamber.ZeroSeats();
+        if (seats > MAX_SEATS) revert IChamber.TooManySeats();
 
         __ERC4626_init(IERC20(erc20Token));
         __ERC20_init(_name, _symbol);
@@ -99,7 +104,6 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
 
         ChamberStorage storage $ = _getChamberStorage();
         $.nft = IERC721(erc721Token);
-        $.version = "1.1.3";
 
         _setSeats(0, seats);
     }
@@ -124,17 +128,17 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
         uint256 senderBalance = balanceOf(msg.sender);
         if (senderBalance < amount) revert IChamber.InsufficientChamberBalance();
 
-        $.agentDelegation[msg.sender][tokenId] += amount;
-        $.totalAgentDelegations[msg.sender] += amount;
+        $.holderDelegation[msg.sender][tokenId] += amount;
+        $.totalHolderDelegations[msg.sender] += amount;
 
         // Validate the balance constraint one final time after updates to reduce SLOADs
-        if (senderBalance < $.totalAgentDelegations[msg.sender]) {
+        if (senderBalance < $.totalHolderDelegations[msg.sender]) {
             revert IChamber.InsufficientChamberBalance();
         }
 
         _delegate(tokenId, amount);
 
-        emit IChamber.DelegationUpdated(msg.sender, tokenId, $.agentDelegation[msg.sender][tokenId]);
+        emit IChamber.DelegationUpdated(msg.sender, tokenId, $.holderDelegation[msg.sender][tokenId]);
     }
 
     /**
@@ -147,12 +151,12 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
         if (amount == 0) revert IChamber.ZeroAmount();
 
         ChamberStorage storage $ = _getChamberStorage();
-        uint256 currentDelegation = $.agentDelegation[msg.sender][tokenId];
+        uint256 currentDelegation = $.holderDelegation[msg.sender][tokenId];
         if (currentDelegation < amount) revert IChamber.InsufficientDelegatedAmount();
 
         uint256 newDelegation = currentDelegation - amount;
-        $.agentDelegation[msg.sender][tokenId] = newDelegation;
-        $.totalAgentDelegations[msg.sender] -= amount;
+        $.holderDelegation[msg.sender][tokenId] = newDelegation;
+        $.totalHolderDelegations[msg.sender] -= amount;
 
         // Only update board if node still exists (handles evicted nodes — Fix Finding 11)
         BoardStorage storage $b = _getBoardStorage();
@@ -233,18 +237,18 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
     }
 
     /**
-     * @notice Returns the list of tokenIds to which the agent has delegated tokens and the corresponding amounts
-     * @param agent The address of the agent
+     * @notice Returns the list of tokenIds to which the holder has delegated tokens and the corresponding amounts
+     * @param holder The address holding Chamber shares that delegated voting weight
      * @return tokenIds The list of tokenIds
      * @return amounts The list of amounts delegated to each tokenId
      */
-    function getDelegations(address agent)
+    function getDelegations(address holder)
         public
         view
         override
         returns (uint256[] memory tokenIds, uint256[] memory amounts)
     {
-        if (agent == address(0)) revert IChamber.ZeroAddress();
+        if (holder == address(0)) revert IChamber.ZeroAddress();
 
         BoardStorage storage $b = _getBoardStorage();
         ChamberStorage storage $c = _getChamberStorage();
@@ -255,7 +259,7 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
         uint256[] memory tempAmounts = new uint256[]($b.size);
 
         while (tokenId != 0) {
-            uint256 amount = $c.agentDelegation[agent][tokenId];
+            uint256 amount = $c.holderDelegation[holder][tokenId];
             if (amount > 0) {
                 tempTokenIds[count] = tokenId;
                 tempAmounts[count] = amount;
@@ -279,22 +283,22 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
     }
 
     /**
-     * @notice Returns the amount delegated by a agent to a specific tokenId
-     * @param agent The address of the agent
+     * @notice Returns the amount delegated by a holder to a specific membership tokenId
+     * @param holder The delegating holder address
      * @param tokenId The token ID
      * @return amount The amount delegated
      */
-    function getAgentDelegation(address agent, uint256 tokenId) external view override returns (uint256) {
-        return _getChamberStorage().agentDelegation[agent][tokenId];
+    function getHolderDelegation(address holder, uint256 tokenId) external view override returns (uint256) {
+        return _getChamberStorage().holderDelegation[holder][tokenId];
     }
 
     /**
-     * @notice Returns the total amount delegated by a agent across all tokenIds
-     * @param agent The address of the agent
+     * @notice Returns the total amount delegated by a holder across all tokenIds
+     * @param holder The delegating holder address
      * @return amount The total amount delegated
      */
-    function getTotalAgentDelegations(address agent) external view override returns (uint256) {
-        return _getChamberStorage().totalAgentDelegations[agent];
+    function getTotalHolderDelegations(address holder) external view override returns (uint256) {
+        return _getChamberStorage().totalHolderDelegations[holder];
     }
 
     /**
@@ -343,22 +347,28 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
         nonReentrant
         isDirector(tokenId)
     {
-        if (target == address(0)) revert IChamber.ZeroAddress();
-
-        if (target == address(this)) {
-            if (data.length < 4) revert IChamber.InvalidTransaction();
-            // forge-lint: disable-next-line(unsafe-typecast)
-            bytes4 selector = bytes4(data);
-            if (selector != UPGRADE_SELECTOR) {
-                revert IChamber.InvalidTransaction();
-            }
-        }
-
-        if (value > 0 && address(this).balance < value) {
-            revert IChamber.InsufficientChamberBalance();
-        }
-
+        _validateTransaction(target, value, data);
         _submitTransaction(tokenId, target, value, data);
+        emit IChamber.TransactionSubmitted(getNextTransactionId() - 1, target, value);
+    }
+
+    /**
+     * @notice Submits a new transaction with durable proposal metadata for approval
+     * @param tokenId The tokenId submitting the transaction
+     * @param target The address to send the transaction to
+     * @param value The amount of Ether to send
+     * @param data The data to include in the transaction
+     * @param metadataURI URI or content hash describing the proposal rationale and risk context
+     */
+    function submitTransactionWithMetadata(
+        uint256 tokenId,
+        address target,
+        uint256 value,
+        bytes memory data,
+        string memory metadataURI
+    ) public override nonReentrant isDirector(tokenId) {
+        _validateTransaction(target, value, data);
+        _submitTransactionWithMetadata(tokenId, target, value, data, metadataURI);
         emit IChamber.TransactionSubmitted(getNextTransactionId() - 1, target, value);
     }
 
@@ -385,10 +395,12 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
 
     /**
      * @notice Executes a transaction if it has enough confirmations
+     * @dev Caller must re-supply the original calldata; it is verified against the stored keccak256 hash.
      * @param tokenId The tokenId executing the transaction
      * @param transactionId The ID of the transaction to execute
+     * @param data The original calldata supplied at submission time
      */
-    function executeTransaction(uint256 tokenId, uint256 transactionId)
+    function executeTransaction(uint256 tokenId, uint256 transactionId, bytes calldata data)
         public
         override
         nonReentrant
@@ -401,7 +413,7 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
         if ($w.cancelled[transactionId]) revert IWallet.TransactionAlreadyCancelled();
         if (transaction.confirmations < getQuorum()) revert IChamber.NotEnoughConfirmations();
 
-        _executeTransaction(tokenId, transactionId);
+        _executeTransaction(tokenId, transactionId, data);
         emit IChamber.TransactionExecuted(transactionId, msg.sender);
     }
 
@@ -488,6 +500,23 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
         }
     }
 
+    function _validateTransaction(address target, uint256 value, bytes memory data) internal view {
+        if (target == address(0)) revert IChamber.ZeroAddress();
+
+        if (target == address(this)) {
+            if (data.length < 4) revert IChamber.InvalidTransaction();
+            // forge-lint: disable-next-line(unsafe-typecast)
+            bytes4 selector = bytes4(data);
+            if (selector != UPGRADE_SELECTOR) {
+                revert IChamber.InvalidTransaction();
+            }
+        }
+
+        if (value > 0 && address(this).balance < value) {
+            revert IChamber.InsufficientChamberBalance();
+        }
+    }
+
     /**
      * @notice Confirms multiple transactions in a single call
      * @param tokenId The tokenId confirming the transactions
@@ -520,16 +549,24 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
 
     /**
      * @notice Executes multiple transactions in a single call if they have enough confirmations
+     * @dev _getQuorum() is cached once before the loop, saving one SLOAD per extra transaction
+     *      in the batch (Optimization 7).
+     *      Caller must re-supply original calldata for each transaction in the same order as
+     *      transactionIds; each entry is verified against its stored keccak256 hash.
      * @param tokenId The tokenId executing the transactions
      * @param transactionIds The array of transaction IDs to execute
+     * @param data The array of original calldata for each transaction (same order as transactionIds)
      */
-    function executeBatchTransactions(uint256 tokenId, uint256[] memory transactionIds)
+    function executeBatchTransactions(uint256 tokenId, uint256[] memory transactionIds, bytes[] calldata data)
         public
         override
         nonReentrant
         isDirector(tokenId)
     {
         if (transactionIds.length == 0) revert IChamber.ZeroAmount();
+        if (transactionIds.length != data.length) revert IChamber.ArrayLengthsMustMatch();
+
+        uint256 quorum = _getQuorum();
 
         WalletStorage storage $w = _getWalletStorage();
         for (uint256 i = 0; i < transactionIds.length;) {
@@ -538,9 +575,9 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
             Transaction storage transaction = $w.transactions[transactionId];
 
             if (transaction.executed) revert IWallet.TransactionAlreadyExecuted();
-            if (transaction.confirmations < getQuorum()) revert IChamber.NotEnoughConfirmations();
+            if (transaction.confirmations < quorum) revert IChamber.NotEnoughConfirmations();
 
-            _executeTransaction(tokenId, transactionId);
+            _executeTransaction(tokenId, transactionId, data[i]);
             emit IChamber.TransactionExecuted(transactionId, msg.sender);
             unchecked {
                 ++i;
@@ -633,7 +670,8 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
     }
 
     /**
-     * @notice Upgrades the Chamber implementation
+     * @notice Upgrades the Chamber implementation via `ProxyAdmin.upgradeAndCall`
+     * @dev Reverts with `NotDirector` if this contract is not the `ProxyAdmin` owner (naming is historical).
      * @param newImplementation The new implementation address
      * @param data Optional initialization data for the new implementation
      */
@@ -665,7 +703,7 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
     function _update(address from, address to, uint256 value) internal override {
         if (from != address(0) && value > 0) {
             uint256 fromBalance = balanceOf(from);
-            if (fromBalance >= value && fromBalance - value < _getChamberStorage().totalAgentDelegations[from]) {
+            if (fromBalance >= value && fromBalance - value < _getChamberStorage().totalHolderDelegations[from]) {
                 revert IChamber.ExceedsDelegatedAmount();
             }
         }
@@ -767,9 +805,14 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
         public
         view
         override(IWallet, Wallet)
-        returns (bool, uint8, address, uint256, bytes memory)
+        returns (bool, uint8, address, uint256, bytes32)
     {
         return super.getTransaction(nonce);
+    }
+
+    /// @inheritdoc IWallet
+    function getTransactionMetadata(uint256 nonce) public view override(IWallet, Wallet) returns (string memory) {
+        return super.getTransactionMetadata(nonce);
     }
 
     /**

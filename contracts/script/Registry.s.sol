@@ -2,7 +2,7 @@
 pragma solidity ^0.8.30;
 
 import {Script, console} from "forge-std/Script.sol";
-import {ChamberRegistry} from "src/ChamberRegistry.sol";
+import {Registry} from "src/Registry.sol";
 import {DeployRegistry as DeployRegistryLib} from "test/utils/DeployRegistry.sol";
 
 contract DeployRegistry is Script {
@@ -18,7 +18,7 @@ contract DeployRegistry is Script {
 
         vm.startBroadcast();
 
-        ChamberRegistry registry = DeployRegistryLib.deploy(admin);
+        Registry registry = DeployRegistryLib.deploy(admin);
         console.log("Registry deployed at:", address(registry));
 
         vm.stopBroadcast();

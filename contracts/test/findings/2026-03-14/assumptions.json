@@ -3,7 +3,7 @@
   "admin_assumptions": [
     {
       "id": "AA-01",
-      "assumption": "DEFAULT_ADMIN_ROLE on ChamberRegistry is held by a trusted EOA or multisig",
+      "assumption": "DEFAULT_ADMIN_ROLE on Registry is held by a trusted EOA or multisig",
       "risk": "Admin can update implementation address for future Chamber deployments",
       "severity": "HIGH"
     },

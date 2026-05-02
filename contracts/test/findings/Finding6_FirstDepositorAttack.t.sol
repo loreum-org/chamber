@@ -2,7 +2,7 @@
 pragma solidity ^0.8.30;
 
 import {Test, console} from "forge-std/Test.sol";
-import {ChamberRegistry} from "src/ChamberRegistry.sol";
+import {Registry} from "src/Registry.sol";
 import {Chamber} from "src/Chamber.sol";
 import {IChamber} from "src/interfaces/IChamber.sol";
 import {MockERC20} from "test/mock/MockERC20.sol";
@@ -15,7 +15,7 @@ import {DeployRegistry} from "test/utils/DeployRegistry.sol";
  *         With 1000 virtual shares, the donation attack becomes economically infeasible.
  */
 contract FirstDepositorAttackTest is Test {
-    ChamberRegistry public registry;
+    Registry public registry;
     MockERC20 public token;
     MockERC721 public nft;
     address public admin = makeAddr("admin");

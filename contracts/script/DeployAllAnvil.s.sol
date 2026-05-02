@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.30;
+pragma solidity ^0.8.30;
 
 import {Script, console} from "forge-std/Script.sol";
-import {ChamberRegistry} from "src/ChamberRegistry.sol";
+import {Registry} from "src/Registry.sol";
 import {DeployRegistry as DeployRegistryLib} from "test/utils/DeployRegistry.sol";
 import {MockERC20} from "test/mock/MockERC20.sol";
 import {MockERC721} from "test/mock/MockERC721.sol";
@@ -29,7 +29,7 @@ contract DeployAllAnvil is Script {
         vm.startBroadcast();
 
         // Deploy Registry
-        ChamberRegistry registry = DeployRegistryLib.deploy(admin);
+        Registry registry = DeployRegistryLib.deploy(admin);
         console.log("Registry deployed at:", address(registry));
 
         // Deploy MockERC20
@@ -50,13 +50,13 @@ contract DeployAllAnvil is Script {
         // Write deployment addresses to JSON file for the app to consume
         string memory json = vm.serializeAddress("deployment", "registry", address(registry));
         json = vm.serializeAddress("deployment", "chamberImplementation", registry.implementation());
-        json = vm.serializeAddress("deployment", "agentImplementation", registry.agentImplementation());
         json = vm.serializeAddress("deployment", "mockERC20", address(mockERC20));
         json = vm.serializeAddress("deployment", "mockERC721", address(mockERC721));
         json = vm.serializeUint("deployment", "chainId", block.chainid);
         json = vm.serializeUint("deployment", "timestamp", block.timestamp);
 
-        vm.writeJson(json, "./contracts/deployments.json");
+        // Path is relative to Foundry project root (the `contracts/` dir when using contracts/Makefile).
+        vm.writeJson(json, "./deployments.json");
         console.log("Deployment addresses written to contracts/deployments.json");
     }
 }

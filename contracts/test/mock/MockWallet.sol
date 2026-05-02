@@ -12,8 +12,8 @@ contract MockWallet is Wallet {
         _confirmTransaction(tokenId, transactionId);
     }
 
-    function executeTransaction(uint256 tokenId, uint256 transactionId) public {
-        _executeTransaction(tokenId, transactionId);
+    function executeTransaction(uint256 tokenId, uint256 transactionId, bytes calldata data) public {
+        _executeTransaction(tokenId, transactionId, data);
     }
 
     function revokeConfirmation(uint256 tokenId, uint256 transactionId) public {

@@ -37,8 +37,8 @@
     },
     {
       "id": "REGISTRY_ADMIN",
-      "defined_by": "ChamberRegistry.ADMIN_ROLE / DEFAULT_ADMIN_ROLE",
-      "description": "Admin of the ChamberRegistry. Set at initialization.",
+      "defined_by": "Registry.ADMIN_ROLE / DEFAULT_ADMIN_ROLE",
+      "description": "Admin of the Registry. Set at initialization.",
       "privileges": ["AccessControl role management"],
       "how_acquired": "Set at initialize()"
     },
@@ -61,7 +61,7 @@
       "defined_by": "AgentIdentityRegistry.REGISTRAR_ROLE",
       "description": "Can mint Agent Identity NFTs.",
       "privileges": ["registerAgent"],
-      "how_acquired": "Granted by DEFAULT_ADMIN_ROLE; ChamberRegistry is granted this role"
+      "how_acquired": "Granted by DEFAULT_ADMIN_ROLE; Registry is granted this role"
     }
   ],
   "modifiers": [

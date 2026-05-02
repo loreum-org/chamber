@@ -30,9 +30,11 @@ interface TreasuryOverviewProps {
   chamberAddress: `0x${string}`
   chamberInfo: ReturnType<typeof useChamberInfo>
   userBalance: bigint | undefined
+  /** Total shares the user has delegated (locked, non-withdrawable) */
+  totalDelegated?: bigint
 }
 
-export default function TreasuryOverview({ chamberAddress, chamberInfo, userBalance }: TreasuryOverviewProps) {
+export default function TreasuryOverview({ chamberAddress, chamberInfo, userBalance, totalDelegated = 0n }: TreasuryOverviewProps) {
   const { address: userAddress } = useAccount()
   const [depositAmount, setDepositAmount] = useState('')
   const [withdrawAmount, setWithdrawAmount] = useState('')
@@ -301,130 +303,137 @@ export default function TreasuryOverview({ chamberAddress, chamberInfo, userBala
         </motion.div>
       </div>
 
-      {/* Deposit / Withdraw */}
-      <div className="grid md:grid-cols-2 gap-5">
+      {/* Deposit / Withdraw — matched layout, equal-height columns */}
+      <div className="grid md:grid-cols-2 gap-5 md:items-stretch">
         {/* Deposit */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="panel p-6"
+          className="panel p-6 flex flex-col h-full"
         >
-          <div className="flex items-center gap-3 mb-6">
-            <div className="icon-container-emerald">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="icon-container-emerald shrink-0">
               <FiArrowDownCircle className="w-5 h-5" />
             </div>
-            <div>
-              <h3 className="font-heading font-semibold text-slate-100">Deposit</h3>
-              <p className="text-slate-500 text-xs">Add assets to receive shares</p>
+            <div className="min-w-0">
+              <h3 className="font-heading font-semibold text-slate-100 leading-tight">Deposit</h3>
+              <p className="text-slate-500 text-xs mt-0.5">Add assets to receive shares</p>
             </div>
           </div>
 
-          <div className="space-y-4">
-            {/* Token Balance Display */}
-            {tokenBalance !== undefined && (
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-500">Your {assetSymbol as string || 'Token'} Balance:</span>
-                <span className="text-slate-300 font-mono">
-                  {parseFloat(formatUnits(tokenBalance, 18)).toLocaleString(undefined, { maximumFractionDigits: 4 })} {assetSymbol as string || ''}
+          <div className="flex flex-col flex-1 min-h-0 space-y-4">
+            <div className="rounded-xl border border-slate-700/50 bg-slate-950/40 px-3.5 py-3">
+              <div className="flex items-center justify-between gap-3 text-sm">
+                <span className="text-slate-500 shrink-0">Wallet balance</span>
+                <span className="text-slate-200 font-mono text-right tabular-nums">
+                  {tokenBalance !== undefined
+                    ? `${parseFloat(formatUnits(tokenBalance, 18)).toLocaleString(undefined, { maximumFractionDigits: 4 })} ${assetSymbol as string || ''}`
+                    : '—'}
                 </span>
-              </div>
-            )}
-
-            <div>
-              <label className="block text-slate-300 text-sm font-medium mb-2">
-                Amount
-              </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  placeholder="0.00"
-                  className="input pr-20"
-                  value={depositAmount}
-                  onChange={(e) => setDepositAmount(e.target.value)}
-                  min="0"
-                  step="any"
-                />
-                <button
-                  onClick={() => tokenBalance && setDepositAmount(formatUnits(tokenBalance, 18))}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-cyan-400 hover:text-cyan-300 text-sm font-medium"
-                >
-                  MAX
-                </button>
               </div>
             </div>
 
-            {/* Allowance Status */}
-            {depositAmount && (
-              <div className="flex items-center gap-2 text-sm">
-                {needsApproval ? (
-                  <>
-                    <FiUnlock className="w-4 h-4 text-amber-400" />
-                    <span className="text-amber-400">Approval required before deposit</span>
-                  </>
-                ) : allowance !== undefined && depositAmountBigInt > 0n ? (
-                  <>
-                    <FiCheck className="w-4 h-4 text-emerald-400" />
-                    <span className="text-emerald-400">Approved</span>
-                  </>
-                ) : null}
-              </div>
-            )}
-
-            {/* Simulation Error Display */}
-            {depositAmount && !needsApproval && depositSimError && (
-              <div className="flex items-start gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/30">
-                <FiAlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
-                <div className="text-red-400 text-sm">
-                  <span className="font-medium">Transaction will fail: </span>
-                  {getErrorMessage(depositSimError)}
+            <div className="flex-1 min-h-0 flex flex-col space-y-4">
+              <div>
+                <label className="block text-slate-300 text-sm font-medium mb-2">Amount</label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    placeholder="0.00"
+                    className="input pr-20"
+                    value={depositAmount}
+                    onChange={(e) => setDepositAmount(e.target.value)}
+                    min="0"
+                    step="any"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => tokenBalance && setDepositAmount(formatUnits(tokenBalance, 18))}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-accent-400 hover:text-accent-300 text-sm font-medium"
+                  >
+                    MAX
+                  </button>
                 </div>
               </div>
-            )}
 
-            {/* Approve or Deposit Button */}
-            {needsApproval ? (
-              <button
-                onClick={handleApprove}
-                disabled={isApproving || isApproveConfirming}
-                className="btn btn-secondary w-full border-amber-500/30 hover:border-amber-500/50"
-              >
-                {isApproving || isApproveConfirming ? (
-                  <>
-                    <FiLoader className="w-4 h-4 animate-spin" />
-                    {isApproving ? 'Confirm...' : 'Approving...'}
-                  </>
+              <div className="min-h-[2.75rem] flex items-center">
+                {depositAmount ? (
+                  <div className="flex items-center gap-2 text-sm">
+                    {needsApproval ? (
+                      <>
+                        <FiUnlock className="w-4 h-4 text-amber-400 shrink-0" />
+                        <span className="text-amber-400/95">Approval required before deposit</span>
+                      </>
+                    ) : allowance !== undefined && depositAmountBigInt > 0n ? (
+                      <>
+                        <FiCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                        <span className="text-emerald-400/95">Allowance sufficient</span>
+                      </>
+                    ) : null}
+                  </div>
                 ) : (
-                  <>
-                    <FiUnlock className="w-4 h-4" />
-                    Approve Token
-                  </>
+                  <span className="text-xs text-slate-600">Enter an amount to validate allowance</span>
                 )}
-              </button>
-            ) : (
-              <button
-                onClick={handleDeposit}
-                disabled={isDepositing || isDepositConfirming || !depositAmount || !!(depositAmount && !isDepositValid && !isDepositSimulating)}
-                className="btn btn-primary w-full"
-              >
-                {isDepositing || isDepositConfirming ? (
-                  <>
-                    <FiLoader className="w-4 h-4 animate-spin" />
-                    {isDepositing ? 'Confirm...' : 'Processing...'}
-                  </>
-                ) : isDepositSimulating ? (
-                  <>
-                    <FiLoader className="w-4 h-4 animate-spin" />
-                    Validating...
-                  </>
-                ) : (
-                  <>
-                    <FiArrowDownCircle className="w-4 h-4" />
-                    Deposit
-                  </>
-                )}
-              </button>
-            )}
+              </div>
+
+              {depositAmount && !needsApproval && depositSimError && (
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/30">
+                  <FiAlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+                  <div className="text-red-400 text-sm">
+                    <span className="font-medium">Transaction will fail: </span>
+                    {getErrorMessage(depositSimError)}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-auto pt-1 space-y-3">
+              {needsApproval ? (
+                <button
+                  type="button"
+                  onClick={handleApprove}
+                  disabled={isApproving || isApproveConfirming}
+                  className="btn w-full border border-amber-500/40 bg-amber-600/85 text-white hover:bg-amber-500 shadow-sm"
+                >
+                  {isApproving || isApproveConfirming ? (
+                    <>
+                      <FiLoader className="w-4 h-4 animate-spin" />
+                      {isApproving ? 'Confirm...' : 'Approving...'}
+                    </>
+                  ) : (
+                    <>
+                      <FiUnlock className="w-4 h-4" />
+                      Approve token
+                    </>
+                  )}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleDeposit}
+                  disabled={isDepositing || isDepositConfirming || !depositAmount || !!(depositAmount && !isDepositValid && !isDepositSimulating)}
+                  className="btn btn-primary w-full"
+                >
+                  {isDepositing || isDepositConfirming ? (
+                    <>
+                      <FiLoader className="w-4 h-4 animate-spin" />
+                      {isDepositing ? 'Confirm...' : 'Processing...'}
+                    </>
+                  ) : isDepositSimulating ? (
+                    <>
+                      <FiLoader className="w-4 h-4 animate-spin" />
+                      Validating...
+                    </>
+                  ) : (
+                    <>
+                      <FiArrowDownCircle className="w-4 h-4" />
+                      Deposit
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
           </div>
         </motion.div>
 
@@ -433,83 +442,121 @@ export default function TreasuryOverview({ chamberAddress, chamberInfo, userBala
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="panel p-6"
+          className="panel p-6 flex flex-col h-full"
         >
-          <div className="flex items-center gap-3 mb-6">
-            <div className="icon-container bg-red-500/15 text-red-400">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="icon-container-rose shrink-0">
               <FiArrowUpCircle className="w-5 h-5" />
             </div>
-            <div>
-              <h3 className="font-heading font-semibold text-slate-100">Withdraw</h3>
-              <p className="text-slate-500 text-xs">Burn shares to receive assets</p>
+            <div className="min-w-0">
+              <h3 className="font-heading font-semibold text-slate-100 leading-tight">Withdraw</h3>
+              <p className="text-slate-500 text-xs mt-0.5">Burn shares to receive assets</p>
             </div>
           </div>
 
-          <div className="space-y-4">
-            <div>
-              <label className="block text-slate-300 text-sm font-medium mb-2">
-                Amount
-              </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  placeholder="0.00"
-                  className="input pr-20"
-                  value={withdrawAmount}
-                  onChange={(e) => setWithdrawAmount(e.target.value)}
-                  min="0"
-                  step="any"
-                />
-                <button
-                  onClick={() => userBalance && setWithdrawAmount(formatUnits(userBalance, 18))}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-cyan-400 hover:text-cyan-300 text-sm font-medium"
-                >
-                  MAX
-                </button>
+          <div className="flex flex-col flex-1 min-h-0 space-y-4">
+            <div className="rounded-xl border border-slate-700/50 bg-slate-950/40 px-3.5 py-3">
+              <div className="flex items-center justify-between gap-3 text-sm">
+                <span className="text-slate-500 shrink-0">Withdrawable</span>
+                <span className="text-slate-200 font-mono text-right tabular-nums">
+                  {userBalance !== undefined
+                    ? `${parseFloat(formatUnits(userBalance > totalDelegated ? userBalance - totalDelegated : 0n, 18)).toFixed(4)} ${chamberInfo.symbol || ''}`
+                    : '—'}
+                </span>
               </div>
+              {totalDelegated > 0n && userBalance !== undefined && (
+                <p className="mt-2.5 text-xs leading-relaxed text-amber-200/90 border-l-2 border-amber-500/45 pl-2.5">
+                  <span className="font-medium text-amber-300">
+                    {parseFloat(formatUnits(totalDelegated, 18)).toFixed(4)} {chamberInfo.symbol || 'shares'} delegated
+                  </span>
+                  <span className="text-amber-200/75"> — locked until you undelegate.</span>
+                </p>
+              )}
             </div>
 
-            {/* Simulation Error Display */}
-            {withdrawAmount && withdrawSimError && (
-              <div className="flex items-start gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/30">
-                <FiAlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
-                <div className="text-red-400 text-sm">
-                  <span className="font-medium">Transaction will fail: </span>
-                  {getErrorMessage(withdrawSimError)}
+            <div className="flex-1 min-h-0 flex flex-col space-y-4">
+              <div>
+                <label className="block text-slate-300 text-sm font-medium mb-2">Amount</label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    placeholder="0.00"
+                    className="input pr-20"
+                    value={withdrawAmount}
+                    onChange={(e) => setWithdrawAmount(e.target.value)}
+                    min="0"
+                    step="any"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (userBalance === undefined) return
+                      const withdrawable = userBalance > totalDelegated ? userBalance - totalDelegated : 0n
+                      setWithdrawAmount(formatUnits(withdrawable, 18))
+                    }}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-accent-400 hover:text-accent-300 text-sm font-medium"
+                  >
+                    MAX
+                  </button>
                 </div>
               </div>
-            )}
 
-            <button
-              onClick={handleWithdraw}
-              disabled={isWithdrawing || isWithdrawConfirming || !withdrawAmount || !!(withdrawAmount && !isWithdrawValid && !isWithdrawSimulating)}
-              className="btn btn-secondary w-full border-red-500/30 hover:border-red-500/50 hover:text-red-400"
-            >
-              {isWithdrawing || isWithdrawConfirming ? (
-                <>
-                  <FiLoader className="w-4 h-4 animate-spin" />
-                  {isWithdrawing ? 'Confirm...' : 'Processing...'}
-                </>
-              ) : isWithdrawSimulating ? (
-                <>
-                  <FiLoader className="w-4 h-4 animate-spin" />
-                  Validating...
-                </>
-              ) : (
-                <>
-                  <FiArrowUpCircle className="w-4 h-4" />
-                  Withdraw
-                </>
+              <div className="min-h-[2.75rem] flex items-center">
+                {withdrawAmount ? (
+                  <span className="text-xs text-slate-500">
+                    {totalDelegated > 0n
+                      ? 'Only withdrawable shares can be burned for assets.'
+                      : 'Shares will be redeemed for underlying assets.'}
+                  </span>
+                ) : (
+                  <span className="text-xs text-slate-600">Enter an amount to simulate withdrawal</span>
+                )}
+              </div>
+
+              {withdrawAmount && withdrawSimError && (
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/30">
+                  <FiAlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+                  <div className="text-red-400 text-sm">
+                    <span className="font-medium">Transaction will fail: </span>
+                    {getErrorMessage(withdrawSimError)}
+                  </div>
+                </div>
               )}
-            </button>
+            </div>
+
+            <div className="mt-auto pt-1">
+              <button
+                type="button"
+                onClick={handleWithdraw}
+                disabled={isWithdrawing || isWithdrawConfirming || !withdrawAmount || !!(withdrawAmount && !isWithdrawValid && !isWithdrawSimulating)}
+                className="btn w-full border border-rose-500/40 bg-rose-600/90 text-white hover:bg-rose-500 shadow-sm disabled:opacity-50"
+              >
+                {isWithdrawing || isWithdrawConfirming ? (
+                  <>
+                    <FiLoader className="w-4 h-4 animate-spin" />
+                    {isWithdrawing ? 'Confirm...' : 'Processing...'}
+                  </>
+                ) : isWithdrawSimulating ? (
+                  <>
+                    <FiLoader className="w-4 h-4 animate-spin" />
+                    Validating...
+                  </>
+                ) : (
+                  <>
+                    <FiArrowUpCircle className="w-4 h-4" />
+                    Withdraw
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </motion.div>
       </div>
 
       {/* Info Box */}
-      <div className="panel p-6 bg-cyan-500/5 border-cyan-500/20">
+      <div className="panel p-6 bg-accent-500/5 border-accent-500/20">
         <div className="flex items-start gap-4">
-          <FiAlertCircle className="w-5 h-5 text-cyan-400 flex-shrink-0 mt-0.5" />
+          <FiAlertCircle className="w-5 h-5 text-accent-400 flex-shrink-0 mt-0.5" />
           <div>
             <h4 className="font-medium text-slate-100 mb-1">About ERC4626 Vaults</h4>
             <p className="text-slate-400 text-sm leading-relaxed">

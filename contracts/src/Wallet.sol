@@ -1,31 +1,45 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.30;
+pragma solidity ^0.8.30;
 
 import {IWallet} from "./interfaces/IWallet.sol";
 
 /**
  * @title Wallet
+ * @author xhad, Loreum DAO LLC
  * @notice Abstract contract implementing multisig transaction management
  * @dev Provides core functionality for submitting, confirming, and executing transactions
- *      with configurable quorum requirements
+ *      with configurable quorum requirements.
+ *
+ * Gas optimization — hash-only calldata storage:
+ *   Transaction.data (formerly dynamic `bytes`) is replaced with `bytes32 dataHash`.
+ *   At submission the keccak256 of the calldata is stored (fixed 1 slot vs. 20k per 32 bytes
+ *   of raw calldata). At execution the caller re-supplies the original bytes; the contract
+ *   verifies keccak256(data) == dataHash before forwarding to the target.
+ *   This matches the pattern used by Gnosis Safe.
+ *
+ * BREAKING: executeTransaction and executeBatchTransactions now require a `data` / `data[]`
+ *           parameter at call time. Callers must persist the original calldata (e.g. via the
+ *           SubmitTransaction event or off-chain storage) and re-supply it at execution.
  */
 abstract contract Wallet {
     /**
      * @notice Structure representing a transaction in the wallet
-     * @dev Packing: `executed` (bool, 1 byte) + `confirmations` (uint8, 1 byte) + `target` (address, 20 bytes)
-     *      = 22 bytes in slot 0. `value` and `data` each occupy their own slots.
+     * @dev Slot packing: executed (bool, 1 byte) + confirmations (uint8, 1 byte) +
+     *      target (address, 20 bytes) = 22 bytes in slot 0. value fills slot 1.
+     *      dataHash (bytes32) fills slot 2 — replaces the former dynamic `bytes data` field
+     *      which previously cost 20k SSTORE per 32-byte word of calldata.
      * @param executed Whether the transaction has been executed
      * @param confirmations Number of confirmations received for this transaction
      * @param target The destination address for the transaction
      * @param value The amount of ETH to send with the transaction
-     * @param data The calldata to be executed
+     * @param dataHash keccak256 of the original calldata; verified at execution time
      */
     struct Transaction {
         bool executed;
         uint8 confirmations;
         address target;
         uint256 value;
-        bytes data;
+        bytes32 dataHash;
     }
 
     /**
@@ -34,6 +48,7 @@ abstract contract Wallet {
      */
     struct WalletStorage {
         Transaction[] transactions;
+        mapping(uint256 nonce => string metadataURI) transactionMetadataURI;
         mapping(uint256 nonce => mapping(uint256 tokenId => bool)) isConfirmed;
         mapping(uint256 nonce => bool) cancelled;
         mapping(uint256 nonce => uint8) cancelConfirmations;
@@ -52,7 +67,6 @@ abstract contract Wallet {
     /// @dev Events and errors are defined in IWallet interface
 
     /// @notice Modifier to check if a transaction exists
-    /// @param nonce The transaction index to check
     modifier txExists(uint256 nonce) {
         _txExists(nonce);
         _;
@@ -63,7 +77,6 @@ abstract contract Wallet {
     }
 
     /// @notice Modifier to check if a transaction has not been executed
-    /// @param nonce The transaction index to check
     modifier notExecuted(uint256 nonce) {
         _notExecuted(nonce);
         _;
@@ -84,8 +97,6 @@ abstract contract Wallet {
     }
 
     /// @notice Modifier to check if a transaction has not been confirmed by a specific tokenId
-    /// @param tokenId The token ID to check confirmation for
-    /// @param nonce The transaction index to check
     modifier notConfirmed(uint256 tokenId, uint256 nonce) {
         _notConfirmed(tokenId, nonce);
         _;
@@ -100,19 +111,45 @@ abstract contract Wallet {
      * @param tokenId The token ID submitting the transaction
      * @param target The destination address for the transaction
      * @param value The amount of ETH to send
-     * @param data The calldata to execute
+     * @param data The calldata to execute (stored as keccak256 hash only)
      */
     function _submitTransaction(uint256 tokenId, address target, uint256 value, bytes memory data) internal {
+        _submitTransactionWithMetadata(tokenId, target, value, data, "");
+    }
+
+    /**
+     * @notice Submits a new transaction with durable proposal metadata and auto-confirms for the submitter
+     * @param tokenId The token ID submitting the transaction
+     * @param target The destination address for the transaction
+     * @param value The amount of ETH to send
+     * @param data The calldata to execute (stored as keccak256 hash only)
+     * @param metadataURI URI or content hash describing the proposal rationale and risk context
+     */
+    function _submitTransactionWithMetadata(
+        uint256 tokenId,
+        address target,
+        uint256 value,
+        bytes memory data,
+        string memory metadataURI
+    ) internal {
         WalletStorage storage $ = _getWalletStorage();
         uint256 nonce = $.transactions.length;
 
-        $.transactions.push(Transaction({target: target, value: value, data: data, executed: false, confirmations: 0}));
+        bytes32 dataHash = keccak256(data);
+        $.transactions.push(
+            Transaction({target: target, value: value, dataHash: dataHash, executed: false, confirmations: 0})
+        );
+        if (bytes(metadataURI).length != 0) {
+            $.transactionMetadataURI[nonce] = metadataURI;
+            emit IWallet.ProposalMetadataSet(nonce, metadataURI);
+        }
         _confirmTransaction(tokenId, nonce);
         emit IWallet.SubmitTransaction(tokenId, nonce, target, value, data);
     }
 
     /**
      * @notice Confirms a transaction for a specific token ID
+     * @dev Rejects cancelled nonces via `notCancelled` so confirmations cannot accrue after cancel.
      * @param tokenId The token ID confirming the transaction
      * @param nonce The transaction index to confirm
      */
@@ -120,6 +157,7 @@ abstract contract Wallet {
         internal
         txExists(nonce)
         notExecuted(nonce)
+        notCancelled(nonce)
         notConfirmed(tokenId, nonce)
     {
         WalletStorage storage $ = _getWalletStorage();
@@ -179,11 +217,13 @@ abstract contract Wallet {
 
     /**
      * @notice Executes a confirmed transaction
-     * @dev Uses CEI pattern - state updated before external call
+     * @dev Uses CEI pattern — state updated before external call.
+     *      Verifies keccak256(data) == stored dataHash before forwarding.
      * @param tokenId The token ID executing the transaction
      * @param nonce The transaction index to execute
+     * @param data The original calldata (must match the stored keccak256 hash)
      */
-    function _executeTransaction(uint256 tokenId, uint256 nonce)
+    function _executeTransaction(uint256 tokenId, uint256 nonce, bytes calldata data)
         internal
         txExists(nonce)
         notExecuted(nonce)
@@ -193,10 +233,10 @@ abstract contract Wallet {
         Transaction storage transaction = $.transactions[nonce];
 
         if (transaction.target == address(0)) revert IWallet.InvalidTarget();
+        if (keccak256(data) != transaction.dataHash) revert IWallet.DataHashMismatch();
 
         address target = transaction.target;
         uint256 value = transaction.value;
-        bytes memory data = transaction.data;
 
         // CEI pattern: Update state BEFORE external call to prevent reentrancy
         transaction.executed = true;
@@ -225,17 +265,30 @@ abstract contract Wallet {
      * @return confirmations Number of confirmations
      * @return target The target address
      * @return value The ETH value
-     * @return data The calldata
+     * @return dataHash keccak256 of the original calldata
      */
     function getTransaction(uint256 nonce)
         public
         view
         virtual
-        returns (bool executed, uint8 confirmations, address target, uint256 value, bytes memory data)
+        returns (bool executed, uint8 confirmations, address target, uint256 value, bytes32 dataHash)
     {
         Transaction storage transaction = _getWalletStorage().transactions[nonce];
-        return
-            (transaction.executed, transaction.confirmations, transaction.target, transaction.value, transaction.data);
+        return (
+            transaction.executed,
+            transaction.confirmations,
+            transaction.target,
+            transaction.value,
+            transaction.dataHash
+        );
+    }
+
+    /**
+     * @notice Returns durable metadata URI or content hash for a transaction proposal
+     * @param nonce The index of the transaction to retrieve metadata for
+     */
+    function getTransactionMetadata(uint256 nonce) public view virtual txExists(nonce) returns (string memory) {
+        return _getWalletStorage().transactionMetadataURI[nonce];
     }
 
     /**

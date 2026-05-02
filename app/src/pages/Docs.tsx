@@ -9,8 +9,6 @@ import { motion, AnimatePresence } from 'framer-motion'
 // Import all markdown files in the docs folder
 const docFiles = import.meta.glob('../docs/**/*.md', { as: 'raw', eager: true })
 
-console.log('Available doc files:', Object.keys(docFiles))
-
 interface DocNode {
   name: string
   path: string
@@ -103,7 +101,7 @@ const NavItem = ({ node, level, activePath }: { node: DocNode; level: number; ac
       <div
         className={`flex items-center gap-2 py-1.5 px-3 rounded-lg cursor-pointer transition-colors ${
           isActive 
-            ? 'bg-cyan-500/10 text-cyan-400' 
+            ? 'bg-accent-500/10 text-accent-400' 
             : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/50'
         }`}
         style={{ paddingLeft: `${level * 12 + 12}px` }}
@@ -187,7 +185,7 @@ export default function Docs() {
 
     const doc = docFiles[targetKey]
     if (!doc) {
-      return `# 404 - Document Not Found\n\nCould not find document: ${activePath}\n\nAvailable keys: ${keys.join(', ')}`
+      return `# Document Not Found\n\nThe requested document could not be found.`
     }
     
     // With as: 'raw', doc should be the string content directly
@@ -196,16 +194,16 @@ export default function Docs() {
 
   return (
     <div className="flex flex-col md:flex-row gap-8 min-h-[calc(100vh-12rem)]">
-      {/* Debug info - hidden but searchable in DOM */}
-      <div className="sr-only">Debug: path={activePath} content={content?.substring(0, 100)}</div>
       {/* Sidebar */}
       <aside className="w-full md:w-64 flex-shrink-0">
-        <div className="text-[10px] text-slate-500 mb-2">
-          Debug: {keys.length} files found
-        </div>
+        {import.meta.env.DEV && (
+          <div className="text-[10px] text-slate-500 mb-2">
+            Debug: {keys.length} files found
+          </div>
+        )}
         <div className="sticky top-24 panel p-4 max-h-[calc(100vh-8rem)] overflow-y-auto scroll-container">
           <div className="flex items-center gap-2 px-3 mb-4 text-slate-100 font-semibold">
-            <FiFolder className="text-cyan-500" />
+            <FiFolder className="text-accent-500" />
             <span>Documentation</span>
           </div>
           <div className="space-y-1">
@@ -224,7 +222,7 @@ export default function Docs() {
           animate={{ opacity: 1, y: 0 }}
           className="panel p-8 md:p-12"
         >
-          <div className="prose prose-invert prose-cyan max-w-none prose-headings:font-heading prose-headings:font-bold prose-h1:text-4xl prose-h1:mb-8 prose-h2:text-2xl prose-h2:mt-12 prose-h2:mb-4 prose-h3:text-xl prose-h3:mt-8 prose-h3:mb-3 prose-p:text-slate-400 prose-p:leading-relaxed prose-a:text-cyan-400 prose-a:no-underline hover:prose-a:underline prose-strong:text-slate-100 prose-code:text-cyan-300 prose-code:bg-slate-800/50 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none prose-ul:list-disc prose-ol:list-decimal">
+          <div className="prose prose-invert prose-slate max-w-none prose-headings:font-heading prose-headings:font-bold prose-h1:text-4xl prose-h1:mb-8 prose-h2:text-2xl prose-h2:mt-12 prose-h2:mb-4 prose-h3:text-xl prose-h3:mt-8 prose-h3:mb-3 prose-p:text-slate-400 prose-p:leading-relaxed prose-a:text-accent-400 prose-a:no-underline hover:prose-a:underline prose-strong:text-slate-100 prose-code:text-accent-300 prose-code:bg-slate-800/50 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none prose-ul:list-disc prose-ol:list-decimal">
             <div className="hidden">Debug: content length {content.length}</div>
             <ReactMarkdown 
               remarkPlugins={[remarkGfm]}
@@ -239,7 +237,7 @@ export default function Docs() {
                 h2({ children }) {
                   return (
                     <h2 className="text-2xl font-heading font-bold text-slate-100 mt-12 mb-4 flex items-center gap-3">
-                      <span className="w-1.5 h-6 bg-cyan-500 rounded-full" />
+                      <span className="w-1.5 h-6 bg-accent-500 rounded-full" />
                       {children}
                     </h2>
                   )
@@ -267,7 +265,7 @@ export default function Docs() {
                   return (
                     <a 
                       href={href} 
-                      className="text-cyan-400 hover:text-cyan-300 transition-colors underline decoration-cyan-500/30 underline-offset-4"
+                      className="text-accent-400 hover:text-accent-300 transition-colors underline decoration-accent-500/30 underline-offset-4"
                       target={href?.startsWith('http') ? '_blank' : undefined}
                       rel={href?.startsWith('http') ? 'noopener noreferrer' : undefined}
                     >
@@ -277,7 +275,7 @@ export default function Docs() {
                 },
                 blockquote({ children }) {
                   return (
-                    <blockquote className="border-l-4 border-cyan-500/50 bg-cyan-500/5 px-6 py-4 rounded-r-xl my-8 italic text-slate-300">
+                    <blockquote className="border-l-4 border-accent-500/50 bg-accent-500/5 px-6 py-4 rounded-r-xl my-8 italic text-slate-300">
                       {children}
                     </blockquote>
                   )
@@ -300,7 +298,7 @@ export default function Docs() {
                           </span>
                         </div>
                         <pre className="p-4 overflow-x-auto scroll-container">
-                          <code className="text-sm text-cyan-100 font-mono" {...props}>
+                          <code className="text-sm text-accent-100 font-mono" {...props}>
                             {children}
                           </code>
                         </pre>
@@ -308,7 +306,7 @@ export default function Docs() {
                     )
                   }
                   return (
-                    <code className="bg-slate-800/80 text-cyan-300 px-1.5 py-0.5 rounded text-sm font-mono border border-slate-700/30" {...props}>
+                    <code className="bg-slate-800/80 text-accent-300 px-1.5 py-0.5 rounded text-sm font-mono border border-slate-700/30" {...props}>
                       {children}
                     </code>
                   )

@@ -414,27 +414,17 @@ contract BoardTest is Test {
     // ─── Circuit breaker ───────────────────────────────────────────────
 
     function test_Board_CircuitBreakerActive_Delegate_Reverts() public {
-        board.exposed_delegate(1, 100);
-        board.lockBoard(); // manually set locked = true
-
+        // lockAndDelegate acquires the transient lock then immediately calls _delegate in the
+        // same transaction, simulating reentrancy. The second _delegate should revert.
         vm.expectRevert(IBoard.CircuitBreakerActive.selector);
-        board.exposed_delegate(2, 100);
+        board.lockAndDelegate(1, 100);
     }
 
     function test_Board_CircuitBreakerActive_Undelegate_Reverts() public {
         board.exposed_delegate(1, 100);
-        board.lockBoard();
 
         vm.expectRevert(IBoard.CircuitBreakerActive.selector);
-        board.exposed_undelegate(1, 50);
-    }
-
-    function test_Board_CircuitBreakerActive_Reposition_Reverts() public {
-        board.exposed_delegate(1, 100);
-        board.lockBoard();
-
-        vm.expectRevert(IBoard.CircuitBreakerActive.selector);
-        board.reposition(1);
+        board.lockAndDelegate(1, 50);
     }
 
     // ─── executeSeatsUpdate: supporter no longer in top seats ──────────

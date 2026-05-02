@@ -18,8 +18,8 @@ contract BoardFuzzTest is Test {
 
     /// @notice Fuzz test for inserting nodes with random tokenIds and amounts
     function testFuzz_Insert(uint256 tokenId, uint256 amount) public {
-        // Bound inputs to reasonable values
-        tokenId = bound(tokenId, 1, type(uint256).max);
+        // Bound inputs to reasonable values (tokenId must fit in uint128 per Node packing)
+        tokenId = bound(tokenId, 1, type(uint128).max);
         amount = bound(amount, 1, MAX_AMOUNT);
 
         // Skip if already exists
@@ -37,12 +37,12 @@ contract BoardFuzzTest is Test {
 
     /// @notice Fuzz test for inserting multiple nodes and verifying sorted order
     function testFuzz_InsertMultiple(uint256[10] memory tokenIds, uint256[10] memory amounts) public {
-        // Bound inputs
+        // Bound inputs (tokenId must fit in uint128 per Node packing)
         for (uint256 i = 0; i < 10; i++) {
-            tokenIds[i] = bound(tokenIds[i], 1, type(uint256).max);
+            tokenIds[i] = bound(tokenIds[i], 1, type(uint128).max);
             amounts[i] = bound(amounts[i], 1, MAX_AMOUNT);
 
-            // Ensure unique tokenIds
+            // Ensure unique tokenIds, wrapping within uint128 range
             bool unique = false;
             while (!unique) {
                 unique = true;
@@ -53,9 +53,7 @@ contract BoardFuzzTest is Test {
                 }
                 for (uint256 j = 0; j < i; j++) {
                     if (tokenIds[i] == tokenIds[j]) {
-                        unchecked {
-                            tokenIds[i]++;
-                        }
+                        tokenIds[i] = tokenIds[i] < type(uint128).max ? tokenIds[i] + 1 : 1;
                         unique = false;
                         break;
                     }
@@ -80,8 +78,8 @@ contract BoardFuzzTest is Test {
 
     /// @notice Fuzz test for delegate operations
     function testFuzz_Delegate(uint256 tokenId, uint256 initialAmount, uint256 delegateAmount) public {
-        // Bound inputs
-        tokenId = bound(tokenId, 1, type(uint256).max);
+        // Bound inputs (tokenId must fit in uint128 per Node packing)
+        tokenId = bound(tokenId, 1, type(uint128).max);
         initialAmount = bound(initialAmount, 1, MAX_AMOUNT / 2);
         delegateAmount = bound(delegateAmount, 1, MAX_AMOUNT / 2);
 
@@ -100,8 +98,8 @@ contract BoardFuzzTest is Test {
 
     /// @notice Fuzz test for undelegate operations
     function testFuzz_Undelegate(uint256 tokenId, uint256 initialAmount, uint256 undelegateAmount) public {
-        // Bound inputs
-        tokenId = bound(tokenId, 1, type(uint256).max);
+        // Bound inputs (tokenId must fit in uint128 per Node packing)
+        tokenId = bound(tokenId, 1, type(uint128).max);
         initialAmount = bound(initialAmount, 1, MAX_AMOUNT);
         undelegateAmount = bound(undelegateAmount, 1, initialAmount); // Can't undelegate more than exists
 
@@ -138,9 +136,9 @@ contract BoardFuzzTest is Test {
         uint256 amount2,
         uint256 additionalAmount
     ) public {
-        // Bound inputs
-        tokenId1 = bound(tokenId1, 1, type(uint256).max);
-        tokenId2 = bound(tokenId2, 1, type(uint256).max);
+        // Bound inputs (tokenId must fit in uint128 per Node packing)
+        tokenId1 = bound(tokenId1, 1, type(uint128).max - 1);
+        tokenId2 = bound(tokenId2, 1, type(uint128).max);
         if (tokenId1 == tokenId2) {
             unchecked {
                 tokenId2 = tokenId1 + 1;
@@ -171,8 +169,8 @@ contract BoardFuzzTest is Test {
 
     /// @notice Fuzz test for remove operations
     function testFuzz_Remove(uint256 tokenId, uint256 amount) public {
-        // Bound inputs
-        tokenId = bound(tokenId, 1, type(uint256).max);
+        // Bound inputs (tokenId must fit in uint128 per Node packing)
+        tokenId = bound(tokenId, 1, type(uint128).max);
         amount = bound(amount, 1, MAX_AMOUNT);
 
         // Insert node
@@ -227,8 +225,8 @@ contract BoardFuzzTest is Test {
             }
         }
 
-        // Bound tokenId to be unique
-        tokenId = bound(tokenId, MAX_NODES + 1, type(uint256).max);
+        // Bound tokenId to be unique and fit in uint128 (Node packing constraint)
+        tokenId = bound(tokenId, MAX_NODES + 1, type(uint128).max);
 
         // Should revert when trying to insert beyond MAX_NODES
         vm.expectRevert(IBoard.MaxNodesReached.selector);
@@ -237,8 +235,8 @@ contract BoardFuzzTest is Test {
 
     /// @notice Fuzz test for undelegate exceeding amount
     function testFuzz_UndelegateExceedsAmount(uint256 tokenId, uint256 amount, uint256 undelegateAmount) public {
-        // Bound inputs
-        tokenId = bound(tokenId, 1, type(uint256).max);
+        // Bound inputs (tokenId must fit in uint128 per Node packing)
+        tokenId = bound(tokenId, 1, type(uint128).max);
         amount = bound(amount, 1, MAX_AMOUNT);
         undelegateAmount = bound(undelegateAmount, amount + 1, type(uint256).max); // More than exists
 
@@ -268,12 +266,12 @@ contract BoardFuzzTest is Test {
 
     /// @notice Invariant: Board size should never exceed MAX_NODES
     function testFuzz_Invariant_MaxNodes(uint256[20] memory tokenIds, uint256[20] memory amounts) public {
-        // Bound inputs
+        // Bound inputs (tokenId must fit in uint128 per Node packing)
         for (uint256 i = 0; i < 20; i++) {
-            tokenIds[i] = bound(tokenIds[i], 1, type(uint256).max);
+            tokenIds[i] = bound(tokenIds[i], 1, type(uint128).max);
             amounts[i] = bound(amounts[i], 1, MAX_AMOUNT);
 
-            // Ensure unique tokenIds
+            // Ensure unique tokenIds, wrapping within uint128 range
             bool unique = false;
             while (!unique) {
                 unique = true;
@@ -284,9 +282,7 @@ contract BoardFuzzTest is Test {
                 }
                 for (uint256 j = 0; j < i; j++) {
                     if (tokenIds[i] == tokenIds[j]) {
-                        unchecked {
-                            tokenIds[i]++;
-                        }
+                        tokenIds[i] = tokenIds[i] < type(uint128).max ? tokenIds[i] + 1 : 1;
                         unique = false;
                         break;
                     }
@@ -307,12 +303,12 @@ contract BoardFuzzTest is Test {
 
     /// @notice Invariant: Head should always point to node with highest amount
     function testFuzz_Invariant_HeadIsHighest(uint256[10] memory tokenIds, uint256[10] memory amounts) public {
-        // Bound inputs
+        // Bound inputs (tokenId must fit in uint128 per Node packing)
         for (uint256 i = 0; i < 10; i++) {
-            tokenIds[i] = bound(tokenIds[i], 1, type(uint256).max);
+            tokenIds[i] = bound(tokenIds[i], 1, type(uint128).max);
             amounts[i] = bound(amounts[i], 1, MAX_AMOUNT);
 
-            // Ensure unique tokenIds
+            // Ensure unique tokenIds, wrapping within uint128 range
             bool unique = false;
             while (!unique) {
                 unique = true;
@@ -323,9 +319,7 @@ contract BoardFuzzTest is Test {
                 }
                 for (uint256 j = 0; j < i; j++) {
                     if (tokenIds[i] == tokenIds[j]) {
-                        unchecked {
-                            tokenIds[i]++;
-                        }
+                        tokenIds[i] = tokenIds[i] < type(uint128).max ? tokenIds[i] + 1 : 1;
                         unique = false;
                         break;
                     }

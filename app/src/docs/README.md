@@ -1,6 +1,6 @@
-# Chamber Protocol
+# Loreum Chambers
 
-Welcome to the official documentation for the Chamber Protocol. 
+Welcome to the official documentation for Loreum Chambers. 
 
 Chamber is a decentralized governance platform that allows communities to manage their assets through a dynamic, community-elected Board of Directors.
 

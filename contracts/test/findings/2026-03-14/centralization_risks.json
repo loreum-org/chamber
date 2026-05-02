@@ -15,7 +15,7 @@
   },
   {
     "id": "CENT-03",
-    "component": "ChamberRegistry Admin",
+    "component": "Registry Admin",
     "risk": "Admin key controls the implementation address for all future Chamber deployments",
     "severity": "LOW",
     "mitigation": "Existing Chambers are unaffected; only new deployments use stored implementation"

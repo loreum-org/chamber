@@ -3,7 +3,9 @@ pragma solidity ^0.8.30;
 
 /**
  * @title WalletTypes
- * @notice Shared types for Wallet functionality
+ * @author xhad, Loreum DAO LLC
+ * @notice Legacy reference struct for documentation and off-chain tooling.
+ * @dev Canonical on-chain layout is `Wallet.Transaction` with `bytes32 dataHash`, not inline `bytes data`.
  */
 library WalletTypes {
     /**

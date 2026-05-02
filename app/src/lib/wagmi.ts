@@ -1,14 +1,33 @@
 import { getDefaultConfig } from '@rainbow-me/rainbowkit'
+import { http } from 'wagmi'
 import { mainnet, sepolia, base, arbitrum, Chain } from 'wagmi/chains'
 import localDeployments from '@/contracts/deployments.json'
+import { alchemySupportsChain, getAlchemyApiKeyFromEnv, getAlchemyV2RpcUrl } from '@/lib/alchemy'
 
 // Use the chain ID from deployments.json so that localhost accurately matches Anvil forks
-const localChainId = localDeployments.chainId || 31337
+export const LOCAL_CHAIN_ID = localDeployments.chainId || 31337
+
+const alchemyApiKey = getAlchemyApiKeyFromEnv()
+
+/** Public RPC fallbacks when `VITE_ALCHEMY_API_KEY` is unset (CSP allowlisted). */
+const PUBLIC_RPC: Record<number, string> = {
+  [mainnet.id]: 'https://eth.llamarpc.com',
+  [sepolia.id]: 'https://rpc.sepolia.org',
+  [base.id]: 'https://mainnet.base.org',
+  [arbitrum.id]: 'https://arb1.arbitrum.io/rpc',
+}
+
+function rpcHttpUrl(chainId: number, publicUrl: string): string {
+  if (alchemyApiKey && alchemySupportsChain(chainId)) {
+    return getAlchemyV2RpcUrl(chainId, alchemyApiKey) ?? publicUrl
+  }
+  return publicUrl
+}
 
 // Define localhost chain explicitly with correct chain ID
 const localhost: Chain = {
-  id: localChainId,
-  name: localChainId === 11155111 ? 'Local Sepolia Fork' : 'Localhost',
+  id: LOCAL_CHAIN_ID,
+  name: LOCAL_CHAIN_ID === 11155111 ? 'Local Sepolia Fork' : 'Localhost',
   nativeCurrency: {
     decimals: 18,
     name: 'Ether',
@@ -21,15 +40,25 @@ const localhost: Chain = {
 
 // Get WalletConnect project ID from environment variable
 // For local development, you can use a placeholder or get a free project ID from cloud.walletconnect.com
-const walletConnectProjectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || '00000000000000000000000000000000000000000000'
+const walletConnectProjectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || ''
 
-// Warn if using placeholder project ID (will cause WalletConnect API errors but won't break the app)
-if (!import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || walletConnectProjectId === '00000000000000000000000000000000000000000000') {
-  console.warn(
-    '⚠️ WalletConnect Project ID not configured. Wallet connections may not work properly.\n' +
-    'Get a free project ID at https://cloud.walletconnect.com and add it to your .env file:\n' +
-    'VITE_WALLETCONNECT_PROJECT_ID=your_project_id'
-  )
+if (!walletConnectProjectId) {
+  if (import.meta.env.PROD) {
+    throw new Error(
+      'VITE_WALLETCONNECT_PROJECT_ID is required in production. ' +
+      'Get a free project ID at https://cloud.walletconnect.com'
+    )
+  } else {
+    console.warn(
+      '⚠️ WalletConnect Project ID not configured. Wallet connections may not work properly.\n' +
+      'Get a free project ID at https://cloud.walletconnect.com and add it to your .env file:\n' +
+      'VITE_WALLETCONNECT_PROJECT_ID=your_project_id'
+    )
+  }
+}
+
+if (import.meta.env.DEV && alchemyApiKey) {
+  console.info('[wagmi] Alchemy RPC enabled for Ethereum, Sepolia, Base, and Arbitrum')
 }
 
 export const config = getDefaultConfig({
@@ -37,6 +66,14 @@ export const config = getDefaultConfig({
   projectId: walletConnectProjectId,
   chains: [mainnet, sepolia, base, arbitrum, localhost],
   ssr: false,
+  // Prefer Alchemy when VITE_ALCHEMY_API_KEY is set; otherwise public RPCs (CSP allowlisted)
+  transports: {
+    [mainnet.id]: http(rpcHttpUrl(mainnet.id, PUBLIC_RPC[mainnet.id])),
+    [sepolia.id]: http(rpcHttpUrl(sepolia.id, PUBLIC_RPC[sepolia.id])),
+    [base.id]: http(rpcHttpUrl(base.id, PUBLIC_RPC[base.id])),
+    [arbitrum.id]: http(rpcHttpUrl(arbitrum.id, PUBLIC_RPC[arbitrum.id])),
+    [localhost.id]: http(localhost.rpcUrls.default.http[0]),
+  },
 })
 
 // Contract addresses - localhost uses auto-generated deployments.json from `make deploy-anvil-all`
@@ -105,13 +142,13 @@ export function getContractAddresses(chainId: number) {
     case 31337:
       return CONTRACT_ADDRESSES.localhost
     default:
-      // Default to localhost for development
-      return CONTRACT_ADDRESSES.localhost
+      return null
   }
 }
 
 // Helper to check if we have valid addresses configured
 export function hasValidAddresses(chainId: number): boolean {
   const addresses = getContractAddresses(chainId)
+  if (!addresses) return false
   return addresses.registry !== '0x0000000000000000000000000000000000000000'
 }

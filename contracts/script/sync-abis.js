@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 
 /**
- * Syncs ABIs from Foundry's compiled output to the repo `contracts/` folder.
- * 
- * Usage: node contracts/script/sync-abis.js (from repo root)
- * 
- * This script reads the compiled contract ABIs from the `out/` folder
- * and generates TypeScript files with the ABIs for use in the frontend app.
+ * Syncs ABIs from Foundry's compiled output into `contracts/generated-abis.ts`.
+ *
+ * Usage: `node script/sync-abis.js` from `contracts/`, or
+ * `node contracts/script/sync-abis.js` from the monorepo root.
+ *
+ * Reads artifacts from `<repo>/contracts/out/` (Forge project root is `contracts/`).
  */
 
 import { readFileSync, writeFileSync, existsSync } from 'fs';
@@ -14,19 +14,20 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-// Repo root: contracts/script -> .. -> contracts -> ..
+// Monorepo root: contracts/script -> .. -> contracts -> ..
 const repoRoot = join(__dirname, '..', '..');
+const forgeOutRoot = join(repoRoot, 'contracts', 'out');
 
 // Contracts to sync ABIs for
 const contracts = [
-  { name: 'ChamberRegistry', path: 'src/ChamberRegistry.sol' },
+  { name: 'Registry', path: 'src/Registry.sol' },
   { name: 'Chamber', path: 'src/Chamber.sol' },
   { name: 'MockERC20', path: 'test/mock/MockERC20.sol' },
   { name: 'MockERC721', path: 'test/mock/MockERC721.sol' },
 ];
 
 function getAbi(contractName, contractPath) {
-  const outPath = join(repoRoot, 'out', `${contractName}.sol`, `${contractName}.json`);
+  const outPath = join(forgeOutRoot, `${contractName}.sol`, `${contractName}.json`);
   
   if (!existsSync(outPath)) {
     console.error(`❌ ABI not found: ${outPath}`);

@@ -36,7 +36,7 @@ contract ChamberFuzzTest is Test {
     /// @notice Fuzz test for delegate with random amounts
     function testFuzz_Delegate(uint256 tokenId, uint256 amount) public {
         // Bound inputs
-        tokenId = bound(tokenId, 1, type(uint256).max);
+        tokenId = bound(tokenId, 1, type(uint128).max);
         amount = bound(amount, 1, MAX_AMOUNT);
 
         // Setup: mint NFT and tokens
@@ -50,7 +50,7 @@ contract ChamberFuzzTest is Test {
         vm.stopPrank();
 
         // Verify delegation
-        assertEq(chamber.getAgentDelegation(user1, tokenId), amount);
+        assertEq(chamber.getHolderDelegation(user1, tokenId), amount);
         (, uint256 nodeAmount,,) = chamber.getMember(tokenId);
         assertEq(nodeAmount, amount);
     }
@@ -63,7 +63,7 @@ contract ChamberFuzzTest is Test {
         uint256 undelegateAmount
     ) public {
         // Bound inputs
-        tokenId = bound(tokenId, 1, type(uint256).max);
+        tokenId = bound(tokenId, 1, type(uint128).max);
         depositAmount = bound(depositAmount, 1, MAX_AMOUNT);
         delegateAmount = bound(delegateAmount, 1, depositAmount);
         undelegateAmount = bound(undelegateAmount, 1, delegateAmount);
@@ -78,7 +78,7 @@ contract ChamberFuzzTest is Test {
         chamber.delegate(tokenId, delegateAmount);
         vm.stopPrank();
 
-        uint256 beforeDelegation = chamber.getAgentDelegation(user1, tokenId);
+        uint256 beforeDelegation = chamber.getHolderDelegation(user1, tokenId);
         (, uint256 beforeNodeAmount,,) = chamber.getMember(tokenId);
 
         // Undelegate
@@ -87,7 +87,7 @@ contract ChamberFuzzTest is Test {
         vm.stopPrank();
 
         // Verify undelegation
-        assertEq(chamber.getAgentDelegation(user1, tokenId), beforeDelegation - undelegateAmount);
+        assertEq(chamber.getHolderDelegation(user1, tokenId), beforeDelegation - undelegateAmount);
         (, uint256 afterNodeAmount,,) = chamber.getMember(tokenId);
         assertEq(afterNodeAmount, beforeNodeAmount - undelegateAmount);
     }
@@ -101,7 +101,7 @@ contract ChamberFuzzTest is Test {
         uint256 sum = 0;
 
         for (uint256 i = 0; i < 5; i++) {
-            tokenIds[i] = bound(tokenIds[i], 1, type(uint256).max);
+            tokenIds[i] = bound(tokenIds[i], 1, type(uint128).max);
             amounts[i] = bound(amounts[i], 1, totalDeposit / 5);
             sum += amounts[i];
 
@@ -116,9 +116,7 @@ contract ChamberFuzzTest is Test {
                 }
                 for (uint256 j = 0; j < i; j++) {
                     if (tokenIds[i] == tokenIds[j]) {
-                        unchecked {
-                            tokenIds[i]++;
-                        }
+                        tokenIds[i] = tokenIds[i] < type(uint128).max ? tokenIds[i] + 1 : 1;
                         unique = false;
                         break;
                     }
@@ -150,12 +148,12 @@ contract ChamberFuzzTest is Test {
         // Verify all delegations
         uint256 totalDelegated = 0;
         for (uint256 i = 0; i < 5; i++) {
-            uint256 delegation = chamber.getAgentDelegation(user1, tokenIds[i]);
+            uint256 delegation = chamber.getHolderDelegation(user1, tokenIds[i]);
             assertEq(delegation, amounts[i]);
             totalDelegated += delegation;
         }
 
-        assertEq(chamber.getTotalAgentDelegations(user1), totalDelegated);
+        assertEq(chamber.getTotalHolderDelegations(user1), totalDelegated);
     }
 
     /// @notice Fuzz test for deposit and withdraw
@@ -266,7 +264,7 @@ contract ChamberFuzzTest is Test {
         uint256 sum = 0;
 
         for (uint256 i = 0; i < 3; i++) {
-            tokenIds[i] = bound(tokenIds[i], 1, type(uint256).max);
+            tokenIds[i] = bound(tokenIds[i], 1, type(uint128).max);
             amounts[i] = bound(amounts[i], 1, totalDeposit / 3);
             sum += amounts[i];
 
@@ -281,9 +279,7 @@ contract ChamberFuzzTest is Test {
                 }
                 for (uint256 j = 0; j < i; j++) {
                     if (tokenIds[i] == tokenIds[j]) {
-                        unchecked {
-                            tokenIds[i]++;
-                        }
+                        tokenIds[i] = tokenIds[i] < type(uint128).max ? tokenIds[i] + 1 : 1;
                         unique = false;
                         break;
                     }
@@ -327,7 +323,7 @@ contract ChamberFuzzTest is Test {
 
     /// @notice Fuzz test for zero amount delegation (should revert)
     function testFuzz_DelegateZeroAmount(uint256 tokenId) public {
-        tokenId = bound(tokenId, 1, type(uint256).max);
+        tokenId = bound(tokenId, 1, type(uint128).max);
 
         MockERC721(address(nft)).mintWithTokenId(user1, tokenId);
         MockERC20(address(token)).mint(user1, 100);
@@ -345,7 +341,7 @@ contract ChamberFuzzTest is Test {
     function testFuzz_DelegateInsufficientBalance(uint256 tokenId, uint256 depositAmount, uint256 delegateAmount)
         public
     {
-        tokenId = bound(tokenId, 1, type(uint256).max);
+        tokenId = bound(tokenId, 1, type(uint128).max);
         // Limit deposit to avoid overflow with 1000x share multiplier
         depositAmount = bound(depositAmount, 1, MAX_AMOUNT / 1000);
 
@@ -394,7 +390,7 @@ contract ChamberFuzzTest is Test {
         vm.stopPrank();
 
         // Invariant: total delegations <= balance
-        uint256 totalDelegations = chamber.getTotalAgentDelegations(user1);
+        uint256 totalDelegations = chamber.getTotalHolderDelegations(user1);
         uint256 balance = chamber.balanceOf(user1);
         assertLe(totalDelegations, balance, "Total delegations should never exceed balance");
     }
@@ -407,7 +403,7 @@ contract ChamberFuzzTest is Test {
         uint256 sum = 0;
 
         for (uint256 i = 0; i < 5; i++) {
-            tokenIds[i] = bound(tokenIds[i], 1, type(uint256).max);
+            tokenIds[i] = bound(tokenIds[i], 1, type(uint128).max);
             amounts[i] = bound(amounts[i], 1, totalDeposit / 5);
             sum += amounts[i];
 
@@ -422,9 +418,7 @@ contract ChamberFuzzTest is Test {
                 }
                 for (uint256 j = 0; j < i; j++) {
                     if (tokenIds[i] == tokenIds[j]) {
-                        unchecked {
-                            tokenIds[i]++;
-                        }
+                        tokenIds[i] = tokenIds[i] < type(uint128).max ? tokenIds[i] + 1 : 1;
                         unique = false;
                         break;
                     }

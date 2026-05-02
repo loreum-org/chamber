@@ -40,7 +40,7 @@
       {"name": "getProxyAdmin", "visibility": "external", "payable": false, "modifiers": []},
       {"name": "receive", "visibility": "external", "payable": true, "modifiers": []}
     ],
-    "ChamberRegistry": [
+    "Registry": [
       {"name": "initialize", "visibility": "external", "payable": false, "modifiers": ["initializer"]},
       {"name": "createChamber", "visibility": "external", "payable": false, "modifiers": [], "note": "Permissionless — anyone can deploy a Chamber"},
       {"name": "createAgent", "visibility": "external", "payable": false, "modifiers": [], "note": "Permissionless — anyone can deploy an Agent"}
@@ -56,9 +56,9 @@
     {"caller": "Chamber._isDirector", "callee": "IERC1271.isValidSignature(hash, sig)", "timing": "only for contract-owned NFTs"},
     {"caller": "Chamber.getDirectors", "callee": "IERC721.ownerOf(tokenId)", "timing": "view only"},
     {"caller": "Wallet._executeTransaction", "callee": "target.call{value}(data)", "timing": "after state update (CEI)", "trust": "arbitrary"},
-    {"caller": "ChamberRegistry.createChamber", "callee": "new TransparentUpgradeableProxy(...)", "timing": "deployment"},
-    {"caller": "ChamberRegistry._transferChamberAdmin", "callee": "IChamber.getProxyAdmin()", "timing": "post-deploy"},
-    {"caller": "ChamberRegistry._transferChamberAdmin", "callee": "ProxyAdmin.transferOwnership(chamber)", "timing": "post-deploy"},
+    {"caller": "Registry.createChamber", "callee": "new TransparentUpgradeableProxy(...)", "timing": "deployment"},
+    {"caller": "Registry._transferChamberAdmin", "callee": "IChamber.getProxyAdmin()", "timing": "post-deploy"},
+    {"caller": "Registry._transferChamberAdmin", "callee": "ProxyAdmin.transferOwnership(chamber)", "timing": "post-deploy"},
     {"caller": "Agent.autoConfirm", "callee": "IAgentPolicy.canApprove(chamber, txId)", "timing": "before confirmTransaction", "trust": "untrusted policy"},
     {"caller": "Agent.autoConfirm", "callee": "IChamber.confirmTransaction(tokenId, txId)", "timing": "after policy approval"},
     {"caller": "Agent.execute", "callee": "target.call{value}(data)", "timing": "arbitrary", "trust": "untrusted"}

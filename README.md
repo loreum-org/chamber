@@ -66,6 +66,10 @@ The Chamber represents a novel smart account architecture that fundamentally rei
 - Governance Token: `0x7756d245527f5f8925a537be509bf54feb2fdc99`
 - Team Multisig: `0x5d45a213b2b6259f0b3c116a8907b56ab5e22095`
 
+## Ethereum
+- Governance Token: `0x7756d245527f5f8925a537be509bf54feb2fdc99`
+- Membership Token: `0xB99DEdbDe082B8Be86f06449f2fC7b9FED044E15`
+
 ## Documentation
 
 For detailed documentation, visit [docs.loreum.org](https://docs.loreum.org)
@@ -90,3 +94,9 @@ MIT License
   MockERC721 deployed at: 0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9
     Name: Mock NFT
     Symbol: MNFT
+
+
+## Testing
+
+`make loreum-fund-wallet WALLET=0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266`
+

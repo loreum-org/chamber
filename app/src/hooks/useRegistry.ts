@@ -1,10 +1,27 @@
-import { useReadContract, useReadContracts, useWriteContract, useWaitForTransactionReceipt, useChainId } from 'wagmi'
-import { chamberRegistryAbi, chamberAbi } from '@/contracts/abis'
-import { getContractAddresses, hasValidAddresses } from '@/lib/wagmi'
+import { useQuery } from '@tanstack/react-query'
+import {
+  useReadContract,
+  useReadContracts,
+  useWriteContract,
+  useWaitForTransactionReceipt,
+  useChainId,
+  usePublicClient,
+} from 'wagmi'
+import { zeroAddress, type Hex } from 'viem'
+import { registryAbi, chamberAbi } from '@/contracts/abis'
+import {
+  getContractAddresses,
+  hasValidAddresses,
+} from '@/lib/wagmi'
+import {
+  ERC1967_IMPLEMENTATION_SLOT,
+  addressFromEip1967ImplementationSlot,
+  chamberVersionBytes32ToLabel,
+} from '@/lib/utils'
 
 export function useRegistryAddress() {
   const chainId = useChainId()
-  return getContractAddresses(chainId).registry
+  return getContractAddresses(chainId)?.registry ?? '0x0000000000000000000000000000000000000000' as `0x${string}`
 }
 
 export function useHasValidConfig() {
@@ -24,7 +41,7 @@ export function useAllChambers() {
   
   const { data, isLoading, error, refetch } = useReadContract({
     address: isValidRegistry ? registryAddress : undefined,
-    abi: chamberRegistryAbi,
+    abi: registryAbi,
     functionName: 'getAllChambers',
     query: { 
       enabled: !!isValidRegistry,
@@ -32,14 +49,6 @@ export function useAllChambers() {
       retryDelay: 1000,
     },
   })
-
-  // Debug logging
-  if (error) {
-    console.error('useAllChambers error:', error)
-  }
-  if (!isValidRegistry) {
-    console.warn('useAllChambers: Registry address is invalid, query disabled', { registryAddress })
-  }
 
   // Filter out invalid addresses from the result
   const validChambers = data 
@@ -69,7 +78,7 @@ export function useChamberCount() {
   
   const { data, refetch, isLoading, error } = useReadContract({
     address: isValidRegistry ? registryAddress : undefined,
-    abi: chamberRegistryAbi,
+    abi: registryAbi,
     functionName: 'getChamberCount',
     query: { 
       enabled: !!isValidRegistry,
@@ -77,14 +86,6 @@ export function useChamberCount() {
       retryDelay: 1000,
     },
   })
-
-  // Debug logging
-  if (error) {
-    console.error('useChamberCount error:', error)
-  }
-  if (!isValidRegistry) {
-    console.warn('useChamberCount: Registry address is invalid, query disabled', { registryAddress })
-  }
 
   return { 
     count: data ? Number(data) : 0,
@@ -100,7 +101,7 @@ export function useIsChamber(address: `0x${string}` | undefined) {
   
   const { data } = useReadContract({
     address: registryAddress,
-    abi: chamberRegistryAbi,
+    abi: registryAbi,
     functionName: 'isChamber',
     args: address ? [address] : undefined,
     query: { enabled: !!address && registryAddress !== '0x0000000000000000000000000000000000000000' },
@@ -114,7 +115,7 @@ export function useChambersByAsset(asset: `0x${string}` | undefined) {
   
   const { data, isLoading, error, refetch } = useReadContract({
     address: registryAddress,
-    abi: chamberRegistryAbi,
+    abi: registryAbi,
     functionName: 'getChambersByAsset',
     args: asset ? [asset] : undefined,
     query: { enabled: !!asset && registryAddress !== '0x0000000000000000000000000000000000000000' },
@@ -133,7 +134,7 @@ export function useAssets() {
   
   const { data, isLoading, error, refetch } = useReadContract({
     address: registryAddress,
-    abi: chamberRegistryAbi,
+    abi: registryAbi,
     functionName: 'getAssets',
     query: { enabled: registryAddress !== '0x0000000000000000000000000000000000000000' },
   })
@@ -201,7 +202,7 @@ export function useParentChamber(chamber: `0x${string}` | undefined) {
   
   const { data, isLoading, error, refetch } = useReadContract({
     address: registryAddress,
-    abi: chamberRegistryAbi,
+    abi: registryAbi,
     functionName: 'getParentChamber',
     args: chamber ? [chamber] : undefined,
     query: { enabled: !!chamber && registryAddress !== '0x0000000000000000000000000000000000000000' },
@@ -220,7 +221,7 @@ export function useChildChambers(chamber: `0x${string}` | undefined) {
   
   const { data, isLoading, error, refetch } = useReadContract({
     address: registryAddress,
-    abi: chamberRegistryAbi,
+    abi: registryAbi,
     functionName: 'getChildChambers',
     args: chamber ? [chamber] : undefined,
     query: { enabled: !!chamber && registryAddress !== '0x0000000000000000000000000000000000000000' },
@@ -248,7 +249,7 @@ export function useCreateChamber() {
   ) => {
     writeContract({
       address: registryAddress,
-      abi: chamberRegistryAbi,
+      abi: registryAbi,
       functionName: 'createChamber',
       args: [erc20Token, erc721Token, BigInt(seats), name, symbol],
     })
@@ -262,5 +263,79 @@ export function useCreateChamber() {
     error,
     hash,
     receipt,
+  }
+}
+
+/**
+ * Compare this chamber proxy’s EIP-1967 implementation with the Registry’s
+ * default implementation used for new deployments. When the Registry bumps
+ * its implementation pointer, existing proxies may lag until upgraded.
+ */
+export function useChamberRegistryImplementationSync(chamberAddress: `0x${string}` | undefined) {
+  const registryAddress = useRegistryAddress()
+  const chainId = useChainId()
+  const publicClient = usePublicClient()
+  const registryOk =
+    registryAddress &&
+    registryAddress !== zeroAddress &&
+    registryAddress.startsWith('0x') &&
+    registryAddress.length === 42
+
+  const { data: registryImplementation, isLoading: registryImplLoading } = useReadContract({
+    address: registryOk ? registryAddress : undefined,
+    abi: registryAbi,
+    functionName: 'implementation',
+    query: { enabled: !!registryOk && !!chamberAddress },
+  })
+
+  const regImpl =
+    registryImplementation && registryImplementation !== zeroAddress
+      ? (registryImplementation as `0x${string}`)
+      : undefined
+
+  const { data: proxyImplementationAddress, isLoading: slotLoading } = useQuery({
+    queryKey: ['chamberProxyImplementation', chamberAddress, chainId],
+    queryFn: async () => {
+      if (!publicClient || !chamberAddress) return undefined
+      const raw = await publicClient.getStorageAt({
+        address: chamberAddress,
+        slot: ERC1967_IMPLEMENTATION_SLOT,
+      })
+      return addressFromEip1967ImplementationSlot(raw as Hex | undefined)
+    },
+    enabled: !!chamberAddress && !!publicClient,
+  })
+
+  const { data: chamberVerRaw, isLoading: chamberVerLoading } = useReadContract({
+    address: chamberAddress,
+    abi: chamberAbi,
+    functionName: 'VERSION',
+    query: { enabled: !!chamberAddress },
+  })
+
+  const { data: registryVerRaw, isLoading: registryVerLoading } = useReadContract({
+    address: regImpl,
+    abi: chamberAbi,
+    functionName: 'VERSION',
+    query: { enabled: !!regImpl },
+  })
+
+  const chamberVersionLabel = chamberVersionBytes32ToLabel(chamberVerRaw as Hex | undefined)
+  const registryImplementationVersionLabel = chamberVersionBytes32ToLabel(registryVerRaw as Hex | undefined)
+
+  const implMismatch =
+    !!proxyImplementationAddress &&
+    !!regImpl &&
+    proxyImplementationAddress.toLowerCase() !== regImpl.toLowerCase()
+
+  return {
+    proxyImplementationAddress,
+    registryImplementation: regImpl,
+    chamberVersionLabel,
+    registryImplementationVersionLabel,
+    implMismatch,
+    registryAddress: registryOk ? registryAddress : undefined,
+    isLoading:
+      registryImplLoading || slotLoading || chamberVerLoading || registryVerLoading,
   }
 }

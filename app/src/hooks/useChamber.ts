@@ -1,5 +1,8 @@
+import { useMemo } from 'react'
 import { useReadContract, useReadContracts, useWriteContract, useWaitForTransactionReceipt, useSimulateContract, useAccount } from 'wagmi'
+import { isAddress } from 'viem'
 import { chamberAbi, erc20Abi, erc721Abi } from '@/contracts/abis'
+import { chamberVersionBytes32ToLabel } from '@/lib/utils'
 import type { Transaction, BoardMember, SeatUpdate } from '@/types'
 
 // ERC20 Allowance hook
@@ -83,10 +86,9 @@ export function useTokenBalance(tokenAddress: `0x${string}` | undefined, account
 
 export function useChamberInfo(chamberAddress: `0x${string}` | undefined) {
   // Validate address before making queries
-  const isValidAddress = chamberAddress && 
+  const isValidAddress = chamberAddress &&
     chamberAddress !== '0x0000000000000000000000000000000000000000' &&
-    chamberAddress.startsWith('0x') &&
-    chamberAddress.length === 42
+    isAddress(chamberAddress)
 
   const { data: name } = useReadContract({
     address: isValidAddress ? chamberAddress : undefined,
@@ -198,10 +200,10 @@ export function useChamberInfo(chamberAddress: `0x${string}` | undefined) {
     },
   })
 
-  const { data: version } = useReadContract({
+  const { data: versionBytes32 } = useReadContract({
     address: isValidAddress ? chamberAddress : undefined,
     abi: chamberAbi,
-    functionName: 'version',
+    functionName: 'VERSION',
     query: { 
       enabled: !!isValidAddress,
       retry: 1,
@@ -220,7 +222,7 @@ export function useChamberInfo(chamberAddress: `0x${string}` | undefined) {
     transactionCount: transactionCount ? Number(transactionCount) : undefined,
     assetToken: assetToken as `0x${string}` | undefined,
     nftToken: nftToken as `0x${string}` | undefined,
-    version: version as string | undefined,
+    version: chamberVersionBytes32ToLabel(versionBytes32 as `0x${string}` | undefined),
   }
 }
 
@@ -230,14 +232,17 @@ export function useChamberBalance(chamberAddress: `0x${string}` | undefined, acc
     abi: chamberAbi,
     functionName: 'balanceOf',
     args: account ? [account] : undefined,
-    query: { enabled: !!chamberAddress && !!account },
+    query: {
+      enabled: !!chamberAddress && !!account,
+      retry: false,
+    },
   })
 
   return { balance: balance as bigint | undefined, refetch }
 }
 
 export function useBoardMembers(chamberAddress: `0x${string}` | undefined, count: number = 20) {
-  const { data, refetch } = useReadContract({
+  const { data, refetch, isPending, isFetched } = useReadContract({
     address: chamberAddress,
     abi: chamberAbi,
     functionName: 'getTop',
@@ -259,7 +264,46 @@ export function useBoardMembers(chamberAddress: `0x${string}` | undefined, count
     }
   }
 
-  return { members, refetch }
+  return { members, refetch, isPending, isFetched }
+}
+
+/**
+ * Resolves ERC721 ownerOf for each membership token ID (director wallets on the board).
+ */
+export function useMembershipTokenOwners(
+  nftAddress: `0x${string}` | undefined,
+  tokenIds: bigint[]
+) {
+  const enabled =
+    !!nftAddress &&
+    nftAddress !== '0x0000000000000000000000000000000000000000' &&
+    tokenIds.length > 0
+
+  const contracts = tokenIds.map((tokenId) => ({
+    address: nftAddress!,
+    abi: erc721Abi,
+    functionName: 'ownerOf' as const,
+    args: [tokenId] as const,
+  }))
+
+  const { data, refetch, isPending, isFetched } = useReadContracts({
+    contracts,
+    query: { enabled },
+  })
+
+  const owners = useMemo((): (`0x${string}` | undefined)[] => {
+    if (!enabled || !data || data.length !== tokenIds.length) {
+      return tokenIds.map(() => undefined)
+    }
+    return data.map((r) => {
+      if (r.status === 'success' && r.result !== undefined && r.result !== null) {
+        return r.result as `0x${string}`
+      }
+      return undefined
+    })
+  }, [enabled, data, tokenIds])
+
+  return { owners, refetch, isPending, isFetched }
 }
 
 export function useTransaction(chamberAddress: `0x${string}` | undefined, transactionId: number) {
@@ -374,16 +418,22 @@ export function useDelegations(chamberAddress: `0x${string}` | undefined, accoun
 
 // Write hooks
 export function useSubmitTransaction(chamberAddress: `0x${string}` | undefined) {
-  const { writeContract, data: hash, isPending, error } = useWriteContract()
+  const { writeContractAsync, data: hash, isPending, error } = useWriteContract()
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
 
-  const submit = async (tokenId: bigint, target: `0x${string}`, value: bigint, data: `0x${string}`) => {
+  const submit = async (
+    tokenId: bigint,
+    target: `0x${string}`,
+    value: bigint,
+    data: `0x${string}`,
+    metadataURI?: string
+  ) => {
     if (!chamberAddress) return
-    writeContract({
+    return writeContractAsync({
       address: chamberAddress,
       abi: chamberAbi,
-      functionName: 'submitTransaction',
-      args: [tokenId, target, value, data],
+      functionName: metadataURI ? 'submitTransactionWithMetadata' : 'submitTransaction',
+      args: metadataURI ? [tokenId, target, value, data, metadataURI] : [tokenId, target, value, data],
     })
   }
 
@@ -408,12 +458,12 @@ export function useSubmitBatchTransactions(chamberAddress: `0x${string}` | undef
 }
 
 export function useConfirmTransaction(chamberAddress: `0x${string}` | undefined) {
-  const { writeContract, data: hash, isPending, error } = useWriteContract()
+  const { writeContractAsync, data: hash, isPending, error } = useWriteContract()
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
 
   const confirm = async (tokenId: bigint, transactionId: bigint) => {
     if (!chamberAddress) return
-    writeContract({
+    return writeContractAsync({
       address: chamberAddress,
       abi: chamberAbi,
       functionName: 'confirmTransaction',
@@ -425,12 +475,12 @@ export function useConfirmTransaction(chamberAddress: `0x${string}` | undefined)
 }
 
 export function useExecuteTransaction(chamberAddress: `0x${string}` | undefined) {
-  const { writeContract, data: hash, isPending, error } = useWriteContract()
+  const { writeContractAsync, data: hash, isPending, error } = useWriteContract()
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
 
   const execute = async (tokenId: bigint, transactionId: bigint) => {
     if (!chamberAddress) return
-    writeContract({
+    return writeContractAsync({
       address: chamberAddress,
       abi: chamberAbi,
       functionName: 'executeTransaction',
@@ -459,12 +509,12 @@ export function useRevokeConfirmation(chamberAddress: `0x${string}` | undefined)
 }
 
 export function useCancelTransaction(chamberAddress: `0x${string}` | undefined) {
-  const { writeContract, data: hash, isPending, error } = useWriteContract()
+  const { writeContractAsync, data: hash, isPending, error } = useWriteContract()
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
 
   const cancel = async (tokenId: bigint, transactionId: bigint) => {
     if (!chamberAddress) return
-    writeContract({
+    return writeContractAsync({
       address: chamberAddress,
       abi: chamberAbi,
       functionName: 'cancelTransaction',
@@ -724,4 +774,38 @@ export function useSimulateWithdraw(
     isLoading,
     refetch,
   }
+}
+
+export function useUpdateSeats(chamberAddress: `0x${string}` | undefined) {
+  const { writeContractAsync, data: hash, isPending, error } = useWriteContract()
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
+
+  const updateSeats = async (tokenId: bigint, numOfSeats: bigint) => {
+    if (!chamberAddress) return
+    return writeContractAsync({
+      address: chamberAddress,
+      abi: chamberAbi,
+      functionName: 'updateSeats',
+      args: [tokenId, numOfSeats],
+    })
+  }
+
+  return { updateSeats, isPending, isConfirming, isSuccess, error, hash }
+}
+
+export function useExecuteSeatsUpdate(chamberAddress: `0x${string}` | undefined) {
+  const { writeContractAsync, data: hash, isPending, error } = useWriteContract()
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
+
+  const executeSeatsUpdate = async (tokenId: bigint) => {
+    if (!chamberAddress) return
+    return writeContractAsync({
+      address: chamberAddress,
+      abi: chamberAbi,
+      functionName: 'executeSeatsUpdate',
+      args: [tokenId],
+    })
+  }
+
+  return { executeSeatsUpdate, isPending, isConfirming, isSuccess, error, hash }
 }
