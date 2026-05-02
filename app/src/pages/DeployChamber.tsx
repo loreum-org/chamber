@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAccount, useReadContract } from 'wagmi'
-import { isAddress } from 'viem'
+import { isAddress, zeroAddress } from 'viem'
 import { useQueryClient } from '@tanstack/react-query'
 import { FiAlertCircle, FiCheck, FiLoader, FiArrowRight, FiArrowLeft, FiCopy } from 'react-icons/fi'
 import { useCreateChamberWithStatus } from '@/hooks'
@@ -87,15 +87,26 @@ export default function DeployChamber() {
     const erc721 = searchParams.get('erc721')
     if (erc20 && erc721 && isValidAddress(erc20) && isValidAddress(erc721)) {
       setFormData((prev) => ({ ...prev, erc20Token: erc20, erc721Token: erc721 }))
-    } else if (chainId === 31337) {
-      const addresses = getContractAddresses(chainId)
-      if (addresses && addresses.mockERC20 && addresses.mockERC721) {
-        setFormData((prev) => ({
-          ...prev,
-          erc20Token: prev.erc20Token || addresses.mockERC20,
-          erc721Token: prev.erc721Token || addresses.mockERC721,
-        }))
-      }
+      return
+    }
+    if (typeof chainId !== 'number') return
+    const addresses = getContractAddresses(chainId)
+    const mock20 =
+      addresses?.mockERC20 &&
+      addresses.mockERC20 !== zeroAddress
+        ? addresses.mockERC20
+        : undefined
+    const mock721 =
+      addresses?.mockERC721 &&
+      addresses.mockERC721 !== zeroAddress
+        ? addresses.mockERC721
+        : undefined
+    if (mock20 && mock721) {
+      setFormData((prev) => ({
+        ...prev,
+        erc20Token: prev.erc20Token || mock20,
+        erc721Token: prev.erc721Token || mock721,
+      }))
     }
   }, [searchParams, chainId])
 
