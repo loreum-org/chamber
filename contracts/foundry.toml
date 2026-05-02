@@ -1,23 +1,12 @@
 [profile.default]
 
-# Paths are relative to this directory (contracts/). Solidity imports use src/, test/, lib/.
-remappings = [
-    "src/=src/",
-    "test/=test/",
-    "script/=script/",
-    "lib/=lib/",
-]
-
 cache = true
 
 cache_path = 'cache'
 evm_version = 'cancun'
 
-names = false
-offline = false
 optimizer = true
 optimizer_runs = 200
-# Match `pragma solidity 0.8.30` everywhere; helps reproducible bytecode across machines (Etherscan verify).
 solc_version = "0.8.30"
 via_ir = true
 out = 'out'

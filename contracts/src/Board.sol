@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.30;
+pragma solidity ^0.8.30;
 
 import {IBoard} from "./interfaces/IBoard.sol";
 
@@ -10,21 +10,6 @@ import {IBoard} from "./interfaces/IBoard.sol";
  * @dev Abstract contract that implements core board functionality including delegation tracking
  *      and seat management. Uses a doubly linked list to maintain sorted order of delegations.
  *
- * Gas optimizations applied:
- *   - EIP-1153 transient storage (TSTORE/TLOAD) for the reentrancy lock: saves ~20 k gas per
- *     delegate / undelegate call vs. SSTORE/SLOAD on a persistent bool.
- *   - Node.next and Node.prev packed into uint128 each, sharing one 32-byte slot: saves 1
- *     storage slot per node (50 slots across MAX_NODES = 50).
- *   - BoardStorage.size and .seats packed as uint32, sharing one slot (saves 1 slot vs. two
- *     separate uint256 fields).
- *   - In-place directional nudge replaces remove+re-insert in _reposition, eliminating the
- *     `delete` + cold-insert cost on the common single-step movement case.
- *   - _executeSeatsUpdate builds the top-seat set in a single O(seats) pass, then does O(1)
- *     membership lookups; replaces the O(supporters × seats) nested walk.
- *
- * BREAKING: Node.next/prev are now uint128. tokenIds > type(uint128).max are rejected at insert.
- * BREAKING: BoardStorage layout changed (locked removed, size/seats packed). Not compatible with
- *           previous deployments; redeploy required.
  */
 abstract contract Board {
     /**

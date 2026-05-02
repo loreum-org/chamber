@@ -53,10 +53,11 @@ deploy-anvil :; forge script script/${contract}.s.sol:Deploy${contract} \
 	--broadcast \
 	--verbosity -vvv
 
-deploy :; forge script script/${contract}.s.sol:Deploy${contract} \
+deploy :; forge script script/Deploy${contract}.s.sol:Deploy${contract} \
 	--chain-id ${chain} \
 	--rpc-url ${rpc}  \
 	--account ${account} \
+	--etherscan-api-key ${ETHERSCAN_API_KEY} \
 	--broadcast \
 	--verify
 
@@ -82,47 +83,6 @@ deploy-erc721-anvil :; forge script script/MockERC721.s.sol:DeployMockERC721 \
 	--broadcast \
 	--verbosity -vvv
 
-# Mainnet / Sepolia: Chamber implementation + Registry implementation + Registry Transparent proxy.
-# Requires ADMIN. Requires SEPOLIA_RPC_URL / MAINNET_RPC_URL in .env (foundry [rpc_endpoints]).
-# Uses named `--rpc-url sepolia` / `mainnet` — NOT ${RPC_URL} (often unset or fork/Anvil; verify then hits localhost → "Unable to locate ContractCode").
-# Exports ETH_RPC_URL to the Sepolia/Mainnet HTTPS URL so Forge's `--verify` step probes the correct chain.
-# `--slow`: wait for each tx before the next so verification races less often during same run.
-.PHONY: deploy-registry-remote-sepolia deploy-registry-remote-mainnet etherscan-verify-cmd etherscan-verify-remote-json etherscan-diff-runtime
-deploy-registry-remote-sepolia :
-	@test -n "$${ADMIN}" || (echo 'Set ADMIN (Registry proxy admin owner + initializer admin)' ; exit 1)
-	@test -n "$${SEPOLIA_RPC_URL}" || (echo 'Set SEPOLIA_RPC_URL in .env'; exit 1)
-	ETH_RPC_URL="$${SEPOLIA_RPC_URL}" forge script script/DeployRegistryRemote.s.sol:DeployRegistryRemote \
-		--rpc-url sepolia \
-		--slow \
-		$${EXTRA_FORGE_ARGS}
-
-deploy-registry-remote-mainnet :
-	@test -n "$${ADMIN}" || (echo 'Set ADMIN (Registry proxy admin owner + initializer admin)' ; exit 1)
-	@test -n "$${MAINNET_RPC_URL}" || (echo 'Set MAINNET_RPC_URL in .env'; exit 1)
-	ETH_RPC_URL="$${MAINNET_RPC_URL}" forge script script/DeployRegistryRemote.s.sol:DeployRegistryRemote \
-		--rpc-url mainnet \
-		--slow \
-		$${EXTRA_FORGE_ARGS}
-
-# Print exact verify command (via_ir + full solc + --rpc-url sepolia|mainnet so Forge does not use localhost RPC).
-# Requires SEPOLIA_RPC_URL / MAINNET_RPC_URL in .env (foundry.toml [rpc_endpoints]).
-# Usage: make etherscan-verify-cmd CONTRACT=Registry ADDRESS=0x3597... CHAIN=sepolia
-etherscan-verify-cmd :
-	@test -n "$(CONTRACT)" || (echo 'Set CONTRACT=Chamber or CONTRACT=Registry' ; exit 1)
-	@test -n "$(ADDRESS)" || (echo 'Set ADDRESS=<on-chain implementation>' ; exit 1)
-	bash script/etherscan-verify-cmd.sh "$(CONTRACT)" "$(ADDRESS)" "$(or $(CHAIN),sepolia)"
-
-# Print both Chamber + Registry impl verify cmds from deployments-registry-remote-*.json (avoid forge script --verify).
-# Default file: deployments-registry-remote-11155111.json — override VERIFY_JSON=
-VERIFY_JSON ?= deployments-registry-remote-11155111.json
-etherscan-verify-remote-json :
-	bash script/etherscan-verify-deployment-json.sh "$(VERIFY_JSON)"
-
-# On-chain bytecode vs local artifact — run after forge build; needs cast + SEPOLIA_RPC_URL (or MAINNET…) in shell.
-etherscan-diff-runtime :
-	@test -n "$(CONTRACT)" || (echo 'Set CONTRACT=Registry or Chamber' ; exit 1)
-	@test -n "$(ADDRESS)" || (echo 'Set ADDRESS=0x implementation' ; exit 1)
-	bash script/etherscan-diff-runtime-vs-artifact.sh "$(CONTRACT)" "$(ADDRESS)" "$(or $(CHAIN),sepolia)"
 
 # Deploy Registry, MockERC20, and MockERC721 to anvil
 # This also writes deployment addresses to contracts/deployments.json
