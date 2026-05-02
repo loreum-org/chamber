@@ -6,6 +6,14 @@ import { alchemySupportsChain, getAlchemyApiKeyFromEnv, getAlchemyV2RpcUrl } fro
 
 const productionApp = import.meta.env.PROD
 
+const ZERO_REGISTRY = '0x0000000000000000000000000000000000000000'
+
+/** Mainnet is only offered when `VITE_MAINNET_REGISTRY` is set (same rule as `hasValidAddresses(1)`). */
+const mainnetRegistryRaw = import.meta.env.VITE_MAINNET_REGISTRY?.trim() ?? ''
+export const isMainnetConfigured =
+  mainnetRegistryRaw !== '' &&
+  mainnetRegistryRaw.toLowerCase() !== ZERO_REGISTRY
+
 // Use the chain ID from deployments.json so that localhost accurately matches Anvil forks (dev only)
 export const LOCAL_CHAIN_ID = localDeployments.chainId || 31337
 
@@ -63,31 +71,54 @@ if (import.meta.env.DEV && alchemyApiKey) {
   console.info('[wagmi] Alchemy RPC enabled for Ethereum, Sepolia, Base, Arbitrum, and local RPC')
 }
 
-/** Production: mainnet + Sepolia only. Development: includes Base, Arbitrum, and local Anvil. */
+/** Production: Sepolia, plus Mainnet only when `VITE_MAINNET_REGISTRY` is set. Dev adds Base, Arbitrum, local. */
 export const config = productionApp
-  ? getDefaultConfig({
-      appName: 'Chamber',
-      projectId: walletConnectProjectId,
-      chains: [mainnet, sepolia],
-      ssr: false,
-      transports: {
-        [mainnet.id]: http(rpcHttpUrl(mainnet.id, PUBLIC_RPC[mainnet.id])),
-        [sepolia.id]: http(rpcHttpUrl(sepolia.id, PUBLIC_RPC[sepolia.id])),
-      },
-    })
-  : getDefaultConfig({
-      appName: 'Chamber',
-      projectId: walletConnectProjectId,
-      chains: [mainnet, sepolia, base, arbitrum, localhost],
-      ssr: false,
-      transports: {
-        [mainnet.id]: http(rpcHttpUrl(mainnet.id, PUBLIC_RPC[mainnet.id])),
-        [sepolia.id]: http(rpcHttpUrl(sepolia.id, PUBLIC_RPC[sepolia.id])),
-        [base.id]: http(rpcHttpUrl(base.id, PUBLIC_RPC[base.id])),
-        [arbitrum.id]: http(rpcHttpUrl(arbitrum.id, PUBLIC_RPC[arbitrum.id])),
-        [localhost.id]: http(localhost.rpcUrls.default.http[0]),
-      },
-    })
+  ? isMainnetConfigured
+    ? getDefaultConfig({
+        appName: 'Chamber',
+        projectId: walletConnectProjectId,
+        chains: [mainnet, sepolia],
+        ssr: false,
+        transports: {
+          [mainnet.id]: http(rpcHttpUrl(mainnet.id, PUBLIC_RPC[mainnet.id])),
+          [sepolia.id]: http(rpcHttpUrl(sepolia.id, PUBLIC_RPC[sepolia.id])),
+        },
+      })
+    : getDefaultConfig({
+        appName: 'Chamber',
+        projectId: walletConnectProjectId,
+        chains: [sepolia],
+        ssr: false,
+        transports: {
+          [sepolia.id]: http(rpcHttpUrl(sepolia.id, PUBLIC_RPC[sepolia.id])),
+        },
+      })
+  : isMainnetConfigured
+    ? getDefaultConfig({
+        appName: 'Chamber',
+        projectId: walletConnectProjectId,
+        chains: [mainnet, sepolia, base, arbitrum, localhost],
+        ssr: false,
+        transports: {
+          [mainnet.id]: http(rpcHttpUrl(mainnet.id, PUBLIC_RPC[mainnet.id])),
+          [sepolia.id]: http(rpcHttpUrl(sepolia.id, PUBLIC_RPC[sepolia.id])),
+          [base.id]: http(rpcHttpUrl(base.id, PUBLIC_RPC[base.id])),
+          [arbitrum.id]: http(rpcHttpUrl(arbitrum.id, PUBLIC_RPC[arbitrum.id])),
+          [localhost.id]: http(localhost.rpcUrls.default.http[0]),
+        },
+      })
+    : getDefaultConfig({
+        appName: 'Chamber',
+        projectId: walletConnectProjectId,
+        chains: [sepolia, base, arbitrum, localhost],
+        ssr: false,
+        transports: {
+          [sepolia.id]: http(rpcHttpUrl(sepolia.id, PUBLIC_RPC[sepolia.id])),
+          [base.id]: http(rpcHttpUrl(base.id, PUBLIC_RPC[base.id])),
+          [arbitrum.id]: http(rpcHttpUrl(arbitrum.id, PUBLIC_RPC[arbitrum.id])),
+          [localhost.id]: http(localhost.rpcUrls.default.http[0]),
+        },
+      })
 
 // Contract addresses - localhost uses auto-generated deployments.json from `make deploy-anvil-all`
 // Testnet/mainnet addresses can be overridden with environment variables

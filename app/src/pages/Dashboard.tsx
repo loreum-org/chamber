@@ -10,6 +10,7 @@ import { useAllChambers, useChamberCount, useHasValidConfig, useOrganizationsByN
 import { erc721Abi } from '@/contracts'
 import { chamberAbi } from '@/contracts/abis'
 import ChamberCard from '@/components/ChamberCard'
+import { isMainnetConfigured } from '@/lib/wagmi'
 
 export default function Dashboard() {
   const { isConnected, address: userAddress } = useAccount()
@@ -91,8 +92,21 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-10">
+      {chainId === 1 && !isMainnetConfigured && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="panel p-4 border-slate-600/40 bg-slate-800/20"
+        >
+          <p className="text-slate-300 text-sm">
+            This deployment does not include <strong className="text-slate-200">Ethereum mainnet</strong>. Use your
+            wallet to switch to <strong className="text-slate-200">Sepolia</strong> (or another supported network).
+          </p>
+        </motion.div>
+      )}
+
       {/* Configuration Warning */}
-      {!isValid && (
+      {!isValid && !(chainId === 1 && !isMainnetConfigured) && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
