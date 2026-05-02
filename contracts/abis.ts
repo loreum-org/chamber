@@ -280,6 +280,7 @@ export const chamberAbi = [
     inputs: [
       { name: 'tokenId', type: 'uint256' },
       { name: 'transactionId', type: 'uint256' },
+      { name: 'data', type: 'bytes' },
     ],
     outputs: [],
     stateMutability: 'nonpayable',
@@ -332,6 +333,7 @@ export const chamberAbi = [
     inputs: [
       { name: 'tokenId', type: 'uint256' },
       { name: 'transactionIds', type: 'uint256[]' },
+      { name: 'data', type: 'bytes[]' },
     ],
     outputs: [],
     stateMutability: 'nonpayable',
@@ -352,7 +354,7 @@ export const chamberAbi = [
       { name: 'confirmations', type: 'uint8' },
       { name: 'target', type: 'address' },
       { name: 'value', type: 'uint256' },
-      { name: 'data', type: 'bytes' },
+      { name: 'dataHash', type: 'bytes32' },
     ],
     stateMutability: 'view',
   },

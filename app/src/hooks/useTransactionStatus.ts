@@ -370,7 +370,7 @@ export function useExecuteTransactionWithStatus(
     ...options,
   })
 
-  const execute = async (tokenId: bigint, transactionId: bigint) => {
+  const execute = async (tokenId: bigint, transactionId: bigint, calldata: `0x${string}` = '0x') => {
     if (!chamberAddress) return
     try {
       transactionStatus.reset()
@@ -378,7 +378,7 @@ export function useExecuteTransactionWithStatus(
         address: chamberAddress,
         abi: chamberAbi,
         functionName: 'executeTransaction',
-        args: [tokenId, transactionId],
+        args: [tokenId, transactionId, calldata],
       })
     } catch (err) {
       transactionStatus.reset()

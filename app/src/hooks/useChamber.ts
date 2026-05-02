@@ -333,14 +333,20 @@ export function useTransaction(chamberAddress: `0x${string}` | undefined, transa
 
   let transaction: Transaction | undefined
   if (data) {
-    const [executed, confirmations, target, value, txData] = data as [boolean, number, `0x${string}`, bigint, `0x${string}`]
+    const [executed, confirmations, target, value, dataHash] = data as [
+      boolean,
+      number,
+      `0x${string}`,
+      bigint,
+      `0x${string}`,
+    ]
     transaction = {
       id: transactionId,
       executed,
       confirmations,
       target,
       value,
-      data: txData,
+      dataHash,
     }
   }
 
@@ -494,13 +500,13 @@ export function useExecuteTransaction(chamberAddress: `0x${string}` | undefined)
   const { writeContractAsync, data: hash, isPending, error } = useWriteContract()
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
 
-  const execute = async (tokenId: bigint, transactionId: bigint) => {
+  const execute = async (tokenId: bigint, transactionId: bigint, calldata: `0x${string}` = '0x') => {
     if (!chamberAddress) return
     return writeContractAsync({
       address: chamberAddress,
       abi: chamberAbi,
       functionName: 'executeTransaction',
-      args: [tokenId, transactionId],
+      args: [tokenId, transactionId, calldata],
     })
   }
 

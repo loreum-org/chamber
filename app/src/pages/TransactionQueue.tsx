@@ -38,7 +38,7 @@ import {
   useExecuteSeatsUpdate,
 } from '@/hooks'
 import { chamberAbi, erc20Abi } from '@/contracts/abis'
-import { getBlockExplorerAddressUrl, parseDataField } from '@/lib/utils'
+import { getBlockExplorerAddressUrl, hasProposalCalldata } from '@/lib/utils'
 import {
   createProposalMetadataURI,
   getProposalMetadata,
@@ -106,6 +106,61 @@ function classifyTransactionRisk(chamberAddress: `0x${string}`, target: `0x${str
     level: 'low' as RiskLevel,
     label: 'Low risk: no calldata',
     summary: 'Plain transaction with no calldata. Still verify recipient and amount before approval.',
+  }
+}
+
+/** Risk summary when `getTransaction` only returns `dataHash` (no preimage in RPC). */
+function classifyTransactionRiskFromDataHash(
+  chamberAddress: `0x${string}`,
+  target: `0x${string}`,
+  value: bigint,
+  dataHash: `0x${string}`
+) {
+  const isSelfCall = target.toLowerCase() === chamberAddress.toLowerCase()
+  const hasCalldata = hasProposalCalldata(dataHash)
+  const sendsEth = value > 0n
+
+  if (isSelfCall && !hasCalldata) {
+    return {
+      level: 'high' as RiskLevel,
+      label: 'Invalid: Chamber self-call',
+      summary:
+        'The wallet queue rejects Chamber self-calls except upgrades. Use the Board seats panel for seat changes.',
+    }
+  }
+
+  if (isSelfCall && hasCalldata) {
+    return {
+      level: 'high' as RiskLevel,
+      label: 'High risk: Chamber self-call',
+      summary:
+        'Calls this Chamber from the treasury queue. Verify calldata matches the intended action (e.g. upgrade) before approving.',
+    }
+  }
+
+  if (sendsEth && hasCalldata) {
+    return {
+      level: 'high' as RiskLevel,
+      label: 'High risk: ETH + contract call',
+      summary:
+        'Sends ETH with contract calldata. Review target, amount, and the exact calldata used at execution.',
+    }
+  }
+
+  if (sendsEth || hasCalldata) {
+    return {
+      level: 'medium' as RiskLevel,
+      label: sendsEth ? 'Medium risk: treasury transfer' : 'Medium risk: contract call',
+      summary: sendsEth
+        ? 'Moves treasury ETH. Verify recipient and amount before approval.'
+        : 'Executes calldata on an external contract. The proposer must share the exact hex for execution.',
+    }
+  }
+
+  return {
+    level: 'low' as RiskLevel,
+    label: 'Low risk: no calldata',
+    summary: 'Plain ETH transfer with no calldata. Still verify recipient and amount.',
   }
 }
 
@@ -244,7 +299,13 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
       const txs: (Transaction & { status: string; cancelled?: boolean; cancelConfirmations?: number; metadataURI?: string })[] = []
       transactionsData.forEach((result, index) => {
         if (result.status === 'success' && result.result) {
-          const [executed, confirmations, target, value, data] = result.result as [boolean, number, `0x${string}`, bigint, `0x${string}`]
+          const [executed, confirmations, target, value, dataHash] = result.result as [
+            boolean,
+            number,
+            `0x${string}`,
+            bigint,
+            `0x${string}`,
+          ]
           const cancelled = cancelledList[index] ?? false
           const status = cancelled ? 'cancelled' : executed ? 'executed' : confirmations >= (chamberInfo.quorum || 1) ? 'ready' : 'pending'
           txs.push({
@@ -253,7 +314,7 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
             confirmations,
             target,
             value,
-            data,
+            dataHash,
             status,
             cancelled,
             cancelConfirmations: cancelConfirmationsList[index] ?? 0,
@@ -617,6 +678,11 @@ function TransactionCard({ transaction, chamberAddress, quorum, userTokenId, cha
   const { execute, isPending: isExecuting } = useExecuteTransaction(chamberAddress)
   const { revoke, isPending: isRevoking } = useRevokeConfirmation(chamberAddress)
   const { cancel, isPending: isCancelling } = useCancelTransaction(chamberAddress)
+  const [executeCalldata, setExecuteCalldata] = useState('0x')
+
+  useEffect(() => {
+    setExecuteCalldata('0x')
+  }, [transaction.id])
   const { isConfirmed: userHasConfirmed } = useTransactionConfirmation(
     chamberAddress,
     userTokenId,
@@ -647,8 +713,18 @@ function TransactionCard({ transaction, chamberAddress, quorum, userTokenId, cha
       toast.error('You must be a director to execute')
       return
     }
+    const needsCalldata = hasProposalCalldata(transaction.dataHash)
+    let calldata: `0x${string}` = '0x'
+    if (needsCalldata) {
+      const raw = executeCalldata.trim()
+      if (!raw || raw === '0x') {
+        toast.error('Paste the proposal calldata (hex) from the author — it must match the on-chain hash.')
+        return
+      }
+      calldata = (raw.startsWith('0x') ? raw : `0x${raw}`) as `0x${string}`
+    }
     try {
-      await execute(userTokenId, BigInt(transaction.id))
+      await execute(userTokenId, BigInt(transaction.id), calldata)
       toast.success('Execution submitted!')
     } catch (err) {
       console.error(err)
@@ -685,12 +761,11 @@ function TransactionCard({ transaction, chamberAddress, quorum, userTokenId, cha
   }
 
   const shortTarget = `${transaction.target.slice(0, 10)}...${transaction.target.slice(-8)}`
-  const hasData = transaction.data !== '0x'
-  const decodedData = hasData ? parseDataField(transaction.data) : null
+  const hasData = hasProposalCalldata(transaction.dataHash)
   const onchainMeta = parseProposalMetadataURI(transaction.metadataURI)
   const proposalMeta = onchainMeta || getProposalMetadata(chamberAddress, transaction.id)
-  const displayTitle = proposalMeta?.title || (decodedData?.method || 'Transaction')
-  const risk = classifyTransactionRisk(chamberAddress, transaction.target, transaction.value, transaction.data)
+  const displayTitle = proposalMeta?.title || (hasData ? 'Contract call' : 'Transaction')
+  const risk = classifyTransactionRiskFromDataHash(chamberAddress, transaction.target, transaction.value, transaction.dataHash)
   const riskLevel = proposalMeta?.riskLevel || risk.level
   const riskSummary = proposalMeta?.riskSummary || risk.summary
 
@@ -781,10 +856,10 @@ function TransactionCard({ transaction, chamberAddress, quorum, userTokenId, cha
               <FiDollarSign className="w-3 h-3" />
               {formatEther(transaction.value)} ETH
             </span>
-            {hasData && decodedData && (
-              <span className="flex items-center gap-1" title={decodedData.decoded}>
+            {hasData && (
+              <span className="flex items-center gap-1 font-mono text-[11px]" title={transaction.dataHash}>
                 <FiCode className="w-3 h-3" />
-                {decodedData.method}
+                {`${transaction.dataHash.slice(0, 12)}…`}
               </span>
             )}
             <span className="flex items-center gap-1">
@@ -798,6 +873,21 @@ function TransactionCard({ transaction, chamberAddress, quorum, userTokenId, cha
               </span>
             )}
           </div>
+
+          {!transaction.executed && !isCancelled && transaction.status === 'ready' && hasData && (
+            <div className="mt-3 space-y-1.5">
+              <label className="block text-slate-500 text-xs font-medium">
+                Execution calldata (hex)
+              </label>
+              <textarea
+                className="input font-mono text-xs min-h-[4rem] resize-y w-full"
+                placeholder="0x… (must match on-chain hash)"
+                value={executeCalldata}
+                onChange={(e) => setExecuteCalldata(e.target.value)}
+                spellCheck={false}
+              />
+            </div>
+          )}
 
           {/* Progress bar */}
           {!transaction.executed && !isCancelled && (
@@ -888,16 +978,18 @@ function TransactionCard({ transaction, chamberAddress, quorum, userTokenId, cha
         )}
       </div>
 
-      {/* Data Preview */}
-      {hasData && decodedData && (
+      {/* Calldata hash / preimage note */}
+      {hasData ? (
         <div className="mt-4 pt-4 border-t border-slate-700/30">
-          <div className="text-slate-500 text-xs mb-1">Transaction Data</div>
-          <div className="text-slate-300 text-sm font-medium mb-1">{decodedData.method}</div>
+          <div className="text-slate-500 text-xs mb-1">Calldata commitment (keccak256)</div>
           <code className="block text-slate-400 text-xs font-mono bg-slate-800/50 p-2 rounded-lg overflow-x-auto break-all">
-            {transaction.data}
+            {transaction.dataHash}
           </code>
+          <p className="text-slate-500 text-xs mt-2">
+            Only the hash is stored on-chain. To execute, directors must supply the exact calldata bytes (or use <span className="font-mono">0x</span> for plain ETH with no call data).
+          </p>
         </div>
-      )}
+      ) : null}
         {transaction.metadataURI && (
           <div className="mt-3 text-[11px] text-slate-500 font-mono break-all">
             Metadata: {transaction.metadataURI}

@@ -1,5 +1,13 @@
 import { BaseError, getAddress, hexToString, type Hex } from 'viem'
 
+/** `keccak256` of empty `bytes` — matches Solidity `keccak256(bytes(""))` for empty calldata. */
+export const KECCAK256_EMPTY_CALLDATA =
+  '0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470' as const
+
+export function hasProposalCalldata(dataHash: `0x${string}`): boolean {
+  return dataHash.toLowerCase() !== KECCAK256_EMPTY_CALLDATA.toLowerCase()
+}
+
 /** EIP-1967 implementation slot (OpenZeppelin `ERC1967Utils.IMPLEMENTATION_SLOT`). */
 export const ERC1967_IMPLEMENTATION_SLOT =
   '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc' as const
