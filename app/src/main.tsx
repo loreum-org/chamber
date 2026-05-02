@@ -6,6 +6,7 @@ import { WagmiProvider } from 'wagmi'
 import { RainbowKitProvider } from '@rainbow-me/rainbowkit'
 import '@rainbow-me/rainbowkit/styles.css'
 import App from './App'
+import { AccountModalChainLabel } from '@/components/AccountModalChainLabel'
 import { chamberWalletTheme, noWalletAvatar } from '@/lib/rainbowTheme'
 import { config } from './lib/wagmi'
 import './index.css'
@@ -24,6 +25,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
             learnMoreUrl: 'https://github.com/loreum-org/chamber',
           }}
         >
+          <AccountModalChainLabel />
           <BrowserRouter>
             <App />
           </BrowserRouter>

@@ -245,7 +245,7 @@ export default function DeployChamber() {
           <p className="text-slate-400">
             {step === 'review'
               ? 'Confirm your parameters before committing to the blockchain'
-              : 'Create a new governance instance with board-based control'}
+              : 'Create a new decentralized governance contract.'}
           </p>
         </div>
 
