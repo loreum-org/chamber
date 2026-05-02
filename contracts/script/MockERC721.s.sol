@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.30;
+pragma solidity ^0.8.30;
 
 import {Script, console} from "forge-std/Script.sol";
-import {MockERC721} from "test/mock/MockERC721.sol";
+import {MockERC721} from "../test/mock/MockERC721.sol";
 
 contract DeployMockERC721 is Script {
     function run() external {
         // Default values, can be overridden with env vars
-        string memory name = vm.envOr("NFT_NAME", string("Mock NFT"));
-        string memory symbol = vm.envOr("NFT_SYMBOL", string("MNFT"));
+        string memory name = vm.envOr("NFT_NAME", string("Loreum"));
+        string memory symbol = vm.envOr("NFT_SYMBOL", string("EXPLORERS"));
 
         vm.startBroadcast();
 

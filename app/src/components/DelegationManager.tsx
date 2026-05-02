@@ -224,7 +224,7 @@ export default function DelegationManager({
           <p className="text-slate-500 text-sm">Connect to view your delegations and manage voting power.</p>
         </div>
         <div className="flex justify-center pt-2">
-          <ConnectButton />
+          <ConnectButton accountStatus="address" chainStatus="icon" showBalance={false} />
         </div>
       </div>
     )

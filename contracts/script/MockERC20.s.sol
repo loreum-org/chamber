@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.30;
+pragma solidity ^0.8.30;
 
 import {Script, console} from "forge-std/Script.sol";
-import {MockERC20} from "test/mock/MockERC20.sol";
+import {MockERC20} from "../test/mock/MockERC20.sol";
 
 contract DeployMockERC20 is Script {
     function run() external {
         // Default values, can be overridden with env vars
-        string memory name = vm.envOr("TOKEN_NAME", string("Mock LORE"));
+        string memory name = vm.envOr("TOKEN_NAME", string("Loreum"));
         string memory symbol = vm.envOr("TOKEN_SYMBOL", string("LORE"));
         uint256 initialSupply = vm.envOr("TOKEN_SUPPLY", uint256(100_000_000 ether));
 

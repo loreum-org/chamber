@@ -248,7 +248,7 @@ export default function DeployChamber() {
               <h3 className="font-heading text-xl font-semibold text-slate-100 mb-2">Connect Your Wallet</h3>
               <p className="text-slate-400 mb-6">Connect your wallet to deploy a new Chamber</p>
               <div className="flex justify-center">
-                <ConnectButton />
+                <ConnectButton accountStatus="address" chainStatus="icon" showBalance={false} />
               </div>
             </div>
           ) : (

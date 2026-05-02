@@ -1,5 +1,8 @@
 import { darkTheme } from '@rainbow-me/rainbowkit'
-import type { Theme } from '@rainbow-me/rainbowkit'
+import type { Theme, AvatarComponent } from '@rainbow-me/rainbowkit'
+
+/** No ENS / generated avatar in the account modal or connect button (see ConnectButton `accountStatus`). */
+export const noWalletAvatar: AvatarComponent = () => null
 
 /**
  * RainbowKit theme aligned with Chamber UI:

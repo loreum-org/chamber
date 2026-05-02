@@ -6,7 +6,7 @@ import { WagmiProvider } from 'wagmi'
 import { RainbowKitProvider } from '@rainbow-me/rainbowkit'
 import '@rainbow-me/rainbowkit/styles.css'
 import App from './App'
-import { chamberWalletTheme } from '@/lib/rainbowTheme'
+import { chamberWalletTheme, noWalletAvatar } from '@/lib/rainbowTheme'
 import { config } from './lib/wagmi'
 import './index.css'
 
@@ -17,6 +17,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider
+          avatar={noWalletAvatar}
           theme={chamberWalletTheme}
           appInfo={{
             appName: 'Chamber',

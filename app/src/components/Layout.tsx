@@ -4,11 +4,12 @@ import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { motion, AnimatePresence } from 'framer-motion'
 import { FiHome, FiGithub, FiBook, FiPlus, FiMenu, FiX } from 'react-icons/fi'
 import { useAccount, useWriteContract } from 'wagmi'
+import { sepolia } from 'wagmi/chains'
 import { simulateContract } from 'wagmi/actions'
-import { zeroAddress } from 'viem'
+import { zeroAddress, parseEther } from 'viem'
 import { config, getContractAddresses, LOCAL_CHAIN_ID } from '@/lib/wagmi'
-import { erc721Abi } from '@/contracts'
-import { formatLocalTestMintToast } from '@/lib/utils'
+import { erc721Abi, erc20Abi } from '@/contracts'
+import { formatLocalTestMintToast, formatWalletSendError } from '@/lib/utils'
 import toast from 'react-hot-toast'
 
 const navItems = [
@@ -16,6 +17,9 @@ const navItems = [
   { path: '/deploy', label: 'Deploy Chamber', icon: FiPlus },
   { path: '/docs', label: 'Docs', icon: FiBook },
 ]
+
+/** Default test mint size for MockERC20 (header “Mint Test ERC20”). */
+const TEST_ERC20_MINT_AMOUNT = parseEther('10000')
 
 function isNavActive(itemPath: string, locationPath: string): boolean {
   if (itemPath === '/') return locationPath === '/' || locationPath.startsWith('/chamber')
@@ -27,25 +31,32 @@ export default function Layout() {
   const { chainId, address } = useAccount()
   const { writeContractAsync } = useWriteContract()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [minting, setMinting] = useState(false)
+  const [minting, setMinting] = useState<'none' | 'nft' | 'erc20'>('none')
 
   const onLocalRpc = typeof chainId === 'number' && chainId === LOCAL_CHAIN_ID
-  const mintTargets = onLocalRpc ? getContractAddresses(chainId) : undefined
+  const onSepolia = chainId === sepolia.id
+  const canMintTestTokens = onLocalRpc || onSepolia
+  const mintTargets = canMintTestTokens ? getContractAddresses(chainId) : undefined
   const mintNftAddr = mintTargets?.mockERC721
-  const canShowMintBtn =
-    onLocalRpc && !!address && !!mintNftAddr && mintNftAddr !== zeroAddress
+  const mintErc20Addr = mintTargets?.mockERC20
+  const canShowMintNftBtn =
+    canMintTestTokens && !!address && !!mintNftAddr && mintNftAddr !== zeroAddress
+  const canShowMintErc20Btn =
+    canMintTestTokens && !!address && !!mintErc20Addr && mintErc20Addr !== zeroAddress
 
-  const handleMintLocal = async () => {
-    if (!address || !onLocalRpc || !mintNftAddr || mintNftAddr === zeroAddress) {
+  const handleMintTestNft = async () => {
+    if (!address || !canMintTestTokens || !mintNftAddr || mintNftAddr === zeroAddress) {
       if (!mintNftAddr || mintNftAddr === zeroAddress) {
         toast.error(
-          'Mock ERC-721 address is missing. With Anvil running, run make setup-local in contracts/',
+          onSepolia
+            ? 'Sepolia test NFT contract not configured. Set VITE_SEPOLIA_MOCK_ERC721 to your MockERC721 (mint(address) to caller).'
+            : 'Mock ERC-721 address is missing. With Anvil running, run make setup-local in contracts/',
         )
       }
       return
     }
 
-    setMinting(true)
+    setMinting('nft')
     try {
       const { request } = await simulateContract(config, {
         address: mintNftAddr,
@@ -58,9 +69,44 @@ export default function Layout() {
       await writeContractAsync(request)
       toast.success('Test member token minted successfully!')
     } catch (e: unknown) {
-      toast.error(formatLocalTestMintToast(e))
+      toast.error(
+        onLocalRpc ? formatLocalTestMintToast(e) : formatWalletSendError(e, 'Mint failed'),
+      )
     } finally {
-      setMinting(false)
+      setMinting('none')
+    }
+  }
+
+  const handleMintTestErc20 = async () => {
+    if (!address || !canMintTestTokens || !mintErc20Addr || mintErc20Addr === zeroAddress) {
+      if (!mintErc20Addr || mintErc20Addr === zeroAddress) {
+        toast.error(
+          onSepolia
+            ? 'Sepolia test ERC-20 not configured. Set VITE_SEPOLIA_MOCK_ERC20 to your MockERC20 (mint(address,uint256)).'
+            : 'Mock ERC-20 address is missing. With Anvil running, run make setup-local in contracts/',
+        )
+      }
+      return
+    }
+
+    setMinting('erc20')
+    try {
+      const { request } = await simulateContract(config, {
+        address: mintErc20Addr,
+        abi: erc20Abi,
+        functionName: 'mint',
+        args: [address, TEST_ERC20_MINT_AMOUNT],
+        chainId,
+        account: address,
+      })
+      await writeContractAsync(request)
+      toast.success('Test ERC-20 tokens minted to your wallet!')
+    } catch (e: unknown) {
+      toast.error(
+        onLocalRpc ? formatLocalTestMintToast(e) : formatWalletSendError(e, 'Mint failed'),
+      )
+    } finally {
+      setMinting('none')
     }
   }
 
@@ -105,20 +151,32 @@ export default function Layout() {
             </nav>
 
             {/* Right side actions */}
-            <div className="flex items-center gap-3">
-              {canShowMintBtn && (
-                <button
-                  onClick={handleMintLocal}
-                  disabled={minting}
-                  className="hidden md:block text-xs px-3 py-1.5 bg-accent-500/10 text-accent-400 rounded-lg border border-accent-500/20 hover:bg-accent-500/20 transition-colors whitespace-nowrap disabled:opacity-50"
-                >
-                  {minting ? 'Minting...' : 'Mint Test Member Token'}
-                </button>
-              )}
-              <ConnectButton chainStatus="icon" showBalance={false} />
-
-              {/* Mobile hamburger */}
+            <div className="flex items-center gap-2">
+              <div className="hidden md:flex items-center gap-2">
+                {canShowMintErc20Btn && (
+                  <button
+                    type="button"
+                    onClick={handleMintTestErc20}
+                    disabled={minting !== 'none'}
+                    className="text-xs px-3 py-1.5 bg-accent-500/10 text-accent-400 rounded-lg border border-accent-500/20 hover:bg-accent-500/20 transition-colors whitespace-nowrap disabled:opacity-50"
+                  >
+                    {minting === 'erc20' ? 'Minting...' : 'Mint Test ERC20'}
+                  </button>
+                )}
+                {canShowMintNftBtn && (
+                  <button
+                    type="button"
+                    onClick={handleMintTestNft}
+                    disabled={minting !== 'none'}
+                    className="text-xs px-3 py-1.5 bg-accent-500/10 text-accent-400 rounded-lg border border-accent-500/20 hover:bg-accent-500/20 transition-colors whitespace-nowrap disabled:opacity-50"
+                  >
+                    {minting === 'nft' ? 'Minting...' : 'Mint Test NFT'}
+                  </button>
+                )}
+              </div>
+              <ConnectButton accountStatus="address" chainStatus="icon" showBalance={false} />
               <button
+                type="button"
                 onClick={() => setMobileMenuOpen((o) => !o)}
                 className="md:hidden p-2 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 transition-all"
                 aria-label="Toggle menu"
@@ -181,18 +239,32 @@ export default function Layout() {
                   )
                 })}
 
-                {canShowMintBtn && (
+                {canShowMintErc20Btn && (
                   <button
                     type="button"
                     onClick={() => {
-                      void handleMintLocal()
+                      void handleMintTestErc20()
                       setMobileMenuOpen(false)
                     }}
-                    disabled={minting}
+                    disabled={minting !== 'none'}
                     className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-accent-400 hover:bg-accent-500/10 transition-all disabled:opacity-50"
                   >
                     <FiPlus className="w-4 h-4" />
-                    {minting ? 'Minting...' : 'Mint Test Member Token'}
+                    {minting === 'erc20' ? 'Minting...' : 'Mint Test ERC20'}
+                  </button>
+                )}
+                {canShowMintNftBtn && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void handleMintTestNft()
+                      setMobileMenuOpen(false)
+                    }}
+                    disabled={minting !== 'none'}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-accent-400 hover:bg-accent-500/10 transition-all disabled:opacity-50"
+                  >
+                    <FiPlus className="w-4 h-4" />
+                    {minting === 'nft' ? 'Minting...' : 'Mint Test NFT'}
                   </button>
                 )}
               </nav>

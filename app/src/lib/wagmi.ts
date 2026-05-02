@@ -127,10 +127,11 @@ export const CONTRACT_ADDRESSES = {
   sepolia: {
     registry: (import.meta.env.VITE_SEPOLIA_REGISTRY || '0x0000000000000000000000000000000000000000') as `0x${string}`,
     chamberImplementation: (import.meta.env.VITE_SEPOLIA_CHAMBER_IMPL || '0x0000000000000000000000000000000000000000') as `0x${string}`,
-    mockERC20: '0x0000000000000000000000000000000000000000' as `0x${string}`,
-    mockERC721: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+    mockERC20: (import.meta.env.VITE_SEPOLIA_MOCK_ERC20 ||
+      '0x0000000000000000000000000000000000000000') as `0x${string}`,
+    mockERC721: (import.meta.env.VITE_SEPOLIA_MOCK_ERC721 ||
+      '0x0000000000000000000000000000000000000000') as `0x${string}`,
   },
-  // Mainnet addresses (when deployed)
   mainnet: {
     registry: (import.meta.env.VITE_MAINNET_REGISTRY || '0x0000000000000000000000000000000000000000') as `0x${string}`,
     chamberImplementation: (import.meta.env.VITE_MAINNET_CHAMBER_IMPL || '0x0000000000000000000000000000000000000000') as `0x${string}`,
