@@ -1,7 +1,7 @@
 import { Routes, Route } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import Layout from '@/components/Layout'
-import { Dashboard, DeployChamber, DeployAgent, AgentProfile, ChamberDetail, TransactionQueue, Docs } from '@/pages'
+import { Dashboard, DeployChamber, ChamberDetail, TransactionQueue, Docs, DirectorProfile } from '@/pages'
 
 function App() {
   return (
@@ -11,9 +11,9 @@ function App() {
         toastOptions={{
           duration: 5000,
           style: {
-            background: '#1e293b',
-            color: '#f5f5f4',
-            border: '1px solid rgba(251, 191, 36, 0.3)',
+            background: '#141c2b',
+            color: '#e2e8f0',
+            border: '1px solid rgba(148, 163, 184, 0.18)',
           },
           success: {
             iconTheme: {
@@ -33,11 +33,10 @@ function App() {
         <Route path="/" element={<Layout />}>
           <Route index element={<Dashboard />} />
           <Route path="deploy" element={<DeployChamber />} />
-          <Route path="deploy-agent" element={<DeployAgent />} />
-          <Route path="agent/:address" element={<AgentProfile />} />
           <Route path="chamber/:address" element={<ChamberDetail />} />
           <Route path="chamber/:address/:tab" element={<ChamberDetail />} />
           <Route path="chamber/:address/transactions" element={<TransactionQueue />} />
+          <Route path="chamber/:address/director/:tokenId" element={<DirectorProfile />} />
           <Route path="docs" element={<Docs />} />
           <Route path="docs/*" element={<Docs />} />
         </Route>

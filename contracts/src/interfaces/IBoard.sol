@@ -3,54 +3,60 @@ pragma solidity 0.8.30;
 
 /**
  * @title IBoard
- * @notice Interface for Board governance functionality
- * @dev Structs are defined in Board.sol - use Board.Node and Board.SeatUpdate types
+ * @author xhad, Loreum DAO LLC
+ * @notice Read API and events for the delegation-weighted sorted board (linked list by stake).
+ * @dev Canonical structs live in {Board}: packed `Node` (`uint128` next/prev) and `SeatUpdate`.
  */
 interface IBoard {
     /**
-     * @notice Retrieves node information for a given tokenId
-     * @param tokenId The token ID to query
-     * @return Node struct containing the node's data (Board.Node)
+     * @notice Returns on-list data for a membership `tokenId` (zero values if not in the list).
+     * @param tokenId The ERC-721 membership token ID
+     * @return nodeTokenId Same as `tokenId` when the node exists, else zero
+     * @return amount Total delegated weight for this token in the board list
+     * @return next Token ID of the next node toward the tail (ascending rank), or zero
+     * @return prev Token ID of the previous node toward the head, or zero
      */
-    /// @dev Returns Node struct (defined in Board.sol)
-    function getMember(uint256 tokenId) external view returns (uint256, uint256, uint256, uint256);
+    function getMember(uint256 tokenId) external view returns (uint256 nodeTokenId, uint256 amount, uint256 next, uint256 prev);
 
     /**
-     * @notice Retrieves the top tokenIds and their amounts
-     * @param count The number of top tokenIds to retrieve
-     * @return An array of top tokenIds and their corresponding amounts
+     * @notice Returns the first `count` entries in descending delegation order.
+     * @param count Maximum number of `(tokenId, amount)` pairs to return
+     * @return tokenIds Leaderboard token IDs
+     * @return amounts Delegated amounts aligned with `tokenIds`
      */
-    function getTop(uint256 count) external view returns (uint256[] memory, uint256[] memory);
+    function getTop(uint256 count) external view returns (uint256[] memory tokenIds, uint256[] memory amounts);
 
     /**
-     * @notice Returns the total size of the board
-     * @return uint256 current size of the board
+     * @notice Number of nodes currently in the leaderboard list (capped by `MAX_NODES` in `Board`).
+     * @return size Current list length
      */
-    function getSize() external view returns (uint256);
+    function getSize() external view returns (uint256 size);
 
     /**
-     * @notice Retrieves the current quorum
-     * @return The current quorum value
+     * @notice Wallet multisig confirmation threshold: `1 + (seats * 51) / 100`.
+     * @return quorum Minimum confirmations required to execute a transaction
      */
-    function getQuorum() external view returns (uint256);
+    function getQuorum() external view returns (uint256 quorum);
 
     /**
-     * @notice Retrieves the current number of seats
-     * @return The current number of seats
+     * @notice Governance parameter: how many top entries count as director seats.
+     * @return seats Configured seat count
      */
-    function getSeats() external view returns (uint256);
+    function getSeats() external view returns (uint256 seats);
 
     /**
-     * @notice Retrieves the addresses of the current directors
-     * @return An array of addresses representing the current directors
+     * @notice Resolves each top-seat `tokenId` to `IERC721.ownerOf`; burned or invalid IDs yield `address(0)`.
+     * @return directors Owner addresses for the top `getSeats()` token IDs, in rank order
      */
-    function getDirectors() external view returns (address[] memory);
+    function getDirectors() external view returns (address[] memory directors);
 
     /**
-     * @notice Returns the current seat update proposal
-     * @return The current SeatUpdate struct containing proposal details (Board.SeatUpdate)
+     * @notice Active seat-change proposal, if any.
+     * @return proposedSeats Target seat count
+     * @return timestamp Proposal start (`block.timestamp`); zero if no proposal
+     * @return requiredQuorum Supporter count required at execution (from proposal time)
+     * @return supporters Token IDs that have endorsed this proposal
      */
-    /// @dev Returns SeatUpdate struct (defined in Board.sol, includes requiredQuorum field)
     function getSeatUpdate()
         external
         view
@@ -115,8 +121,8 @@ interface IBoard {
     /// @notice Thrown if updateSeats execution call hasn't got enough votes
     error InsufficientVotes();
 
-    /// @notice Thrown when a supporter is not found on the leaderboard
-    /// @param supporter The address of the supporter
+    /// @notice Reserved error (not reverted by current Board source); kept for ABI compatibility.
+    /// @param supporter Address placeholder for a supporter not on the leaderboard
     error SupporterNotOnLeaderboard(address supporter);
 
     /// @notice Thrown when the linked list has reached its maximum size
@@ -127,4 +133,7 @@ interface IBoard {
 
     /// @notice Thrown when a non-proposer attempts to cancel a seat update proposal (Fix Finding 14)
     error OnlyProposerCanCancel();
+
+    /// @notice Thrown when a tokenId exceeds type(uint128).max (Node.next/prev are packed as uint128)
+    error TokenIdTooLarge();
 }

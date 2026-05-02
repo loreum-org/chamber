@@ -2,7 +2,7 @@
 pragma solidity ^0.8.30;
 
 import {Test} from "forge-std/Test.sol";
-import {ChamberRegistry} from "src/ChamberRegistry.sol";
+import {Registry} from "src/Registry.sol";
 import {Chamber} from "src/Chamber.sol";
 import {IChamber} from "src/interfaces/IChamber.sol";
 import {MockERC20} from "test/mock/MockERC20.sol";
@@ -10,7 +10,7 @@ import {MockERC721} from "test/mock/MockERC721.sol";
 import {DeployRegistry} from "test/utils/DeployRegistry.sol";
 
 contract BoardDoSTest is Test {
-    ChamberRegistry public registry;
+    Registry public registry;
     Chamber public implementation;
     MockERC20 public token;
     MockERC721 public nft;

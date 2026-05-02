@@ -2,7 +2,7 @@
 pragma solidity ^0.8.30;
 
 import {Test, console} from "forge-std/Test.sol";
-import {ChamberRegistry} from "src/ChamberRegistry.sol";
+import {Registry} from "src/Registry.sol";
 import {Chamber} from "src/Chamber.sol";
 import {IChamber} from "src/interfaces/IChamber.sol";
 import {MockERC20} from "test/mock/MockERC20.sol";
@@ -15,7 +15,7 @@ import {DeployRegistry} from "test/utils/DeployRegistry.sol";
  *         when the user has active delegations.
  */
 contract DelegationBypassViaWithdrawTest is Test {
-    ChamberRegistry public registry;
+    Registry public registry;
     MockERC20 public token;
     MockERC721 public nft;
     address public admin = makeAddr("admin");
@@ -58,7 +58,7 @@ contract DelegationBypassViaWithdrawTest is Test {
 
         // Delegation and balance are intact
         assertGt(chamber.balanceOf(attacker), 0, "Attacker still has shares");
-        assertGt(chamber.getAgentDelegation(attacker, 1), 0, "Delegation intact");
+        assertGt(chamber.getHolderDelegation(attacker, 1), 0, "Delegation intact");
     }
 
     /**

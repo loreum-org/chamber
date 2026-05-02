@@ -2,7 +2,7 @@
 pragma solidity ^0.8.30;
 
 import {Test, console} from "forge-std/Test.sol";
-import {ChamberRegistry} from "src/ChamberRegistry.sol";
+import {Registry} from "src/Registry.sol";
 import {Chamber} from "src/Chamber.sol";
 import {IChamber} from "src/interfaces/IChamber.sol";
 import {IBoard} from "src/interfaces/IBoard.sol";
@@ -19,7 +19,7 @@ import {DeployRegistry} from "test/utils/DeployRegistry.sol";
  * Fix: Require cancellation to come from the proposer (supporters[0]) only.
  */
 contract SeatProposalGriefingTest is Test {
-    ChamberRegistry public registry;
+    Registry public registry;
     MockERC20 public token;
     MockERC721 public nft;
     address public admin = makeAddr("admin");

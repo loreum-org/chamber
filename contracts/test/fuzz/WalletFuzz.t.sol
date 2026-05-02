@@ -41,14 +41,14 @@ contract WalletFuzzTest is Test {
         // Verify transaction was submitted
         assertEq(wallet.getTransactionCount(), initialCount + 1);
 
-        (bool executed, uint8 confirmations, address trxTarget, uint256 trxValue, bytes memory trxData) =
+        (bool executed, uint8 confirmations, address trxTarget, uint256 trxValue, bytes32 trxDataHash) =
             wallet.getTransaction(initialCount);
 
         assertEq(executed, false);
         assertEq(confirmations, 1); // Auto-confirmed by submitter
         assertEq(trxTarget, target);
         assertEq(trxValue, value);
-        assertEq(keccak256(trxData), keccak256(data));
+        assertEq(trxDataHash, keccak256(data));
     }
 
     /// @notice Fuzz test for confirming transactions
@@ -135,7 +135,7 @@ contract WalletFuzzTest is Test {
         uint256 transactionId = wallet.getTransactionCount() - 1;
 
         // Execute transaction
-        wallet.executeTransaction(tokenId, transactionId);
+        wallet.executeTransaction(tokenId, transactionId, "");
 
         // Verify execution
         (bool executed,,,,) = wallet.getTransaction(transactionId);
@@ -257,11 +257,11 @@ contract WalletFuzzTest is Test {
         uint256 transactionId = wallet.getTransactionCount() - 1;
 
         // Execute once
-        wallet.executeTransaction(tokenId, transactionId);
+        wallet.executeTransaction(tokenId, transactionId, "");
 
         // Try to execute again - should revert
         vm.expectRevert(IWallet.TransactionAlreadyExecuted.selector);
-        wallet.executeTransaction(tokenId, transactionId);
+        wallet.executeTransaction(tokenId, transactionId, "");
     }
 
     /// @notice Fuzz test for revoking non-confirmed transaction (should revert)
@@ -316,7 +316,7 @@ contract WalletFuzzTest is Test {
             // Use address >= 0x100 to avoid precompiles and ensure EOA behavior
             address target = address(uint160(i + 100));
             wallet.submitTransaction(tokenIds[i], target, values[i], "");
-            wallet.executeTransaction(tokenIds[i], i);
+            wallet.executeTransaction(tokenIds[i], i, "");
         }
 
         // Invariant: All executed transactions should remain executed

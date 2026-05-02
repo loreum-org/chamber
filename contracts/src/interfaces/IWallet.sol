@@ -3,8 +3,10 @@ pragma solidity 0.8.30;
 
 /**
  * @title IWallet
- * @notice Interface for Wallet multisig functionality
- * @dev Transaction struct is defined in Wallet.sol - use Wallet.Transaction type
+ * @author xhad, Loreum DAO LLC
+ * @notice Director-gated multisig: submit, confirm, execute, revoke, and cancel transaction flows.
+ * @dev Only `keccak256(calldata)` is stored on-chain; callers must retain full calldata to execute.
+ *      Confirmation and execution require a quorum of distinct director token IDs as enforced by `Chamber`.
  */
 interface IWallet {
     /**
@@ -12,23 +14,40 @@ interface IWallet {
      * @param tokenId The tokenId submitting the transaction
      * @param target The address to send the transaction to
      * @param value The amount of Ether to send
-     * @param data The data to include in the transaction
+     * @param data The calldata (stored on-chain as keccak256 hash only)
      */
     function submitTransaction(uint256 tokenId, address target, uint256 value, bytes memory data) external;
 
     /**
-     * @notice Confirms a transaction
-     * @param tokenId The tokenId confirming the transaction
-     * @param transactionId The ID of the transaction to confirm
+     * @notice Submits a new transaction for approval with durable proposal metadata
+     * @param tokenId The tokenId submitting the transaction
+     * @param target The address to send the transaction to
+     * @param value The amount of Ether to send
+     * @param data The calldata (stored on-chain as keccak256 hash only)
+     * @param metadataURI URI or content hash describing the proposal rationale and risk context
+     */
+    function submitTransactionWithMetadata(
+        uint256 tokenId,
+        address target,
+        uint256 value,
+        bytes memory data,
+        string memory metadataURI
+    ) external;
+
+    /**
+     * @notice Adds one confirmation for `transactionId` from director `tokenId`.
+     * @dev Reverts if the transaction is cancelled, already executed, or already confirmed by this `tokenId`.
      */
     function confirmTransaction(uint256 tokenId, uint256 transactionId) external;
 
     /**
      * @notice Executes a transaction if it has enough confirmations
+     * @dev Caller must supply the original calldata; the contract verifies keccak256(data) == stored hash.
      * @param tokenId The tokenId executing the transaction
      * @param transactionId The ID of the transaction to execute
+     * @param data The original calldata supplied at submission time
      */
-    function executeTransaction(uint256 tokenId, uint256 transactionId) external;
+    function executeTransaction(uint256 tokenId, uint256 transactionId, bytes calldata data) external;
 
     /**
      * @notice Revokes a confirmation for a transaction
@@ -49,7 +68,7 @@ interface IWallet {
      * @param tokenId The tokenId submitting the transactions
      * @param targets The array of addresses to send the transactions to
      * @param values The array of amounts of Ether to send
-     * @param data The array of data to include in each transaction
+     * @param data The array of calldata (each stored as keccak256 hash only)
      */
     function submitBatchTransactions(
         uint256 tokenId,
@@ -67,10 +86,16 @@ interface IWallet {
 
     /**
      * @notice Executes multiple transactions in a single call if they have enough confirmations
+     * @dev Caller must supply the original calldata for each transaction in the same order as transactionIds.
      * @param tokenId The tokenId executing the transactions
      * @param transactionIds The array of transaction IDs to execute
+     * @param data The array of original calldata for each transaction
      */
-    function executeBatchTransactions(uint256 tokenId, uint256[] memory transactionIds) external;
+    function executeBatchTransactions(
+        uint256 tokenId,
+        uint256[] memory transactionIds,
+        bytes[] calldata data
+    ) external;
 
     /**
      * @notice Returns the total number of transactions
@@ -81,13 +106,23 @@ interface IWallet {
     /**
      * @notice Returns the details of a specific transaction
      * @param nonce The index of the transaction to retrieve
-     * @return The Transaction struct containing the transaction details (Wallet.Transaction)
+     * @return executed Whether the transaction has been executed
+     * @return confirmations Number of confirmations
+     * @return target The target address
+     * @return value The ETH value
+     * @return dataHash keccak256 of the original calldata (re-supply at execution time)
      */
-    /// @dev Returns Transaction struct (defined in Wallet.sol)
     function getTransaction(uint256 nonce)
         external
         view
-        returns (bool executed, uint8 confirmations, address target, uint256 value, bytes memory data);
+        returns (bool executed, uint8 confirmations, address target, uint256 value, bytes32 dataHash);
+
+    /**
+     * @notice Returns durable metadata URI or content hash for a transaction proposal
+     * @param nonce The index of the transaction to retrieve metadata for
+     * @return metadataURI URI or content hash supplied at proposal creation
+     */
+    function getTransactionMetadata(uint256 nonce) external view returns (string memory metadataURI);
 
     /**
      * @notice Checks if a transaction is confirmed by a specific director
@@ -132,36 +167,43 @@ interface IWallet {
      * @param nonce The unique identifier for the transaction
      * @param to The target address for the transaction
      * @param value The amount of ETH to send
-     * @param data The calldata for the transaction
+     * @param data The original calldata (emitted for off-chain persistence; only hash stored on-chain)
      */
     event SubmitTransaction(
         uint256 indexed tokenId, uint256 indexed nonce, address indexed to, uint256 value, bytes data
     );
 
     /**
-     * @notice Emitted when a transaction is confirmed by a leader
-     * @param tokenId The tokenId of the leader confirming
+     * @notice Emitted when proposal metadata is attached to a transaction
+     * @param nonce The transaction identifier
+     * @param metadataURI URI or content hash describing the proposal
+     */
+    event ProposalMetadataSet(uint256 indexed nonce, string metadataURI);
+
+    /**
+     * @notice Emitted when a transaction is confirmed by a director
+     * @param tokenId The token ID of the director confirming
      * @param nonce The identifier of the confirmed transaction
      */
     event ConfirmTransaction(uint256 indexed tokenId, uint256 indexed nonce);
 
     /**
-     * @notice Emitted when a confirmation is revoked by a leader
-     * @param tokenId The tokenId of the leader revoking confirmation
+     * @notice Emitted when a confirmation is revoked by a director
+     * @param tokenId The token ID of the director revoking confirmation
      * @param nonce The identifier of the transaction
      */
     event RevokeConfirmation(uint256 indexed tokenId, uint256 indexed nonce);
 
     /**
      * @notice Emitted when a transaction is executed
-     * @param tokenId The tokenId of the leader executing the transaction
+     * @param tokenId The token ID of the director executing the transaction
      * @param nonce The identifier of the executed transaction
      */
     event ExecuteTransaction(uint256 indexed tokenId, uint256 indexed nonce);
 
     /**
      * @notice Emitted when a director votes to cancel a transaction
-     * @param tokenId The tokenId of the director voting to cancel
+     * @param tokenId The token ID of the director voting to cancel
      * @param nonce The identifier of the transaction
      */
     event CancelTransaction(uint256 indexed tokenId, uint256 indexed nonce);
@@ -197,4 +239,7 @@ interface IWallet {
 
     /// @notice Thrown when transaction target is invalid
     error InvalidTarget();
+
+    /// @notice Thrown when the supplied calldata does not match the stored keccak256 hash
+    error DataHashMismatch();
 }

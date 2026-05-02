@@ -1,44 +1,42 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import {ChamberRegistry} from "src/ChamberRegistry.sol";
+import {Registry} from "src/Registry.sol";
 import {Chamber} from "src/Chamber.sol";
-import {Agent} from "src/Agent.sol";
-import {AgentIdentityRegistry} from "src/AgentIdentityRegistry.sol";
 import {
     TransparentUpgradeableProxy
 } from "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 library DeployRegistry {
-    function deploy(address admin) internal returns (ChamberRegistry) {
-        // Deploy implementations
-        ChamberRegistry registryImplementation = new ChamberRegistry();
-        Chamber chamberImplementation = new Chamber();
-        Agent agentImplementation = new Agent();
+    /// @notice Outcome of deploying Registry proxy + implementations (used by prod scripts).
+    struct Deployment {
+        Registry registryProxy;
+        address registryImplementation;
+        address chamberImplementation;
+    }
 
-        // Deploy AgentIdentityRegistry implementation
-        AgentIdentityRegistry identityRegistryImpl = new AgentIdentityRegistry();
+    function deploy(address admin) internal returns (Registry) {
+        return deployFull(admin).registryProxy;
+    }
 
-        // Deploy AgentIdentityRegistry proxy
-        TransparentUpgradeableProxy identityRegistryProxy = new TransparentUpgradeableProxy(
-            address(identityRegistryImpl),
-            address(admin),
-            abi.encodeWithSelector(AgentIdentityRegistry.initialize.selector, admin)
-        );
+    /// @dev Deploys Chamber implementation, Registry implementation, then Registry `TransparentUpgradeableProxy`,
+    ///      initialized via `Registry.initialize(chamberImplementation, admin)`.
+    function deployFull(address admin) internal returns (Deployment memory d) {
+        Registry registryImplementationContract = new Registry();
+        Chamber chamberImplementationContract = new Chamber();
 
-        // Deploy Registry proxy
         TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
-            address(registryImplementation),
+            address(registryImplementationContract),
             address(admin),
             abi.encodeWithSelector(
-                ChamberRegistry.initialize.selector,
-                address(chamberImplementation),
-                address(agentImplementation),
-                address(identityRegistryProxy),
-                admin
+                Registry.initialize.selector, address(chamberImplementationContract), admin
             )
         );
 
-        return ChamberRegistry(address(proxy));
+        return Deployment({
+            registryProxy: Registry(address(proxy)),
+            registryImplementation: address(registryImplementationContract),
+            chamberImplementation: address(chamberImplementationContract)
+        });
     }
 }

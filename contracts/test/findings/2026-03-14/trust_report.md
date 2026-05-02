@@ -37,7 +37,7 @@
 
 ---
 
-### REGISTRY_ADMIN (ChamberRegistry)
+### REGISTRY_ADMIN (Registry)
 
 | Capability | Function | Blast Radius |
 |------------|----------|-------------|

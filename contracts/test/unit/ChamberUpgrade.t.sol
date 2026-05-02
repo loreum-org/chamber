@@ -2,7 +2,7 @@
 pragma solidity ^0.8.30;
 
 import {Test} from "forge-std/Test.sol";
-import {ChamberRegistry} from "src/ChamberRegistry.sol";
+import {Registry} from "src/Registry.sol";
 import {Chamber} from "src/Chamber.sol";
 import {IChamber} from "src/interfaces/IChamber.sol";
 import {IWallet} from "src/interfaces/IWallet.sol";
@@ -12,7 +12,7 @@ import {DeployRegistry} from "test/utils/DeployRegistry.sol";
 import {ProxyAdmin} from "lib/openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 
 contract ChamberUpgradeTest is Test {
-    ChamberRegistry public registry;
+    Registry public registry;
     Chamber public implementation;
     Chamber public newImplementation;
     MockERC20 public token;
@@ -131,7 +131,7 @@ contract ChamberUpgradeTest is Test {
 
         // Execute upgrade transaction
         vm.prank(user1);
-        chamber.executeTransaction(1, txId);
+        chamber.executeTransaction(1, txId, upgradeData);
 
         // Verify implementation was upgraded
         address newImpl = address(uint160(uint256(vm.load(chamberAddress, implSlot))));
@@ -162,7 +162,7 @@ contract ChamberUpgradeTest is Test {
 
         // Execute upgrade
         vm.prank(user1);
-        chamber.executeTransaction(1, txId);
+        chamber.executeTransaction(1, txId, upgradeData);
 
         // Verify upgrade succeeded
         bytes32 implSlot = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
@@ -208,7 +208,7 @@ contract ChamberUpgradeTest is Test {
         // Try to execute without enough confirmations
         vm.prank(user1);
         vm.expectRevert(IChamber.NotEnoughConfirmations.selector);
-        chamber.executeTransaction(1, txId);
+        chamber.executeTransaction(1, txId, upgradeData);
     }
 
     function test_Chamber_UpgradeViaTransaction_ZeroImplementation_Reverts() public {
@@ -231,7 +231,7 @@ contract ChamberUpgradeTest is Test {
         // The error is wrapped in TransactionFailed, so we check for that
         vm.prank(user1);
         vm.expectRevert(); // TransactionFailed with ZeroAddress error inside
-        chamber.executeTransaction(1, txId);
+        chamber.executeTransaction(1, txId, upgradeData);
     }
 
     function test_Chamber_UpgradeDirectly_Unauthorized_Reverts() public {
@@ -295,7 +295,7 @@ contract ChamberUpgradeTest is Test {
         chamber.confirmTransaction(3, txId);
 
         vm.prank(user1);
-        chamber.executeTransaction(1, txId);
+        chamber.executeTransaction(1, txId, upgradeData);
 
         // Verify state is preserved
         assertEq(chamber.getSeats(), initialSeats);
@@ -343,8 +343,10 @@ contract ChamberUpgradeTest is Test {
         // Execute first upgrade
         uint256[] memory firstTx = new uint256[](1);
         firstTx[0] = txIds[0];
+        bytes[] memory firstData = new bytes[](1);
+        firstData[0] = upgradeDataArray[0];
         vm.prank(user1);
-        chamber.executeBatchTransactions(1, firstTx);
+        chamber.executeBatchTransactions(1, firstTx, firstData);
 
         // Verify first upgrade
         bytes32 implSlot = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
@@ -354,8 +356,10 @@ contract ChamberUpgradeTest is Test {
         // Execute second upgrade
         uint256[] memory secondTx = new uint256[](1);
         secondTx[0] = txIds[1];
+        bytes[] memory secondData = new bytes[](1);
+        secondData[0] = upgradeDataArray[1];
         vm.prank(user1);
-        chamber.executeBatchTransactions(1, secondTx);
+        chamber.executeBatchTransactions(1, secondTx, secondData);
 
         // Verify second upgrade
         impl = address(uint160(uint256(vm.load(chamberAddress, implSlot))));
@@ -386,7 +390,7 @@ contract ChamberUpgradeTest is Test {
         vm.prank(user3);
         chamber.confirmTransaction(3, transferTxId);
         vm.prank(user1);
-        chamber.executeTransaction(1, transferTxId);
+        chamber.executeTransaction(1, transferTxId, transferData);
 
         // Verify ProxyAdmin owner is now 0xDEAD
         assertEq(ProxyAdmin(proxyAdminAddress).owner(), address(0xDEAD));
@@ -408,6 +412,6 @@ contract ChamberUpgradeTest is Test {
         //   → reverts at line 601 (NotDirector) → wrapped as TransactionFailed
         vm.prank(user1);
         vm.expectRevert();
-        chamber.executeTransaction(1, upgradeTxId);
+        chamber.executeTransaction(1, upgradeTxId, upgradeData);
     }
 }

@@ -1,6 +1,6 @@
 # Chamber App
 
-A decentralized treasury governance application for the Chamber Protocol. This application serves as a Gnosis Safe-like interface for managing multi-signature treasury operations with board-based governance.
+A decentralized treasury governance application for Loreum Chambers. This application serves as a Gnosis Safe-like interface for managing multi-signature treasury operations with board-based governance.
 
 ## Features
 
@@ -9,6 +9,7 @@ A decentralized treasury governance application for the Chamber Protocol. This a
 - **Transaction Queue**: Submit, confirm, and execute multi-signature transactions
 - **Treasury Management**: Deposit/withdraw assets using ERC4626 vault mechanics
 - **Delegation System**: Delegate voting power to NFT holders to compete for board seats
+- **Chamber assets (overview)**: Optional ERC-20 and NFT holdings via Alchemy when `VITE_ALCHEMY_API_KEY` is set. On local Anvil **31337**, the panel reads **Ethereum mainnet** balances for the chamber address (same as a mainnet fork).
 
 ## Tech Stack
 
@@ -44,12 +45,18 @@ npm install
 
 ### Configuration
 
-1. Update the WalletConnect Project ID in `src/lib/wagmi.ts`:
+1. Optional — **Alchemy** for indexed chamber assets on the Chamber overview tab. Create an API key at [alchemy.com](https://www.alchemy.com) and add to `app/.env`:
+   ```bash
+   VITE_ALCHEMY_API_KEY=your_key
+   ```
+   Enable Ethereum, Sepolia, Base, and Arbitrum apps in the Alchemy dashboard. The same key powers **wagmi RPC** (read/write on those chains) and the **Chamber assets** panel.
+
+2. Update the WalletConnect Project ID in `src/lib/wagmi.ts`:
    ```typescript
    projectId: 'YOUR_WALLETCONNECT_PROJECT_ID'
    ```
 
-2. Update contract addresses for your deployment in `src/lib/wagmi.ts`:
+3. Update contract addresses for your deployment in `src/lib/wagmi.ts`:
    ```typescript
    export const CONTRACT_ADDRESSES = {
      sepolia: {

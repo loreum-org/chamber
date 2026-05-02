@@ -9,7 +9,7 @@
     {
       "id": "UPGT-02",
       "status": "SAFE",
-      "description": "Agent uses ERC-7201 slot 0xd17d9a... for AgentStorage. ChamberRegistry uses slot 0xf63155... No overlap.",
+      "description": "Agent uses ERC-7201 slot 0xd17d9a... for AgentStorage. Registry uses slot 0xf63155... No overlap.",
       "verified": true
     },
     {
@@ -35,7 +35,7 @@
     },
     {
       "id": "INIT-03",
-      "contract": "ChamberRegistry",
+      "contract": "Registry",
       "status": "SAFE",
       "checks": ["constructor() calls _disableInitializers()", "initialize() uses initializer modifier", "Zero address checks on implementation and admin"]
     },

@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
-import { FiArrowRight, FiUsers, FiLayers, FiCheckCircle, FiShield } from 'react-icons/fi'
-import { useReadContract } from 'wagmi'
-import { useChamberInfo } from '@/hooks'
+import { FiArrowRight, FiUsers, FiLayers, FiCheckCircle, FiShield, FiStar } from 'react-icons/fi'
+import { useReadContract, useAccount } from 'wagmi'
+import { useChamberInfo, useChamberBalance } from '@/hooks'
 import { formatUnits } from 'viem'
 import { erc20Abi } from '@/contracts'
 
@@ -10,16 +10,19 @@ interface ChamberCardProps {
 }
 
 export default function ChamberCard({ address }: ChamberCardProps) {
-  const { 
-    name, 
-    symbol, 
-    totalAssets, 
-    seats, 
-    quorum, 
-    directors, 
+  const { address: userAddress } = useAccount()
+  const {
+    name,
+    symbol,
+    totalAssets,
+    seats,
+    quorum,
+    directors,
     transactionCount,
     assetToken,
   } = useChamberInfo(address)
+
+  const { balance: userBalance } = useChamberBalance(address, userAddress)
 
   // Get asset token symbol
   const { data: assetSymbol } = useReadContract({
@@ -31,9 +34,15 @@ export default function ChamberCard({ address }: ChamberCardProps) {
 
   const shortAddress = `${address.slice(0, 6)}...${address.slice(-4)}`
 
+  const isUserDirector =
+    userAddress &&
+    directors?.some((d) => d.toLowerCase() === userAddress.toLowerCase())
+
+  const hasDeposit = userBalance !== undefined && userBalance > 0n
+
   return (
     <Link to={`/chamber/${address}`} className="card-hover group block relative">
-      {/* Transaction Count Badge - only show if there are transactions */}
+      {/* Transaction Count Badge */}
       {transactionCount !== undefined && transactionCount > 0 && (
         <div className="absolute -top-2 -right-2 z-10">
           <span className="badge bg-slate-700 text-slate-300 border-slate-600">
@@ -46,7 +55,7 @@ export default function ChamberCard({ address }: ChamberCardProps) {
       {/* Header */}
       <div className="flex items-start justify-between mb-5">
         <div>
-          <h3 className="font-heading text-lg font-semibold text-slate-100 group-hover:text-cyan-400 transition-colors">
+          <h3 className="font-heading text-lg font-semibold text-slate-100 group-hover:text-accent-400 transition-colors">
             {name || 'Loading...'}
           </h3>
           <p className="text-slate-500 text-sm font-mono mt-0.5">{shortAddress}</p>
@@ -62,10 +71,9 @@ export default function ChamberCard({ address }: ChamberCardProps) {
             <span>Total Assets</span>
           </div>
           <div className="font-mono text-slate-100 font-medium">
-            {totalAssets !== undefined 
+            {totalAssets !== undefined
               ? `${parseFloat(formatUnits(totalAssets, 18)).toFixed(2)}`
-              : '...'
-            }
+              : '...'}
             {assetSymbol && <span className="text-slate-400 ml-1">{assetSymbol as string}</span>}
           </div>
         </div>
@@ -80,19 +88,32 @@ export default function ChamberCard({ address }: ChamberCardProps) {
         </div>
       </div>
 
-      {/* Additional Info */}
+      {/* Footer row */}
       <div className="flex items-center justify-between text-sm border-t border-slate-700/30 pt-4">
-        <div className="flex items-center gap-4 text-slate-500">
+        <div className="flex items-center gap-3 text-slate-500 flex-wrap">
           <span className="flex items-center gap-1.5">
             <FiCheckCircle className="w-3.5 h-3.5 text-emerald-500" />
             <span>{quorum} quorum</span>
           </span>
           <span className="flex items-center gap-1.5">
-            <FiUsers className="w-3.5 h-3.5 text-violet-500" />
+            <FiUsers className="w-3.5 h-3.5 text-accent-500" />
             <span>{directors?.length || 0} directors</span>
           </span>
         </div>
-        <FiArrowRight className="w-4 h-4 text-slate-600 group-hover:text-cyan-400 group-hover:translate-x-1 transition-all" />
+        <div className="flex items-center gap-2">
+          {isUserDirector && (
+            <span className="flex items-center gap-1 text-[10px] text-accent-400 font-medium">
+              <FiStar className="w-3 h-3" />
+              You
+            </span>
+          )}
+          {hasDeposit && !isUserDirector && (
+            <span className="text-[10px] text-slate-400 font-mono">
+              {parseFloat(formatUnits(userBalance!, 18)).toFixed(2)} shares
+            </span>
+          )}
+          <FiArrowRight className="w-4 h-4 text-slate-600 group-hover:text-accent-400 group-hover:translate-x-1 transition-all" />
+        </div>
       </div>
     </Link>
   )

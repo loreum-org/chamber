@@ -16,7 +16,7 @@ This security audit reviewed the Chamber protocol, a governance system where NFT
 - `Chamber.sol`: Main protocol contract combining ERC4626 vault, board management, and multi-signature wallet
 - `Board.sol`: Sorted linked list implementation for delegation tracking
 - `Wallet.sol`: Multi-signature transaction management
-- Supporting contracts: `ChamberRegistry.sol`, `Agent.sol`, `ValidationRegistry.sol`, etc.
+- Supporting contracts: `Registry.sol`, `Agent.sol`, `ValidationRegistry.sol`, etc.
 
 **Key Components**:
 - ERC4626 vault with delegation constraints

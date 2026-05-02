@@ -1,18 +1,19 @@
 import { useEffect, useRef, useState } from 'react'
 import mermaid from 'mermaid'
+import DOMPurify from 'dompurify'
 
 mermaid.initialize({
   startOnLoad: true,
   theme: 'dark',
-  securityLevel: 'loose',
+  securityLevel: 'strict',
   fontFamily: 'Inter, system-ui, sans-serif',
   themeVariables: {
-    primaryColor: '#06b6d4',
+    primaryColor: '#1e40af',
     primaryTextColor: '#f1f5f9',
-    primaryBorderColor: '#0e7490',
-    lineColor: '#94a3b8',
-    secondaryColor: '#8b5cf6',
-    tertiaryColor: '#1e293b',
+    primaryBorderColor: '#2563eb',
+    lineColor: '#64748b',
+    secondaryColor: '#334155',
+    tertiaryColor: '#0f172a',
   }
 })
 
@@ -35,10 +36,11 @@ export default function Mermaid({ chart }: MermaidProps) {
         setSvg('')
         
         const id = `mermaid-${Math.random().toString(36).substring(2, 11)}`
-        const { svg } = await mermaid.render(id, chart)
+        const { svg: rawSvg } = await mermaid.render(id, chart)
+        const cleanSvg = DOMPurify.sanitize(rawSvg, { USE_PROFILES: { svg: true, svgFilters: true } })
         
         if (isMounted) {
-          setSvg(svg)
+          setSvg(cleanSvg)
           setError(null)
         }
       } catch (err) {

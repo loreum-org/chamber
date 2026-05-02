@@ -2,7 +2,7 @@
 pragma solidity ^0.8.30;
 
 import {Test, console} from "forge-std/Test.sol";
-import {ChamberRegistry} from "src/ChamberRegistry.sol";
+import {Registry} from "src/Registry.sol";
 import {Chamber} from "src/Chamber.sol";
 import {IChamber} from "src/interfaces/IChamber.sol";
 import {MockERC20} from "test/mock/MockERC20.sol";
@@ -43,7 +43,7 @@ contract ReentrantTarget {
 }
 
 contract WalletReentrancyTest is Test {
-    ChamberRegistry public registry;
+    Registry public registry;
     MockERC20 public token;
     MockERC721 public nft;
     address public admin = makeAddr("admin");
@@ -88,7 +88,7 @@ contract WalletReentrancyTest is Test {
 
         // Execute — target's receive() will fire and try to reenter
         vm.prank(user2);
-        chamber.executeTransaction(2, 0);
+        chamber.executeTransaction(2, 0, "");
 
         // Verify callback fired but reentrant call was blocked
         assertTrue(target.attacked(), "Callback was triggered");

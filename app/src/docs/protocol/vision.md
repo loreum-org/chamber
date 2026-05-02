@@ -1,75 +1,39 @@
-Core Concepts of the Chamber
+Core concepts
 
-1. Modular Ecosystems
+1. Modular custody and governance
 
-The Chamber is built on two main ecosystems, promoting extensibility and open-source contributions:
-	1.	Sensor Hub:
-	•	The data ingestion and processing layer.
-	•	Connects to real-time data sources (e.g., blockchain events, market prices) and fetch-requested data (e.g., APIs, historical datasets).
-	•	Maintains a unified knowledge base with:
-	•	Real-time cache (e.g., Redis).
-	•	Persistent storage (e.g., vector databases).
-	•	Provides agents with accessible, normalized data for decision-making.
-	2.	Agent Hub:
-	•	The platform for adding and managing modular agents.
-	•	Agents are self-contained functionalities like trading bots, compliance checks, or analytics tools.
-	•	Encourages collaboration between agents to share insights and resources.
-	•	Supports a plug-and-play architecture, enabling easy addition or removal of agents.
+The Chamber combines ERC-4626 vault custody with NFT-backed membership and share-weight delegation:
 
-2. Governance Framework
-	•	The Chamber integrates a token-weighted voting system with NFT-based membership roles to ensure transparent and dynamic decision-making:
-	•	Leaderboard of Directors:
-	•	Stakeholders delegate governance power to specific NFT IDs, representing roles or members.
-	•	Decisions are made through quorum-based votes (e.g., 3 of 5 required).
-	•	Flexible participation:
-	•	Open (permissionless) or restricted (permissioned) governance options.
-	•	Compatible with regulatory compliance.
+- **Leaderboard of directors**: Stakeholders delegate Chamber share balance toward membership token IDs; the highest-weight IDs occupy board seats up to a configured maximum.
+- **Quorum governance**: Directors propose, confirm, and execute outbound transactions through the Wallet module with transparent quorum rules.
+- **Registry**: Verified Chamber implementations are deployed behind proxies with ProxyAdmin ownership transferred to each Chamber.
 
-3. Smart Account Functionality
-	•	The Chamber operates as an agentic smart account:
-	•	Agents execute transactions and interact with smart contracts under governance rules.
-	•	Provides a composable and extensible framework for executing multi-agent operations.
+2. Execution model
 
-4. Open-Source and Community-Driven
-	•	Encourages developers to contribute new agents, data sources, and integrations.
-	•	Promotes modular growth and innovation through community collaboration.
+Treasury moves are encoded as queued Wallet transactions; directors coordinate confirmations before execution. Proposal metadata URIs can be attached at submission time for accountability.
 
-  How the Chamber Works
+3. Smart-contract participation
 
-1. Data Flow
-	•	The Sensor Hub ingests data from multiple sources, processes it, and stores it in a unified knowledge base.
-	•	Agents query the knowledge base for actionable insights, such as:
-	•	Market conditions.
-	•	Risk signals.
-	•	Historical trends.
+Director addresses may be EOAs or smart contracts; where applicable the Chamber validates EIP-1271 signatures so contract wallets can govern alongside humans.
 
-2. Agent Collaboration
-	•	Agents in the Agent Hub operate autonomously but share resources and data.
-	•	Example:
-	•	A trading agent (e.g., Arbitron) can leverage market signals from a sentiment analysis agent and compliance checks from a risk monitoring agent.
+4. Open-source growth
 
-3. Governance Oversight
-	•	Governance ensures that agent actions align with community objectives and ethical constraints.
-	•	Stakeholders vote on:
-	•	Strategic updates.
-	•	Risk parameters.
-	•	Adding or removing agents.
+Extensions live around Chamber surfaces—telemetry, analytics, automation—that integrate without replacing on-chain quorum or custody guarantees.
 
-4. Execution and Feedback
-	•	Agents execute tasks (e.g., trades, data analysis) and report results to the Chamber.
-	•	The Chamber logs decisions, actions, and outcomes for transparency and refinement.
+How it works
 
-  Use Cases
-	1.	Trading and Market Operations:
-	•	A DEX trading agent identifies opportunities using real-time data.
-	•	Governance approves the strategy, and the agent executes trades.
-	2.	Portfolio Management:
-	•	A rebalancer agent analyzes asset allocation and proposes optimizations.
-	•	Governance votes on adjustments, which the agent then implements.
-	3.	Compliance and Risk Management:
-	•	A compliance agent monitors regulatory requirements and flags risky actions.
-	•	Other agents adapt strategies to mitigate flagged risks.
-	4.	Dynamic Governance:
-	•	Stakeholders adjust risk parameters during volatile market conditions to protect assets.
-	•	Agents dynamically adapt to updated governance rules.
+1. Users deposit underlying assets into the Chamber vault and receive Chamber shares.
 
+2. Share holders delegate voting weight toward NFT-backed seats that compete on an on-chain leaderboard.
+
+3. Sitting directors steward the transaction queue: submit targets and calldata, gather confirmations, and execute once quorum is satisfied.
+
+4. Sub-chambers may nest vault hierarchies via the Registry when parent vault ERC-20 shares back child Chambers.
+
+Use cases
+
+1. Treasury governance with explicit multisig workflow on-chain.
+
+2. Delegated voting toward designated membership representatives without sacrificing ERC-4626 accounting.
+
+3. Structured upgrades and operational moves enforced through Wallet confirmations rather than EOAs holding funds directly.

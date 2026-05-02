@@ -16,7 +16,7 @@ Chamber is an on-chain governance primitive combining three primitives:
 3. **Multisig Wallet** (`Wallet.sol`) — directors submit, confirm, and execute arbitrary transactions. Execution requires `confirmations >= quorum`. Transactions can target any address including the Chamber itself (for upgrades).
 
 **Supporting contracts**:
-- `ChamberRegistry` — factory and directory for Chamber and Agent proxies (TransparentUpgradeableProxy).
+- `Registry` — factory and directory for Chamber and Agent proxies (TransparentUpgradeableProxy).
 - `Agent` — smart-account contract that can hold an NFT directorship and auto-confirm transactions based on configurable governance policies. Implements EIP-1271.
 - `AgentIdentityRegistry` — ERC-721 identity NFTs for Agents (ERC-8004).
 - `ValidationRegistry` — ERC-8004 validation attestations for Agents.

@@ -1,6 +1,8 @@
 
 
-# Ignores development broadcast logs
+# Persisted local Anvil chain (see contracts/Makefile `anvil`)
+contracts/.anvil/
+
 
 /broadcast/*/31337/
 

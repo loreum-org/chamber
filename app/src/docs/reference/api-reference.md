@@ -113,7 +113,7 @@ Delegates tokens to a token ID.
 
 **Events**:
 - `Delegate(sender, tokenId, amount)`
-- `DelegationUpdated(agent, tokenId, newAmount)`
+- `DelegationUpdated(holder, tokenId, newAmount)`
 
 ---
 
@@ -131,41 +131,41 @@ Undelegates tokens from a token ID.
 
 **Events**:
 - `Undelegate(sender, tokenId, amount)`
-- `DelegationUpdated(agent, tokenId, newAmount)`
+- `DelegationUpdated(holder, tokenId, newAmount)`
 
 ---
 
-#### `getDelegations(address agent) → (uint256[] tokenIds, uint256[] amounts)`
-Returns all delegations for an agent.
+#### `getDelegations(address holder) → (uint256[] tokenIds, uint256[] amounts)`
+Returns all delegations for a share holder.
 
 **Parameters**:
-- `agent`: Address to query
+- `holder`: Address holding Chamber shares that delegated voting weight
 
 **Returns**:
 - `tokenIds`: Array of token IDs
 - `amounts`: Array of delegated amounts
 
 **Reverts**:
-- `ZeroAddress`: If agent is zero
+- `ZeroAddress`: If holder is zero
 
 ---
 
-#### `getAgentDelegation(address agent, uint256 tokenId) → uint256`
-Returns delegation amount for specific agent-tokenId pair.
+#### `getHolderDelegation(address holder, uint256 tokenId) → uint256`
+Returns delegation amount for a holder toward one membership tokenId.
 
 **Parameters**:
-- `agent`: Agent address
+- `holder`: Delegating holder address
 - `tokenId`: Token ID
 
 **Returns**: Delegation amount
 
 ---
 
-#### `getTotalAgentDelegations(address agent) → uint256`
-Returns total delegations across all token IDs for an agent.
+#### `getTotalHolderDelegations(address holder) → uint256`
+Returns total delegations across all token IDs for a holder.
 
 **Parameters**:
-- `agent`: Agent address
+- `holder`: Delegating holder address
 
 **Returns**: Total delegation amount
 
@@ -560,7 +560,7 @@ Transfers tokens from another address.
 
 ### Chamber Events
 
-- `DelegationUpdated(address indexed agent, uint256 indexed tokenId, uint256 amount)`
+- `DelegationUpdated(address indexed holder, uint256 indexed tokenId, uint256 amount)`
 - `DirectorshipChanged(address indexed account, uint256 indexed tokenId, bool isDirector)`
 - `QuorumUpdated(uint256 oldQuorum, uint256 newQuorum)`
 - `TransactionSubmitted(uint256 indexed transactionId, address indexed target, uint256 value)`

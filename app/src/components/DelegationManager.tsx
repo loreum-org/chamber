@@ -1,7 +1,7 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useAccount } from 'wagmi'
-import { formatUnits, parseUnits } from 'viem'
+import { formatUnits, parseUnits, zeroAddress } from 'viem'
 import {
   FiSend,
   FiArrowRight,
@@ -10,16 +10,21 @@ import {
   FiLoader,
   FiInfo,
   FiAlertCircle,
+  FiTrendingUp,
 } from 'react-icons/fi'
+import { ConnectButton } from '@rainbow-me/rainbowkit'
 import toast from 'react-hot-toast'
-import { 
-  useDelegate, 
-  useUndelegate, 
+import { useQueryClient } from '@tanstack/react-query'
+import {
+  useDelegate,
+  useUndelegate,
   useChamberEventRefresh,
   useSimulateDelegate,
   useSimulateUndelegate,
   useUserNFTs,
+  useNftTokenImage,
 } from '@/hooks'
+import { NftRetryableImage } from '@/components/NftRetryableImage'
 import type { BoardMember } from '@/types'
 
 interface DelegationManagerProps {
@@ -29,6 +34,8 @@ interface DelegationManagerProps {
   members: BoardMember[]
   vaultSymbol?: string
   nftToken?: `0x${string}`
+  /** Number of board seats — used for director rank badge threshold */
+  seats?: number
 }
 
 export default function DelegationManager({
@@ -38,8 +45,10 @@ export default function DelegationManager({
   members,
   vaultSymbol,
   nftToken,
+  seats = 5,
 }: DelegationManagerProps) {
-  const { address: userAddress } = useAccount()
+  const queryClient = useQueryClient()
+  const { address: userAddress, isConnected } = useAccount()
   const { tokenIds: userNFTTokenIds } = useUserNFTs(nftToken, userAddress)
   const [delegateTokenId, setDelegateTokenId] = useState('')
   const [delegateAmount, setDelegateAmount] = useState('')
@@ -51,6 +60,20 @@ export default function DelegationManager({
 
   // Watch for delegation events and auto-refresh when transactions are mined
   useChamberEventRefresh(chamberAddress)
+
+  const invalidateNftImagesForChamber = () => {
+    const needle = chamberAddress.toLowerCase()
+    queryClient.invalidateQueries({
+      predicate: (q) => {
+        try {
+          const k = JSON.stringify(q.queryKey).toLowerCase()
+          return k.includes('nft-token-image') && k.includes(needle)
+        } catch {
+          return false
+        }
+      },
+    })
+  }
 
   const totalDelegated = delegations.reduce((sum, d) => sum + d.amount, 0n)
   const availableBalance = userBalance ? userBalance - totalDelegated : 0n
@@ -93,6 +116,30 @@ export default function DelegationManager({
     undelegateAmountBigInt
   )
 
+  // Rank-impact preview: compute where the target token would land after delegation
+  const delegateRankPreview = useMemo(() => {
+    if (!delegateTokenId || !delegateAmountBigInt || delegateAmountBigInt === 0n) return null
+    const tokenIdBig = BigInt(delegateTokenId)
+    const updated = members.map((m) =>
+      m.tokenId === tokenIdBig
+        ? { ...m, amount: m.amount + delegateAmountBigInt }
+        : m
+    )
+    if (!updated.some((m) => m.tokenId === tokenIdBig)) {
+      updated.push({
+        tokenId: tokenIdBig, amount: delegateAmountBigInt,
+        next: 0n, prev: 0n, rank: members.length + 1,
+      })
+    }
+    const sorted = [...updated].sort((a, b) =>
+      b.amount > a.amount ? 1 : b.amount < a.amount ? -1 : 0
+    )
+    const currentRank = members.findIndex((m) => m.tokenId === tokenIdBig)
+    const newRank = sorted.findIndex((m) => m.tokenId === tokenIdBig)
+    const willBeDirector = newRank + 1 <= seats
+    return { currentRank: currentRank >= 0 ? currentRank + 1 : null, newRank: newRank + 1, willBeDirector }
+  }, [delegateTokenId, delegateAmountBigInt, members, seats])
+
   // Helper to extract readable error message
   const getErrorMessage = (error: Error | null): string | null => {
     if (!error) return null
@@ -101,10 +148,10 @@ export default function DelegationManager({
     // Map custom error names to user-friendly messages
     const errorMessages: Record<string, string> = {
       'InsufficientChamberBalance': 'You don\'t have enough shares to delegate this amount',
-      'InsufficientDelegatedAmount': 'You haven\'t delegated this much to this NFT',
+      'InsufficientDelegatedAmount': 'You haven\'t delegated this much to this member',
       'ZeroTokenId': 'Token ID cannot be zero',
       'ZeroAmount': 'Amount cannot be zero',
-      'InvalidTokenId': 'This NFT token ID does not exist',
+      'InvalidTokenId': 'This member ID does not exist',
       'NotDirector': 'You are not a director',
       'ExceedsDelegatedAmount': 'Amount exceeds your delegated balance',
     }
@@ -128,13 +175,13 @@ export default function DelegationManager({
     }
     
     // Check for error signature and provide guidance
-    if (message.includes('0x1fed7fc5')) return 'This NFT token ID does not exist'
+    if (message.includes('0x1fed7fc5')) return 'This member ID does not exist'
     if (message.includes('0xf4844814')) return 'You don\'t have enough shares'
     
     // Common error patterns
     if (message.includes('insufficient balance')) return 'Insufficient balance'
     if (message.includes('exceeds balance')) return 'Amount exceeds balance'
-    if (message.includes('not owner')) return 'You do not own this NFT'
+    if (message.includes('not owner')) return 'You do not own this member token'
     
     // Return truncated message
     return message.length > 100 ? message.slice(0, 100) + '...' : message
@@ -145,6 +192,7 @@ export default function DelegationManager({
     try {
       await delegate(BigInt(delegateTokenId), parseUnits(delegateAmount, 18))
       toast.success('Delegation submitted!')
+      invalidateNftImagesForChamber()
       setDelegateTokenId('')
       setDelegateAmount('')
     } catch (err) {
@@ -158,12 +206,28 @@ export default function DelegationManager({
     try {
       await undelegate(BigInt(undelegateTokenId), parseUnits(undelegateAmount, 18))
       toast.success('Undelegation submitted!')
+      invalidateNftImagesForChamber()
       setUndelegateTokenId('')
       setUndelegateAmount('')
     } catch (err) {
       console.error(err)
       toast.error('Undelegation failed')
     }
+  }
+
+  if (!isConnected) {
+    return (
+      <div className="panel p-10 text-center space-y-4">
+        <FiUser className="w-8 h-8 text-slate-600 mx-auto" />
+        <div>
+          <h3 className="font-heading text-lg font-semibold text-slate-300 mb-1">Connect your wallet</h3>
+          <p className="text-slate-500 text-sm">Connect to view your delegations and manage voting power.</p>
+        </div>
+        <div className="flex justify-center pt-2">
+          <ConnectButton />
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -226,14 +290,14 @@ export default function DelegationManager({
             </div>
             <div>
               <h3 className="font-heading font-semibold text-slate-100">Delegate</h3>
-              <p className="text-slate-500 text-xs">Give voting power to an NFT</p>
+              <p className="text-slate-500 text-xs">Give voting power to a member</p>
             </div>
           </div>
 
           <div className="space-y-4">
             <div>
               <label className="block text-slate-300 text-sm font-medium mb-2">
-                NFT Token ID
+                Member ID
               </label>
               {userNFTTokenIds.length > 0 ? (
                 <select
@@ -241,7 +305,7 @@ export default function DelegationManager({
                   value={delegateTokenId}
                   onChange={(e) => setDelegateTokenId(e.target.value)}
                 >
-                  <option value="">Select your NFT...</option>
+                  <option value="">Select your member token...</option>
                   {userNFTTokenIds.map((id) => (
                     <option key={id.toString()} value={id.toString()}>
                       #{id.toString()} {members.find(m => m.tokenId === id) ? `(Rank #${members.find(m => m.tokenId === id)?.rank})` : ''}
@@ -260,7 +324,7 @@ export default function DelegationManager({
               )}
               {userNFTTokenIds.length > 0 && (
                 <p className="text-slate-500 text-xs mt-1">
-                  Select an NFT you own to delegate voting power to it
+                  Select a member token you own to delegate voting power to it
                 </p>
               )}
             </div>
@@ -281,7 +345,7 @@ export default function DelegationManager({
                 />
                 <button
                   onClick={() => setDelegateAmount(formatUnits(availableBalance, 18))}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-cyan-400 hover:text-cyan-300 text-sm font-medium"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-accent-400 hover:text-accent-300 text-sm font-medium"
                 >
                   MAX
                 </button>
@@ -295,6 +359,30 @@ export default function DelegationManager({
                 <div className="text-red-400 text-sm">
                   <span className="font-medium">Transaction will fail: </span>
                   {getErrorMessage(delegateSimError)}
+                </div>
+              </div>
+            )}
+
+            {/* Rank impact preview */}
+            {delegateRankPreview && !delegateSimError && (
+              <div className={`flex items-start gap-2 p-3 rounded-lg border ${
+                delegateRankPreview.willBeDirector
+                  ? 'bg-accent-500/10 border-accent-500/25'
+                  : 'bg-slate-800/50 border-slate-700/40'
+              }`}>
+                <FiTrendingUp className={`w-4 h-4 mt-0.5 shrink-0 ${delegateRankPreview.willBeDirector ? 'text-accent-400' : 'text-slate-500'}`} />
+                <div className="text-sm">
+                  {delegateRankPreview.currentRank ? (
+                    <span className={delegateRankPreview.willBeDirector ? 'text-accent-300' : 'text-slate-400'}>
+                      Member Id #{delegateTokenId} moves from Rank #{delegateRankPreview.currentRank} → Rank #{delegateRankPreview.newRank}
+                      {delegateRankPreview.willBeDirector ? ' — would fill a board seat' : ''}
+                    </span>
+                  ) : (
+                    <span className={delegateRankPreview.willBeDirector ? 'text-accent-300' : 'text-slate-400'}>
+                      Member Id #{delegateTokenId} enters at Rank #{delegateRankPreview.newRank}
+                      {delegateRankPreview.willBeDirector ? ' — would fill a board seat' : ''}
+                    </span>
+                  )}
                 </div>
               </div>
             )}
@@ -344,14 +432,14 @@ export default function DelegationManager({
           <div className="space-y-4">
             <div>
               <label className="block text-slate-300 text-sm font-medium mb-2">
-                NFT Token ID
+                Member ID
               </label>
               <select
                 className="input"
                 value={undelegateTokenId}
                 onChange={(e) => setUndelegateTokenId(e.target.value)}
               >
-                <option value="">Select delegated NFT...</option>
+                <option value="">Select delegated member...</option>
                 {delegations.map((d) => (
                   <option key={d.tokenId.toString()} value={d.tokenId.toString()}>
                     #{d.tokenId.toString()} - {parseFloat(formatUnits(d.amount, 18)).toFixed(4)} {vaultSymbol || ''} delegated
@@ -379,7 +467,7 @@ export default function DelegationManager({
                     const del = delegations.find(d => d.tokenId.toString() === undelegateTokenId)
                     if (del) setUndelegateAmount(formatUnits(del.amount, 18))
                   }}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-cyan-400 hover:text-cyan-300 text-sm font-medium"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-accent-400 hover:text-accent-300 text-sm font-medium"
                 >
                   MAX
                 </button>
@@ -433,7 +521,7 @@ export default function DelegationManager({
         <div className="p-4 border-b border-slate-700/30 flex items-center justify-between">
           <div>
             <h3 className="font-heading font-semibold text-slate-100">Your Delegations</h3>
-            <p className="text-slate-500 text-xs mt-0.5">NFTs you've delegated voting power to</p>
+            <p className="text-slate-500 text-xs mt-0.5">Members you've delegated voting power to</p>
           </div>
           <span className="badge badge-primary">{delegations.length} active</span>
         </div>
@@ -442,18 +530,22 @@ export default function DelegationManager({
           <div className="divide-y divide-slate-700/30">
             {delegations.map((delegation) => {
               const member = members.find(m => m.tokenId === delegation.tokenId)
+              const isDirectorSeat = !!(member?.rank && member.rank <= seats)
               return (
                 <div key={delegation.tokenId.toString()} className="p-4 flex items-center gap-4">
-                  <div className="w-10 h-10 bg-cyan-500/15 rounded-xl flex items-center justify-center">
-                    <FiUser className="w-5 h-5 text-cyan-400" />
-                  </div>
+                  <DelegationMemberAvatar
+                    nftToken={nftToken && nftToken !== zeroAddress ? nftToken : undefined}
+                    tokenId={delegation.tokenId}
+                    chamberAddress={chamberAddress}
+                    isDirector={isDirectorSeat}
+                  />
                   <div className="flex-1">
                     <div className="font-mono text-slate-100">
-                      Token #{delegation.tokenId.toString()}
+                      Member Id #{delegation.tokenId.toString()}
                     </div>
-                    {member && member.rank && member.rank <= 5 && (
+                    {member && member.rank && member.rank <= seats && (
                       <span className="badge badge-primary text-[10px] mt-1">
-                        Rank #{member.rank}
+                        Director · Rank #{member.rank}
                       </span>
                     )}
                   </div>
@@ -471,13 +563,54 @@ export default function DelegationManager({
         ) : (
           <div className="p-8 text-center">
             <FiInfo className="w-8 h-8 text-slate-600 mx-auto mb-3" />
-            <p className="text-slate-500">You haven't delegated to any NFTs yet</p>
+            <p className="text-slate-500">You haven't delegated to any members yet</p>
             <p className="text-slate-600 text-sm mt-1">
               Delegate your shares to give voting power to board candidates
             </p>
           </div>
         )}
       </motion.div>
+    </div>
+  )
+}
+
+function DelegationMemberAvatar({
+  nftToken,
+  tokenId,
+  chamberAddress,
+  isDirector,
+}: {
+  nftToken: `0x${string}` | undefined
+  tokenId: bigint
+  chamberAddress: `0x${string}`
+  isDirector: boolean
+}) {
+  const { data: imageUrl, resolvingImages } = useNftTokenImage(nftToken, tokenId, {
+    chamberAddress,
+  })
+  const [broken, setBroken] = useState(false)
+  useEffect(() => setBroken(false), [imageUrl])
+  const showImg = !!(imageUrl && !broken)
+  const pending = !!nftToken && resolvingImages && !imageUrl
+
+  return (
+    <div
+      className={`w-11 h-11 rounded-full overflow-hidden flex items-center justify-center shrink-0 ring-2 ring-offset-2 ring-offset-slate-900/90
+        ${isDirector ? 'ring-accent-500/55' : 'ring-slate-600/70'}
+        ${showImg ? '' : isDirector ? 'bg-accent-500/15' : 'bg-slate-800/90'}`}
+    >
+      {showImg ? (
+        <NftRetryableImage
+          src={imageUrl}
+          alt=""
+          className="w-full h-full object-cover"
+          onLoadFailed={() => setBroken(true)}
+        />
+      ) : pending ? (
+        <div className="w-full h-full animate-pulse bg-slate-600/60" aria-hidden />
+      ) : (
+        <FiUser className={`w-5 h-5 ${isDirector ? 'text-accent-400' : 'text-slate-500'}`} />
+      )}
     </div>
   )
 }

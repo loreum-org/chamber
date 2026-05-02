@@ -1,5 +1,64 @@
+import { BaseError, getAddress, hexToString, type Hex } from 'viem'
+
+/** EIP-1967 implementation slot (OpenZeppelin `ERC1967Utils.IMPLEMENTATION_SLOT`). */
+export const ERC1967_IMPLEMENTATION_SLOT =
+  '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc' as const
+
+/** Decode `Chamber.VERSION` (`bytes32` short string, right-padded) for UI. */
+export function chamberVersionBytes32ToLabel(value: Hex | undefined): string | undefined {
+  if (!value || value === '0x') return undefined
+  try {
+    const s = hexToString(value, { size: 32 })
+    const trimmed = s.replace(/\0+$/g, '').trim()
+    return trimmed.length > 0 ? trimmed : undefined
+  } catch {
+    return undefined
+  }
+}
+
+export function addressFromEip1967ImplementationSlot(slotValue: Hex | undefined): `0x${string}` | undefined {
+  if (!slotValue || slotValue === '0x' || slotValue === `0x${'0'.repeat(64)}`) return undefined
+  try {
+    return getAddress(`0x${slotValue.slice(-40)}` as `0x${string}`)
+  } catch {
+    return undefined
+  }
+}
+
 export function cn(...inputs: (string | undefined | null | false)[]): string {
   return inputs.filter(Boolean).join(' ')
+}
+
+/** Human-readable revert / RPC messages for toast UI (wagmi/viem/BaseError chains). */
+export function formatWalletSendError(error: unknown, fallback = 'Transaction failed'): string {
+  if (error instanceof BaseError) return (error.shortMessage || error.message || fallback).trim()
+  if (typeof error === 'object' && error !== null) {
+    const o = error as { shortMessage?: string; message?: string }
+    const s = typeof o.shortMessage === 'string' ? o.shortMessage.trim() : ''
+    if (s) return s
+    const m = typeof o.message === 'string' ? o.message.trim() : ''
+    if (m && m !== 'Rejected user operation.' && !m.includes('Internal JSON-RPC error')) return m.slice(0, 320)
+    if (m) return m.slice(0, 280)
+  }
+  if (error instanceof Error) return error.message.slice(0, 280)
+  return fallback
+}
+
+/** Full toast body for localhost test ERC-721 mint (nonce/cache vs chain reset guidance). */
+export function formatLocalTestMintToast(error: unknown): string {
+  const base = formatWalletSendError(error)
+  const b = base.toLowerCase()
+
+  const nonceStale =
+    b.includes('nonce too low') ||
+    b.includes('nonce too high') ||
+    b.includes('invalid nonce')
+
+  if (nonceStale) {
+    return `${base}. Wallets often cache the next tx nonce; after Anvil restarts the chain nonce resets. In MetaMask: Settings → Advanced → Clear activity tab data, then mint again. Other wallets: disconnect or use an account reset for this network if available. If the chain was wiped, also run make setup-local.`
+  }
+
+  return `${base} If Anvil was reset, redeploy mocks (make setup-local).`
 }
 
 /** Chain ID to block explorer base URL */

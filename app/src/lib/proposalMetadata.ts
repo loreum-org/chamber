@@ -1,6 +1,6 @@
 /**
- * Proposal metadata storage (title, description) for Chamber transactions.
- * Stored in localStorage since the contract does not support on-chain metadata.
+ * Proposal metadata helpers for Chamber transactions.
+ * Metadata is now committed on-chain as a URI, with localStorage kept as a legacy fallback.
  * Key: chamber-proposal-{chamberAddress}-{txId}
  */
 
@@ -10,6 +10,12 @@ export interface ProposalMetadata {
   title: string
   description?: string
   templateId?: string
+  riskLevel?: 'low' | 'medium' | 'high'
+  riskSummary?: string
+  target?: string
+  valueEth?: string
+  functionName?: string
+  metadataURI?: string
   createdAt: number
 }
 
@@ -41,4 +47,36 @@ export function setProposalMetadata(
     createdAt: Date.now(),
   }
   localStorage.setItem(key, JSON.stringify(full))
+}
+
+export function createProposalMetadataURI(meta: Omit<ProposalMetadata, 'createdAt'>): string {
+  const payload: ProposalMetadata = {
+    ...meta,
+    createdAt: Date.now(),
+  }
+  return `data:application/json;base64,${btoa(JSON.stringify(payload))}`
+}
+
+export function parseProposalMetadataURI(metadataURI?: string): ProposalMetadata | null {
+  if (!metadataURI) return null
+
+  try {
+    if (metadataURI.startsWith('data:application/json;base64,')) {
+      const encoded = metadataURI.replace('data:application/json;base64,', '')
+      return JSON.parse(atob(encoded)) as ProposalMetadata
+    }
+
+    if (metadataURI.startsWith('data:application/json,')) {
+      const encoded = metadataURI.replace('data:application/json,', '')
+      return JSON.parse(decodeURIComponent(encoded)) as ProposalMetadata
+    }
+  } catch {
+    return null
+  }
+
+  return {
+    title: 'External proposal metadata',
+    metadataURI,
+    createdAt: 0,
+  }
 }

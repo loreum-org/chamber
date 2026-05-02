@@ -105,9 +105,9 @@ export const chamberAbi = [
   },
   {
     type: 'function',
-    name: 'version',
+    name: 'VERSION',
     inputs: [],
-    outputs: [{ name: '', type: 'string' }],
+    outputs: [{ name: '', type: 'bytes32' }],
     stateMutability: 'view',
   },
   // Delegation functions
@@ -134,7 +134,7 @@ export const chamberAbi = [
   {
     type: 'function',
     name: 'getDelegations',
-    inputs: [{ name: 'agent', type: 'address' }],
+    inputs: [{ name: 'holder', type: 'address' }],
     outputs: [
       { name: 'tokenIds', type: 'uint256[]' },
       { name: 'amounts', type: 'uint256[]' },
@@ -143,9 +143,9 @@ export const chamberAbi = [
   },
   {
     type: 'function',
-    name: 'getAgentDelegation',
+    name: 'getHolderDelegation',
     inputs: [
-      { name: 'agent', type: 'address' },
+      { name: 'holder', type: 'address' },
       { name: 'tokenId', type: 'uint256' },
     ],
     outputs: [{ name: 'amount', type: 'uint256' }],
@@ -153,8 +153,8 @@ export const chamberAbi = [
   },
   {
     type: 'function',
-    name: 'getTotalAgentDelegations',
-    inputs: [{ name: 'agent', type: 'address' }],
+    name: 'getTotalHolderDelegations',
+    inputs: [{ name: 'holder', type: 'address' }],
     outputs: [{ name: 'amount', type: 'uint256' }],
     stateMutability: 'view',
   },
@@ -253,6 +253,19 @@ export const chamberAbi = [
   },
   {
     type: 'function',
+    name: 'submitTransactionWithMetadata',
+    inputs: [
+      { name: 'tokenId', type: 'uint256' },
+      { name: 'target', type: 'address' },
+      { name: 'value', type: 'uint256' },
+      { name: 'data', type: 'bytes' },
+      { name: 'metadataURI', type: 'string' },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
     name: 'confirmTransaction',
     inputs: [
       { name: 'tokenId', type: 'uint256' },
@@ -345,6 +358,13 @@ export const chamberAbi = [
   },
   {
     type: 'function',
+    name: 'getTransactionMetadata',
+    inputs: [{ name: 'nonce', type: 'uint256' }],
+    outputs: [{ name: 'metadataURI', type: 'string' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
     name: 'getConfirmation',
     inputs: [
       { name: 'tokenId', type: 'uint256' },
@@ -389,7 +409,7 @@ export const chamberAbi = [
     type: 'event',
     name: 'DelegationUpdated',
     inputs: [
-      { name: 'agent', type: 'address', indexed: true },
+      { name: 'holder', type: 'address', indexed: true },
       { name: 'tokenId', type: 'uint256', indexed: true },
       { name: 'amount', type: 'uint256', indexed: false },
     ],
@@ -401,6 +421,14 @@ export const chamberAbi = [
       { name: 'transactionId', type: 'uint256', indexed: true },
       { name: 'target', type: 'address', indexed: true },
       { name: 'value', type: 'uint256', indexed: false },
+    ],
+  },
+  {
+    type: 'event',
+    name: 'ProposalMetadataSet',
+    inputs: [
+      { name: 'nonce', type: 'uint256', indexed: true },
+      { name: 'metadataURI', type: 'string', indexed: false },
     ],
   },
   {
@@ -589,15 +617,13 @@ export const chamberAbi = [
   },
 ] as const
 
-// ChamberRegistry ABI - Factory for deploying chambers
-export const chamberRegistryAbi = [
+// Registry ABI - Factory for deploying chambers
+export const registryAbi = [
   {
     type: 'function',
     name: 'initialize',
     inputs: [
       { name: '_implementation', type: 'address' },
-      { name: '_agentImplementation', type: 'address' },
-      { name: '_agentIdentityRegistry', type: 'address' },
       { name: 'admin', type: 'address' },
     ],
     outputs: [],
@@ -618,13 +644,9 @@ export const chamberRegistryAbi = [
   },
   {
     type: 'function',
-    name: 'createAgent',
-    inputs: [
-      { name: 'owner', type: 'address' },
-      { name: 'policy', type: 'address' },
-      { name: 'metadataURI', type: 'string' },
-    ],
-    outputs: [{ name: 'agent', type: 'address' }],
+    name: 'setChamberImplementation',
+    inputs: [{ name: 'newImplementation', type: 'address' }],
+    outputs: [],
     stateMutability: 'nonpayable',
   },
   {
@@ -694,6 +716,13 @@ export const chamberRegistryAbi = [
     stateMutability: 'view',
   },
   {
+    type: 'function',
+    name: 'proxyAdmin',
+    inputs: [],
+    outputs: [{ name: '', type: 'address' }],
+    stateMutability: 'view',
+  },
+  {
     type: 'event',
     name: 'ChamberCreated',
     inputs: [
@@ -707,11 +736,10 @@ export const chamberRegistryAbi = [
   },
   {
     type: 'event',
-    name: 'AgentCreated',
+    name: 'ChamberImplementationUpdated',
     inputs: [
-      { name: 'agent', type: 'address', indexed: true },
-      { name: 'owner', type: 'address', indexed: true },
-      { name: 'policy', type: 'address', indexed: false },
+      { name: 'previousImplementation', type: 'address', indexed: true },
+      { name: 'newImplementation', type: 'address', indexed: true },
     ],
   },
 ] as const

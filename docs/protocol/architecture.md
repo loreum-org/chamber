@@ -18,7 +18,7 @@ Registry
 
 ## Core Components
 
-### 1. ChamberRegistry Contract
+### 1. Registry Contract
 
 **Purpose**: Factory contract for deploying Chamber instances using minimal proxy pattern.
 
@@ -243,7 +243,7 @@ function initialize(...) external initializer {
 
 ### 1. Minimal Proxy Pattern
 
-ChamberRegistry uses `Clones.clone()` for gas-efficient Chamber deployment:
+Registry uses `Clones.clone()` for gas-efficient Chamber deployment:
 - ~45,000 gas vs ~2,000,000+ gas for full deployment
 - Shared implementation code
 - Separate storage per instance

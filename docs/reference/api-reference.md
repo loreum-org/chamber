@@ -1,11 +1,11 @@
 # Chamber API Reference
 
-## ChamberRegistry Contract
+## Registry Contract
 
 ### Functions
 
 #### `initialize(address _implementation, address admin)`
-Initializes the ChamberRegistry contract.
+Initializes the Registry contract.
 
 **Parameters**:
 - `_implementation`: Address of Chamber implementation contract
@@ -554,7 +554,7 @@ Transfers tokens from another address.
 
 ## Events
 
-### ChamberRegistry Events
+### Registry Events
 
 - `ChamberCreated(address indexed chamber, uint256 seats, string name, string symbol, address erc20Token, address erc721Token)`
 
@@ -585,7 +585,7 @@ Transfers tokens from another address.
 
 ## Errors
 
-### ChamberRegistry Errors
+### Registry Errors
 
 - `ZeroAddress()`: Address is zero
 - `InvalidSeats()`: Seats value is invalid (0 or > 20)

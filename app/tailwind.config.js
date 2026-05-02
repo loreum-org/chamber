@@ -7,7 +7,7 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Modern tech palette
+        // Neutral slate tuned for dark UI readability
         slate: {
           50: '#f8fafc',
           100: '#f1f5f9',
@@ -22,69 +22,57 @@ export default {
           900: '#0f172a',
           950: '#020617',
         },
-        // Primary - Electric blue/cyan
-        primary: {
-          50: '#ecfeff',
-          100: '#cffafe',
-          200: '#a5f3fc',
-          300: '#67e8f9',
-          400: '#22d3ee',
-          500: '#06b6d4',
-          600: '#0891b2',
-          700: '#0e7490',
-          800: '#155e75',
-          900: '#164e63',
-        },
-        // Secondary accent - Purple
-        violet: {
-          50: '#f5f3ff',
-          100: '#ede9fe',
-          200: '#ddd6fe',
-          300: '#c4b5fd',
-          400: '#a78bfa',
-          500: '#8b5cf6',
-          600: '#7c3aed',
-          700: '#6d28d9',
-          800: '#5b21b6',
-          900: '#4c1d95',
+        // Primary accent — restrained institutional blue (trust / clarity)
+        accent: {
+          50: '#eff6ff',
+          100: '#dbeafe',
+          200: '#bfdbfe',
+          300: '#93c5fd',
+          400: '#60a5fa',
+          500: '#3b82f6',
+          600: '#2563eb',
+          700: '#1d4ed8',
+          800: '#1e40af',
+          900: '#1e3a8a',
+          950: '#172554',
         },
       },
       fontFamily: {
-        heading: ['Space Grotesk', 'Inter', 'system-ui', 'sans-serif'],
+        heading: ['"IBM Plex Sans"', 'Inter', 'system-ui', 'sans-serif'],
         sans: ['Inter', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'Menlo', 'monospace'],
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
         'gradient-conic': 'conic-gradient(var(--tw-gradient-stops))',
-        'gradient-accent': 'linear-gradient(135deg, #06b6d4 0%, #8b5cf6 100%)',
-        'gradient-dark': 'linear-gradient(180deg, #1e293b 0%, #0f172a 100%)',
-        'mesh-gradient': 'radial-gradient(at 40% 20%, hsla(188, 85%, 40%, 0.15) 0px, transparent 50%), radial-gradient(at 80% 0%, hsla(263, 85%, 60%, 0.1) 0px, transparent 50%), radial-gradient(at 0% 50%, hsla(188, 85%, 40%, 0.1) 0px, transparent 50%)',
+        'gradient-accent': 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+        'gradient-dark': 'linear-gradient(180deg, #151d2e 0%, #0b0f17 100%)',
+        // Very subtle depth — no purple / neon spots
+        'mesh-gradient':
+          'radial-gradient(at 18% 12%, rgba(37, 99, 235, 0.07) 0px, transparent 45%), radial-gradient(at 92% 8%, rgba(37, 99, 235, 0.05) 0px, transparent 42%), radial-gradient(at 50% 88%, rgba(15, 23, 42, 0.5) 0px, transparent 55%)',
       },
       boxShadow: {
-        'glow': '0 0 20px rgba(6, 182, 212, 0.3)',
-        'glow-lg': '0 0 40px rgba(6, 182, 212, 0.4)',
-        'glow-violet': '0 0 20px rgba(139, 92, 246, 0.3)',
-        'inner-glow': 'inset 0 0 20px rgba(6, 182, 212, 0.1)',
-        'card': '0 4px 20px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.05)',
-        'card-hover': '0 8px 30px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(6, 182, 212, 0.2)',
+        soft: '0 1px 2px rgba(0, 0, 0, 0.35), 0 4px 16px rgba(0, 0, 0, 0.22)',
+        card: '0 4px 24px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(148, 163, 184, 0.06)',
+        'card-hover': '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(59, 130, 246, 0.12)',
+        innerGlow: 'inset 0 1px 0 rgba(255, 255, 255, 0.04)',
       },
       animation: {
-        'pulse-glow': 'pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-        'shimmer': 'shimmer 2s linear infinite',
-        'float': 'float 6s ease-in-out infinite',
+        'pulse-soft': 'pulse-soft 2.8s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        shimmer: 'shimmer 2s linear infinite',
+        float: 'float 6s ease-in-out infinite',
         'fade-in': 'fade-in 0.5s ease-out',
       },
       keyframes: {
-        'pulse-glow': {
-          '0%, 100%': { boxShadow: '0 0 20px rgba(6, 182, 212, 0.3)' },
-          '50%': { boxShadow: '0 0 40px rgba(6, 182, 212, 0.6)' },
+        'pulse-soft': {
+          '0%, 100%': { boxShadow: '0 0 0 0 rgba(37, 99, 235, 0.18)' },
+          '50%': { boxShadow: '0 0 24px 2px rgba(37, 99, 235, 0.12)' },
         },
-        'shimmer': {
+        shimmer: {
           '0%': { backgroundPosition: '-200% 0' },
           '100%': { backgroundPosition: '200% 0' },
         },
-        'float': {
+        float: {
           '0%, 100%': { transform: 'translateY(0)' },
           '50%': { transform: 'translateY(-10px)' },
         },

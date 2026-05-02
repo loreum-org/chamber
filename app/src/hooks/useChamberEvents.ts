@@ -1,5 +1,6 @@
 import { useWatchContractEvent, usePublicClient } from 'wagmi'
 import { useQueryClient } from '@tanstack/react-query'
+import { isAddress } from 'viem'
 import { chamberAbi } from '@/contracts/abis'
 
 type RefetchCallback = () => void
@@ -50,10 +51,9 @@ export function useChamberEvents(
   const queryClient = useQueryClient()
   const publicClient = usePublicClient()
 
-  const isValidAddress = chamberAddress && 
+  const isValidAddress = chamberAddress &&
     chamberAddress !== '0x0000000000000000000000000000000000000000' &&
-    chamberAddress.startsWith('0x') &&
-    chamberAddress.length === 42
+    isAddress(chamberAddress)
 
   const watchEnabled = enabled && !!isValidAddress && !!publicClient
 
@@ -63,7 +63,7 @@ export function useChamberEvents(
     abi: chamberAbi,
     eventName: 'Deposit' as any, // ERC4626 Deposit event
     onLogs: (logs) => {
-      console.log('Chamber Deposit event:', logs)
+      if (import.meta.env.DEV) console.log('Chamber Deposit event:', logs)
       invalidateChamberQueries()
       onVaultEvent?.()
     },
@@ -76,7 +76,7 @@ export function useChamberEvents(
     abi: chamberAbi,
     eventName: 'Withdraw' as any, // ERC4626 Withdraw event
     onLogs: (logs) => {
-      console.log('Chamber Withdraw event:', logs)
+      if (import.meta.env.DEV) console.log('Chamber Withdraw event:', logs)
       invalidateChamberQueries()
       onVaultEvent?.()
     },
@@ -89,7 +89,7 @@ export function useChamberEvents(
     abi: chamberAbi,
     eventName: 'Transfer' as any,
     onLogs: (logs) => {
-      console.log('Chamber Transfer event:', logs)
+      if (import.meta.env.DEV) console.log('Chamber Transfer event:', logs)
       invalidateChamberQueries()
       onVaultEvent?.()
     },
@@ -102,7 +102,7 @@ export function useChamberEvents(
     abi: chamberAbi,
     eventName: 'DelegationUpdated',
     onLogs: (logs) => {
-      console.log('Chamber DelegationUpdated event:', logs)
+      if (import.meta.env.DEV) console.log('Chamber DelegationUpdated event:', logs)
       invalidateChamberQueries()
       onDelegationEvent?.()
       onBoardEvent?.() // Delegations affect board
@@ -116,7 +116,7 @@ export function useChamberEvents(
     abi: chamberAbi,
     eventName: 'TransactionSubmitted',
     onLogs: (logs) => {
-      console.log('Chamber TransactionSubmitted event:', logs)
+      if (import.meta.env.DEV) console.log('Chamber TransactionSubmitted event:', logs)
       invalidateChamberQueries()
       onTransactionEvent?.()
     },
@@ -129,7 +129,7 @@ export function useChamberEvents(
     abi: chamberAbi,
     eventName: 'TransactionConfirmed',
     onLogs: (logs) => {
-      console.log('Chamber TransactionConfirmed event:', logs)
+      if (import.meta.env.DEV) console.log('Chamber TransactionConfirmed event:', logs)
       invalidateChamberQueries()
       onTransactionEvent?.()
     },
@@ -142,7 +142,7 @@ export function useChamberEvents(
     abi: chamberAbi,
     eventName: 'TransactionExecuted',
     onLogs: (logs) => {
-      console.log('Chamber TransactionExecuted event:', logs)
+      if (import.meta.env.DEV) console.log('Chamber TransactionExecuted event:', logs)
       invalidateChamberQueries()
       onTransactionEvent?.()
     },
@@ -155,7 +155,7 @@ export function useChamberEvents(
     abi: chamberAbi,
     eventName: 'CancelTransaction',
     onLogs: (logs) => {
-      console.log('Chamber CancelTransaction event:', logs)
+      if (import.meta.env.DEV) console.log('Chamber CancelTransaction event:', logs)
       invalidateChamberQueries()
       onTransactionEvent?.()
     },
@@ -167,7 +167,7 @@ export function useChamberEvents(
     abi: chamberAbi,
     eventName: 'TransactionCancelled',
     onLogs: (logs) => {
-      console.log('Chamber TransactionCancelled event:', logs)
+      if (import.meta.env.DEV) console.log('Chamber TransactionCancelled event:', logs)
       invalidateChamberQueries()
       onTransactionEvent?.()
     },
@@ -180,7 +180,7 @@ export function useChamberEvents(
     abi: chamberAbi,
     eventName: 'SetSeats',
     onLogs: (logs) => {
-      console.log('Chamber SetSeats event:', logs)
+      if (import.meta.env.DEV) console.log('Chamber SetSeats event:', logs)
       invalidateChamberQueries()
       onBoardEvent?.()
     },
@@ -193,7 +193,7 @@ export function useChamberEvents(
     abi: chamberAbi,
     eventName: 'Received',
     onLogs: (logs) => {
-      console.log('Chamber Received event:', logs)
+      if (import.meta.env.DEV) console.log('Chamber Received event:', logs)
       invalidateChamberQueries()
       onVaultEvent?.()
     },

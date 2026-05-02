@@ -8,35 +8,30 @@ import {
 } from "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {ProxyAdmin} from "lib/openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 import {IChamber} from "./interfaces/IChamber.sol";
-import {Agent} from "./Agent.sol";
-
-import {AgentIdentityRegistry} from "./AgentIdentityRegistry.sol";
+import {IRegistry} from "./interfaces/IRegistry.sol";
 
 /**
- * @title ChamberRegistry
- * @notice Central registry for deploying and managing Chamber instances and Agents
- * @dev Uses TransparentUpgradeableProxy for upgradeable Chamber deployments
+ * @title Registry
+ * @author xhad, Loreum DAO LLC
+ * @notice Central registry for deploying and managing Chamber instances
+ * @dev Uses OpenZeppelin `TransparentUpgradeableProxy`; registry is proxy admin until `ProxyAdmin` ownership is transferred to each chamber.
  */
-contract ChamberRegistry is AccessControl, Initializable {
+contract Registry is AccessControl, Initializable, IRegistry {
     /// @notice Role for managing the registry configuration
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
     /**
-     * @notice ERC-7201 namespaced storage layout for ChamberRegistry
+     * @notice ERC-7201 namespaced storage layout for Registry
      * @dev Address fields (20 bytes each) cannot be packed together in the same 32-byte slot.
      *      Mappings and dynamic arrays each occupy a full slot regardless of value type.
      * @custom:storage-location erc7201:loreum.ChamberRegistry
      */
-    struct ChamberRegistryStorage {
+    struct RegistryStorage {
         address implementation;
-        address agentImplementation;
-        address agentIdentityRegistry;
         address proxyAdmin;
         address[] chambers;
-        address[] agents;
         address[] assets;
         mapping(address => bool) isChamber;
-        mapping(address => bool) isAgent;
         mapping(address => bool) isAsset;
         mapping(address => address[]) chambersByAsset;
         mapping(address => address) parentChamber;
@@ -44,12 +39,12 @@ contract ChamberRegistry is AccessControl, Initializable {
     }
 
     /// @dev keccak256(abi.encode(uint256(keccak256("erc7201:loreum.ChamberRegistry")) - 1)) & ~bytes32(uint256(0xff))
-    bytes32 private constant _CHAMBERREGISTRY_STORAGE_SLOT =
+    bytes32 private constant _REGISTRY_STORAGE_SLOT =
         0xf6315592a63ddf317bd8b41aa1ba894c04251b3cfbd8a95258342cd83f2a4600;
 
-    function _getChamberRegistryStorage() internal pure returns (ChamberRegistryStorage storage $) {
+    function _getRegistryStorage() internal pure returns (RegistryStorage storage $) {
         assembly {
-            $.slot := _CHAMBERREGISTRY_STORAGE_SLOT
+            $.slot := _REGISTRY_STORAGE_SLOT
         }
     }
 
@@ -57,35 +52,32 @@ contract ChamberRegistry is AccessControl, Initializable {
 
     /// @notice The implementation contract for Chamber proxies
     function implementation() external view returns (address) {
-        return _getChamberRegistryStorage().implementation;
+        return _getRegistryStorage().implementation;
     }
 
-    /// @notice The implementation contract for Agent proxies
-    function agentImplementation() external view returns (address) {
-        return _getChamberRegistryStorage().agentImplementation;
-    }
-
-    /// @notice The Agent Identity Registry contract
-    function agentIdentityRegistry() external view returns (address) {
-        return _getChamberRegistryStorage().agentIdentityRegistry;
-    }
-
-    /// @notice Admin address for Chamber proxies (Registry admin)
+    /**
+     * @notice Address stored from `initialize(_implementation, admin)`: `admin` receives `DEFAULT_ADMIN_ROLE` / `ADMIN_ROLE`.
+     * @dev Not the on-chain `ProxyAdmin` contract address returned by `Chamber.getProxyAdmin`; naming is historical.
+     */
     function proxyAdmin() external view returns (address) {
-        return _getChamberRegistryStorage().proxyAdmin;
+        return _getRegistryStorage().proxyAdmin;
     }
 
     /**
      * @notice Emitted when a new chamber is deployed
+     * @param chamber The new chamber proxy (`payable`)
+     * @param seats Initial board seat count
+     * @param name Share token name passed to `Chamber.initialize`
+     * @param symbol Share token symbol passed to `Chamber.initialize`
+     * @param erc20Token Underlying ERC-20 (vault asset)
+     * @param erc721Token Membership ERC-721
      */
     event ChamberCreated(
         address indexed chamber, uint256 seats, string name, string symbol, address erc20Token, address erc721Token
     );
 
-    /**
-     * @notice Emitted when a new agent is deployed
-     */
-    event AgentCreated(address indexed agent, address indexed owner, address indexed policy);
+    /// @notice Emitted when `ADMIN_ROLE` updates the Chamber implementation pointer used for `createChamber`
+    event ChamberImplementationUpdated(address indexed previousImplementation, address indexed newImplementation);
 
     /// @notice Thrown when address is zero
     error ZeroAddress();
@@ -101,27 +93,34 @@ contract ChamberRegistry is AccessControl, Initializable {
     /**
      * @notice Initializes the Registry contract
      * @param _implementation The address of the Chamber implementation contract for proxies
-     * @param _agentImplementation The address of the Agent implementation contract for proxies
-     * @param _agentIdentityRegistry The address of the AgentIdentityRegistry contract
      * @param admin The address that will have admin role and proxy admin
      */
-    function initialize(
-        address _implementation,
-        address _agentImplementation,
-        address _agentIdentityRegistry,
-        address admin
-    ) external initializer {
-        if (admin == address(0) || _implementation == address(0) || _agentImplementation == address(0)) {
+    function initialize(address _implementation, address admin) external initializer {
+        if (admin == address(0) || _implementation == address(0)) {
             revert ZeroAddress();
         }
-        ChamberRegistryStorage storage $ = _getChamberRegistryStorage();
+        RegistryStorage storage $ = _getRegistryStorage();
         $.implementation = _implementation;
-        $.agentImplementation = _agentImplementation;
-        $.agentIdentityRegistry = _agentIdentityRegistry;
         $.proxyAdmin = admin;
 
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
         _grantRole(ADMIN_ROLE, admin);
+    }
+
+    /**
+     * @notice Updates the Chamber implementation address used for future `createChamber` deploys
+     * @dev Does not upgrade existing chamber proxies; each chamber upgrades via its own `ProxyAdmin`.
+     * @param newImplementation The new Chamber implementation contract (non-zero)
+     */
+    function setChamberImplementation(address newImplementation) external onlyRole(ADMIN_ROLE) {
+        if (newImplementation == address(0)) revert ZeroAddress();
+        RegistryStorage storage $ = _getRegistryStorage();
+        address previous = $.implementation;
+        if (previous == newImplementation) {
+            return;
+        }
+        $.implementation = newImplementation;
+        emit ChamberImplementationUpdated(previous, newImplementation);
     }
 
     /**
@@ -140,7 +139,7 @@ contract ChamberRegistry is AccessControl, Initializable {
         string memory name,
         string memory symbol
     ) external returns (address payable chamber) {
-        ChamberRegistryStorage storage $ = _getChamberRegistryStorage();
+        RegistryStorage storage $ = _getRegistryStorage();
 
         if (erc20Token == address(0) || erc721Token == address(0)) revert ZeroAddress();
         if (seats == 0 || seats > 20) revert InvalidSeats();
@@ -173,46 +172,11 @@ contract ChamberRegistry is AccessControl, Initializable {
     }
 
     /**
-     * @notice Deploys a new Agent instance using TransparentUpgradeableProxy
-     * @param owner The owner of the agent (can upgrade policies)
-     * @param policy The initial policy contract for the agent
-     * @param metadataURI The metadata URI for the Agent's identity
-     * @return agent The address of the newly deployed agent proxy
-     */
-    function createAgent(address owner, address policy, string memory metadataURI)
-        external
-        returns (address payable agent)
-    {
-        ChamberRegistryStorage storage $ = _getChamberRegistryStorage();
-
-        if (owner == address(0)) revert ZeroAddress();
-        if ($.agentImplementation == address(0)) revert ZeroAddress();
-
-        bytes memory initData = abi.encodeWithSelector(Agent.initialize.selector, owner, policy, address(this));
-
-        TransparentUpgradeableProxy proxy =
-            new TransparentUpgradeableProxy($.agentImplementation, address(this), initData);
-
-        agent = payable(address(proxy));
-
-        _transferAgentAdmin(agent, owner);
-
-        $.agents.push(agent);
-        $.isAgent[agent] = true;
-
-        if ($.agentIdentityRegistry != address(0)) {
-            AgentIdentityRegistry($.agentIdentityRegistry).registerAgent(owner, agent, metadataURI);
-        }
-
-        emit AgentCreated(agent, owner, policy);
-    }
-
-    /**
      * @notice Returns all deployed chambers
      * @return Array of chamber addresses
      */
     function getAllChambers() external view returns (address[] memory) {
-        return _getChamberRegistryStorage().chambers;
+        return _getRegistryStorage().chambers;
     }
 
     /**
@@ -220,7 +184,7 @@ contract ChamberRegistry is AccessControl, Initializable {
      * @return The number of chambers
      */
     function getChamberCount() external view returns (uint256) {
-        return _getChamberRegistryStorage().chambers.length;
+        return _getRegistryStorage().chambers.length;
     }
 
     /**
@@ -230,7 +194,7 @@ contract ChamberRegistry is AccessControl, Initializable {
      * @return Array of chamber addresses
      */
     function getChambers(uint256 limit, uint256 skip) external view returns (address[] memory) {
-        address[] storage allChambers = _getChamberRegistryStorage().chambers;
+        address[] storage allChambers = _getRegistryStorage().chambers;
         uint256 total = allChambers.length;
         if (skip >= total) {
             return new address[](0);
@@ -256,24 +220,7 @@ contract ChamberRegistry is AccessControl, Initializable {
      * @return bool True if the address is a deployed chamber
      */
     function isChamber(address chamber) external view returns (bool) {
-        return _getChamberRegistryStorage().isChamber[chamber];
-    }
-
-    /**
-     * @notice Checks if an address is a deployed agent
-     * @param agent The address to check
-     * @return bool True if the address is a deployed agent
-     */
-    function isAgent(address agent) external view returns (bool) {
-        return _getChamberRegistryStorage().isAgent[agent];
-    }
-
-    /**
-     * @notice Returns all deployed agents
-     * @return Array of agent addresses
-     */
-    function getAllAgents() external view returns (address[] memory) {
-        return _getChamberRegistryStorage().agents;
+        return _getRegistryStorage().isChamber[chamber];
     }
 
     /**
@@ -282,7 +229,7 @@ contract ChamberRegistry is AccessControl, Initializable {
      * @return Array of chamber addresses
      */
     function getChambersByAsset(address asset) external view returns (address[] memory) {
-        return _getChamberRegistryStorage().chambersByAsset[asset];
+        return _getRegistryStorage().chambersByAsset[asset];
     }
 
     /**
@@ -290,7 +237,7 @@ contract ChamberRegistry is AccessControl, Initializable {
      * @return Array of asset addresses
      */
     function getAssets() external view returns (address[] memory) {
-        return _getChamberRegistryStorage().assets;
+        return _getRegistryStorage().assets;
     }
 
     /**
@@ -299,7 +246,7 @@ contract ChamberRegistry is AccessControl, Initializable {
      * @return The parent chamber address, or address(0) if it's a root chamber
      */
     function getParentChamber(address chamber) external view returns (address) {
-        return _getChamberRegistryStorage().parentChamber[chamber];
+        return _getRegistryStorage().parentChamber[chamber];
     }
 
     /**
@@ -308,7 +255,7 @@ contract ChamberRegistry is AccessControl, Initializable {
      * @return Array of child chamber addresses
      */
     function getChildChambers(address chamber) external view returns (address[] memory) {
-        return _getChamberRegistryStorage().childChambers[chamber];
+        return _getRegistryStorage().childChambers[chamber];
     }
 
     /**
@@ -321,20 +268,5 @@ contract ChamberRegistry is AccessControl, Initializable {
 
         ProxyAdmin proxyAdminInstance = ProxyAdmin(proxyAdminAddress);
         proxyAdminInstance.transferOwnership(chamber);
-    }
-
-    /**
-     * @notice Transfers ProxyAdmin ownership of an Agent to the Agent's owner
-     * @param agent The agent proxy address
-     * @param owner The new owner address
-     */
-    function _transferAgentAdmin(address agent, address owner) internal {
-        try Agent(payable(agent)).getProxyAdmin() returns (address proxyAdminAddress) {
-            if (proxyAdminAddress != address(0)) {
-                ProxyAdmin(proxyAdminAddress).transferOwnership(owner);
-            }
-        } catch {
-            revert("Failed to get ProxyAdmin");
-        }
     }
 }
