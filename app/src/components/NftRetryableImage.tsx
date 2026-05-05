@@ -1,4 +1,13 @@
-import { useEffect, useMemo, useRef, useState, type ImgHTMLAttributes } from 'react'
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ImgHTMLAttributes,
+  type SyntheticEvent,
+} from 'react'
+import { cn } from '@/lib/utils'
 
 const MAX_IMAGE_RETRIES = 5
 /** Backoff between <img> retries: 3s, 6s, 9s, 12s, 15s after prior failure. */
@@ -12,13 +21,25 @@ type Props = Omit<ImgHTMLAttributes<HTMLImageElement>, 'src' | 'onError'> & {
 
 /**
  * NFT / IPFS artwork: retries failed <img> loads with delay + cache-bust query param.
+ * Tracks decode completion so opacity can update when pixels are ready (incl. cached images),
+ * and hides the broken-image state while waiting to retry.
  */
-export function NftRetryableImage({ src, onLoadFailed, ...rest }: Props) {
+export function NftRetryableImage({ src, onLoadFailed, onLoad, className, ...rest }: Props) {
   const [retryIdx, setRetryIdx] = useState(0)
+  const [betweenRetry, setBetweenRetry] = useState(false)
+  const [pixelLoaded, setPixelLoaded] = useState(false)
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const imgRef = useRef<HTMLImageElement>(null)
+  const retryIdxRef = useRef(0)
+
+  useEffect(() => {
+    retryIdxRef.current = retryIdx
+  }, [retryIdx])
 
   useEffect(() => {
     setRetryIdx(0)
+    setBetweenRetry(false)
+    setPixelLoaded(false)
   }, [src])
 
   useEffect(() => {
@@ -36,22 +57,55 @@ export function NftRetryableImage({ src, onLoadFailed, ...rest }: Props) {
     return `${s}${sep}ch_retry=${retryIdx}`
   }, [src, retryIdx])
 
+  useLayoutEffect(() => {
+    if (!displaySrc || betweenRetry) return
+    const el = imgRef.current
+    if (el?.complete && el.naturalHeight > 0) {
+      setPixelLoaded(true)
+    }
+  }, [displaySrc, betweenRetry])
+
   if (!displaySrc) return null
 
-  const handleError = () => {
-    setRetryIdx((i) => {
-      if (i < MAX_IMAGE_RETRIES) {
-        if (timeoutRef.current) clearTimeout(timeoutRef.current)
-        timeoutRef.current = setTimeout(() => {
-          timeoutRef.current = null
-          setRetryIdx(i + 1)
-        }, IMAGE_RETRY_DELAY_MS * (i + 1))
-        return i
-      }
-      onLoadFailed?.()
-      return i
-    })
+  if (betweenRetry) {
+    return (
+      <div
+        aria-hidden
+        className={cn(className, 'w-full h-full min-h-0 min-w-0 animate-pulse bg-slate-600/40')}
+      />
+    )
   }
 
-  return <img key={displaySrc} {...rest} src={displaySrc} onError={handleError} />
+  const handleLoad = (e: SyntheticEvent<HTMLImageElement>) => {
+    setPixelLoaded(true)
+    onLoad?.(e)
+  }
+
+  const handleError = () => {
+    setPixelLoaded(false)
+    const i = retryIdxRef.current
+    if (i >= MAX_IMAGE_RETRIES) {
+      onLoadFailed?.()
+      return
+    }
+    setBetweenRetry(true)
+    if (timeoutRef.current) clearTimeout(timeoutRef.current)
+    timeoutRef.current = setTimeout(() => {
+      timeoutRef.current = null
+      setBetweenRetry(false)
+      setRetryIdx(i + 1)
+    }, IMAGE_RETRY_DELAY_MS * (i + 1))
+  }
+
+  return (
+    <img
+      ref={imgRef}
+      key={displaySrc}
+      {...rest}
+      src={displaySrc}
+      className={cn(className, 'transition-opacity duration-200', pixelLoaded ? 'opacity-100' : 'opacity-0')}
+      onLoad={handleLoad}
+      onError={handleError}
+    />
+  )
 }

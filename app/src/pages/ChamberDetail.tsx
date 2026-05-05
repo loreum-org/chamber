@@ -41,6 +41,7 @@ import BoardVisualization from '@/components/BoardVisualization'
 import TreasuryOverview from '@/components/TreasuryOverview'
 import DelegationManager from '@/components/DelegationManager'
 import ChamberAssetsAlchemy from '@/components/ChamberAssetsAlchemy'
+import { NftRetryableImage } from '@/components/NftRetryableImage'
 import { getBlockExplorerAddressUrl, shortenAddress } from '@/lib/utils'
 import type { SeatUpdate } from '@/types'
 
@@ -637,9 +638,13 @@ function OverviewTab({ chamberAddress, chamberInfo, members, totalDelegated, use
     chamberInfo.nftToken && chamberInfo.nftToken !== zeroAddress
       ? (chamberInfo.nftToken as `0x${string}`)
       : undefined
-  const { data: directorImages } = useNftImageMap(nftForImages, directorTokenIds, {
-    chamberAddress,
-  })
+  const { data: directorImages, resolvingImages: directorImagesResolving } = useNftImageMap(
+    nftForImages,
+    directorTokenIds,
+    {
+      chamberAddress,
+    }
+  )
 
   const orgBelowDirectors = directorSlice.length <= ORG_PANEL_BELOW_DIRECTORS_MAX
   const organizationCard = (
@@ -701,8 +706,10 @@ function OverviewTab({ chamberAddress, chamberInfo, members, totalDelegated, use
                   ${index === 0 ? 'ring-2 ring-accent-500/50' : ''}
                 `}
                 >
-                  {directorImages?.get(m.tokenId.toString()) ? (
-                    <img
+                  {directorImagesResolving && !directorImages?.get(m.tokenId.toString()) ? (
+                    <div className="w-full h-full animate-pulse bg-slate-700/70" aria-hidden />
+                  ) : directorImages?.get(m.tokenId.toString()) ? (
+                    <NftRetryableImage
                       src={directorImages.get(m.tokenId.toString())}
                       alt=""
                       className="w-full h-full object-cover"

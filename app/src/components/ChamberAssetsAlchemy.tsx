@@ -1,5 +1,7 @@
+import { useEffect, useState } from 'react'
 import { formatUnits, zeroAddress } from 'viem'
 import { FiExternalLink, FiInfo, FiLoader, FiPackage, FiTrendingUp } from 'react-icons/fi'
+import { NftRetryableImage } from '@/components/NftRetryableImage'
 import { useChamberAlchemyPortfolio } from '@/hooks/useChamberAlchemyPortfolio'
 import { usePortfolioUsdValue } from '@/hooks/usePortfolioUsdValue'
 import {
@@ -10,6 +12,22 @@ import {
 } from '@/lib/alchemy'
 import { alchemyChainSupportsUsdPricing, formatUsdCompact, type PortfolioUsdBreakdown } from '@/lib/portfolioUsd'
 import { getBlockExplorerAddressUrl } from '@/lib/utils'
+
+function AlchemyNftThumb({ imageUrl }: { imageUrl: string }) {
+  const [failed, setFailed] = useState(false)
+  useEffect(() => setFailed(false), [imageUrl])
+  if (failed) {
+    return <FiPackage className="w-6 h-6 text-slate-600" />
+  }
+  return (
+    <NftRetryableImage
+      src={imageUrl}
+      alt=""
+      className="w-full h-full object-cover"
+      onLoadFailed={() => setFailed(true)}
+    />
+  )
+}
 
 function TotalAumPanel({
   portfolioLoading,
@@ -353,7 +371,7 @@ export default function ChamberAssetsAlchemy({
                       >
                         <div className="w-14 h-14 rounded-lg overflow-hidden bg-slate-800 shrink-0 flex items-center justify-center">
                           {nft.imageUrl ? (
-                            <img src={nft.imageUrl} alt="" className="w-full h-full object-cover" />
+                            <AlchemyNftThumb imageUrl={nft.imageUrl} />
                           ) : (
                             <FiPackage className="w-6 h-6 text-slate-600" />
                           )}
