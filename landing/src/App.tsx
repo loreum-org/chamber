@@ -15,6 +15,11 @@ const FadeIn = ({ children, delay = 0, className = "" }: { children: React.React
   </motion.div>
 );
 
+/** Production default so CTAs work when env is unset in a static build. */
+const chamberAppUrl =
+  (import.meta.env.VITE_CHAMBER_APP_URL as string | undefined)?.trim() ||
+  'https://app.loreum.org';
+
 function App() {
   return (
     <div className="min-h-screen bg-space-900 text-white selection:bg-space-accent selection:text-space-900 overflow-hidden relative">
@@ -43,7 +48,7 @@ function App() {
           <a href="#governance" className="hover:text-space-accent transition-colors">GOVERNANCE</a>
         </div>
         <a 
-          href={import.meta.env.VITE_CHAMBER_APP_URL}
+          href={chamberAppUrl}
           className="hidden md:flex items-center gap-2 border border-white/20 px-6 py-2 rounded-full hover:bg-white/10 transition-all text-sm tracking-wide"
         >
           LAUNCH APP
@@ -60,7 +65,7 @@ function App() {
             className="mb-6 inline-block"
           >
             <span className="px-4 py-1.5 rounded-full border border-space-accent/30 bg-space-accent/10 text-space-accent text-xs tracking-[0.2em] backdrop-blur-sm">
-              A DECENTRALIZED GOVERNANCE SYSTEM
+              CHAMBER · ON-CHAIN GOVERNANCE
             </span>
           </motion.div>
           
@@ -70,8 +75,8 @@ function App() {
             transition={{ duration: 0.8, delay: 0.2 }}
             className="text-6xl md:text-8xl lg:text-9xl font-display leading-tight mb-8"
           >
-            EXPLORE THE <br />
-            <span className="text-gradient">UNKNOWN</span>
+            GOVERNANCE THAT <br />
+            <span className="text-gradient">EXECUTES ON-CHAIN</span>
           </motion.h1>
 
           <motion.p 
@@ -80,10 +85,10 @@ function App() {
             transition={{ duration: 0.8, delay: 0.4 }}
             className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-12 font-light leading-relaxed"
           >
-            The Chamber Protocol gives DAOs and autonomous agents the on-chain rules,
-            distributed authority, and verifiable consensus required to operate as a
-            <span className="text-space-accent"> Decentralized Governance System</span> under
-            the U.S. CLARITY Act of 2025.
+            Loreum Chamber is protocol infrastructure for real DAOs: delegated voting,
+            a ranked board of directors, quorum, and treasury flows enforced by
+            <span className="text-space-accent"> audited smart contracts</span> — verifiable
+            by your community, compatible with humans, multisigs, and agents.
           </motion.p>
 
           <motion.div 
@@ -92,10 +97,13 @@ function App() {
             transition={{ duration: 0.8, delay: 0.6 }}
             className="flex flex-col sm:flex-row items-center justify-center gap-4"
           >
-            <button className="w-full sm:w-auto px-8 py-4 bg-white text-space-900 hover:bg-space-accent transition-colors rounded-none text-sm tracking-widest font-bold flex items-center justify-center gap-2 group">
+            <a
+              href={chamberAppUrl}
+              className="w-full sm:w-auto px-8 py-4 bg-white text-space-900 hover:bg-space-accent transition-colors rounded-none text-sm tracking-widest font-bold flex items-center justify-center gap-2 group"
+            >
               START MISSION
               <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </button>
+            </a>
             <Link 
               to="/whitepaper"
               className="w-full sm:w-auto px-8 py-4 border border-white/20 hover:border-white hover:bg-white/5 transition-all rounded-none text-sm tracking-widest font-bold text-center inline-block"
@@ -391,9 +399,12 @@ function App() {
                   </div>
                 ))}
               </div>
-              <button className="mt-10 flex items-center gap-2 text-space-accent hover:text-white transition-colors tracking-widest text-sm font-bold">
+              <a
+                href={chamberAppUrl}
+                className="mt-10 inline-flex items-center gap-2 text-space-accent hover:text-white transition-colors tracking-widest text-sm font-bold"
+              >
                 VIEW DEMO <ArrowRight className="w-4 h-4" />
-              </button>
+              </a>
             </FadeIn>
           </div>
           

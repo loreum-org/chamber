@@ -39,6 +39,30 @@ contract RevertingERC1271 {
     }
 }
 
+/// @dev A minimal Chamber contract that implements IERC1271 for testing
+contract MockChamberERC1271 {
+    address public authorizedAddress;
+    
+    constructor(address _authorized) {
+        authorizedAddress = _authorized;
+    }
+    
+    function isValidSignature(bytes32, bytes memory signature) external view returns (bytes4) {
+        if (signature.length == 32) {
+            address decoded = abi.decode(signature, (address));
+            if (decoded == authorizedAddress) {
+                return IERC1271.isValidSignature.selector;
+            }
+        }
+        return bytes4(0xffffffff);
+    }
+    
+    // Chamber must implement onERC721Received to receive NFTs
+    function onERC721Received(address, address, uint256, bytes calldata) external pure returns (bytes4) {
+        return bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"));
+    }
+}
+
 contract ChamberTest is Test {
     Chamber public chamber;
     IERC20 public token;
@@ -1703,5 +1727,186 @@ contract ChamberTest is Test {
         vm.prank(address(0xCAFE));
         vm.expectRevert(IChamber.NotDirector.selector);
         chamber.submitTransaction(tokenId, address(0x9999), 0, "");
+    }
+
+    function test_ChamberAsDirector_ExecutesTransactionToAnotherChamber() public {
+        // Setup: Create two Chambers
+        // Chamber A (director chamber) will be a director of Chamber B
+        
+        // Deploy Chamber A (as ERC1271 contract)
+        address authorizedAddress = address(this);
+        MockChamberERC1271 chamberA = new MockChamberERC1271(authorizedAddress);
+        
+        // Deploy Chamber B (regular chamber)
+        Chamber chamberB = DeployChamber.deploy(address(token), address(nft), 3, "Chamber B", "CHMB", address(0x9));
+        
+        // 1. Chamber A needs to hold an NFT from Chamber B's collection
+        uint256 tokenId = 1;
+        MockERC721(address(nft)).mintWithTokenId(address(chamberA), tokenId);
+        
+        // 2. Chamber A needs delegated voting power in Chamber B to become director
+        // Mint tokens to this test contract
+        uint256 delegationAmount = 1000e18;
+        MockERC20(address(token)).mint(address(this), delegationAmount);
+        
+        // Approve and deposit to Chamber B
+        token.approve(address(chamberB), delegationAmount);
+        chamberB.deposit(delegationAmount, address(this));
+        
+        // Delegate tokens to Chamber A's tokenId
+        chamberB.delegate(tokenId, delegationAmount);
+        
+        // 3. Verify Chamber A is now a director of Chamber B
+        // Chamber A should be in top 3 positions (seats = 3)
+        address[] memory directors = chamberB.getDirectors();
+        bool chamberAIsDirector = false;
+        for (uint256 i = 0; i < directors.length; i++) {
+            if (directors[i] == address(chamberA)) {
+                chamberAIsDirector = true;
+                break;
+            }
+        }
+        assertTrue(chamberAIsDirector, "Chamber A should be a director of Chamber B");
+        
+        // 4. Chamber A (via authorizedAddress) submits a transaction on Chamber B
+        // This simulates Chamber A acting as director
+        bytes memory testData = abi.encodeWithSignature("testFunction()");
+        chamberB.submitTransaction(tokenId, address(0x1234), 0, testData);
+        
+        // Verify transaction was submitted
+        assertEq(chamberB.getTransactionCount(), 1);
+        
+        // 5. Get other directors to confirm (need quorum)
+        // Mint more NFTs and delegate to get more directors
+        uint256 tokenId2 = 2;
+        address testUser2 = address(0x20);
+        MockERC721(address(nft)).mintWithTokenId(testUser2, tokenId2);
+        
+        // Delegate to tokenId2
+        chamberB.delegate(tokenId2, 500e18);
+        
+        // testUser2 confirms the transaction
+        vm.prank(testUser2);
+        chamberB.confirmTransaction(tokenId2, 0);
+        
+        // 6. Chamber A executes the transaction
+        chamberB.executeTransaction(tokenId, 0, testData);
+        
+        // Verify transaction executed
+        (bool executed,,,,) = chamberB.getTransaction(0);
+        assertTrue(executed, "Transaction should be executed");
+        
+        emit log("Test passed: Chamber A successfully acted as director and executed transaction on Chamber B");
+    }
+    
+    function test_ChamberAsDirector_ExecutesTransactionFromChamberToChamber() public {
+        // More comprehensive test: Chamber A is director of Chamber B and executes 
+        // a transaction from Chamber B to Chamber C
+        
+        // Setup: Create three Chambers
+        // Chamber A (director chamber) will be a director of Chamber B
+        // Chamber B will execute a transaction to Chamber C
+        
+        // Deploy Chamber A (as ERC1271 contract)
+        address authorizedAddress = address(this);
+        MockChamberERC1271 chamberA = new MockChamberERC1271(authorizedAddress);
+        
+        // Deploy Chamber B (regular chamber - where Chamber A is director)
+        Chamber chamberB = DeployChamber.deploy(address(token), address(nft), 3, "Chamber B", "CHMB", address(0x9));
+        
+        // Deploy Chamber C (target chamber for transaction)
+        Chamber chamberC = DeployChamber.deploy(address(token), address(nft), 3, "Chamber C", "CHMC", address(0x9));
+        
+        // 1. Chamber A needs to hold an NFT from Chamber B's collection
+        uint256 tokenId = 1;
+        MockERC721(address(nft)).mintWithTokenId(address(chamberA), tokenId);
+        
+        // 2. Chamber A needs delegated voting power in Chamber B to become director
+        uint256 delegationAmount = 1000e18;
+        MockERC20(address(token)).mint(address(this), delegationAmount);
+        
+        // Approve and deposit to Chamber B
+        token.approve(address(chamberB), delegationAmount);
+        chamberB.deposit(delegationAmount, address(this));
+        
+        // Delegate tokens to Chamber A's tokenId
+        chamberB.delegate(tokenId, delegationAmount);
+        
+        // 3. Verify Chamber A is now a director of Chamber B
+        address[] memory directors = chamberB.getDirectors();
+        bool chamberAIsDirector = false;
+        for (uint256 i = 0; i < directors.length; i++) {
+            if (directors[i] == address(chamberA)) {
+                chamberAIsDirector = true;
+                break;
+            }
+        }
+        assertTrue(chamberAIsDirector, "Chamber A should be a director of Chamber B");
+        
+        // 4. Fund Chamber B with some tokens to send to Chamber C
+        uint256 transferAmount = 100e18;
+        MockERC20(address(token)).mint(address(chamberB), transferAmount);
+        
+        // 5. Chamber A (via authorizedAddress) submits a transaction on Chamber B
+        // This transaction will transfer tokens from Chamber B to Chamber C
+        bytes memory transferData = abi.encodeWithSelector(
+            IERC20.transfer.selector, 
+            address(chamberC), 
+            transferAmount
+        );
+        
+        // Submit transaction to transfer tokens from Chamber B to Chamber C
+        chamberB.submitTransaction(tokenId, address(token), 0, transferData);
+        
+        // Verify transaction was submitted
+        assertEq(chamberB.getTransactionCount(), 1);
+        
+        // 6. Get other directors to confirm (need quorum)
+        // Create second director
+        uint256 tokenId2 = 2;
+        address director2 = address(0x20);
+        MockERC721(address(nft)).mintWithTokenId(director2, tokenId2);
+        
+        // Delegate to tokenId2
+        chamberB.delegate(tokenId2, 500e18);
+        
+        // director2 confirms the transaction
+        vm.prank(director2);
+        chamberB.confirmTransaction(tokenId2, 0);
+        
+        // Create third director
+        uint256 tokenId3 = 3;
+        address director3 = address(0x30);
+        MockERC721(address(nft)).mintWithTokenId(director3, tokenId3);
+        
+        // Delegate to tokenId3
+        chamberB.delegate(tokenId3, 400e18);
+        
+        // director3 confirms the transaction
+        vm.prank(director3);
+        chamberB.confirmTransaction(tokenId3, 0);
+        
+        // 7. Check balances before execution
+        uint256 chamberBBalanceBefore = token.balanceOf(address(chamberB));
+        uint256 chamberCBalanceBefore = token.balanceOf(address(chamberC));
+        
+        // 8. Chamber A executes the transaction (transfer from Chamber B to Chamber C)
+        chamberB.executeTransaction(tokenId, 0, transferData);
+        
+        // 9. Verify balances after execution
+        uint256 chamberBBalanceAfter = token.balanceOf(address(chamberB));
+        uint256 chamberCBalanceAfter = token.balanceOf(address(chamberC));
+        
+        assertEq(chamberBBalanceBefore - chamberBBalanceAfter, transferAmount, 
+            "Chamber B balance should decrease by transfer amount");
+        assertEq(chamberCBalanceAfter - chamberCBalanceBefore, transferAmount,
+            "Chamber C balance should increase by transfer amount");
+        
+        // 10. Verify transaction executed
+        (bool executed,,,,) = chamberB.getTransaction(0);
+        assertTrue(executed, "Transaction should be executed");
+        
+        emit log("Test passed: Chamber A (as director of Chamber B) executed transaction from Chamber B to Chamber C");
+        emit log_string(string(abi.encodePacked("Transferred ", vm.toString(transferAmount), " tokens from Chamber B to Chamber C")));
     }
 }
