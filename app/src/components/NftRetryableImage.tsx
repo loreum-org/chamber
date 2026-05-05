@@ -19,8 +19,18 @@ type Props = Omit<ImgHTMLAttributes<HTMLImageElement>, 'src' | 'onError'> & {
   onLoadFailed?: () => void
 }
 
+/** Loreum IPFS gateway returns Content-Length that does not match the body when a query string is appended. */
+function shouldAvoidQueryCacheBust(url: string): boolean {
+  try {
+    const host = new URL(url).hostname.toLowerCase()
+    return host === 'ipfs.loreum.org'
+  } catch {
+    return false
+  }
+}
+
 /**
- * NFT / IPFS artwork: retries failed <img> loads with delay + cache-bust query param.
+ * NFT / IPFS artwork: retries failed <img> loads with delay + cache-bust query param (when safe).
  * Tracks decode completion so opacity can update when pixels are ready (incl. cached images),
  * and hides the broken-image state while waiting to retry.
  */
@@ -53,9 +63,12 @@ export function NftRetryableImage({ src, onLoadFailed, onLoad, className, ...res
     const s = src.trim()
     if (s.toLowerCase().startsWith('data:')) return s
     if (retryIdx === 0) return s
+    if (shouldAvoidQueryCacheBust(s)) return s
     const sep = s.includes('?') ? '&' : '?'
     return `${s}${sep}ch_retry=${retryIdx}`
   }, [src, retryIdx])
+
+  const imgMountKey = `${displaySrc ?? ''}::r${retryIdx}`
 
   useLayoutEffect(() => {
     if (!displaySrc || betweenRetry) return
@@ -100,7 +113,7 @@ export function NftRetryableImage({ src, onLoadFailed, onLoad, className, ...res
   return (
     <img
       ref={imgRef}
-      key={displaySrc}
+      key={imgMountKey}
       {...rest}
       src={displaySrc}
       className={cn(className, 'transition-opacity duration-200', pixelLoaded ? 'opacity-100' : 'opacity-0')}
