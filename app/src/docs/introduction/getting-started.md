@@ -1,49 +1,70 @@
-# Getting Started
+# Getting started
 
-Welcome! Setting up or joining a Chamber is a straightforward process. This guide will walk you through your first steps as a member or a founder.
+This guide matches the **Chamber web app** routes in `app/src/App.tsx`: Dashboard, Deploy, per‑chamber views, transaction queue, director profile, and in-app docs.
 
-## 🚀 Quick Start for Users
+## Connect a wallet
 
-### 1. Connect Your Wallet
-To interact with a Chamber, you’ll need a digital wallet (like MetaMask or Rainbow). Click the **Connect Wallet** button at the top of the app to get started.
+Use the app’s wallet connect control in the header. You need a browser wallet (e.g. MetaMask) on a network where the **Registry** and your Chamber are deployed.
 
-### 2. Find Your Community
-Browse the **Dashboard** to see active Chambers. Each Chamber represents a different community or organization. You can see what assets they manage and who is currently on their Board.
+## Explore chambers
 
-### 3. Join a Chamber
-To become a member, you typically need to:
-- **Deposit Assets**: Contribute to the Chamber's vault to receive shares. These shares represent your "weight" in the community.
-- **Hold an NFT**: Some Chambers require you to own a specific NFT to sit on the Board or participate in governance.
+**Route:** `/` (Dashboard)
 
----
+The dashboard lists chambers the app discovers from the configured **Registry** (see app environment / chain setting). Each row links into a chamber’s detail view.
 
-## 🏗️ Founding a New Chamber
+## Open a chamber
 
-If you want to start your own organization, click **Deploy Chamber** on the dashboard. You will need to decide a few things:
+**Route:** `/chamber/:address`  
+**Optional tab:** `/chamber/:address/:tab`
 
-- **Treasury Asset**: What token will your community use? (e.g., USDC, LOREUM).
-- **Membership NFT**: Which NFT collection represents your members or potential leaders?
-- **Board Size**: How many Directors should your organization have? (Usually an odd number like 3, 5, or 7).
-- **Name & Symbol**: Give your community a name and a token symbol for its shares.
+From a chamber you can:
 
----
+- Inspect vault stats, directors, delegation leaderboard, and seat settings (tabs depend on the current UI).  
+- **Deposit / withdraw** underlying assets (ERC‑4626 `deposit` / `withdraw` / `mint` / `redeem` flow in the contract).  
+- **Delegate** Chamber share balance toward membership **token IDs** you support.  
 
-## 🛠️ The Daily Workflow
+If you own (or control via EIP‑1271) a token ID in the current top **`getSeats()`** leaderboard positions, wallet actions gated as “director” will be available (submit/confirm/execute transactions, seat proposals where exposed).
 
-Once you are part of a Chamber, here is how you participate:
+## Transactions
 
-### Support Your Leaders
-Go to the **Delegation** tab. Here, you can see all the NFT holders who want to lead. Use your shares to "Delegate" to the people you trust. Your support helps them stay on or join the Board.
+**Route:** `/chamber/:address/transactions`
 
-### Propose and Vote (For Directors)
-If you are one of the top supported members, you are a **Director**:
-1. **Submit**: Create a new transaction in the **Transactions** tab.
-2. **Review**: Look at transactions submitted by other Directors.
-3. **Confirm**: Click confirm on transactions you agree with.
-4. **Execute**: Once a transaction has enough confirmations, any Director can click "Execute" to finalize it.
+Directors cooperate on the on-chain queue:
 
-## 🎯 What's Next?
+1. **Submit** — provides `target`, ETH `value`, and `data`; submitter gets the first confirmation.  
+2. **Confirm** — other directors add confirmations until **`getQuorum()`** is reached.  
+3. **Execute** — any director passes the **same calldata** as at submit time so the contract can verify **`keccak256(data)`**.
 
-- **[Explore Organizations](../protocol/governance.md)**: Learn more about how groups work together.
-- **[Managing Assets](../protocol/vaults.md)**: Deep dive into how the vault keeps funds safe.
-- **[Board Dynamics](../protocol/multisig.md)**: Understand the rules of the Board.
+The UI should surface **metadata URIs** when proposals used **`submitTransactionWithMetadata`**.
+
+## Director profile
+
+**Route:** `/chamber/:address/director/:tokenId`
+
+Useful for linking to or inspecting a specific membership token’s participation context (delegation and director status vary with leaderboard state).
+
+## Deploy a new chamber (app)
+
+**Route:** `/deploy`
+
+The Deploy flow gathers:
+
+- Underlying **ERC‑20** (vault asset).  
+- **Membership ERC‑721**.  
+- Initial **seat count** (contracts enforce **1–20**).  
+- **Name** and **symbol** for Chamber **share tokens** (ERC‑20 surfaced by ERC‑4626).  
+
+Behind the scenes, production setups should use **`Registry.createChamber`** so **ProxyAdmin** ownership lands on the Chamber proxy according to **`Registry.sol`**; standalone deploy scripts behave differently—see **[Deployment](../guides/deployment.md)**.
+
+## Documentation in the app
+
+**Route:** `/docs` and `/docs/...`
+
+This documentation tree is loaded from **`app/src/docs/**/*.md`**.
+
+## Read next
+
+- **[Governance concepts](../protocol/governance.md)**  
+- **[Vault mechanics](../protocol/vaults.md)**  
+- **[Multisig / Wallet behavior](../protocol/multisig.md)**  
+- **[API reference](../reference/api-reference.md)**  

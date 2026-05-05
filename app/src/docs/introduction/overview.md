@@ -1,57 +1,55 @@
 # Welcome to Loreum Chamber
 
-Loreum Chamber is a digital command center for organizations, communities, and treasuries. It combines a secure vault with a dynamic governance system that ensures your community’s assets are managed by the leaders they trust most.
+Chamber is a **tokenized vault** (ERC‑4626) paired with **membership NFTs** and a **delegation-weight leaderboard**. Share holders point their balance at specific NFT token IDs; the strongest-backed IDs occupy a fixed number of **seats**. The owners of those seats act as **directors**, coordinating outbound calls through an on-chain **transaction queue** with **quorum** approval.
 
-At its heart, a Chamber is a **Smart Vault** where a "Board of Directors" makes decisions together. Unlike traditional systems, this Board isn't fixed—it shifts in real-time based on the support of the community.
+The Board is **dynamic**: as delegations change, the set of top token IDs (and therefore who can govern) updates without a manual multisig signer list.
 
-## Why Use a Chamber?
+## Why use it?
 
-Traditional community wallets (like multisigs) can be rigid. When a member leaves or a new leader emerges, updating the wallet can be slow and complicated. 
+- **Liquid membership** — Treasury shares are standard ERC‑20; deposit and redeem against a chosen underlying ERC‑20.  
+- **Representative weight** — Delegation ties voting weight to recognizable NFT token IDs instead of anonymous EOAs only.  
+- **Multisig-style execution** — Directors submit `target`, `value`, and calldata; confirmations must meet quorum; execution verifies stored calldata hashes.  
+- **Upgradeable instances** — Each Chamber is a **transparent proxy**; upgrade rights are mediated through **`ProxyAdmin` ownership** transferred from the **[Registry](../protocol/architecture.md)** at creation.  
 
-**Chamber solves this by being dynamic:**
-- **Community-Led**: Token holders decide who sits on the Board by delegating their support.
-- **Dynamic Leadership**: As community sentiment changes, the Board updates automatically.
-- **High Security**: No single person can move funds. Every action requires a "Quorum" (a majority) of the Board to agree.
-- **Transparency**: Every deposit, delegation, and transaction is recorded on the blockchain for everyone to see.
+## How it fits together
 
-## How It Works
+### 1. Vault (ERC‑4626)
 
-A Chamber operates through a simple but powerful cycle of support and action:
+The Chamber custody layer is ERC‑4626 over a single underlying asset. You receive Chamber **share tokens** when you deposit. Shares are the unit you **delegate** toward NFT token IDs.
 
-### 1. The Vault
-The Chamber holds your community's assets (like ETH or other tokens). When you contribute to the vault, you receive "Shares" that represent your stake in the community.
+### 2. Membership (ERC‑721)
 
-### 2. The Board
-Every Chamber has a set number of "Seats" (for example, 5 or 7). These seats are filled by holders of a special community NFT. These are your Directors.
+Each Chamber is configured with one **membership ERC‑721**. A **director** is not “any NFT holder”—they must hold a token ID that is currently in the **top `seats` positions** on the delegation leaderboard, and they must prove control of that token when acting (EOA owner or [EIP‑1271](https://eips.ethereum.org/EIPS/eip-1271) for contract wallets).
 
-### 3. Delegation (Your Voice)
-If you hold community shares, you can "Delegate" them to any NFT holder you trust. The NFT holders with the most delegated support automatically take the seats on the Board. You can move your support at any time if you change your mind.
+### 3. Delegation
 
-### 4. Proposals and Execution
-Directors propose actions—like sending funds to a contributor or investing in a new project. Other Directors must then "Confirm" these actions. Once enough Directors agree, the transaction is executed automatically.
+Share holders call **`delegate(tokenId, amount)`** and **`undelegate`**. Total delegated per holder cannot exceed their Chamber share balance; transfers and withdrawals respect the same constraint so voting weight cannot be double-spent.
 
-## The Big Picture
+### 4. Transaction queue
 
-Whether you are a DAO, a small investment club, or a large international organization, Chamber provides the tools to manage your future together.
+Directors **`submitTransaction`**, peers **`confirm`**, and anyone eligible may **`execute`** once quorum is met. Only **`keccak256(calldata)`** is stored on-chain—**callers must retain or recover the original calldata** (e.g. from `SubmitTransaction` events) to execute.
 
 ```mermaid
 graph TD
-    subgraph Community
-        T[Token Holders]
+    subgraph Holders
+        S[Share holders]
     end
-    
-    subgraph Governance
-        N[NFT Holders]
-        B[Active Board]
+    subgraph Board
+        N[Membership NFT token IDs]
+        D[Top seats become director seats]
     end
-    
-    subgraph Action
-        V[Treasury Vault]
-        TX[Executed Decisions]
+    subgraph Treasury
+        V[ERC-4626 vault]
+        Q[Queued multisig transactions]
     end
-    
-    T -->|"Delegate Support"| N
-    N -->|"Top Supported"| B
-    B -->|"Propose & Approve"| TX
-    V -->|"Provides Funds"| TX
+    S -->|delegate weight| N
+    N -->|ranked by weight| D
+    D -->|submit / confirm / execute| Q
+    V -->|underlies shares| S
 ```
+
+## Where to go next
+
+- **[Getting started](./getting-started.md)** — using the web app  
+- **[Governance](../protocol/governance.md)** — quorum formula, seat changes, cancellation  
+- **[Design notes](../protocol/design-notes.md)** — exact on-chain rules and limits  

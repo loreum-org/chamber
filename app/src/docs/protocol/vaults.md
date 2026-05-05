@@ -1,28 +1,32 @@
-# Vaults (ERC4626)
+# Vault (ERC‑4626)
 
-Chamber instances function as fully compliant **ERC4626 Tokenized Vaults**. This ensures deep compatibility with the broader DeFi ecosystem.
+Each Chamber is an **ERC‑4626 tokenized vault** wrapping one **underlying ERC‑20** configured at `initialize`. Chamber **share tokens** follow OpenZeppelin’s **`ERC4626Upgradeable`** semantics: `deposit`, `mint`, `withdraw`, and `redeem`, plus `preview*` helpers and standard ERC‑20 transfer behavior.
 
-## Asset Management
+## Shares and underlying
 
-Every Chamber is paired with an underlying **ERC20 asset**.
-- **Deposits**: Users deposit the underlying asset and receive "Chamber Shares".
-- **Withdrawals**: Users burn shares to retrieve the underlying asset.
+- **Underlying asset** — immutable per proxy (set in `__ERC4626_init`).  
+- **Shares** — fungible ERC‑20 minted to receivers on deposit/mint; burned on withdraw/redeem.  
+- **Decimals offset** — `_decimalsOffset()` returns **`3`**, enabling virtual shares mitigation for classic ERC‑4626 inflation / donation attack classes (see OpenZeppelin ERC‑4626 docs).  
 
-## Shares and Voting Power
+## Delegation constraint
 
-Chamber shares represent two things:
-1. **Economic Ownership**: A claim on the underlying assets held by the Chamber.
-2. **Governance Power**: Only shareholders can delegate voting power to NFTs.
+Governance weight is **Chamber share balance delegated to membership token IDs**. To prevent **double use** of the same wei of shares as both “free balance” and delegated weight, **`Chamber._update`** enforces:
 
-### Delegation Constraint
-To prevent double-spending of voting power, the Chamber enforces a withdrawal limit:
-`Available for Withdrawal = Total Balance - Total Amount Delegated`
+> After any outbound transfer of shares, **`balance(from) - totalHolderDelegations[from]`** must remain non‑negative (effectively: you cannot transfer or burn below what you’ve delegated).
 
-If a user wish to withdraw more than their available balance, they must first **undelegate** a portion of their voting power.
+Operationally:
 
-## Yield & Integration
+- **Withdraw/redeem** respects the same rule as **transfer**.  
+- Users **undelegate first** if they need to unlock balance for transfers or exits.  
 
-Since the Chamber follows the ERC4626 standard:
-- It can be integrated into yield aggregators.
-- Shares can be used as collateral in lending protocols.
-- It provides a standardized interface for `deposit`, `withdraw`, `mint`, and `redeem` operations.
+Read helpers: **`getDelegations`**, **`getHolderDelegation`**, **`getTotalHolderDelegations`**.
+
+## ETH and ERC‑721
+
+Native ETH can land via **`receive` / `fallback`** (emits **`Received`**).
+
+Membership NFTs can be **safely transferred** into the Chamber (`onERC721Received`); these are **not** ERC‑4626 deposits—they emit **`ReceivedERC721`** for indexing/UX.
+
+## Integrations
+
+ERC‑4626 compatibility allows composability with aggregators and lending markets **where share behavior is understood**; integrators should note the **delegation lock** on transfers, which is stricter than a plain ERC‑20.

@@ -1,38 +1,24 @@
-# Loreum Chambers
+# Loreum Chamber
 
-Welcome to the official documentation for Loreum Chambers. 
+Documentation for **Chamber**: an ERC‑4626 treasury with membership NFTs, share-weight delegation to token IDs, director quorum over a transaction queue, and a **Registry** that deploys upgradeable Chamber instances.
 
-Chamber is a decentralized governance platform that allows communities to manage their assets through a dynamic, community-elected Board of Directors.
+The web app renders these Markdown files under **`/docs`** (`app/src/pages/Docs.tsx`).
 
-## 🌟 Key Features
+## Navigate the docs
 
-- **Community-Led Governance**: Use your tokens to delegate support to leaders you trust.
-- **Dynamic Boards**: The Board of Directors automatically updates as community sentiment shifts.
-- **Secure Treasury**: Quorum-based transaction management ensures that no single member has control over community funds.
-- **Transparant Operations**: Every governance action and financial move is visible on the blockchain.
+1. **[Overview](./introduction/overview.md)** — product mental model  
+2. **[Getting started](./introduction/getting-started.md)** — Dashboard, Deploy, Chamber page, Transactions  
+3. **[Architecture](./protocol/architecture.md)** — contracts and how they connect  
+4. **[Governance](./protocol/governance.md)** — delegation, directors, quorum, seats  
+5. **[Vault](./protocol/vaults.md)** — ERC‑4626 shares and delegation-safe transfers  
+6. **[Wallet / multisig](./protocol/multisig.md)** — submit, confirm, execute, hashed calldata  
+7. **[Design notes](./protocol/design-notes.md)** — storage, limits, and security-relevant details from `contracts/src/`  
+8. **[API reference](./reference/api-reference.md)** — function-level surface  
+9. **[Sequence diagrams](./reference/sequence-diagrams.md)** — Mermaid flows  
+10. **[Deployment](./guides/deployment.md)** — Foundry scripts and Registry setup  
 
-## 📖 Where to Start?
+## Security
 
-If you are new to Chamber, we recommend exploring the documentation in this order:
+Chamber is designed for transparent, rule-bound treasury operation. For review methodology and report expectations, see **[Security](./security/security-review.md)**.
 
-### 1. [Overview](./introduction/overview.md)
-Understand what a Chamber is, how the Board works, and the core philosophy behind the protocol.
-
-### 2. [Getting Started](./introduction/getting-started.md)
-A practical guide on how to join a community, support your leaders, or start your own organization.
-
-### 3. [Governance Concepts](./protocol/governance.md)
-Learn about the rules of the Chamber, how delegation works, and how decisions are made.
-
-### 4. [Treasury Management](./protocol/vaults.md)
-Understand how the vault keeps assets safe and how the community can use them.
-
----
-
-## 🔒 Security First
-
-Chamber is built with security as a priority. Our smart contracts are designed to be robust and transparent, ensuring that your community's assets are always handled according to the rules set by the community itself.
-
----
-
-*For technical documentation and developer guides, please refer to the [Reference](./reference/api-reference.md) section.*
+For technical interface flows in the app, see **[Whitepaper / interface](./whitepaper/interface.md)**.

@@ -75,8 +75,7 @@ function App() {
             transition={{ duration: 0.8, delay: 0.2 }}
             className="text-6xl md:text-8xl lg:text-9xl font-display leading-tight mb-8"
           >
-            GOVERNANCE THAT <br />
-            <span className="text-gradient">EXECUTES ON-CHAIN</span>
+            DECENTRALIZED GOVERNANCE SYSTEM<br />
           </motion.h1>
 
           <motion.p 

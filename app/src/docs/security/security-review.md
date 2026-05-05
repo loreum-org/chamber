@@ -1,5 +1,7 @@
 # Solidity Security Review
 
+User-facing product documentation for Chamber lives in **`app/src/docs/`** (this tree). When auditing or threat modeling, treat **`contracts/src/`** as the authoritative trust surface (Chamber, Board, Wallet, Registry).
+
 Comprehensive security review skill for Solidity smart contracts in the `src/` folder.
 
 ## Purpose

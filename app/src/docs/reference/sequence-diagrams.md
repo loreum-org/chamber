@@ -73,8 +73,8 @@ sequenceDiagram
         Chamber->>Wallet: _confirmTransaction(...)
         Wallet->>Wallet: Quorum reached!
         
-        User->>Chamber: executeTransaction(tokenId, txId)
-        Chamber->>Wallet: _executeTransaction(...)
+        User->>Chamber: executeTransaction(tokenId, txId, data)
+        Chamber->>Wallet: _executeTransaction(..., keccak256(data) verified against tx stored hash)
         Wallet->>External: call{value: value}(data)
         External-->>Wallet: Execution result
         Wallet-->>Chamber: Transaction executed
@@ -238,32 +238,25 @@ This diagram shows how a new Chamber is deployed through the Registry.
 sequenceDiagram
     participant User
     participant Registry
-    participant Clones
     participant ChamberImpl
     participant ChamberProxy
 
-    Note over User,ChamberProxy: Chamber Deployment Flow
+    Note over User,ChamberProxy: Chamber deployment via Registry
 
     User->>Registry: createChamber(erc20Token, erc721Token, seats, name, symbol)
-    
-    Registry->>Registry: Validate inputs (tokens != 0, seats 1-20)
-    
-    Registry->>Clones: clone(implementation)
-    Clones-->>Registry: chamberProxy (minimal proxy address)
-    
-    Registry->>ChamberProxy: initialize(erc20Token, erc721Token, seats, name, symbol)
-    
+
+    Registry->>Registry: Validate tokens non-zero, seats in 1..20, implementation set
+
+    Registry->>ChamberProxy: new TransparentUpgradeableProxy(implementation, address(this), initData)
+    Note over ChamberProxy: initData encodes Chamber.initialize(erc20, erc721, seats, name, symbol)
+
     ChamberProxy->>ChamberImpl: delegatecall initialize(...)
-    ChamberImpl->>ChamberProxy: Initialize storage
-    Note over ChamberProxy: Set ERC4626, Board, Wallet state
-    
-    ChamberProxy-->>Registry: Initialization complete
-    
-    Registry->>Registry: _chambers.push(chamber)
-    Registry->>Registry: _isChamber[chamber] = true
-    
-    Registry-->>User: emit ChamberCreated(...)
-    Registry-->>User: return chamber address
+    ChamberImpl-->>ChamberProxy: ERC-4626 + Board + Wallet storage ready
+
+    Registry->>Registry: index chamber, parent/child if asset is chamber
+    Registry->>Registry: transfer Chamber ProxyAdmin ownership to address(chamber)
+
+    Registry-->>User: ChamberCreated + return chamber proxy
 ```
 
 ---
@@ -288,8 +281,8 @@ sequenceDiagram
     NFT-->>Chamber: owner address (or revert)
     
     alt NFT exists
-        Chamber->>Chamber: agentDelegation[holder][tokenId] += amount
-        Chamber->>Chamber: totalAgentDelegations[holder] += amount
+        Chamber->>Chamber: holderDelegation[holder][tokenId] += amount
+        Chamber->>Chamber: totalHolderDelegations[holder] += amount
         
         Chamber->>Board: _delegate(tokenId, amount)
         
@@ -362,12 +355,13 @@ sequenceDiagram
     
     Note over Director1,ExternalContract: Execute transaction
     
-    Director1->>Chamber: executeTransaction(tokenId1, transactionId)
-    
+    Director1->>Chamber: executeTransaction(tokenId1, transactionId, data)
+
     Chamber->>Chamber: Check isDirector(tokenId1)
     Chamber->>Wallet: Check confirmations >= quorum
-    
-    Chamber->>Wallet: _executeTransaction(tokenId1, transactionId)
+    Chamber->>Wallet: Verify keccak256(data) matches stored hash
+
+    Chamber->>Wallet: _executeTransaction(tokenId1, transactionId, data)
     
     Wallet->>Wallet: transaction.executed = true
     Wallet->>ExternalContract: call{value: value}(data)
@@ -451,10 +445,10 @@ sequenceDiagram
     Chamber->>Chamber: Check isDirector(tokenId1)
     Chamber->>Board: _executeSeatsUpdate(tokenId1)
     
-    Board->>Board: Check timestamp + 7 days <= now
-    Board->>Board: Check supporters.length >= requiredQuorum
-    
-    alt Timelock expired and quorum met
+    Board->>Board: Check timestamp + 7 days elapsed
+    Board->>Board: Count supporters still in current top seats >= requiredQuorum
+
+    alt Timelock expired and supporter recount passes
         Board->>Board: seats = proposedSeats
         Board->>Board: delete seatUpdate
         Board-->>Chamber: Seats updated
@@ -462,9 +456,9 @@ sequenceDiagram
     else Timelock not expired
         Board-->>Chamber: revert TimelockNotExpired
         Chamber-->>Director1: Error: Timelock not expired
-    else Quorum not met
+    else Not enough valid supporters still on board
         Board-->>Chamber: revert InsufficientVotes
-        Chamber-->>Director1: Error: Insufficient votes
+        Chamber-->>Director1: Error: insufficient valid support at execution time
     end
 ```
 
@@ -548,7 +542,7 @@ sequenceDiagram
     Chamber->>Chamber: Check owner balance >= shares
     
     Chamber->>Chamber: Check available balance
-    Note over Chamber: balance - totalAgentDelegations[owner]
+    Note over Chamber: balance - totalHolderDelegations[owner]
     
     alt Available balance >= amount
         Chamber->>Chamber: Burn shares from owner
@@ -586,7 +580,7 @@ sequenceDiagram
     Chamber->>Chamber: Check balance >= totalValue
     
     loop For each transaction
-        Chamber->>Chamber: Validate target != 0 and != Chamber
+        Chamber->>Chamber: Validate target != 0; if target==Chamber only upgradeImplementation selector
         Chamber->>Wallet: _submitTransaction(tokenId, target[i], value[i], data[i])
         Wallet->>Wallet: Create Transaction
         Wallet->>Wallet: Auto-confirm tokenId
@@ -614,14 +608,14 @@ sequenceDiagram
 
     Note over Director,Wallet: Batch Execution
 
-    Director->>Chamber: executeBatchTransactions(tokenId, transactionIds[])
-    
+    Director->>Chamber: executeBatchTransactions(tokenId, transactionIds[], data[])
+
     loop For each transactionId
         Chamber->>Chamber: Validate transaction exists
         Chamber->>Chamber: Check not executed
         Chamber->>Chamber: Check confirmations >= quorum
-        
-        Chamber->>Wallet: _executeTransaction(tokenId, transactionId[i])
+
+        Chamber->>Wallet: _executeTransaction(tokenId, transactionId[i], data[i])
         Wallet->>Wallet: Mark executed
         Wallet->>Wallet: Execute external call
         
@@ -651,12 +645,12 @@ sequenceDiagram
     Note over TokenHolder,Board: Undelegation Flow
 
     TokenHolder->>Chamber: undelegate(tokenId, amount)
-    
-    Chamber->>Chamber: Check agentDelegation[holder][tokenId] >= amount
-    
+
+    Chamber->>Chamber: Check holderDelegation[holder][tokenId] >= amount
+
     alt Sufficient delegation
-        Chamber->>Chamber: agentDelegation[holder][tokenId] -= amount
-        Chamber->>Chamber: totalAgentDelegations[holder] -= amount
+        Chamber->>Chamber: holderDelegation[holder][tokenId] -= amount
+        Chamber->>Chamber: totalHolderDelegations[holder] -= amount
         
         Chamber->>Board: _undelegate(tokenId, amount)
         
