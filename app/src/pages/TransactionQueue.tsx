@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useState, useEffect, useMemo, useRef } from 'react'
+import { useParams, Link, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAccount, useReadContracts, useChainId, useReadContract } from 'wagmi'
 import { formatEther, isAddress, encodeFunctionData, parseAbi, parseEther, parseUnits } from 'viem'
@@ -36,9 +36,10 @@ import {
   useSeatUpdate,
   useUpdateSeats,
   useExecuteSeatsUpdate,
+  useChamberRegistryImplementationSync,
 } from '@/hooks'
 import { chamberAbi, erc20Abi } from '@/contracts/abis'
-import { getBlockExplorerAddressUrl, hasProposalCalldata } from '@/lib/utils'
+import { getBlockExplorerAddressUrl, hasProposalCalldata, shortenAddress } from '@/lib/utils'
 import {
   createProposalMetadataURI,
   getProposalMetadata,
@@ -207,6 +208,7 @@ export default function TransactionQueue() {
 function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${string}` }) {
   const { address: userAddress } = useAccount()
   const chainId = useChainId()
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const [activeTab, setActiveTab] = useState<TabType>('queue')
   const [transactions, setTransactions] = useState<
@@ -214,8 +216,53 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
   >([])
   
   const chamberInfo = useChamberInfo(chamberAddress)
+  const implSync = useChamberRegistryImplementationSync(chamberAddress)
   const { members } = useBoardMembers(chamberAddress, chamberInfo.seats || 5)
   const { seatUpdate, refetch: refetchSeatUpdate } = useSeatUpdate(chamberAddress)
+
+  const upgradeProposalIntent = searchParams.get('proposal') === 'upgrade'
+  const registryUpgradeDraft =
+    upgradeProposalIntent &&
+    implSync.implMismatch &&
+    implSync.registryImplementation
+      ? ({
+          newImplementation: implSync.registryImplementation,
+          chamberVersionLabel: implSync.chamberVersionLabel,
+          registryVersionLabel: implSync.registryImplementationVersionLabel,
+        } as const)
+      : undefined
+
+  const upgradeProposalHandledRef = useRef(false)
+  useEffect(() => {
+    if (!upgradeProposalIntent) {
+      upgradeProposalHandledRef.current = false
+      return
+    }
+    if (implSync.isLoading || upgradeProposalHandledRef.current) return
+
+    upgradeProposalHandledRef.current = true
+
+    if (!registryUpgradeDraft?.newImplementation) {
+      toast('This chamber already matches the Registry’s default implementation.', { duration: 4500 })
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev)
+          next.delete('proposal')
+          return next
+        },
+        { replace: true },
+      )
+      return
+    }
+
+    setActiveTab('new')
+  }, [
+    upgradeProposalIntent,
+    implSync.isLoading,
+    registryUpgradeDraft?.newImplementation,
+    registryUpgradeDraft,
+    setSearchParams,
+  ])
 
   // Fetch all transactions
   const transactionCount = chamberInfo.transactionCount || 0
@@ -631,30 +678,78 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
           >
             {userTokenId !== undefined ? (
               <NewTransactionForm
+                key={registryUpgradeDraft?.newImplementation ?? 'default'}
                 chamberAddress={chamberAddress}
                 userTokenId={userTokenId}
                 nextTransactionId={transactionCount}
                 currentSeats={chamberInfo.seats ?? 5}
                 hasSeatProposal={hasSeatProposal}
+                registryUpgradeDraft={registryUpgradeDraft}
                 onSeatProposalCreated={refetchSeatUpdate}
-                onSuccess={() => setActiveTab('queue')}
+                onSuccess={() => {
+                  setSearchParams(
+                    (prev) => {
+                      const next = new URLSearchParams(prev)
+                      next.delete('proposal')
+                      return next
+                    },
+                    { replace: true },
+                  )
+                  setActiveTab('queue')
+                }}
               />
             ) : (
-              <div className="panel p-10 text-center space-y-4">
-                <FiShield className="w-8 h-8 text-slate-600 mx-auto" />
-                <div>
-                  <h3 className="font-heading text-lg font-semibold text-slate-300 mb-1">Directors only</h3>
-                  <p className="text-slate-500 text-sm max-w-sm mx-auto">
-                    Only active board directors can submit governance proposals. Delegate shares to a member to earn a board seat.
-                  </p>
+              <div className="space-y-4">
+                {registryUpgradeDraft && (
+                  <div className="panel p-4 border border-amber-400/30 bg-amber-500/[0.08] rounded-xl text-left text-sm text-amber-50/95">
+                    <p className="font-medium text-amber-100 flex items-center gap-2 mb-2">
+                      <FiAlertCircle className="w-4 h-4 shrink-0 text-amber-400" aria-hidden />
+                      Registry upgrade available
+                    </p>
+                    <p className="text-amber-100/85 mb-3 leading-relaxed">
+                      Align this Chamber proxy with the Registry’s default implementation{' '}
+                      <span className="font-mono tabular-nums">
+                        ({shortenAddress(registryUpgradeDraft.newImplementation, 6)}
+                        {registryUpgradeDraft.registryVersionLabel
+                          ? ` · v${registryUpgradeDraft.registryVersionLabel}`
+                          : ''}
+                        )
+                      </span>
+                      . Ask a director to open this link (with{' '}
+                      <span className="font-mono">?proposal=upgrade</span>
+                      ), review the prefilled multisig proposal, then submit.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {chainId !== 31337 && (
+                        <a
+                          href={getBlockExplorerAddressUrl(registryUpgradeDraft.newImplementation, chainId)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn btn-secondary inline-flex py-2 text-sm"
+                        >
+                          New impl on explorer
+                          <FiExternalLink className="w-4 h-4" />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                )}
+                <div className="panel p-10 text-center space-y-4">
+                  <FiShield className="w-8 h-8 text-slate-600 mx-auto" />
+                  <div>
+                    <h3 className="font-heading text-lg font-semibold text-slate-300 mb-1">Directors only</h3>
+                    <p className="text-slate-500 text-sm max-w-sm mx-auto">
+                      Only active board directors can submit governance proposals. Delegate shares to a member to earn a board seat.
+                    </p>
+                  </div>
+                  <Link
+                    to={`/chamber/${chamberAddress}/delegation`}
+                    className="btn btn-secondary inline-flex"
+                  >
+                    Go to Delegation
+                    <FiArrowLeft className="w-4 h-4 rotate-180" />
+                  </Link>
                 </div>
-                <Link
-                  to={`/chamber/${chamberAddress}/delegation`}
-                  className="btn btn-secondary inline-flex"
-                >
-                  Go to Delegation
-                  <FiArrowLeft className="w-4 h-4 rotate-180" />
-                </Link>
               </div>
             )}
           </motion.div>
@@ -1188,6 +1283,11 @@ interface NewTransactionFormProps {
   nextTransactionId: number
   currentSeats: number
   hasSeatProposal: boolean
+  registryUpgradeDraft?: {
+    newImplementation: `0x${string}`
+    chamberVersionLabel?: string
+    registryVersionLabel?: string
+  }
   onSeatProposalCreated: () => void | Promise<unknown>
   onSuccess: () => void
 }
@@ -1274,6 +1374,7 @@ function NewTransactionForm({
   nextTransactionId,
   currentSeats,
   hasSeatProposal,
+  registryUpgradeDraft,
   onSeatProposalCreated,
   onSuccess,
 }: NewTransactionFormProps) {
@@ -1320,6 +1421,37 @@ function NewTransactionForm({
     : null
   const busy = isPending || isConfirming || isSeatPending || isSeatConfirming
 
+  const registryUpgradePrefilledRef = useRef<string | undefined>(undefined)
+
+  useEffect(() => {
+    if (!registryUpgradeDraft?.newImplementation) {
+      registryUpgradePrefilledRef.current = undefined
+      return
+    }
+    const impl = registryUpgradeDraft.newImplementation
+    if (registryUpgradePrefilledRef.current === impl) return
+    registryUpgradePrefilledRef.current = impl
+
+    setProposalType('transaction')
+    setTxType('custom')
+    setTarget(chamberAddress)
+    setValue('0')
+
+    const regV = registryUpgradeDraft.registryVersionLabel
+    const curV = registryUpgradeDraft.chamberVersionLabel
+    setTitle(`Upgrade Chamber to Registry implementation${regV ? ` v${regV}` : ''}`)
+    setDescription(
+      `Multisig: upgradeImplementation(${impl}, 0x). Current proxy implementation VERSION reports ${curV ?? 'unknown'}. Confirm audit status and migrations before approving; init calldata left empty.`,
+    )
+    setFunctionSig('upgradeImplementation(address,bytes)')
+  }, [
+    chamberAddress,
+    registryUpgradeDraft?.newImplementation,
+    registryUpgradeDraft?.registryVersionLabel,
+    registryUpgradeDraft?.chamberVersionLabel,
+    registryUpgradeDraft,
+  ])
+
   // Parse function signature when it changes
   useEffect(() => {
     if (!functionSig.trim()) {
@@ -1340,6 +1472,14 @@ function NewTransactionForm({
       setSigError('Invalid function signature. Example: transfer(address,uint256)')
     }
   }, [functionSig])
+
+  // After Registry-upgrade prefill parses, repopulate params (signature effect resets param maps).
+  useEffect(() => {
+    const impl = registryUpgradeDraft?.newImplementation
+    if (!impl) return
+    if (parsedFunction?.name !== 'upgradeImplementation') return
+    setParamValues({ param0: impl, param1: '0x' })
+  }, [registryUpgradeDraft?.newImplementation, parsedFunction])
 
   // Encode function data when params change
   useEffect(() => {
@@ -1642,6 +1782,23 @@ function NewTransactionForm({
           </>
         ) : (
           <>
+            {registryUpgradeDraft && (
+              <div className="rounded-xl border border-accent-400/35 bg-accent-500/[0.08] px-4 py-3 text-sm text-slate-100/95">
+                <p className="font-medium text-accent-300 mb-1">Prefilled Registry upgrade proposal</p>
+                <p className="text-slate-400 text-xs leading-relaxed">
+                  Target is this Chamber. Calldata invokes <span className="font-mono">upgradeImplementation</span> using
+                  the Registry’s default implementation{' '}
+                  <span className="font-mono text-slate-300">
+                    {shortenAddress(registryUpgradeDraft.newImplementation, 6)}
+                  </span>
+                  {registryUpgradeDraft.registryVersionLabel
+                    ? ` (VERSION ${registryUpgradeDraft.registryVersionLabel})`
+                    : ''}
+                  . Other directors still need to confirm until quorum before execution.
+                </p>
+              </div>
+            )}
+
             {/* Proposal Templates */}
             <div>
               <label className="block text-slate-300 text-sm font-medium mb-2">Template</label>

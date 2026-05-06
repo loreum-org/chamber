@@ -20,6 +20,7 @@ import {
   FiStar,
   FiAlertTriangle,
   FiLoader,
+  FiUpload,
 } from 'react-icons/fi'
 import toast from 'react-hot-toast'
 import {
@@ -211,6 +212,15 @@ function ChamberDetailContent({ chamberAddress }: { chamberAddress: `0x${string}
   const chamberImplVersion =
     chamberInfo.version ?? implSync.chamberVersionLabel ?? undefined
 
+  const chamberVersionTag =
+    chamberImplVersion == null || chamberImplVersion === ''
+      ? '…'
+      : chamberImplVersion.startsWith('v')
+        ? chamberImplVersion
+        : `v${chamberImplVersion}`
+
+  const upgradeProposalHref = `/chamber/${chamberAddress}/transactions?proposal=upgrade`
+
   return (
     <div className="space-y-6">
       {implSync.implMismatch && !implSync.isLoading && implSync.registryImplementation && (
@@ -231,7 +241,10 @@ function ChamberDetailContent({ chamberAddress }: { chamberAddress: `0x${string}
                 </span>{' '}
                 ({shortenAddress(implSync.registryImplementation, 6)}
                 ). This chamber proxy still uses{' '}
-                <span className="font-mono tabular-nums">v{chamberImplVersion ?? '—'}</span>. Directors can
+                <span className="font-mono tabular-nums">
+                  {chamberVersionTag === '…' ? '—' : chamberVersionTag}
+                </span>
+                . Directors can
                 upgrade this proxy via the Chamber’s upgrade flow so it aligns with the Registry.
               </p>
               {implSync.registryAddress && chainId !== 31337 && (
@@ -244,6 +257,12 @@ function ChamberDetailContent({ chamberAddress }: { chamberAddress: `0x${string}
                   View Registry <FiExternalLink className="w-3.5 h-3.5" aria-hidden />
                 </a>
               )}
+              <div className="flex flex-wrap gap-2 mt-4">
+                <Link to={upgradeProposalHref} className="btn btn-primary inline-flex gap-2 shrink-0">
+                  <FiUpload className="w-4 h-4" aria-hidden />
+                  Propose upgrade
+                </Link>
+              </div>
             </div>
           </div>
         </motion.div>
@@ -272,9 +291,9 @@ function ChamberDetailContent({ chamberAddress }: { chamberAddress: `0x${string}
                 <span className="badge badge-primary">{chamberInfo.symbol}</span>
                 <span
                   title="Solidity VERSION constant from the Chamber implementation"
-                  className="badge bg-slate-800 text-slate-400 border-slate-700 whitespace-nowrap"
+                  className="badge bg-slate-800 text-slate-400 border-slate-700 whitespace-nowrap font-mono tabular-nums"
                 >
-                  Implementation v{chamberImplVersion ?? '…'}
+                  {chamberVersionTag}
                 </span>
               </div>
               
@@ -295,7 +314,13 @@ function ChamberDetailContent({ chamberAddress }: { chamberAddress: `0x${string}
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            {implSync.implMismatch && implSync.registryImplementation && (
+              <Link to={upgradeProposalHref} className="btn btn-primary gap-2">
+                <FiUpload className="w-4 h-4" aria-hidden />
+                Upgrade
+              </Link>
+            )}
             <Link
               to={`/chamber/${chamberAddress}/transactions`}
               className="btn btn-secondary relative"

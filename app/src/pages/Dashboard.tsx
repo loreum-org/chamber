@@ -157,47 +157,53 @@ export default function Dashboard() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden panel p-8 md:p-10"
+        className="relative overflow-hidden panel px-4 py-3 md:px-5 md:py-3.5"
       >
         <div className="absolute inset-0 bg-mesh-gradient pointer-events-none opacity-[0.85]" />
-        <div className="absolute top-0 right-0 w-[480px] h-[420px] bg-gradient-radial from-accent-600/[0.07] via-transparent to-transparent pointer-events-none" />
+        <div className="absolute top-0 right-0 w-[280px] h-[160px] md:w-[360px] md:h-[200px] bg-gradient-radial from-accent-600/[0.06] via-transparent to-transparent pointer-events-none" />
 
-        <div className="relative flex flex-col md:flex-row md:items-start md:justify-between gap-8">
-          <div className="max-w-3xl">
-            <div className="flex items-center gap-4 mb-6">
-              <img src="https://cdn.loreum.org/logos/white.svg" alt="Chamber Logo" className="w-20 h-20 object-contain" />
-              <div>
-                <p className="text-slate-400 text-sm font-semibold uppercase tracking-wider">Governance</p>
-                <h1 className="font-heading text-3xl md:text-4xl font-bold text-slate-100 tracking-tight">
-                  Loreum Chambers
-                </h1>
-              </div>
+        <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <img
+              src="https://cdn.loreum.org/logos/white.svg"
+              alt="Chamber Logo"
+              className="w-11 h-11 shrink-0 object-contain"
+            />
+            <div className="min-w-0">
+              <p className="text-slate-500 text-[10px] font-semibold uppercase tracking-wider leading-none mb-1">
+                Governance
+              </p>
+              <h1 className="font-heading text-xl sm:text-2xl font-bold text-slate-100 tracking-tight leading-tight">
+                Loreum Chambers
+              </h1>
+              <p className="text-slate-500 text-xs sm:text-sm mt-0.5 leading-snug">
+                Liquid, decentralized governance.
+              </p>
             </div>
-
-            <p className="text-slate-400 text-lg leading-relaxed max-w-2xl">
-              Liquid, decentralized governance.
-            </p>
           </div>
 
-          <div className="flex flex-col gap-6 md:min-w-[200px] md:pt-2">
-            <div>
-              <div className="text-3xl font-heading font-bold gradient-text">
-                {countLoading ? '...' : validChambers.length}
-              </div>
-              <div className="text-slate-500 text-sm mt-1">Active Chambers</div>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 sm:justify-end sm:shrink-0 text-sm border-t border-slate-700/35 pt-3 sm:border-0 sm:pt-0">
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-lg font-heading font-bold gradient-text tabular-nums">
+                {countLoading ? '…' : validChambers.length}
+              </span>
+              <span className="text-slate-500 text-xs">active</span>
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500' : 'bg-slate-600'}`} />
-                <span className="text-xl font-heading font-semibold text-slate-100">
-                  {isConnected ? 'Connected' : 'Not Connected'}
-                </span>
-              </div>
-              <div className="text-slate-500 text-sm mt-1">Wallet Status</div>
+            <span className="hidden sm:inline h-3 w-px bg-slate-600/60" aria-hidden />
+            <div className="flex items-center gap-1.5">
+              <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${isConnected ? 'bg-emerald-500' : 'bg-slate-600'}`} />
+              <span className="text-slate-200 text-sm font-medium">
+                {isConnected ? 'Connected' : 'Disconnected'}
+              </span>
             </div>
-            <div>
-              <div className="text-3xl font-heading font-bold gradient-text">v1.1.3</div>
-              <div className="text-slate-500 text-sm mt-1">Protocol Version</div>
+            <span className="hidden sm:inline h-3 w-px bg-slate-600/60" aria-hidden />
+            <div className="flex items-baseline">
+              <span
+                title="Chamber Solidity VERSION constant (implementation)"
+                className="text-slate-200 text-sm font-mono font-semibold tabular-nums"
+              >
+                v1.1.4
+              </span>
             </div>
           </div>
         </div>
