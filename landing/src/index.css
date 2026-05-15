@@ -20,9 +20,18 @@
 }
 
 @layer base {
+  html {
+    overflow-x: hidden;
+  }
+
   :root {
     background-color: var(--color-space-900);
     color: #ffffff;
+  }
+
+  #root {
+    width: 100%;
+    min-width: 0;
   }
 
   body {

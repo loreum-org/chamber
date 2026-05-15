@@ -22,7 +22,7 @@ const chamberAppUrl =
 
 function App() {
   return (
-    <div className="min-h-screen bg-space-900 text-white selection:bg-space-accent selection:text-space-900 overflow-hidden relative">
+    <div className="min-h-screen w-full min-w-0 bg-space-900 text-white selection:bg-space-accent selection:text-space-900 overflow-x-hidden relative">
       
       {/* Background Stars Effect */}
       <div className="fixed inset-0 z-0 opacity-40 pointer-events-none">
@@ -36,7 +36,7 @@ function App() {
       </div>
 
       {/* Navigation */}
-      <nav className="relative z-50 flex items-center justify-between px-8 py-6 max-w-7xl mx-auto">
+      <nav className="relative z-50 flex items-center justify-between gap-4 px-4 sm:px-8 py-6 max-w-7xl mx-auto w-full min-w-0 box-border">
         <div className="flex items-center gap-2">
           <img src="/logo.svg" alt="Loreum Logo" className="w-8 h-8" />
           <span className="text-2xl font-display tracking-wider">LOREUM</span>
@@ -56,15 +56,15 @@ function App() {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative z-10 min-h-[90vh] flex items-center justify-center px-6">
-        <div className="max-w-5xl mx-auto text-center">
+      <section className="relative z-10 min-h-[90vh] flex items-center justify-center px-4 sm:px-6 w-full min-w-0 box-border">
+        <div className="w-full max-w-5xl mx-auto text-center min-w-0 px-1 sm:px-0">
           <motion.div 
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 1 }}
             className="mb-6 inline-block"
           >
-            <span className="px-4 py-1.5 rounded-full border border-space-accent/30 bg-space-accent/10 text-space-accent text-xs tracking-[0.2em] backdrop-blur-sm">
+            <span className="inline-block max-w-full px-3 sm:px-4 py-1.5 rounded-full border border-space-accent/30 bg-space-accent/10 text-space-accent text-xs tracking-[0.2em] backdrop-blur-sm break-words text-center leading-snug">
               CHAMBER · ON-CHAIN GOVERNANCE
             </span>
           </motion.div>
@@ -73,7 +73,7 @@ function App() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="text-6xl md:text-8xl lg:text-9xl font-display leading-tight mb-8"
+            className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl xl:text-9xl font-display leading-tight mb-8 break-words text-balance"
           >
             DECENTRALIZED GOVERNANCE SYSTEM<br />
           </motion.h1>
@@ -82,7 +82,7 @@ function App() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
-            className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-12 font-light leading-relaxed"
+            className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-12 font-light leading-relaxed break-words"
           >
             Loreum Chamber is protocol infrastructure for real DAOs: delegated voting,
             a ranked board of directors, quorum, and treasury flows enforced by
@@ -115,7 +115,7 @@ function App() {
 
       {/* Built on Ethereum Strip */}
       <section className="relative z-10 border-y border-white/10 bg-space-800/50 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-6 py-12 flex items-center justify-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 flex flex-wrap items-center justify-center gap-6 w-full min-w-0 box-border">
           <a 
             href="https://ethereum.org" 
             target="_blank" 
@@ -137,7 +137,7 @@ function App() {
                     <path d="M392.07 882.29L784.13 650.54L392.07 473.55V882.29Z" fillOpacity="0.2" />
                     <path d="M0 650.54L392.07 882.29V473.55L0 650.54Z" fillOpacity="0.6" />
                  </svg>
-                 <span className="text-3xl font-display tracking-widest">ETHEREUM</span>
+                 <span className="text-2xl sm:text-3xl font-display tracking-widest text-center break-words">ETHEREUM</span>
                </div>
             </div>
           </a>
@@ -145,25 +145,25 @@ function App() {
       </section>
 
       {/* The CLARITY Mandate — Problem Section */}
-      <section id="clarity" className="relative z-10 py-32 px-6 border-b border-white/5">
-        <div className="max-w-7xl mx-auto">
+      <section id="clarity" className="relative z-10 py-32 px-4 sm:px-6 border-b border-white/5 w-full min-w-0 box-border">
+        <div className="max-w-7xl mx-auto w-full min-w-0 px-1 sm:px-0">
           <FadeIn className="mb-20 max-w-4xl">
             <div className="mb-6 inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-amber-300/30 bg-amber-300/10 text-amber-200 text-xs tracking-[0.2em]">
               <Scale className="w-3 h-3" />
               THE CLARITY MANDATE
             </div>
-            <h2 className="text-4xl md:text-6xl font-display mb-8 leading-tight">
+            <h2 className="text-3xl sm:text-4xl md:text-6xl font-display mb-8 leading-tight break-words text-balance">
               Governance is no longer<br />
               <span className="text-gradient">optional infrastructure.</span>
             </h2>
-            <p className="text-lg md:text-xl text-gray-400 font-light leading-relaxed mb-6">
+            <p className="text-lg md:text-xl text-gray-400 font-light leading-relaxed mb-6 break-words">
               Under the U.S. <span className="text-white">Digital Asset Market CLARITY Act of 2025</span> (H.R. 3633, § 104),
               a digital asset can only graduate out of securities oversight when its blockchain
               system is governed by a <span className="text-space-accent">Decentralized Governance System</span>:
               a transparent, rules-based process for forming consensus where no person — and no
               group of persons under common control — retains effective control.
             </p>
-            <p className="text-lg md:text-xl text-gray-400 font-light leading-relaxed">
+            <p className="text-lg md:text-xl text-gray-400 font-light leading-relaxed break-words">
               Most "DAOs" do not meet that bar. Founder multisigs, off-chain Discord votes, opaque
               admin keys, and concentrated voting power all fail the test — leaving protocols
               stuck in regulatory limbo, exposed to enforcement risk, and unable to mature.
@@ -202,7 +202,7 @@ function App() {
                     <div className="p-4 bg-white/5 inline-block rounded-lg group-hover:scale-110 group-hover:bg-white/10 transition-all duration-500 border border-white/5">
                       {item.icon}
                     </div>
-                    <span className="font-mono text-[10px] tracking-widest text-amber-200/70 border border-amber-200/20 rounded-full px-2 py-1">
+                    <span className="font-mono text-[10px] tracking-widest text-amber-200/70 border border-amber-200/20 rounded-full px-2 py-1 shrink-0 min-w-0 max-w-[calc(100%-5rem)] sm:max-w-[14rem] break-words text-right leading-snug">
                       {item.tag}
                     </span>
                   </div>
@@ -236,14 +236,14 @@ function App() {
       </section>
 
       {/* Mission Section */}
-      <section id="mission" className="relative z-10 py-32 px-6">
-        <div className="max-w-7xl mx-auto flex flex-col items-center text-center">
+      <section id="mission" className="relative z-10 py-32 px-4 sm:px-6 w-full min-w-0 box-border">
+        <div className="max-w-7xl mx-auto flex flex-col items-center text-center w-full min-w-0 px-1 sm:px-0">
           <FadeIn>
-            <h2 className="text-4xl md:text-5xl font-display mb-8">Our Mission</h2>
-            <p className="text-2xl md:text-4xl text-white font-light max-w-4xl leading-relaxed">
+            <h2 className="text-4xl md:text-5xl font-display mb-8 break-words">Our Mission</h2>
+            <p className="text-xl sm:text-2xl md:text-4xl text-white font-light max-w-4xl leading-relaxed break-words text-balance">
               "To enable people to <span className="text-space-accent">maximize their potential</span>."
             </p>
-            <p className="mt-8 text-base md:text-lg text-gray-400 max-w-2xl mx-auto font-light leading-relaxed">
+            <p className="mt-8 text-base md:text-lg text-gray-400 max-w-2xl mx-auto font-light leading-relaxed break-words">
               By giving every community a credibly neutral home for capital, decisions, and
               autonomous agents — built to satisfy the legal threshold of a Decentralized
               Governance System from day one.
@@ -253,11 +253,11 @@ function App() {
       </section>
 
       {/* Core Features */}
-      <section id="technology" className="relative z-10 py-32 px-6">
-        <div className="max-w-7xl mx-auto">
+      <section id="technology" className="relative z-10 py-32 px-4 sm:px-6 w-full min-w-0 box-border">
+        <div className="max-w-7xl mx-auto w-full min-w-0 px-1 sm:px-0">
           <FadeIn className="mb-20 max-w-2xl">
-            <h2 className="text-4xl md:text-5xl font-display mb-6">Autonomous Architecture</h2>
-            <p className="text-gray-400 text-lg font-light leading-relaxed">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-display mb-6 break-words text-balance">Autonomous Architecture</h2>
+            <p className="text-gray-400 text-lg font-light leading-relaxed break-words">
               Each Chamber primitive is designed to satisfy a specific clause of CLARITY Act § 104 —
               not as compliance theater, but as the structural property that makes
               autonomous, agent-driven governance possible.
@@ -308,11 +308,11 @@ function App() {
       </section>
 
       {/* Governance Architecture Section */}
-      <section id="governance" className="relative z-10 py-32 px-6 border-t border-white/5">
-        <div className="max-w-7xl mx-auto">
+      <section id="governance" className="relative z-10 py-32 px-4 sm:px-6 border-t border-white/5 w-full min-w-0 box-border overflow-x-hidden">
+        <div className="max-w-7xl mx-auto w-full min-w-0 px-1 sm:px-0">
           <FadeIn className="text-center mb-20">
-            <h2 className="text-4xl md:text-5xl font-display mb-6">Ecosystem Governance</h2>
-            <p className="text-gray-400 max-w-2xl mx-auto text-lg font-light leading-relaxed">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-display mb-6 px-2 break-words text-balance">Ecosystem Governance</h2>
+            <p className="text-gray-400 max-w-2xl mx-auto px-2 text-lg font-light leading-relaxed break-words">
               Chambers and Sub-Chambers compose into a verifiable
               <span className="text-space-accent"> Decentralized Governance System</span> —
               a transparent, rules-based topology where authority is distributed by structure,
@@ -320,31 +320,31 @@ function App() {
             </p>
           </FadeIn>
 
-          <div className="grid md:grid-cols-2 gap-16 items-center">
-             <FadeIn delay={0.2} className="relative">
+          <div className="grid md:grid-cols-2 gap-16 items-center min-w-0">
+             <FadeIn delay={0.2} className="relative w-full min-w-0">
                 {/* Diagrammatic representation */}
-                <div className="relative p-8 border border-white/10 rounded-2xl bg-white/5 backdrop-blur-sm aspect-[4/3] flex flex-col items-center justify-center gap-8">
+                <div className="relative p-6 sm:p-8 border border-white/10 rounded-2xl bg-white/5 backdrop-blur-sm min-h-0 w-full max-w-full min-w-0 flex flex-col items-center justify-center gap-8 md:aspect-[4/3] overflow-hidden">
                    {/* Main Chamber */}
-                   <div className="relative z-10 p-6 bg-space-800 border border-space-accent/50 rounded-xl w-48 text-center shadow-[0_0_30px_rgba(208,214,249,0.1)]">
+                  <div className="relative z-10 p-6 bg-space-800 border border-space-accent/50 rounded-xl max-w-[12rem] w-full sm:w-48 text-center shadow-[0_0_30px_rgba(208,214,249,0.1)]">
                       <div className="text-space-accent font-display text-xl mb-1">Root Chamber</div>
                       <div className="text-xs text-gray-400">Global Consensus</div>
                       
                       {/* Connection Lines */}
-                      <div className="absolute top-full left-1/2 -translate-x-1/2 h-8 w-px bg-gradient-to-b from-space-accent/50 to-transparent"></div>
-                      <div className="absolute top-full left-1/2 -translate-x-1/2 w-48 h-8 border-x border-t border-space-accent/20 rounded-t-xl translate-y-8"></div>
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 h-8 w-px bg-gradient-to-b from-space-accent/50 to-transparent" />
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 w-[min(18rem,calc(100vw-8rem))] sm:w-48 h-8 border-x border-t border-space-accent/20 rounded-t-xl translate-y-8" />
                    </div>
 
-                   {/* Sub Chambers */}
-                   <div className="flex gap-4 mt-8 pt-4">
-                      <div className="p-4 bg-space-800/50 border border-white/10 rounded-lg w-28 text-center backdrop-blur-md">
+                   {/* Sub Chambers — stack on narrow viewports, row + wrap on sm+ */}
+                   <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:gap-4 mt-8 pt-4 w-full max-w-full min-w-0 px-2 sm:px-0 justify-center items-center sm:items-stretch">
+                      <div className="p-4 bg-space-800/50 border border-white/10 rounded-lg w-[8.5rem] max-w-full shrink-0 sm:w-28 text-center backdrop-blur-md">
                          <div className="text-white font-display mb-1">Treasury</div>
                          <div className="text-[10px] text-gray-500">Asset Mgmt</div>
                       </div>
-                      <div className="p-4 bg-space-800/50 border border-white/10 rounded-lg w-28 text-center backdrop-blur-md">
+                      <div className="p-4 bg-space-800/50 border border-white/10 rounded-lg w-[8.5rem] max-w-full shrink-0 sm:w-28 text-center backdrop-blur-md">
                          <div className="text-white font-display mb-1">Ops</div>
                          <div className="text-[10px] text-gray-500">Coordination</div>
                       </div>
-                      <div className="p-4 bg-space-800/50 border border-white/10 rounded-lg w-28 text-center backdrop-blur-md">
+                      <div className="p-4 bg-space-800/50 border border-white/10 rounded-lg w-[8.5rem] max-w-full shrink-0 sm:w-28 text-center backdrop-blur-md">
                          <div className="text-white font-display mb-1">R&D</div>
                          <div className="text-[10px] text-gray-500">Innovation</div>
                       </div>
@@ -352,10 +352,10 @@ function App() {
                 </div>
              </FadeIn>
 
-             <FadeIn delay={0.4} className="space-y-12">
-                <div className="group">
+             <FadeIn delay={0.4} className="space-y-12 w-full min-w-0">
+                <div className="group min-w-0">
                    <h3 className="text-2xl font-display mb-3 text-white group-hover:text-space-accent transition-colors">The Chamber</h3>
-                   <p className="text-gray-400 leading-relaxed font-light">
+                   <p className="text-gray-400 leading-relaxed font-light break-words">
                       The root governing body where global policies are set, the main treasury is
                       held, and consensus is formed. Authority is exercised exclusively through
                       on-chain rules — never through admin keys or off-chain channels — so the
@@ -363,9 +363,9 @@ function App() {
                    </p>
                 </div>
 
-                <div className="group">
+                <div className="group min-w-0">
                    <h3 className="text-2xl font-display mb-3 text-white group-hover:text-space-accent transition-colors">Sub-Chambers</h3>
-                   <p className="text-gray-400 leading-relaxed font-light">
+                   <p className="text-gray-400 leading-relaxed font-light break-words">
                       Specialized bodies with delegated mandates and independent budgets. By
                       splitting authority across Treasury, Ops, R&D, and beyond, no single seat or
                       coalition can unilaterally direct the protocol — closing the
@@ -378,11 +378,11 @@ function App() {
       </section>
 
       {/* Visual Showcase Section */}
-      <section className="relative z-10 py-32 px-6 bg-space-800/30">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-16">
-          <div className="flex-1">
+      <section className="relative z-10 py-32 px-4 sm:px-6 bg-space-800/30 w-full min-w-0 box-border overflow-x-hidden">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-16 w-full min-w-0 px-1 sm:px-0">
+          <div className="flex-1 w-full min-w-0">
             <FadeIn>
-              <h2 className="text-4xl md:text-5xl font-display mb-8">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-display mb-8 break-words text-balance">
                 Command Your <br />
                 <span className="text-gradient">Digital Fleet</span>
               </h2>
@@ -560,8 +560,8 @@ function App() {
       </section>
 
       {/* Footer */}
-      <footer className="relative z-10 bg-space-900 pt-20 pb-10 border-t border-white/10">
-        <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-4 gap-12 mb-16">
+      <footer className="relative z-10 bg-space-900 pt-20 pb-10 border-t border-white/10 w-full min-w-0 overflow-x-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 grid md:grid-cols-4 gap-12 mb-16 w-full min-w-0 box-border">
           <div className="col-span-1 md:col-span-2">
             <div className="flex items-center gap-2 mb-6">
               <img src="/logo.svg" alt="Loreum Logo" className="w-6 h-6" />
@@ -594,7 +594,7 @@ function App() {
           </div>
         </div>
         
-        <div className="max-w-7xl mx-auto px-6 pt-8 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-gray-600">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-8 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-gray-600 w-full min-w-0 box-border text-center md:text-start">
           <div>© 2026 LOREUM DAO LLC. ALL RIGHTS RESERVED.</div>
           <div className="flex gap-8">
             <a href="#" className="hover:text-gray-400">PRIVACY POLICY</a>
