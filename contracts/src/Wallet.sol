@@ -170,10 +170,16 @@ abstract contract Wallet {
 
     /**
      * @notice Revokes a previously given confirmation
+     * @dev Reverts via `notCancelled` after cancellation (consistent with {_confirmTransaction}).
      * @param tokenId The token ID revoking the confirmation
      * @param nonce The transaction index to revoke confirmation for
      */
-    function _revokeConfirmation(uint256 tokenId, uint256 nonce) internal txExists(nonce) notExecuted(nonce) {
+    function _revokeConfirmation(uint256 tokenId, uint256 nonce)
+        internal
+        txExists(nonce)
+        notExecuted(nonce)
+        notCancelled(nonce)
+    {
         WalletStorage storage $ = _getWalletStorage();
         if (!$.isConfirmed[nonce][tokenId]) revert IWallet.TransactionNotConfirmed();
 
