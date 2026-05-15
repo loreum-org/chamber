@@ -1338,6 +1338,28 @@ contract ChamberTest is Test {
         chamber.confirmTransaction(2, 0);
     }
 
+    function test_Chamber_RevokeConfirmation_AfterCancel_Reverts() public {
+        addDirectors();
+
+        vm.prank(user1);
+        chamber.submitTransaction(1, address(0x3), 0, "");
+
+        vm.prank(user2);
+        chamber.confirmTransaction(2, 0);
+
+        vm.prank(user1);
+        chamber.cancelTransaction(1, 0);
+        vm.prank(user2);
+        chamber.cancelTransaction(2, 0);
+        vm.prank(user3);
+        chamber.cancelTransaction(3, 0);
+        assertTrue(chamber.getCancelled(0));
+
+        vm.prank(user2);
+        vm.expectRevert(IWallet.TransactionAlreadyCancelled.selector);
+        chamber.revokeConfirmation(2, 0);
+    }
+
     function test_Chamber_CancelTransaction_DoubleVote_Reverts() public {
         addDirectors();
 
