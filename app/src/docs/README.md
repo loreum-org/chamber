@@ -1,24 +1,42 @@
-# Loreum Chamber
+# Loreum Chamber docs
 
-Documentation for **Chamber**: an ERC‑4626 treasury with membership NFTs, share-weight delegation to token IDs, director quorum over a transaction queue, and a **Registry** that deploys upgradeable Chamber instances.
+Markdown sources under **`app/src/docs`** render inside the web UI at **`/docs`** (`app/src/pages/Docs.tsx`). They’re organized so **readable product context lands first**, then progressively deeper engineering material.
 
-The web app renders these Markdown files under **`/docs`** (`app/src/pages/Docs.tsx`).
+Start with **[Overview](./introduction/overview.md)** once, then skim **[Chamber Protocol (online)](https://loreum.org/whitepaper)** on [loreum.org](https://loreum.org) for authoritative protocol narrative.
 
-## Navigate the docs
+---
 
-1. **[Overview](./introduction/overview.md)** — product mental model  
-2. **[Getting started](./introduction/getting-started.md)** — Dashboard, Deploy, Chamber page, Transactions  
-3. **[Architecture](./protocol/architecture.md)** — contracts and how they connect  
-4. **[Governance](./protocol/governance.md)** — delegation, directors, quorum, seats  
-5. **[Vault](./protocol/vaults.md)** — ERC‑4626 shares and delegation-safe transfers  
-6. **[Wallet / multisig](./protocol/multisig.md)** — submit, confirm, execute, hashed calldata  
-7. **[Design notes](./protocol/design-notes.md)** — storage, limits, and security-relevant details from `contracts/src/`  
-8. **[API reference](./reference/api-reference.md)** — function-level surface  
-9. **[Sequence diagrams](./reference/sequence-diagrams.md)** — Mermaid flows  
-10. **[Deployment](./guides/deployment.md)** — Foundry scripts and Registry setup  
+## Narrative (“what Chambers do”)
+
+1. **[Overview](./introduction/overview.md)** — high-level Chamber story (aligned with the public landing hero + mission).  
+2. **[Chamber and Sub-Chambers](./introduction/chamber-and-sub-chambers.md)** — ecosystem mental model drawn from loreum.org governance framing.  
+3. **[Getting started](./introduction/getting-started.md)** — connect a wallet, routes, Transactions tab, Deploy.
+
+## Practical / protocol reference
+
+| Doc | Audience |
+|-----|----------|
+| **[Vision & primitives](./protocol/vision.md)** | Why the three-legged design exists |
+| **[Architecture](./protocol/architecture.md)** | Contracts, Registry, proxies |
+| **[Governance](./protocol/governance.md)** | Seats, quorum, delegation flow |
+| **[Vault](./protocol/vaults.md)** | ERC‑4626 and transfer/delegation invariants |
+| **[Wallet / multisig](./protocol/multisig.md)** | Queue execution + calldata hashing |
+| **[Design notes](./protocol/design-notes.md)** | Limits, assumptions, Solidity notes |
+
+## Guides
+
+- **[App routes](./guides/app-routes.md)** — path map + diagram for this SPA  
+- **[Deployment](./guides/deployment.md)** — Foundry / Registry setups  
+
+## API & diagrams
+
+- **[API reference](./reference/api-reference.md)**  
+- **[Sequence diagrams](./reference/sequence-diagrams.md)**
 
 ## Security
 
-Chamber is designed for transparent, rule-bound treasury operation. For review methodology and report expectations, see **[Security](./security/security-review.md)**.
+- **[Security review](./security/security-review.md)** methodology  
 
-For technical interface flows in the app, see **[Whitepaper / interface](./whitepaper/interface.md)**.
+## Whitepaper gateway
+
+The **interface table** historically living under `/docs/whitepaper` moved navigationally to **[Whitepaper hub → Read online](./whitepaper/read-online.md)**, pointing at **`https://loreum.org/whitepaper`** for the full prose.
