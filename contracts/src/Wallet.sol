@@ -19,7 +19,7 @@ import {IWallet} from "./interfaces/IWallet.sol";
  *
  * BREAKING: executeTransaction and executeBatchTransactions now require a `data` / `data[]`
  *           parameter at call time. Callers must persist the original calldata (e.g. via the
- *           SubmitTransaction event or off-chain storage) and re-supply it at execution.
+ *           SubmitTransaction event or offchain storage) and re-supply it at execution.
  */
 abstract contract Wallet {
     /**

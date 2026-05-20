@@ -1,6 +1,6 @@
 /**
  * Proposal metadata helpers for Chamber transactions.
- * Metadata is now committed on-chain as a URI, with localStorage kept as a legacy fallback.
+ * Metadata is now committed onchain as a URI, with localStorage kept as a legacy fallback.
  * Key: chamber-proposal-{chamberAddress}-{txId}
  */
 

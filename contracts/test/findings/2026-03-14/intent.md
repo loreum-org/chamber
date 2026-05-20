@@ -7,7 +7,7 @@
 
 ## System Summary
 
-Chamber is an on-chain governance primitive combining three primitives:
+Chamber is an onchain governance primitive combining three primitives:
 
 1. **ERC-4626 Vault** (`Chamber` inherits `ERC4626Upgradeable`) — users deposit ERC-20 tokens and receive vault shares ("chamber shares"). Shares represent proportional claims on the vault asset.
 

@@ -13,7 +13,7 @@ ADDR="${2:?second arg: implementation address}"
 CHAIN="${3:-sepolia}"
 
 # Forge verify-contract defaults --rpc-url to http://localhost:8545; without pointing at Sepolia/etc.,
-# Forge cannot see on-chain bytecode and warns: "Unable to locate ContractCode".
+# Forge cannot see onchain bytecode and warns: "Unable to locate ContractCode".
 # Values below resolve via foundry.toml [rpc_endpoints] (SEPOLIA_RPC_URL, MAINNET_RPC_URL, …).
 case "$CHAIN" in
 sepolia | 11155111) VERIFY_RPC_ALIAS=sepolia ;;

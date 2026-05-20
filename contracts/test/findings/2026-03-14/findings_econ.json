@@ -13,7 +13,7 @@
     "id": "ECON-002",
     "title": "Flash Loan Board Seat Capture",
     "severity": "LOW",
-    "description": "An attacker with access to flash loans could deposit large amounts to dominate the board during a single transaction, execute a governance action, and withdraw. However, ERC-4626 deposit mints shares and delegates in the same block — but the director check requires a pending on-chain transaction and confirmations which cannot complete in the same block.",
+    "description": "An attacker with access to flash loans could deposit large amounts to dominate the board during a single transaction, execute a governance action, and withdraw. However, ERC-4626 deposit mints shares and delegates in the same block — but the director check requires a pending onchain transaction and confirmations which cannot complete in the same block.",
     "preconditions": ["Flash loan available for the chamber asset token"],
     "impact": "Flash loans cannot complete governance (submit + confirm + execute requires separate txns), so impact is limited to board position manipulation within one block",
     "likelihood": "VERY LOW",

@@ -101,7 +101,7 @@ export default function BoardVisualization({
       {boardDataMissing && (
         <div className="panel p-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between border-accent-500/20 bg-accent-500/5">
           <p className="text-sm text-slate-300">
-            Your delegation is on-chain, but the ranked board hasn&apos;t loaded yet (or the indexer is behind).
+            Your delegation is onchain, but the ranked board hasn&apos;t loaded yet (or the indexer is behind).
             Refresh after the transaction confirms.
           </p>
           {onRefreshBoard && (

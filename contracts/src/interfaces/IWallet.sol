@@ -5,7 +5,7 @@ pragma solidity ^0.8.30;
  * @title IWallet
  * @author xhad, Loreum DAO LLC
  * @notice Director-gated multisig: submit, confirm, execute, revoke, and cancel transaction flows.
- * @dev Only `keccak256(calldata)` is stored on-chain; callers must retain full calldata to execute.
+ * @dev Only `keccak256(calldata)` is stored onchain; callers must retain full calldata to execute.
  *      Confirmation and execution require a quorum of distinct director token IDs as enforced by `Chamber`.
  */
 interface IWallet {
@@ -14,7 +14,7 @@ interface IWallet {
      * @param tokenId The tokenId submitting the transaction
      * @param target The address to send the transaction to
      * @param value The amount of Ether to send
-     * @param data The calldata (stored on-chain as keccak256 hash only)
+     * @param data The calldata (stored onchain as keccak256 hash only)
      */
     function submitTransaction(uint256 tokenId, address target, uint256 value, bytes memory data) external;
 
@@ -23,7 +23,7 @@ interface IWallet {
      * @param tokenId The tokenId submitting the transaction
      * @param target The address to send the transaction to
      * @param value The amount of Ether to send
-     * @param data The calldata (stored on-chain as keccak256 hash only)
+     * @param data The calldata (stored onchain as keccak256 hash only)
      * @param metadataURI URI or content hash describing the proposal rationale and risk context
      */
     function submitTransactionWithMetadata(
@@ -167,7 +167,7 @@ interface IWallet {
      * @param nonce The unique identifier for the transaction
      * @param to The target address for the transaction
      * @param value The amount of ETH to send
-     * @param data The original calldata (emitted for off-chain persistence; only hash stored on-chain)
+     * @param data The original calldata (emitted for offchain persistence; only hash stored onchain)
      */
     event SubmitTransaction(
         uint256 indexed tokenId, uint256 indexed nonce, address indexed to, uint256 value, bytes data

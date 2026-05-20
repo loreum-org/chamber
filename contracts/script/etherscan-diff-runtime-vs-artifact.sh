@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Compare *deployed runtime* bytecode on-chain with `out/<Contract>/<Contract>.json` (cheap sanity check).
+# Compare *deployed runtime* bytecode onchain with `out/<Contract>/<Contract>.json` (cheap sanity check).
 # If this does NOT match, your checkout ≠ what was deployed; no verifier flags will fix that.
 #
 # Usage (from contracts/):
@@ -50,6 +50,6 @@ if [[ "$lh" == "$rh" ]]; then
 	exit 0
 fi
 
-echo "# MISMATCH: on-chain bytecode ≠ artifact for this tree." >&2
+echo "# MISMATCH: onchain bytecode ≠ artifact for this tree." >&2
 echo "# git checkout <deploy commit>, forge clean, forge build, re-run compare." >&2
 exit 1

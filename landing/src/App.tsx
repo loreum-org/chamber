@@ -65,7 +65,7 @@ function App() {
             className="mb-6 inline-block"
           >
             <span className="inline-block max-w-full px-3 sm:px-4 py-1.5 rounded-full border border-space-accent/30 bg-space-accent/10 text-space-accent text-xs tracking-[0.2em] backdrop-blur-sm break-words text-center leading-snug">
-              CHAMBER · ON-CHAIN GOVERNANCE
+              CHAMBER · ONCHAIN GOVERNANCE
             </span>
           </motion.div>
           
@@ -73,7 +73,7 @@ function App() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl xl:text-9xl font-display leading-tight mb-8 break-words text-balance"
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-display leading-tight mb-8 break-words text-balance"
           >
             DECENTRALIZED GOVERNANCE SYSTEM<br />
           </motion.h1>
@@ -164,7 +164,7 @@ function App() {
               group of persons under common control — retains effective control.
             </p>
             <p className="text-lg md:text-xl text-gray-400 font-light leading-relaxed break-words">
-              Most "DAOs" do not meet that bar. Founder multisigs, off-chain Discord votes, opaque
+              Most "DAOs" do not meet that bar. Founder multisigs, offchain Discord votes, opaque
               admin keys, and concentrated voting power all fail the test — leaving protocols
               stuck in regulatory limbo, exposed to enforcement risk, and unable to mature.
             </p>
@@ -176,7 +176,7 @@ function App() {
                 icon: <Eye className="w-7 h-7 text-amber-300" />,
                 tag: "§ 104(c)(2)(D)",
                 title: "Transparent & Programmatic",
-                desc: "The Act requires a system that operates and enforces decisions solely from pre-established, transparent rules encoded in source code. Chamber executes every governance action — proposal, vote, and treasury transfer — through audited on-chain logic.",
+                desc: "The Act requires a system that operates and enforces decisions solely from pre-established, transparent rules encoded in source code. Chamber executes every governance action — proposal, vote, and treasury transfer — through audited onchain logic.",
                 glow: "bg-amber-400/10"
               },
               {
@@ -269,7 +269,7 @@ function App() {
               {
                 icon: <Cpu className="w-8 h-8 text-blue-400" />,
                 title: "Agent Directors",
-                desc: "Smart contracts that propose, vote, and execute on-chain through pre-established rules — humans, multisigs, and AI agents seated as equal directors via NFT-based delegation and EIP-1271 signatures.",
+                desc: "Smart contracts that propose, vote, and execute onchain through pre-established rules — humans, multisigs, and AI agents seated as equal directors via NFT-based delegation and EIP-1271 signatures.",
                 glow: "bg-blue-500/20"
               },
               {
@@ -358,7 +358,7 @@ function App() {
                    <p className="text-gray-400 leading-relaxed font-light break-words">
                       The root governing body where global policies are set, the main treasury is
                       held, and consensus is formed. Authority is exercised exclusively through
-                      on-chain rules — never through admin keys or off-chain channels — so the
+                      onchain rules — never through admin keys or offchain channels — so the
                       system remains transparent and rules-based as the Act requires.
                    </p>
                 </div>

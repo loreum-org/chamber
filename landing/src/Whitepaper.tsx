@@ -66,14 +66,14 @@ function Whitepaper() {
                 (H.R. 3633, § 104), a digital asset can only mature past certain securities classifications when its host
                 blockchain is governed by a statutorily defined <strong className="text-space-accent font-normal">
                 Decentralized Governance System</strong>: a transparent, rules-based process where no single person — and
-                no coordinated group — retains effective control. Most on-chain communities today rely on multisigs,
-                informal off-chain signaling, opaque admin capabilities, or plutocratic token voting that do not satisfy
+                no coordinated group — retains effective control. Most onchain communities today rely on multisigs,
+                informal offchain signaling, opaque admin capabilities, or plutocratic token voting that do not satisfy
                 that bar, leaving protocols in regulatory limbo and exposing participants to residual control risk.
               </p>
               <p className="text-gray-300 leading-relaxed mb-4">
                 This paper presents the <strong className="text-white font-normal">Chamber Protocol</strong>, a smart
                 contract architecture designed so that consensus, treasury action, and upgrade authority are exercised
-                <em> solely</em> through pre-established on-chain logic: an ERC4626-compliant vault for asset management,
+                <em> solely</em> through pre-established onchain logic: an ERC4626-compliant vault for asset management,
                 a delegation-driven board ranked by transparent rules (sorted linked list), and quorum-based multisig-style
                 execution. The design targets the Act&apos;s functional requirements — programmatic transparency, dispersed
                 authority, and impartial, rules-bound execution — while enabling autonomous agents and humans to act as
@@ -107,7 +107,7 @@ function Whitepaper() {
               <p className="text-gray-300 leading-relaxed mb-4">
                 Chamber treats that gap as an engineering constraint: governance outcomes must be{" "}
                 <em>observable</em>, <em>rule-bound</em>, and <em>structurally dispersive</em> so that custody of economic and upgrade
-                decisions does not collapse to a small clique. The primitives in §2 onward — on-chain proposal and
+                decisions does not collapse to a small clique. The primitives in §2 onward — onchain proposal and
                 execution paths, director sets derived from transparent delegation math, and quorum-gated calls — are
                 chosen to make &quot;who can move the money and the code&quot; answerable from contract state and event logs,
                 not from Discord moderators or invisible deployer keys.
@@ -131,14 +131,14 @@ function Whitepaper() {
                 (cf. § 104(c)(2)(E–G)) — liquid delegation to a ranked board plus majority quorum on execution resists
                 single-actor capture when parameters and seat counts are tuned to policy; <strong className="text-space-accent font-normal">
                 agent parity</strong> — EIP-1271 allows smart contract directors to participate under the same validation
-                rules as EOAs, supporting autonomous but rule-bound participants rather than off-chain AI promises.
+                rules as EOAs, supporting autonomous but rule-bound participants rather than offchain AI promises.
               </p>
 
               <h3 className="text-2xl font-display mb-4 mt-10 text-white">1.2 Chamber as protocol response</h3>
               <p className="text-gray-300 leading-relaxed mb-4">
                 Decentralized Autonomous Organizations (DAOs) have emerged as a paradigm for collective decision-making
                 in blockchain ecosystems. However, many stacks remain ill-suited to the CLARITY bar: static membership,
-                off-chain voting with on-chain rubber-stamping, or agent-hostile signature models. Chamber addresses
+                offchain voting with onchain rubber-stamping, or agent-hostile signature models. Chamber addresses
                 these limitations with a flexible, agent-centric governance framework built on Ethereum where the
                 enforcement layer is the contract system itself.
               </p>
@@ -618,7 +618,7 @@ Node: 4 × uint256 = 4 storage slots (optimal for linked list operations)`}
               <ul className="list-disc list-inside text-gray-300 space-y-2 mb-4 ml-4">
                 <li>Multi-asset vault support for diversified treasuries</li>
                 <li>Transaction scheduling with time-based execution</li>
-                <li>Conditional execution based on on-chain or off-chain data</li>
+                <li>Conditional execution based on onchain or offchain data</li>
                 <li>Configurable quorum strategies beyond simple majority</li>
                 <li>Enhanced Registry with metadata and discovery mechanisms</li>
                 <li>Cross-chain governance through bridge integrations</li>

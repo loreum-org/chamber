@@ -108,7 +108,7 @@ export function artifactUriToDisplayUrl(uri: string | undefined): string | undef
   if (!uri?.trim()) return undefined
   const t = uri.trim()
 
-  /* Inline images ( ERC-721 on-chain metadata ) */
+  /* Inline images ( ERC-721 onchain metadata ) */
   if (t.toLowerCase().startsWith('data:image/')) return t
 
   return normalizeStorageUriToHttps(t)

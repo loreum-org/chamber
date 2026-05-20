@@ -2,7 +2,7 @@
 
 Chamber couples **vault accounting** (OpenZeppelin **`ERC4626Upgradeable`**), **leaderboard governance** (`Board`), and a **queued multisig executor** (`Wallet`) in one upgradeable **`Chamber`** deployment. A **`Registry`** deploys Chamber proxies and indexes instances (and optional parent/child relationships).
 
-## On-chain components
+## onchain components
 
 ### `Chamber.sol`
 
@@ -18,14 +18,14 @@ Chamber couples **vault accounting** (OpenZeppelin **`ERC4626Upgradeable`**), **
 
 ### `Wallet.sol` (abstract, inherited)
 
-- Stores **`keccak256(calldata)`** per nonce, optional **`metadataURI`**, confirmation bitmaps **per director token ID**, cancel voting, and emits **`SubmitTransaction` with raw calldata** for off-chain archival.  
+- Stores **`keccak256(calldata)`** per nonce, optional **`metadataURI`**, confirmation bitmaps **per director token ID**, cancel voting, and emits **`SubmitTransaction` with raw calldata** for offchain archival.  
 
 ### `Registry.sol`
 
 - **`TransparentUpgradeableProxy`** for implementations; **`initialize`** records **admin** (**`DEFAULT_ADMIN_ROLE`** + **`ADMIN_ROLE`**) and the **pinned Chamber implementation** used by **`createChamber`**.  
 - **`createChamber`** initializes a new Chamber proxy via **`TransparentUpgradeableProxy`**, transfers **`ProxyAdmin` ownership** to **`address(chamber)`**, and optionally links **parent/child chambers** when the asset token is itself a registered Chamber.  
 
-## Off-chain stack
+## offchain stack
 
 ### Web app (`app/`)
 

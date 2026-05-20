@@ -11,7 +11,7 @@
 | Nouns DAO | NFT Governance | 1 Noun = 1 vote, daily auctions, Prop House, Flows.wtf | Strong brand, fractional $NOUNS, evolving capital deployment | No shared vault per se; treasury managed separately |
 | Agent Bravo | AI Agent Governance | Governor Bravo-compatible voting, policy enactment, Discord integration | AI agents can vote in existing DAOs | No native treasury; depends on Governor + Safe stack |
 | onchain-agent-kit | AI Agent Tooling | EIP-8004 identity, agent-to-agent protocols, EVM/Solana | Modular, verifiable agent identity | Framework only; no treasury or governance product |
-| ERC-8004 / ERC-8183 | Standards | Agent identity, reputation, programmable escrow | Formal on-chain AI trust infrastructure | Standards, not products |
+| ERC-8004 / ERC-8183 | Standards | Agent identity, reputation, programmable escrow | Formal onchain AI trust infrastructure | Standards, not products |
 
 ## Feature Matrix
 
@@ -32,7 +32,7 @@
 - **Market-driven board**: Delegation to NFT IDs creates a leaderboard; top N by stake become directors. Competitors use fixed signers or token-weighted votes.
 - **Hybrid human-AI**: Agents can hold NFT-backed directorship and auto-confirm via policies. Gnosis Safe and Tally have no native agent support.
 - **ERC4626 vault**: Chamber is a tokenized vault (shares) with deposit/withdraw; Safe holds raw assets.
-- **ValidationRegistry (ERC-8004)**: On-chain agent attestations; aligns with emerging AI agent trust standards.
+- **ValidationRegistry (ERC-8004)**: onchain agent attestations; aligns with emerging AI agent trust standards.
 
 ## Gaps (Competitors Have, Chamber Doesn't)
 
@@ -47,4 +47,4 @@
 - [Nouns DAO Governance](https://www.nouns.com/learn/nouns-dao-governance-explained)
 - [Agent Bravo Contracts](https://github.com/mikeghen/agent-bravo-contracts)
 - [onchain-agent-kit (EIP-8004)](https://github.com/sebasneuron/onchain-agent-kit)
-- [Ethereum On-Chain AI Agent Trust (ERC-8004, ERC-8183)](https://www.ainvest.com/news/ethereum-chain-ai-agent-trust-live-2603/)
+- [Ethereum onchain AI Agent Trust (ERC-8004, ERC-8183)](https://www.ainvest.com/news/ethereum-chain-ai-agent-trust-live-2603/)
