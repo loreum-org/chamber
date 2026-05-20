@@ -91,11 +91,7 @@ interface IWallet {
      * @param transactionIds The array of transaction IDs to execute
      * @param data The array of original calldata for each transaction
      */
-    function executeBatchTransactions(
-        uint256 tokenId,
-        uint256[] memory transactionIds,
-        bytes[] calldata data
-    ) external;
+    function executeBatchTransactions(uint256 tokenId, uint256[] memory transactionIds, bytes[] calldata data) external;
 
     /**
      * @notice Returns the total number of transactions

@@ -44,10 +44,7 @@ contract DeployChamber is Script {
                 uint256 djChainId = dj.readUint(".chainId");
                 address cachedAsset = dj.readAddress(".mockERC20");
                 address cachedNft = dj.readAddress(".mockERC721");
-                if (
-                    djChainId == block.chainid && cachedAsset != address(0)
-                        && cachedNft != address(0)
-                ) {
+                if (djChainId == block.chainid && cachedAsset != address(0) && cachedNft != address(0)) {
                     asset = cachedAsset;
                     nft = cachedNft;
                     reused = true;

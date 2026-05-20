@@ -4,13 +4,12 @@ pragma solidity ^0.8.30;
 import {Script, console} from "forge-std/Script.sol";
 import {Registry} from "src/Registry.sol";
 import {Chamber} from "src/Chamber.sol";
-import {TransparentUpgradeableProxy} from "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {
+    TransparentUpgradeableProxy
+} from "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 contract DeployRegistry is Script {
-
-
     function run() external {
-
         address admin;
 
         try vm.envAddress("ADMIN") returns (address envAdmin) {
@@ -27,9 +26,7 @@ contract DeployRegistry is Script {
         TransparentUpgradeableProxy registryProxy = new TransparentUpgradeableProxy(
             address(registryImplementationContract),
             address(admin),
-            abi.encodeWithSelector(
-                Registry.initialize.selector, address(chamberImplementationContract), admin
-            )
+            abi.encodeWithSelector(Registry.initialize.selector, address(chamberImplementationContract), admin)
         );
 
         vm.stopBroadcast();

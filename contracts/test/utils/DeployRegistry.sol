@@ -28,9 +28,7 @@ library DeployRegistry {
         TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
             address(registryImplementationContract),
             address(admin),
-            abi.encodeWithSelector(
-                Registry.initialize.selector, address(chamberImplementationContract), admin
-            )
+            abi.encodeWithSelector(Registry.initialize.selector, address(chamberImplementationContract), admin)
         );
 
         return Deployment({

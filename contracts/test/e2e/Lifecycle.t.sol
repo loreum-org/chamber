@@ -41,9 +41,7 @@ contract LifecycleTest is Test {
         console.log("Starting E2E Chamber Lifecycle Test");
 
         vm.startPrank(whale);
-        address chamberAddr = registry.createChamber(
-            address(token), address(nft), 5, "Treasury Chamber", "TCH"
-        );
+        address chamberAddr = registry.createChamber(address(token), address(nft), 5, "Treasury Chamber", "TCH");
         Chamber chamber = Chamber(payable(chamberAddr));
         vm.stopPrank();
 
