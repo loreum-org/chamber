@@ -16,7 +16,10 @@ interface IBoard {
      * @return next Token ID of the next node toward the tail (ascending rank), or zero
      * @return prev Token ID of the previous node toward the head, or zero
      */
-    function getMember(uint256 tokenId) external view returns (uint256 nodeTokenId, uint256 amount, uint256 next, uint256 prev);
+    function getMember(uint256 tokenId)
+        external
+        view
+        returns (uint256 nodeTokenId, uint256 amount, uint256 next, uint256 prev);
 
     /**
      * @notice Returns the first `count` entries in descending delegation order.

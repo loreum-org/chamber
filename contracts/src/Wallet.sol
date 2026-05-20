@@ -136,9 +136,8 @@ abstract contract Wallet {
         uint256 nonce = $.transactions.length;
 
         bytes32 dataHash = keccak256(data);
-        $.transactions.push(
-            Transaction({target: target, value: value, dataHash: dataHash, executed: false, confirmations: 0})
-        );
+        $.transactions
+            .push(Transaction({target: target, value: value, dataHash: dataHash, executed: false, confirmations: 0}));
         if (bytes(metadataURI).length != 0) {
             $.transactionMetadataURI[nonce] = metadataURI;
             emit IWallet.ProposalMetadataSet(nonce, metadataURI);
@@ -280,13 +279,14 @@ abstract contract Wallet {
         returns (bool executed, uint8 confirmations, address target, uint256 value, bytes32 dataHash)
     {
         Transaction storage transaction = _getWalletStorage().transactions[nonce];
-        return (
-            transaction.executed,
-            transaction.confirmations,
-            transaction.target,
-            transaction.value,
-            transaction.dataHash
-        );
+        return
+            (
+                transaction.executed,
+                transaction.confirmations,
+                transaction.target,
+                transaction.value,
+                transaction.dataHash
+            );
     }
 
     /**

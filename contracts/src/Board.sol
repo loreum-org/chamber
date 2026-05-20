@@ -23,9 +23,9 @@ abstract contract Board {
      */
     struct Node {
         uint256 tokenId; // slot 0
-        uint256 amount;  // slot 1
-        uint128 next;    // slot 2 lower 128 bits
-        uint128 prev;    // slot 2 upper 128 bits
+        uint256 amount; // slot 1
+        uint128 next; // slot 2 lower 128 bits
+        uint128 prev; // slot 2 upper 128 bits
     }
 
     /**
@@ -53,7 +53,7 @@ abstract contract Board {
         SeatUpdate seatUpdate;
         uint256 head;
         uint256 tail;
-        uint32 size;  // packed with seats (shares one slot)
+        uint32 size; // packed with seats (shares one slot)
         uint32 seats; // packed with size (shares one slot)
     }
 
@@ -66,8 +66,7 @@ abstract contract Board {
      *      might also use transient storage in the same call chain.
      *      Value: uint256(keccak256("loreum.Board.circuitBreaker"))
      */
-    uint256 private constant _TRANSIENT_LOCK_SLOT =
-        0x63a9d87af1ca3d71f80fefdfe0f7c45cfede4a17e7c60e4bd0c022a28e82e0c;
+    uint256 private constant _TRANSIENT_LOCK_SLOT = 0x63a9d87af1ca3d71f80fefdfe0f7c45cfede4a17e7c60e4bd0c022a28e82e0c;
 
     /// @dev keccak256(abi.encode(uint256(keccak256("erc7201:loreum.Board")) - 1)) & ~bytes32(uint256(0xff))
     bytes32 private constant _BOARD_STORAGE_SLOT = 0xae916af301d5dc481b59b170e7db23e36b830da7017e456f99549768499c8800;
