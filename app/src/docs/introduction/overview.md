@@ -1,55 +1,49 @@
-# Welcome to Loreum Chamber
+# Loreum Chamber — what it is
 
-Chamber is a **tokenized vault** (ERC‑4626) paired with **membership NFTs** and a **delegation-weight leaderboard**. Share holders point their balance at specific NFT token IDs; the strongest-backed IDs occupy a fixed number of **seats**. The owners of those seats act as **directors**, coordinating outbound calls through an on-chain **transaction queue** with **quorum** approval.
+**Loreum Chamber** is on-chain governance infrastructure for communities that want treasury, voting, and execution to follow **clear rules you can read from the chain** — not informal polls, opaque admin keys, or a hand-picked multisig list that never updates.
 
-The Board is **dynamic**: as delegations change, the set of top token IDs (and therefore who can govern) updates without a manual multisig signer list.
+In plain terms, a **Chamber** is where your community:
 
-## Why use it?
+- **Holds assets** in standard vault accounting (ERC‑4626 shares),
+- **Delegates influence** from share holders toward recognizable **director seats** (backed by membership NFTs),
+- **Coordinates outbound action** through a **queued, quorum-approved** process (submit → confirm → execute),
+- **Stays upgradeable** without abandoning on-chain control, when deployed through the **Registry** pattern the app uses.
 
-- **Liquid membership** — Treasury shares are standard ERC‑20; deposit and redeem against a chosen underlying ERC‑20.  
-- **Representative weight** — Delegation ties voting weight to recognizable NFT token IDs instead of anonymous EOAs only.  
-- **Multisig-style execution** — Directors submit `target`, `value`, and calldata; confirmations must meet quorum; execution verifies stored calldata hashes.  
-- **Upgradeable instances** — Each Chamber is a **transparent proxy**; upgrade rights are mediated through **`ProxyAdmin` ownership** transferred from the **[Registry](../protocol/architecture.md)** at creation.  
+The public **Loreum** marketing site describes this as a **[Decentralized Governance System](https://loreum.org#clarity)**: transparent, programmatic, and structured so authority is **distributed by design** rather than concentrated in founders or a silent keyholder.
 
-## How it fits together
+> **Read the full narrative and protocol framing** in the **[Chamber Protocol whitepaper](https://loreum.org/whitepaper)** on [loreum.org](https://loreum.org). It walks through the statutory *Decentralized Governance System* idea, design goals, and technical choices. The docs *here* focus on how the product behaves day to day and where to go for contract-level detail — they are a companion, not a substitute for that paper.
 
-### 1. Vault (ERC‑4626)
+Nothing in these docs is legal advice; statutes and rules change.
 
-The Chamber custody layer is ERC‑4626 over a single underlying asset. You receive Chamber **share tokens** when you deposit. Shares are the unit you **delegate** toward NFT token IDs.
+## Mission (from Loreum)
 
-### 2. Membership (ERC‑721)
+Chamber exists to give communities a **credibly neutral** home for capital, decisions, and (over time) autonomous participants — **humans, multisigs, and agents** — with enforcement in **audited smart contracts** rather than social layers alone.
 
-Each Chamber is configured with one **membership ERC‑721**. A **director** is not “any NFT holder”—they must hold a token ID that is currently in the **top `seats` positions** on the delegation leaderboard, and they must prove control of that token when acting (EOA owner or [EIP‑1271](https://eips.ethereum.org/EIPS/eip-1271) for contract wallets).
+## Why “Chamber” fits the moment
 
-### 3. Delegation
+Many “DAOs” rely on founder multisigs, Discord votes, or concentrated token power. That often fails a simple test: *can an outsider see **who** can move the treasury and **exactly which rules** constrain them?*  
 
-Share holders call **`delegate(tokenId, amount)`** and **`undelegate`**. Total delegated per holder cannot exceed their Chamber share balance; transfers and withdrawals respect the same constraint so voting weight cannot be double-spent.
+Chamber pushes those answers into **contract state and events**: delegation weights, which token IDs hold director seats, quorum, and the **hashed calldata** for each queued action. The point is not “compliance theater” but **structural clarity** — the same story the [CLARITY section of the landing site](https://loreum.org#clarity) summarizes for a general audience.
 
-### 4. Transaction queue
+## The main moving parts (high level)
 
-Directors **`submitTransaction`**, peers **`confirm`**, and anyone eligible may **`execute`** once quorum is met. Only **`keccak256(calldata)`** is stored on-chain—**callers must retain or recover the original calldata** (e.g. from `SubmitTransaction` events) to execute.
+| Idea | What it means for readers |
+|------|----------------------------|
+| **Vault (ERC‑4626)** | Deposit and withdraw an underlying token; receive **share tokens** that represent your slice of the treasury. |
+| **Membership NFTs** | Each Chamber is wired to one **ERC‑721** collection; **directorship** is tied to specific **token IDs** that sit in the top “seats” once delegation is tallied. |
+| **Liquid delegation** | Share holders point weight at the token IDs they want to empower. The **leaderboard of seats** updates as delegations change — the board is **dynamic**, not a static signer CSV. |
+| **Transaction queue** | Directors **propose** outbound calls; others **confirm** until **quorum**; then anyone who can pass the **matching calldata** may **execute**. Only the hash is stored on-chain — **callers must preserve or recover the original calldata** (for example from submit events). |
 
-```mermaid
-graph TD
-    subgraph Holders
-        S[Share holders]
-    end
-    subgraph Board
-        N[Membership NFT token IDs]
-        D[Top seats become director seats]
-    end
-    subgraph Treasury
-        V[ERC-4626 vault]
-        Q[Queued multisig transactions]
-    end
-    S -->|delegate weight| N
-    N -->|ranked by weight| D
-    D -->|submit / confirm / execute| Q
-    V -->|underlies shares| S
-```
+For diagrams and route-level UX, see **[App routes](../guides/app-routes.md)**. For formulas, edge cases, and on-chain limits, use **[Governance](../protocol/governance.md)** and **[Design notes](../protocol/design-notes.md)**.
+
+## Sub-Chambers and scale
+
+Larger ecosystems can **compose** Chambers so that specialized groups (treasury, ops, R&D-style bodies) each have their own vault and director set while remaining legible as a **fractal whole**. See **[Chamber and Sub-Chambers](./chamber-and-sub-chambers.md)** for a readable mental model; see **[Vision / primitives](../protocol/vision.md)** and **[Architecture](../protocol/architecture.md)** for how that maps to contracts and the Registry.
 
 ## Where to go next
 
-- **[Getting started](./getting-started.md)** — using the web app  
-- **[Governance](../protocol/governance.md)** — quorum formula, seat changes, cancellation  
-- **[Design notes](../protocol/design-notes.md)** — exact on-chain rules and limits  
+1. **[Chamber and Sub-Chambers](./chamber-and-sub-chambers.md)** — ecosystem shape (still non-technical).
+2. **[Getting started](./getting-started.md)** — connect a wallet and use the Chamber app.
+3. **[App routes](../guides/app-routes.md)** — where each screen lives in the UI.
+4. **[Governance](../protocol/governance.md)** — seats, quorum, and the queue in depth.
+5. **[Chamber Protocol whitepaper](https://loreum.org/whitepaper)** — full protocol write-up on the public site.

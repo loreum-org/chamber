@@ -58,30 +58,39 @@ function buildDocTree(files: Record<string, any>): DocNode[] {
     })
   })
 
-  // Sort: directories first, then alphabetically
-  const sortNodes = (nodes: DocNode[]) => {
-    const order = ['introduction', 'protocol', 'guides', 'reference', 'security', 'whitepaper']
-    
+  const TOP_LEVEL_ORDER = ['introduction', 'protocol', 'guides', 'reference', 'security', 'whitepaper']
+
+  /** Order of *.md files inside each top-level folder (sidebar within a section). */
+  const DIRECTORY_CHILD_ORDER: Record<string, string[]> = {
+    introduction: ['overview', 'chamber-and-sub-chambers', 'getting-started'],
+    protocol: ['vision', 'architecture', 'governance', 'vaults', 'multisig', 'design-notes'],
+    guides: ['app-routes', 'deployment'],
+    reference: ['api-reference', 'sequence-diagrams'],
+    security: ['security-review'],
+    whitepaper: ['read-online'],
+  }
+
+  const sortNodes = (nodes: DocNode[], parentFolder: string | null = null) => {
     nodes.sort((a, b) => {
       if (a.type !== b.type) {
         return a.type === 'directory' ? -1 : 1
       }
-      
-      const indexA = order.indexOf(a.name.toLowerCase())
-      const indexB = order.indexOf(b.name.toLowerCase())
-      
-      if (indexA !== -1 && indexB !== -1) {
-        return indexA - indexB
-      } else if (indexA !== -1) {
-        return -1
-      } else if (indexB !== -1) {
-        return 1
+
+      const preferred =
+        parentFolder === null ? TOP_LEVEL_ORDER : DIRECTORY_CHILD_ORDER[parentFolder.toLowerCase()]
+
+      if (preferred?.length) {
+        const ia = preferred.indexOf(a.name.toLowerCase())
+        const ib = preferred.indexOf(b.name.toLowerCase())
+        if (ia !== -1 && ib !== -1) return ia - ib
+        if (ia !== -1) return -1
+        if (ib !== -1) return 1
       }
-      
+
       return a.name.localeCompare(b.name)
     })
     nodes.forEach((node) => {
-      if (node.children) sortNodes(node.children)
+      if (node.children) sortNodes(node.children, node.path.split('/')[0] ?? node.name)
     })
   }
 

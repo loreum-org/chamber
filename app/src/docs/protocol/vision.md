@@ -1,11 +1,13 @@
 # Vision and primitives
 
-Chamber merges three primitives that DAOs typically wire together manually:
+Chamber merges three primitives that DAOs historically duct-taped together:
 
-1. **ERC‑4626 custody** — one share token accounting model for treasury deposits and withdrawals.  
-2. **Fluid representation** — share holders delegate numeric weight toward **membership NFT token IDs**, producing an on-chain **leaderboard**.  
-3. **Coordinated execution** — top seats act as multisig directors with **transparent quorum**, **explicit calldata**, **optional disclosure metadata**, and **upgrade hooks** mediated by **ProxyAdmin** ownership on each Chamber proxy.
+1. **Treasury-grade custody with shares (ERC‑4626)** — one accounting model per Chamber for deposits, withdrawals, and share supply.  
+2. **Liquid representation** — share holders steer influence by delegating numerical weight toward **membership NFT token IDs**, yielding a ranked **leaderboard of seats**.  
+3. **Quorum-bound execution** — seated directors cooperate through a hashed-calldata queue (submit → confirm → execute), optional disclosure metadata, and **upgrade hooks** mediated by **ProxyAdmin** ownership on Chamber proxies originating from **`Registry`** flows.
 
-Organizational hierarchy can be mirrored on-chain where a Chamber’s underlying asset **is itself another Chamber’s share token**, using **`Registry`** parent/child bookkeeping.
+The **marketing site** summarizes the *social* implication: treasury and governance mechanics should constitute a credible **Decentralized Governance System** — transparent programmatic rules rather than folklore. Loreum publishes the long-form rationale in **[Chamber Protocol (online whitepaper)](https://loreum.org/whitepaper)**.
 
-Operational extensions (risk dashboards, alerting, simulation) compose around these interfaces without replacing on-chain quorum or custody accounting.
+Composable structure — for example Chambers whose underlying asset **is itself another Chamber’s share token**, or Registries parenting **nested deployments** — lets organizations mirror departmental boundaries without collapsing every wire into one opaque multisig basket. See **[Chamber and Sub-Chambers](../introduction/chamber-and-sub-chambers.md)** alongside **[Architecture](./architecture.md)**.
+
+Analytics, alerting, audits, simulations, agents, etc. orbit these interfaces; none of them substitutes for on‑chain quorum receipts or ERC‑4626 accounting.

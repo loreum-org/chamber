@@ -1,70 +1,129 @@
-# Getting started
+# Getting started — create, stake, delegate, and use a Chamber
 
-This guide matches the **Chamber web app** routes in `app/src/App.tsx`: Dashboard, Deploy, per‑chamber views, transaction queue, director profile, and in-app docs.
+This guide follows the **[Chamber web app](../guides/app-routes.md)** step by step: how to **deploy** a Chamber, **stake** (deposit) treasury assets into it, **delegate** share weight toward member NFTs so a board forms, and **use** governance once you are routed that way.
 
-## Connect a wallet
+For the big picture first, skim **[Overview](./overview.md)**.
 
-Use the app’s wallet connect control in the header. You need a browser wallet (e.g. MetaMask) on a network where the **Registry** and your Chamber are deployed.
+---
 
-## Explore chambers
+## Before you begin
 
-**Route:** `/` (Dashboard)
+1. **Connect your wallet** (header control) on a network where the **Registry** and any Chamber deployments are configured for this build (see **[Deployment](../guides/deployment.md)** for env vars).
+2. There are three main ideas on-chain:
+   - **Chamber share tokens** (from the vault) — weight you delegate.
+   - **Membership NFTs** (ERC‑721) — specific **token IDs** that can receive delegation and rank on the board.
+   - **Director queue** — outbound actions need **submit → confirm to quorum → execute** once you hold a seated member ID.
 
-The dashboard lists chambers the app discovers from the configured **Registry** (see app environment / chain setting). Each row links into a chamber’s detail view.
+Optional query parameters on Deploy can **prefill** token addresses:
 
-## Open a chamber
+`/deploy?erc20=0x…&erc721=0x…`
 
-**Route:** `/chamber/:address`  
-**Optional tab:** `/chamber/:address/:tab`
+On networks that expose mock addresses in env, those may also prefill automatically when the fields are empty.
 
-From a chamber you can:
+---
 
-- Inspect vault stats, directors, delegation leaderboard, and seat settings (tabs depend on the current UI).  
-- **Deposit / withdraw** underlying assets (ERC‑4626 `deposit` / `withdraw` / `mint` / `redeem` flow in the contract).  
-- **Delegate** Chamber share balance toward membership **token IDs** you support.  
+## 1. Create (deploy) a Chamber
 
-If you own (or control via EIP‑1271) a token ID in the current top **`getSeats()`** leaderboard positions, wallet actions gated as “director” will be available (submit/confirm/execute transactions, seat proposals where exposed).
+**Route:** `/deploy` (details in **[App routes](../guides/app-routes.md)**).
 
-## Transactions
+Deploy calls the **Registry**. A new Chamber is created as an **upgradeable proxy** wired through **`Registry`** — the production expectation; see Deployment guide for scripts vs app.
 
-**Route:** `/chamber/:address/transactions`
+### What you configure in the wizard
 
-Directors cooperate on the on-chain queue:
+| Field | Role |
+|--------|------|
+| **ERC‑20 address** | The **underlying asset** held in the Chamber vault (e.g. a stablecoin or treasury token). |
+| **ERC‑721 address** | The **membership NFT** collection whose **token IDs** appear on the delegation leaderboard. |
+| **Seats** | How many **top‑weighted token IDs** count as director seats (**1–20** in contracts). Initial **quorum** in the UI follows majority-of-seats framing (shown on review — e.g. `1 + ⌊seats × 51%⌋`). |
+| **Name / Symbol** | Human-readable labels for Chamber **share** tokens surfaced by ERC‑4626. |
 
-1. **Submit** — provides `target`, ETH `value`, and `data`; submitter gets the first confirmation.  
-2. **Confirm** — other directors add confirmations until **`getQuorum()`** is reached.  
-3. **Execute** — any director passes the **same calldata** as at submit time so the contract can verify **`keccak256(data)`**.
+Steps in the UI: fill the form → **Review & Deploy** → confirm the transaction → on success use **Go to Dashboard** or **Deploy Another**.
 
-The UI should surface **metadata URIs** when proposals used **`submitTransactionWithMetadata`**.
+The new Chamber appears on the Dashboard once indexed from the Registry.
 
-## Director profile
+---
 
-**Route:** `/chamber/:address/director/:tokenId`
+## 2. Open and use your Chamber from the Dashboard
 
-Useful for linking to or inspecting a specific membership token’s participation context (delegation and director status vary with leaderboard state).
+**Route:** Dashboard **`/`** → choose a Chamber → **`/chamber/:address`** (canonical **Overview**). Same route table: **[App routes](../guides/app-routes.md)**.
 
-## Deploy a new chamber (app)
+The chamber header summarizes **vault size**, **seats**, **quorum**, and shortcuts to:
 
-**Route:** `/deploy`
+- **`/chamber/:address/transactions`** — **proposal queue** (submit, confirm, execute).
+- Tabs: **Overview**, **Board**, **Staking**, **Delegation**.
 
-The Deploy flow gathers:
+**Board** ranks members by delegated weight so you can see who currently occupies the **top N seats**. **Director profile** deeplinks: **`/chamber/:address/director/:tokenId`**.
 
-- Underlying **ERC‑20** (vault asset).  
-- **Membership ERC‑721**.  
-- Initial **seat count** (contracts enforce **1–20**).  
-- **Name** and **symbol** for Chamber **share tokens** (ERC‑20 surfaced by ERC‑4626).  
+Until someone has delegated weight to member IDs that fill those seats, the UI shows that there are **no directors yet**.
 
-Behind the scenes, production setups should use **`Registry.createChamber`** so **ProxyAdmin** ownership lands on the Chamber proxy according to **`Registry.sol`**; standalone deploy scripts behave differently—see **[Deployment](../guides/deployment.md)**.
+---
 
-## Documentation in the app
+## 3. Stake — deposit underlying, receive Chamber shares
 
-**Route:** `/docs` and `/docs/...`
+**Tab:** **Staking** (`/chamber/:address/staking`)
 
-This documentation tree is loaded from **`app/src/docs/**/*.md`**.
+In the contracts this is ERC‑4626-style **deposit** (sometimes called “staking” in the UI): you lock the Chamber’s configured **underlying ERC‑20** and receive **Chamber share tokens** proportional to vault pricing.
+
+Typical sequence:
+
+1. Ensure your wallet holds enough **underlying** token.
+2. **Approve** the Chamber contract when the UI asks (spender = Chamber vault address).
+3. Use **Deposit** (underlying out of your wallet, Chamber **shares** in). Use **Withdraw** when you want underlying back.
+4. Check **Overview → Quick Actions** or the chamber header for **Your Balance** in **shares**.
+
+**Delegation is limited by your Chamber share balance** — only shares you effectively control can move into delegation.
+
+Invariants are spelled out in **[Vault](../protocol/vaults.md)**.
+
+---
+
+## 4. Delegate share weight toward member NFTs
+
+**Tab:** **Delegation** (`/chamber/:address/delegation`)
+
+You point some or all of your **undelegated** Chamber share balance at one or more **membership NFT token IDs** (the ERC‑721 the Chamber was created with):
+
+- Increasing delegation to ID **42** strengthens **member #42** on the leaderboard.
+- **Board** recomputes: the **top `seats`** token IDs are the **directors**.
+- Undo or adjust allocations with **undelegate** / UI controls as exposed.
+
+Director-only actions (**Transactions** flows) unlock when your connected wallet proves control (**EOA** or **[EIP‑1271](https://eips.ethereum.org/EIPS/eip-1271)** contract wallets) over an NFT token ID currently in **top seats**.
+
+For formulas, quorum, and cancellations, **[Governance](../protocol/governance.md)**.
+
+---
+
+## 5. Use governance — propose, confirm, execute
+
+**Route:** **`/chamber/:address/transactions`**
+
+Rough lifecycle:
+
+1. **Submit** — choose `target`, optional ETH `value`, and calldata. The hash is recorded; callers must reuse the exact calldata to execute later.
+2. **Confirm** — other seated directors attest until quorum is satisfied.
+3. **Execute** — anyone allowed by contract rules submits the matching calldata path so **`keccak256(data)`** matches storage.
+
+Optional metadata-bearing flows may expose URIs once proposals use **`submitTransactionWithMetadata`**.
+
+Sharper multisig UX detail: **[Wallet / multisig behavior](../protocol/multisig.md)**.
+
+---
+
+## Short mental model
+
+| Goal | Where in the app |
+|------|------------------|
+| Spawn a treasury + board ruleset | **`/deploy`** |
+| Earn voting weight | **Staking** (deposit underlying → Chamber shares) |
+| Elect who leads | **Delegation** toward NFT token IDs; watch **Board** |
+| Spend treasury / call contracts on-chain | **Transactions** |
+
+---
 
 ## Read next
 
-- **[Governance concepts](../protocol/governance.md)**  
-- **[Vault mechanics](../protocol/vaults.md)**  
-- **[Multisig / Wallet behavior](../protocol/multisig.md)**  
-- **[API reference](../reference/api-reference.md)**  
+- **[Overview](./overview.md)** — product framing  
+- **[App routes](../guides/app-routes.md)** — URL map  
+- **[Governance](../protocol/governance.md)**  
+- **[Vault](../protocol/vaults.md)**  
+- **[Deployment](../guides/deployment.md)**  
