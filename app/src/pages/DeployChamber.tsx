@@ -191,7 +191,7 @@ export default function DeployChamber() {
           </div>
           <div>
             <h2 className="font-heading text-2xl font-bold text-slate-100 mb-2">Chamber Deployed</h2>
-            <p className="text-slate-400">Your new chamber is live on-chain and ready to use.</p>
+            <p className="text-slate-400">Your new chamber is live onchain and ready to use.</p>
           </div>
           {(deployedTxHash || hash) && (
             <div className="stat-card flex items-center justify-between gap-3">
@@ -471,7 +471,7 @@ export default function DeployChamber() {
                         {(status === 'pending' || status === 'confirming') && (
                           <>
                             <p className="text-accent-400 font-medium">
-                              {status === 'pending' ? 'Waiting for wallet confirmation…' : 'Confirming on-chain…'}
+                              {status === 'pending' ? 'Waiting for wallet confirmation…' : 'Confirming onchain…'}
                             </p>
                             {hash && (
                               <p className="text-accent-400/60 text-xs mt-1 font-mono">

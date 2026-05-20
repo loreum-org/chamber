@@ -813,7 +813,7 @@ function TransactionCard({ transaction, chamberAddress, quorum, userTokenId, cha
     if (needsCalldata) {
       const raw = executeCalldata.trim()
       if (!raw || raw === '0x') {
-        toast.error('Paste the proposal calldata (hex) from the author — it must match the on-chain hash.')
+        toast.error('Paste the proposal calldata (hex) from the author — it must match the onchain hash.')
         return
       }
       calldata = (raw.startsWith('0x') ? raw : `0x${raw}`) as `0x${string}`
@@ -976,7 +976,7 @@ function TransactionCard({ transaction, chamberAddress, quorum, userTokenId, cha
               </label>
               <textarea
                 className="input font-mono text-xs min-h-[4rem] resize-y w-full"
-                placeholder="0x… (must match on-chain hash)"
+                placeholder="0x… (must match onchain hash)"
                 value={executeCalldata}
                 onChange={(e) => setExecuteCalldata(e.target.value)}
                 spellCheck={false}
@@ -1081,7 +1081,7 @@ function TransactionCard({ transaction, chamberAddress, quorum, userTokenId, cha
             {transaction.dataHash}
           </code>
           <p className="text-slate-500 text-xs mt-2">
-            Only the hash is stored on-chain. To execute, directors must supply the exact calldata bytes (or use <span className="font-mono">0x</span> for plain ETH with no call data).
+            Only the hash is stored onchain. To execute, directors must supply the exact calldata bytes (or use <span className="font-mono">0x</span> for plain ETH with no call data).
           </p>
         </div>
       ) : null}
@@ -2034,7 +2034,7 @@ function NewTransactionForm({
                   : 'Enter a valid target address to generate a governance risk summary for directors.'}
               </p>
               <p className="text-[11px] text-slate-500 mt-2">
-                Proposal title, description, and risk summary will be committed on-chain as metadata for auditability.
+                Proposal title, description, and risk summary will be committed onchain as metadata for auditability.
               </p>
             </div>
           </div>

@@ -185,7 +185,7 @@ Since `executeTransaction` already has `nonReentrant`, any reentrant call to the
 `_validations[agentId]` and `_signals[agentId]` arrays grow without bound. Functions iterating over them (`hasValidAttestation`, `getAverageScore`) become uncallable due to gas limits.
 
 **Impact**:  
-View functions and on-chain consumers eventually fail with out-of-gas errors.
+View functions and onchain consumers eventually fail with out-of-gas errors.
 
 **Fix Applied**:
 

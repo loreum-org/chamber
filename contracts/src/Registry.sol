@@ -57,7 +57,7 @@ contract Registry is AccessControl, Initializable, IRegistry {
 
     /**
      * @notice Address stored from `initialize(_implementation, admin)`: `admin` receives `DEFAULT_ADMIN_ROLE` / `ADMIN_ROLE`.
-     * @dev Not the on-chain `ProxyAdmin` contract address returned by `Chamber.getProxyAdmin`; naming is historical.
+     * @dev Not the onchain `ProxyAdmin` contract address returned by `Chamber.getProxyAdmin`; naming is historical.
      */
     function proxyAdmin() external view returns (address) {
         return _getRegistryStorage().proxyAdmin;

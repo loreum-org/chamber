@@ -1,13 +1,13 @@
 # Loreum Chamber — what it is
 
-**Loreum Chamber** is on-chain governance infrastructure for communities that want treasury, voting, and execution to follow **clear rules you can read from the chain** — not informal polls, opaque admin keys, or a hand-picked multisig list that never updates.
+**Loreum Chamber** is onchain governance infrastructure for communities that want treasury, voting, and execution to follow **clear rules you can read from the chain** — not informal polls, opaque admin keys, or a hand-picked multisig list that never updates.
 
 In plain terms, a **Chamber** is where your community:
 
 - **Holds assets** in standard vault accounting (ERC‑4626 shares),
 - **Delegates influence** from share holders toward recognizable **director seats** (backed by membership NFTs),
 - **Coordinates outbound action** through a **queued, quorum-approved** process (submit → confirm → execute),
-- **Stays upgradeable** without abandoning on-chain control, when deployed through the **Registry** pattern the app uses.
+- **Stays upgradeable** without abandoning onchain control, when deployed through the **Registry** pattern the app uses.
 
 The public **Loreum** marketing site describes this as a **[Decentralized Governance System](https://loreum.org#clarity)**: transparent, programmatic, and structured so authority is **distributed by design** rather than concentrated in founders or a silent keyholder.
 
@@ -32,9 +32,9 @@ Chamber pushes those answers into **contract state and events**: delegation weig
 | **Vault (ERC‑4626)** | Deposit and withdraw an underlying token; receive **share tokens** that represent your slice of the treasury. |
 | **Membership NFTs** | Each Chamber is wired to one **ERC‑721** collection; **directorship** is tied to specific **token IDs** that sit in the top “seats” once delegation is tallied. |
 | **Liquid delegation** | Share holders point weight at the token IDs they want to empower. The **leaderboard of seats** updates as delegations change — the board is **dynamic**, not a static signer CSV. |
-| **Transaction queue** | Directors **propose** outbound calls; others **confirm** until **quorum**; then anyone who can pass the **matching calldata** may **execute**. Only the hash is stored on-chain — **callers must preserve or recover the original calldata** (for example from submit events). |
+| **Transaction queue** | Directors **propose** outbound calls; others **confirm** until **quorum**; then anyone who can pass the **matching calldata** may **execute**. Only the hash is stored onchain — **callers must preserve or recover the original calldata** (for example from submit events). |
 
-For diagrams and route-level UX, see **[App routes](../guides/app-routes.md)**. For formulas, edge cases, and on-chain limits, use **[Governance](../protocol/governance.md)** and **[Design notes](../protocol/design-notes.md)**.
+For diagrams and route-level UX, see **[App routes](../guides/app-routes.md)**. For formulas, edge cases, and onchain limits, use **[Governance](../protocol/governance.md)** and **[Design notes](../protocol/design-notes.md)**.
 
 ## Sub-Chambers and scale
 

@@ -18,7 +18,7 @@ The competitive landscape for DAO treasuries, governance, and AI agent tooling i
 
 #### Value Proposition
 
-Enterprise-grade multisig infrastructure for secure on-chain asset management. Powers treasury management for 200+ projects including Uniswap DAO, Worldcoin, Morpho Labs. "Freedom without fragility. Security without compromise."
+Enterprise-grade multisig infrastructure for secure onchain asset management. Powers treasury management for 200+ projects including Uniswap DAO, Worldcoin, Morpho Labs. "Freedom without fragility. Security without compromise."
 
 #### Key Features (Current)
 
@@ -42,7 +42,7 @@ Enterprise-grade multisig infrastructure for secure on-chain asset management. P
 
 - 57+ million wallets deployed; $60B+ TVS; $1T+ volume processed
 - 4.5M+ monthly active users
-- GitHub: safe-global org; fully on-chain contracts; no SaaS lock
+- GitHub: safe-global org; fully onchain contracts; no SaaS lock
 - Zodiac Governor Module: OpenZeppelin Governor as Safe module; Tally integration
 
 #### Strengths
@@ -79,7 +79,7 @@ Enterprise-grade multisig infrastructure for secure on-chain asset management. P
 
 #### Value Proposition
 
-Governance platform that provides tools for managing DAOs and Governor contracts. Single platform for multisig + governance via Safe integration. Proposal creation, delegate management, and on-chain execution.
+Governance platform that provides tools for managing DAOs and Governor contracts. Single platform for multisig + governance via Safe integration. Proposal creation, delegate management, and onchain execution.
 
 #### Key Features (Current)
 
@@ -198,7 +198,7 @@ Governance platform that provides tools for managing DAOs and Governor contracts
 
 #### Value Proposition
 
-Framework for AI agents to participate autonomously in Governor Bravo-compatible governance. Delegates operate voting agents that review proposals, apply policies, and cast on-chain votes.
+Framework for AI agents to participate autonomously in Governor Bravo-compatible governance. Delegates operate voting agents that review proposals, apply policies, and cast onchain votes.
 
 #### Key Features (Current)
 
@@ -206,7 +206,7 @@ Framework for AI agents to participate autonomously in Governor Bravo-compatible
 - Policy enactment (system prompts guide agent decisions)
 - Governance proposal review by agents
 - Discord integration (agents share opinions in channels)
-- On-chain voting by agents
+- onchain voting by agents
 - AgentBravoToken, AgentBravoGovernor, AgentBravoTimelock
 - AgentBravoDelegate / AgentBravoDelegateFactory for per-agent contracts
 
@@ -255,7 +255,7 @@ Framework for AI agents to participate autonomously in Governor Bravo-compatible
 
 #### Value Proposition
 
-Modular framework for autonomous AI agents that interact with blockchain protocols. Supports EVM (Base, Ethereum L2s) and Solana. Core feature: verifiable on-chain agent identity via EIP-8004/ERC-8004.
+Modular framework for autonomous AI agents that interact with blockchain protocols. Supports EVM (Base, Ethereum L2s) and Solana. Core feature: verifiable onchain agent identity via EIP-8004/ERC-8004.
 
 #### Key Features (Current)
 
@@ -263,7 +263,7 @@ Modular framework for autonomous AI agents that interact with blockchain protoco
 - Agent-to-agent (A2A) protocols
 - EVM and Solana support
 - Pre-deployed contracts on Sepolia, Base Sepolia, Optimism Sepolia
-- Verifiable "on-chain business cards" with credentials
+- Verifiable "onchain business cards" with credentials
 - x402 payments integration
 - No treasury or governance product—framework only
 
@@ -311,13 +311,13 @@ Modular framework for autonomous AI agents that interact with blockchain protoco
 
 #### Value Proposition
 
-Formal on-chain AI agent trust infrastructure. Enables discovery, selection, and interaction with AI agents across organizational boundaries without pre-existing trust. Machine-readable trust for autonomous agents.
+Formal onchain AI agent trust infrastructure. Enables discovery, selection, and interaction with AI agents across organizational boundaries without pre-existing trust. Machine-readable trust for autonomous agents.
 
 #### Key Features (Current)
 
 **ERC-8004 (Draft, Aug 2025):**
 - **Identity Registry**: ERC-721 with URIStorage; portable, censorship-resistant agent IDs
-- **Reputation Registry**: Feedback signals; scoring on-chain and off-chain
+- **Reputation Registry**: Feedback signals; scoring onchain and offchain
 - **Validation Registry**: Hooks for validators (stake-secured re-execution, zkML, TEE oracles)
 - Pluggable trust models; tiered security by value at risk
 - Authors: Marco De Rossi (MetaMask), Davide Crapis (EF), Jordan Ellis (Google), Erik Reppel (Coinbase)
@@ -332,7 +332,7 @@ Formal on-chain AI agent trust infrastructure. Enables discovery, selection, and
 - ERC-8004 created August 2025
 - Ethereum Magicians discussion active
 - best-practices.8004scan.io for spec and AgentURI docs
-- "Ethereum's On-Chain AI Agent Trust Goes Live" (ainvest.com)
+- "Ethereum's onchain AI Agent Trust Goes Live" (ainvest.com)
 
 #### Technical Notes
 

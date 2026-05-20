@@ -4,8 +4,8 @@ pragma solidity ^0.8.30;
 /**
  * @title BoardTypes
  * @author xhad, Loreum DAO LLC
- * @notice Legacy reference structs for documentation and off-chain tooling.
- * @dev Canonical on-chain layout is `Board.Node` (packed `uint128` links) and `Board.SeatUpdate`; do not assume byte-for-byte equivalence.
+ * @notice Legacy reference structs for documentation and offchain tooling.
+ * @dev Canonical onchain layout is `Board.Node` (packed `uint128` links) and `Board.SeatUpdate`; do not assume byte-for-byte equivalence.
  */
 library BoardTypes {
     /**

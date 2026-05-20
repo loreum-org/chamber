@@ -67,7 +67,7 @@
       "Execute victim's transaction which now behaves differently",
       "Back-run to profit from state changes"
     ],
-    "recommended_fix": "Transaction execution requires on-chain confirmation order"
+    "recommended_fix": "Transaction execution requires onchain confirmation order"
   },
   {
     "id": "ECON-SEAT-UPDATE-MANIPULATION",

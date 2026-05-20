@@ -98,7 +98,7 @@ Chronological log of product review findings. Each entry includes category, desc
 
 **Location**: Product-level gap
 
-**Recommendation**: Consider adding an optional proposal layer (on-chain or indexed off-chain) for structured governance. Could integrate with existing transaction queue.
+**Recommendation**: Consider adding an optional proposal layer (onchain or indexed offchain) for structured governance. Could integrate with existing transaction queue.
 
 **Priority**: P2 (medium)
 

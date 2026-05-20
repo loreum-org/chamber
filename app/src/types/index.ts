@@ -4,7 +4,7 @@ export interface Transaction {
   confirmations: number
   target: `0x${string}`
   value: bigint
-  /** `keccak256(calldata)` stored on-chain; full calldata must be supplied at execution. */
+  /** `keccak256(calldata)` stored onchain; full calldata must be supplied at execution. */
   dataHash: `0x${string}`
 }
 

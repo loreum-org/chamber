@@ -132,7 +132,7 @@ loreum-fund-gov :
 	cast rpc anvil_stopImpersonatingAccount $(LOREUM_FROM) --rpc-url $(ANVIL_RPC)
 
 # Transfer one membership NFT to TO (impersonation; fork only)
-# Always uses on-chain ownerOf(TOKEN_ID). If HOLDER/HODLER set, must match that owner (otherwise fails).
+# Always uses onchain ownerOf(TOKEN_ID). If HOLDER/HODLER set, must match that owner (otherwise fails).
 # If TO already owns the token, skips transfer (idempotent).
 # Example: make loreum-fund-membership TOKEN_ID=5 TO=$(ANVIL_ADDR0)
 # Example: make loreum-fund-membership HOLDER=0x... TOKEN_ID=1
@@ -157,14 +157,14 @@ loreum-fund-membership :
 	FROM=$$(printf '%s' "$$FROM" | tr '[:upper:]' '[:lower:]'); \
 	if [ -n "$$FROM" ]; then \
 	  if [ "$$FROM" != "$$ONCHAIN" ]; then \
-	    echo "HOLDER/HODLER $$FROM is not ownerOf(token $(TOKEN_ID)); on-chain owner is $$ONCHAIN"; \
+	    echo "HOLDER/HODLER $$FROM is not ownerOf(token $(TOKEN_ID)); onchain owner is $$ONCHAIN"; \
 	    echo "Omit HOLDER to impersonate the real owner, or fix HOLDER/TOKEN_ID."; \
 	    exit 1; \
 	  fi; \
 	else \
 	  FROM="$$ONCHAIN"; \
 	fi; \
-	echo "Membership token $(TOKEN_ID): on-chain owner $$FROM -> transfer to $$TO"; \
+	echo "Membership token $(TOKEN_ID): onchain owner $$FROM -> transfer to $$TO"; \
 	cast rpc anvil_impersonateAccount $$FROM --rpc-url $(ANVIL_RPC); \
 	cast rpc anvil_setBalance $$FROM 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF --rpc-url $(ANVIL_RPC); \
 	cast send $(LOREUM_MEMBERSHIP_NFT) \

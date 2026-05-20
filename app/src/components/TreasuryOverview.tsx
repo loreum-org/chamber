@@ -389,7 +389,7 @@ export default function TreasuryOverview({ chamberAddress, chamberInfo, userBala
                     {syncingAllowanceAfterApprove ? (
                       <>
                         <FiLoader className="w-4 h-4 text-amber-400 shrink-0 animate-spin" />
-                        <span className="text-amber-400/95">Updating allowance on-chain…</span>
+                        <span className="text-amber-400/95">Updating allowance onchain…</span>
                       </>
                     ) : needsApproval ? (
                       <>

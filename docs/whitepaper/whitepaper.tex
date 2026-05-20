@@ -16,7 +16,7 @@
 \maketitle
 
 \begin{abstract}
-A Chamber is a Smart Vault that integrates artificial intelligence agents with decentralized protocol operations. By combining AI agents with on-chain smart contract systems, a Chamber enables agentic swarm capabilities for assets managment by implementing the ERC-4626 tokenized vault standard, market-driven governance while maintaining human oversight through a unique delegation mechanism.
+A Chamber is a Smart Vault that integrates artificial intelligence agents with decentralized protocol operations. By combining AI agents with onchain smart contract systems, a Chamber enables agentic swarm capabilities for assets managment by implementing the ERC-4626 tokenized vault standard, market-driven governance while maintaining human oversight through a unique delegation mechanism.
 \end{abstract}
 
 \section{Introduction}
@@ -42,7 +42,7 @@ The board structure utilizes a doubly-linked list that maintains nodes containin
 The wallet operations layer implements a multi-signature system with batch transaction support, enabling efficient operations while maintaining security through distributed consensus. Transaction execution requires explicit confirmation from a quorum of directors, with all confirmations being revocable until execution. This creates a flexible yet secure framework for treasury management and organizational operations.
 
 \subsection{Security Architecture}
-The security model implements multiple complementary layers of protection. Access control is managed through a combination of on-chain validation of board membership and dynamic quorum calculations based on the current board size. All state-changing operations are protected by reentrancy guards, preventing potential attack vectors during complex transaction sequences.
+The security model implements multiple complementary layers of protection. Access control is managed through a combination of onchain validation of board membership and dynamic quorum calculations based on the current board size. All state-changing operations are protected by reentrancy guards, preventing potential attack vectors during complex transaction sequences.
 
 Transaction safety is ensured through a multi-signature requirement that enforces collective decision-making. The system requires confirmation from a threshold of 51\% of board seats before any transaction can be executed, with all confirmations being revocable until execution. This creates a time window for detection and prevention of potentially malicious transactions while maintaining operational efficiency through batch execution support.
 
@@ -82,7 +82,7 @@ The vault functionality is integrated with the governance system, allowing token
 \section{AI Agent Integration}
 
 \subsection{Agent Capabilities}
-The AI agents integrated into the Chamber framework perform several critical functions that enhance governance efficiency and security. They continuously analyze on-chain data to provide insights for treasury management decisions, including asset allocation and risk assessment. The agents implement sophisticated monitoring systems to detect and flag suspicious transactions or unusual patterns that may indicate security threats. Through analysis of historical governance data and current market conditions, they generate data-driven insights to inform decision-making processes. For routine operational matters, the agents can execute automated decisions within carefully defined parameters. In more complex scenarios, they facilitate collaboration between human leaders by providing analysis, generating proposals, and modeling potential outcomes.
+The AI agents integrated into the Chamber framework perform several critical functions that enhance governance efficiency and security. They continuously analyze onchain data to provide insights for treasury management decisions, including asset allocation and risk assessment. The agents implement sophisticated monitoring systems to detect and flag suspicious transactions or unusual patterns that may indicate security threats. Through analysis of historical governance data and current market conditions, they generate data-driven insights to inform decision-making processes. For routine operational matters, the agents can execute automated decisions within carefully defined parameters. In more complex scenarios, they facilitate collaboration between human leaders by providing analysis, generating proposals, and modeling potential outcomes.
 
 \subsection{Safety Mechanisms}
 The system incorporates multiple layers of safety mechanisms to ensure responsible operation. Human oversight is maintained through a delegation system that allows token holders to quickly withdraw support from underperforming or malicious agents. All delegated authority can be revoked through token withdrawal, providing an immediate check on agent power. The agents operate within clearly defined operational parameters that limit their autonomy and prevent unexpected behavior. Comprehensive performance monitoring systems track agent actions and outcomes, enabling rapid detection and response to any anomalies.

@@ -9,7 +9,7 @@ For the big picture first, skim **[Overview](./overview.md)**.
 ## Before you begin
 
 1. **Connect your wallet** (header control) on a network where the **Registry** and any Chamber deployments are configured for this build (see **[Deployment](../guides/deployment.md)** for env vars).
-2. There are three main ideas on-chain:
+2. There are three main ideas onchain:
    - **Chamber share tokens** (from the vault) — weight you delegate.
    - **Membership NFTs** (ERC‑721) — specific **token IDs** that can receive delegation and rank on the board.
    - **Director queue** — outbound actions need **submit → confirm to quorum → execute** once you hold a seated member ID.
@@ -116,7 +116,7 @@ Sharper multisig UX detail: **[Wallet / multisig behavior](../protocol/multisig.
 | Spawn a treasury + board ruleset | **`/deploy`** |
 | Earn voting weight | **Staking** (deposit underlying → Chamber shares) |
 | Elect who leads | **Delegation** toward NFT token IDs; watch **Board** |
-| Spend treasury / call contracts on-chain | **Transactions** |
+| Spend treasury / call contracts onchain | **Transactions** |
 
 ---
 

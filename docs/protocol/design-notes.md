@@ -5,10 +5,10 @@ Designing a DEX (Decentralized Exchange) trading model that uses a Large Languag
 1. Core Components of the Architecture
 
 A. Data Retrieval Layer (RAG System)
-	• Purpose: Fetch real-time on-chain and off-chain data (e.g., DEX pool data, token prices, liquidity metrics, and external market conditions).
+	• Purpose: Fetch real-time onchain and offchain data (e.g., DEX pool data, token prices, liquidity metrics, and external market conditions).
 	•	Sources:
-	•	On-Chain: Query blockchain data using The Graph, Infura, or similar providers for DEX metrics.
-	•	Off-Chain: Fetch data from APIs like CoinGecko, CoinMarketCap, or oracle solutions (e.g., Chainlink).
+	•	onchain: Query blockchain data using The Graph, Infura, or similar providers for DEX metrics.
+	•	offchain: Fetch data from APIs like CoinGecko, CoinMarketCap, or oracle solutions (e.g., Chainlink).
 	•	Tools:
 	•	Vector Database (e.g., Pinecone, Weaviate, or FAISS): To index and store historical and real-time data for retrieval.
 	•	Retriever Models (e.g., Dense Passage Retrieval): To fetch context-relevant pricing and liquidity data for the LLM.
@@ -18,7 +18,7 @@ A. Data Retrieval Layer (RAG System)
 B. LLM Decision Engine
 	•	Purpose: Analyze the retrieved data, generate insights, and make trading decisions.
 	•	Functionality:
-	•	Interpretation: Processes RAG-retrieved data (e.g., compares current DEX prices with historical averages, off-chain data, and sentiment).
+	•	Interpretation: Processes RAG-retrieved data (e.g., compares current DEX prices with historical averages, offchain data, and sentiment).
 	•	Decision-Making Logic:
 	•	Assess arbitrage opportunities.
 	•	Predict price movements based on sentiment or patterns.
@@ -44,8 +44,8 @@ D. Feedback Loop
 
 2. High-Level Workflow
 	1.	Data Gathering (RAG Layer):
-	•	Fetch on-chain data: Token prices, pool reserves, and trade history.
-	•	Fetch off-chain data: Market sentiment, global trends, and pricing from centralized exchanges.
+	•	Fetch onchain data: Token prices, pool reserves, and trade history.
+	•	Fetch offchain data: Market sentiment, global trends, and pricing from centralized exchanges.
 	•	Retrieve historical data and patterns from the vector database.
 	2.	Analysis and Decision-Making (LLM Engine):
 	•	Process the retrieved data, identifying arbitrage, price discrepancies, or liquidity inefficiencies.
@@ -77,7 +77,7 @@ D. Model Fine-Tuning
 4. Recommended Technology Stack
 	1.	Data Retrieval and Storage:
 	•	Blockchain Querying: The Graph, Alchemy, Infura.
-	•	Off-Chain APIs: Chainlink, CoinGecko API.
+	•	offchain APIs: Chainlink, CoinGecko API.
 	•	Database: Pinecone, Redis, or Weaviate for vector-based retrieval.
 	2.	LLM Engine:
 	•	OpenAI GPT-4, Llama2, or a fine-tuned Transformer model.
@@ -149,14 +149,14 @@ B. Ethical Constraints
 C. Continuous Monitoring
 	•	Purpose: Make Arbitron self-aware of its operational environment.
 	•	How:
-	•	Real-time data feeds for DEX pool activity, pricing, liquidity, and off-chain sentiment analysis.
+	•	Real-time data feeds for DEX pool activity, pricing, liquidity, and offchain sentiment analysis.
 	•	Use anomaly detection algorithms to adjust behavior when unexpected conditions arise.
 
 3. Autonomy Workflow
 	1.	Goal Identification:
 	•	Arbitron establishes its primary objective (e.g., “maximize returns in Pool A”) based on the user’s overarching strategy.
 	2.	Data Retrieval (RAG Layer):
-	•	Fetches real-time data from on-chain and off-chain sources.
+	•	Fetches real-time data from onchain and offchain sources.
 	•	Retrieves historical trade outcomes and market conditions from its memory.
 	3.	Analysis (LLM + Decision Engine):
 	•	Analyzes data to identify trading opportunities, weighing risks and rewards.
@@ -169,7 +169,7 @@ C. Continuous Monitoring
 4. Example Technologies
 	•	Data Handling:
 	•	Vector Database: Pinecone or Weaviate for RAG integration.
-	•	Blockchain Data: The Graph or Infura for on-chain data.
+	•	Blockchain Data: The Graph or Infura for onchain data.
 	•	LLM Frameworks:
 	•	Fine-tuned OpenAI GPT models or LLaMA 2.
 	•	Decision Framework:
