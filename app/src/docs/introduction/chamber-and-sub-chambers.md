@@ -1,38 +1,57 @@
-# Chamber and Sub-Chambers
+# Chambers and Sub-Chambers
 
-This page matches the **“Ecosystem governance”** story on [loreum.org](https://loreum.org#governance): small groups of people (or programs) should not be able to **promise** decentralization while **holding** the real levers. Chambers are meant to make the levers **legible**.
+Large communities rarely want **one wallet** for everything. Chambers let you split responsibility while keeping rules **visible onchain**.
 
-## Chamber (root)
+## Root Chamber — the main group
 
-A **root Chamber** is the primary governing body for a deployment you care about: where **global defaults** tend to live, where the **main treasury** sits in vault form, and where **cross-cutting decisions** naturally land.
+A **root Chamber** is the primary treasury for your project:
 
-In the Chamber model, legitimacy comes from rules you can inspect:
+- Holds the **main vault** (the shared pot of tokens).  
+- Runs the **main board** (who leads by delegation).  
+- Uses the **main transaction queue** for big outbound actions.
 
-- **Who can propose and vote** derives from documented onchain delegation and seat ranking — not from a hidden admin panel.
-- **What can execute** flows through the **queued transaction** pattern with **quorum**, rather than discretionary “run this script” access.
+Think of it as the **city council** for your protocol or DAO — cross-cutting decisions and the flagship treasury live here.
 
-Readers who want the legal framing (statutory **Decentralized Governance System** language and design intent) should start with the **[whitepaper](https://loreum.org/whitepaper)**; builders who want diagrams and naming for contracts should continue with **[Architecture](../protocol/architecture.md)**.
+## Sub-Chamber — a focused working group
 
-## Sub-Chambers (specialized bodies)
+A **Sub-Chamber** is another Chamber deployment with its **own vault, board, and queue**, usually tied to a **narrow mandate**:
 
-**Sub-Chambers** are best thought of as **specialized governors** sitting under or beside the root: treasury-focused working groups, operations, experimentation (“R&D”), or other mandates your community agrees to carve out.
+| Example Sub-Chamber | Typical mandate |
+|---------------------|-----------------|
+| **Treasury** | Grants, payroll, stablecoin policy |
+| **Operations** | Vendor payments, infrastructure |
+| **R&D** | Experiments, smaller budgets |
 
-The product promise is intuitive:
+Each Sub-Chamber still follows the same rules: **deposit → delegate → directors → quorum → execute**. Contributors can see **which pot** and **which directors** own which decisions.
 
-- **Authority is split by structure** — different vaults and director sets for different charters — rather than concentrating every decision in one informal council.
-- **Budgets and mandates can be bounded** — at the extremes, this is where policy-like guardrails (caps, quorum, delegation limits) intersect with **[Governance](../protocol/governance.md)** and **[Vault](../protocol/vaults.md)** details.
+## Why split instead of one multisig?
 
-Concrete parent/child relationships and asset wiring (for example holding **another Chamber’s share token** as an underlying asset) are implementation concerns; **[Vision](../protocol/vision.md)** summarizes how organization can mirror composition onchain, and **[Architecture](../protocol/architecture.md)** anchors that in **`Registry`** and deployment patterns.
+With a single multisig, every committee shares **one signer list** and **one approval flow**. That encourages either:
 
-## Directors, multisigs, and agents
+- **Too many signers** on one Safe (slow, cluttered), or  
+- **Hidden committees** that “just use the founder keys” off the record.
 
-Landing copy describes **directors** as first-class actors that can include **humans**, **multisig wallets**, or **software agents**. onchain, a director action must reconcile with contract rules: proving control of an eligible NFT token ID (including **[EIP‑1271](https://eips.ethereum.org/EIPS/eip-1271)** verification for contracts) and participating in queue semantics.
+Sub-Chambers make **structure explicit**: different vaults, different seats, different queues — without pretending one informal council represents everyone.
 
-Treat “agent-ready” governance as **one interface surface** Chamber aims to support — not a separate tier of secrecy or admin override.
+## How Sub-Chambers connect (conceptually)
+
+The **Registry** can record **parent ↔ child** relationships when a new Chamber uses **another Chamber’s share token** as its underlying asset. That models organizations where a sub-group’s treasury is denominated in the parent Chamber’s shares.
+
+You do not need to master that wiring to use the app — it matters when you **design** how treasury flows between layers. Builders: **[Architecture](../protocol/architecture.md)**.
+
+## Directors can be people, multisigs, or agents
+
+A **director** is whoever controls a **membership NFT token ID** in a **top seat**:
+
+- **Individual** — wallet holds the NFT.  
+- **Multisig** — the NFT sits in a Safe; directors act through **EIP‑1271** signatures the Chamber understands.  
+- **Agent (future-facing)** — automated systems that still must pass the same **submit / confirm / execute** gates.
+
+The point is **one rulebook** for every seat type, not a special admin lane.
 
 ## Read next
 
-- **[Overview](./overview.md)** — one-page product picture  
-- **[Getting started](./getting-started.md)** — practical app walk-through  
-- **[Governance](../protocol/governance.md)** — director seats, quorum, cancellation  
-- **[Whitepaper](https://loreum.org/whitepaper)** — authoritative long-form rationale  
+- **[Why not just a multisig?](./why-not-multisig.md)**  
+- **[Getting started](./getting-started.md)**  
+- **[Governance](../protocol/governance.md)**  
+- **[Vision](../protocol/vision.md)** — why the design uses three primitives (vault, board, queue)  

@@ -1,6 +1,8 @@
-# Sequence Diagrams
+# Sequence diagrams
 
-This document contains Mermaid sequence diagrams and swimlane diagrams illustrating key workflows in the Chamber system.
+> **Audience:** visual learners and builders. For plain-language explanations, read **[Getting started](../introduction/getting-started.md)**, **[Governance](../protocol/governance.md)**, and **[Treasury actions](../protocol/multisig.md)** first.
+
+Mermaid diagrams for major Chamber workflows.
 
 ## Table of Contents
 

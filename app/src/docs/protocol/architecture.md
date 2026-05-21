@@ -1,50 +1,48 @@
-# Architecture
+# How the contracts fit together
 
-Chamber couples **vault accounting** (OpenZeppelin **`ERC4626Upgradeable`**), **leaderboard governance** (`Board`), and a **queued multisig executor** (`Wallet`) in one upgradeable **`Chamber`** deployment. A **`Registry`** deploys Chamber proxies and indexes instances (and optional parent/child relationships).
+> **Audience:** newcomers can skip this page. It is for builders who want a map of **what runs onchain** after reading **[What is a Chamber?](../introduction/overview.md)**.
 
-## onchain components
+A Chamber is **one proxy address** that combines:
 
-### `Chamber.sol`
+| Piece | File (concept) | Job |
+|-------|----------------|-----|
+| **Vault** | ERC‑4626 in `Chamber` | Share accounting |
+| **Board** | `Board` mixin | Delegation leaderboard + seats |
+| **Wallet** | `Wallet` mixin | Proposal queue |
+| **Registry** | `Registry` | Deploy new Chamber proxies |
 
-- ERC‑4626 vault over a fixed **underlying ERC‑20**; Chamber’s own **share token** is the ERC‑20 issued by ERC‑4626.  
-- Holds **delegation** state: per‑holder allocations to membership **token IDs**, with **`totalHolderDelegations`** enforcing that moves cannot strand delegated weight.  
-- Exposes **Board** read APIs (`getTop`, `getSeats`, `getQuorum`, `getDirectors`, seat proposals) and **Wallet** APIs (submit / confirm / execute / batch / cancel).  
-- **`VERSION`** is a compile-time **`bytes32`** constant (see contract source for the current semantic version string).  
-- **`upgradeImplementation`** is the sanctioned self‑target path for **`ProxyAdmin.upgradeAndCall`**, normally reached via **`executeTransaction`**.  
+```mermaid
+flowchart TB
+  R[Registry]
+  R -->|createChamber| P[Chamber proxy]
+  P --> V[ERC-4626 vault]
+  P --> B[Board storage]
+  P --> W[Wallet storage]
+```
 
-### `Board.sol` (abstract, inherited)
+## Chamber proxy
 
-- Maintains delegation totals per **membership NFT token ID** in a sorted doubly linked list (see **[Design notes](./design-notes.md)** for `MAX_NODES`, `uint128` link constraints, transient **circuitBreaker** lock).  
+- Initialized with **underlying ERC‑20**, **membership ERC‑721**, **seat count**, and share **name/symbol**.  
+- **Upgradeable** — logic changes go through **`upgradeImplementation`**, normally as a queued transaction.  
+- **`ProxyAdmin` ownership** is transferred to the Chamber itself after Registry deploy (so upgrades are also director-gated).
 
-### `Wallet.sol` (abstract, inherited)
+## Registry
 
-- Stores **`keccak256(calldata)`** per nonce, optional **`metadataURI`**, confirmation bitmaps **per director token ID**, cancel voting, and emits **`SubmitTransaction` with raw calldata** for offchain archival.  
+- Stores the **implementation** used for new Chambers.  
+- **`createChamber`** deploys a new transparent proxy, initializes it, indexes it, and wires optional **parent/child** links.  
+- **`ADMIN_ROLE`** can update the implementation pointer for **future** deploys (does not auto-upgrade existing Chambers).
 
-### `Registry.sol`
+## Offchain app
 
-- **`TransparentUpgradeableProxy`** for implementations; **`initialize`** records **admin** (**`DEFAULT_ADMIN_ROLE`** + **`ADMIN_ROLE`**) and the **pinned Chamber implementation** used by **`createChamber`**.  
-- **`createChamber`** initializes a new Chamber proxy via **`TransparentUpgradeableProxy`**, transfers **`ProxyAdmin` ownership** to **`address(chamber)`**, and optionally links **parent/child chambers** when the asset token is itself a registered Chamber.  
+The web app (`app/`) reads Registry and Chamber state and sends transactions users sign in their wallet — deposit, delegate, queue actions.
 
-## offchain stack
+## Registry vs lab deploy scripts
 
-### Web app (`app/`)
+Production-shaped flows use **`Registry.createChamber`**. Standalone Chamber deploy scripts in `contracts/script/` may leave **ProxyAdmin** with a different owner — fine for local experiments; **not** the product default.
 
-- **Reads** Registry and Chamber via viem/ethers-style clients (configured per environment).  
-- **Writes** deposit, delegation, multisig lifecycle, deployment, consistent with **`IChamber` / `Registry`**.
+## Read next
 
-## Proxies
-
-| Contract | Deployment pattern |
-|----------|---------------------|
-| **Registry** | Production setup uses **`TransparentUpgradeableProxy`** + **`Registry.initialize(implementation, admin)`** (see `contracts/test/utils/DeployRegistry.sol` used by `script/Registry.s.sol`). |
-| **Chamber** | **`TransparentUpgradeableProxy`** with **`initialize(erc20, erc721, seats, name, symbol)`**; **`ProxyAdmin` owner** transferred to **`chamber`**. |
-
-## Registry vs standalone Chamber scripts
-
-Using **`registry.createChamber`** matches custody of upgrades with the Chamber instance. The **`contracts/script/Chamber.s.sol`** path deploys proxies with **`ProxyAdmin`** owned by a separate **`admin` EOA**, which differs from **`Registry`** behavior—prefer Registry for product documentation assumptions.
-
-## Further reading
-
-- **[Governance](./governance.md)** — director selection, quorum, seat timelocks.  
-- **[Design notes](./design-notes.md)** — storage layout and invariants.  
-- **[Sequence diagrams](../reference/sequence-diagrams.md)** — lifecycle diagrams.  
+- **[Governance](./governance.md)** — behavior in plain language  
+- **[Design notes](./design-notes.md)** — storage layout and limits  
+- **[Deployment](../guides/deployment.md)** — Foundry commands  
+- **[API reference](../reference/api-reference.md)**  

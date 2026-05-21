@@ -1,49 +1,68 @@
-# Loreum Chamber — what it is
+# What is a Chamber?
 
-**Loreum Chamber** is onchain governance infrastructure for communities that want treasury, voting, and execution to follow **clear rules you can read from the chain** — not informal polls, opaque admin keys, or a hand-picked multisig list that never updates.
+A **Chamber** is a **community treasury with built-in rules**. It holds tokens in a shared vault, lets members **delegate influence** toward recognizable **director seats**, and only spends or calls other contracts when **enough directors agree** through an onchain queue.
 
-In plain terms, a **Chamber** is where your community:
+If you have used a **multisig wallet** (like Gnosis Safe), think of a Chamber as answering three questions that multisigs usually leave informal:
 
-- **Holds assets** in standard vault accounting (ERC‑4626 shares),
-- **Delegates influence** from share holders toward recognizable **director seats** (backed by membership NFTs),
-- **Coordinates outbound action** through a **queued, quorum-approved** process (submit → confirm → execute),
-- **Stays upgradeable** without abandoning onchain control, when deployed through the **Registry** pattern the app uses.
+1. **Who holds economic weight in the group?** — tracked as vault **shares**, not just a static signer list.  
+2. **Who actually leads day to day?** — the **top delegated membership NFTs** on a public leaderboard, not a founder’s spreadsheet.  
+3. **What exactly was approved to run?** — each outbound action is **proposed, confirmed to quorum, then executed** with calldata checked against a stored hash.
 
-The public **Loreum** marketing site describes this as a **[Decentralized Governance System](https://loreum.org#clarity)**: transparent, programmatic, and structured so authority is **distributed by design** rather than concentrated in founders or a silent keyholder.
+Those rules live in **audited smart contracts**, not in a Discord poll or a hidden admin key.
 
-> **Read the full narrative and protocol framing** in the **[Chamber Protocol whitepaper](https://loreum.org/whitepaper)** on [loreum.org](https://loreum.org). It walks through the statutory *Decentralized Governance System* idea, design goals, and technical choices. The docs *here* focus on how the product behaves day to day and where to go for contract-level detail — they are a companion, not a substitute for that paper.
+## What you can do with a Chamber
 
-Nothing in these docs is legal advice; statutes and rules change.
+| You want to… | Chamber gives you… |
+|--------------|-------------------|
+| Pool assets | An **ERC‑4626 vault** — deposit the configured token, receive **share tokens** representing your slice. |
+| Influence leadership | **Delegation** — point your share weight at **membership NFT token IDs** you trust. |
+| See who leads | A **Board** — the highest-weight token IDs fill a fixed number of **seats** (directors). |
+| Move the treasury | A **transaction queue** — directors **submit**, **confirm**, and **execute** outbound calls only after **quorum**. |
 
-## Mission (from Loreum)
+## Who is a “director”?
 
-Chamber exists to give communities a **credibly neutral** home for capital, decisions, and (over time) autonomous participants — **humans, multisigs, and agents** — with enforcement in **audited smart contracts** rather than social layers alone.
+A **director** is whoever controls a **membership NFT token ID** that currently sits in the **top seats** on the board. That can be:
 
-## Why “Chamber” fits the moment
+- A person with a normal wallet  
+- A **multisig contract** (still one seat on the board)  
+- Over time, **software agents** that follow the same onchain rules as everyone else  
 
-Many “DAOs” rely on founder multisigs, Discord votes, or concentrated token power. That often fails a simple test: *can an outsider see **who** can move the treasury and **exactly which rules** constrain them?*  
+There is no separate “admin bypass” for day-to-day spending — the queue is the path.
 
-Chamber pushes those answers into **contract state and events**: delegation weights, which token IDs hold director seats, quorum, and the **hashed calldata** for each queued action. The point is not “compliance theater” but **structural clarity** — the same story the [CLARITY section of the landing site](https://loreum.org#clarity) summarizes for a general audience.
+## Why teams choose Chamber
 
-## The main moving parts (high level)
+Teams that outgrow a single founder multisig often hit the same walls:
 
-| Idea | What it means for readers |
-|------|----------------------------|
-| **Vault (ERC‑4626)** | Deposit and withdraw an underlying token; receive **share tokens** that represent your slice of the treasury. |
-| **Membership NFTs** | Each Chamber is wired to one **ERC‑721** collection; **directorship** is tied to specific **token IDs** that sit in the top “seats” once delegation is tallied. |
-| **Liquid delegation** | Share holders point weight at the token IDs they want to empower. The **leaderboard of seats** updates as delegations change — the board is **dynamic**, not a static signer CSV. |
-| **Transaction queue** | Directors **propose** outbound calls; others **confirm** until **quorum**; then anyone who can pass the **matching calldata** may **execute**. Only the hash is stored onchain — **callers must preserve or recover the original calldata** (for example from submit events). |
+- Signers are **hand-picked** and rarely update when power shifts.  
+- **Discord or Snapshot** votes are not the same as **enforced** treasury execution.  
+- Outsiders cannot easily answer: *who can move funds right now, under what threshold?*
 
-For diagrams and route-level UX, see **[App routes](../guides/app-routes.md)**. For formulas, edge cases, and onchain limits, use **[Governance](../protocol/governance.md)** and **[Design notes](../protocol/design-notes.md)**.
+Chamber pushes those answers into **onchain state**: delegation totals, seat ranking, quorum, and proposal hashes. That is **structural clarity** — useful for communities, contributors, and regulators who ask how governance actually works.
 
-## Sub-Chambers and scale
+> **Not legal advice.** Statutes and supervisory guidance change. For formal protocol framing, see the **[Chamber Protocol whitepaper](https://loreum.org/whitepaper)**.
 
-Larger ecosystems can **compose** Chambers so that specialized groups (treasury, ops, R&D-style bodies) each have their own vault and director set while remaining legible as a **fractal whole**. See **[Chamber and Sub-Chambers](./chamber-and-sub-chambers.md)** for a readable mental model; see **[Vision / primitives](../protocol/vision.md)** and **[Architecture](../protocol/architecture.md)** for how that maps to contracts and the Registry.
+## The three parts (simple mental model)
+
+```mermaid
+flowchart LR
+  V[Vault — shared treasury]
+  B[Board — who leads]
+  W[Wallet — what gets executed]
+  V --> B
+  B --> W
+```
+
+- **Vault** — deposit and withdraw; shares represent ownership.  
+- **Board** — delegation ranks **NFT token IDs**; top **N** seats are directors.  
+- **Wallet** — directors queue **transactions** (send ETH, call contracts) with **quorum**.
+
+## Sub-Chambers (bigger organizations)
+
+One **root Chamber** can anchor the main treasury. **Sub-Chambers** are additional Chambers with their own vault and directors for focused mandates (treasury committee, operations, experiments). See **[Chambers and Sub-Chambers](./chamber-and-sub-chambers.md)**.
 
 ## Where to go next
 
-1. **[Chamber and Sub-Chambers](./chamber-and-sub-chambers.md)** — ecosystem shape (still non-technical).
-2. **[Getting started](./getting-started.md)** — connect a wallet and use the Chamber app.
-3. **[App routes](../guides/app-routes.md)** — where each screen lives in the UI.
-4. **[Governance](../protocol/governance.md)** — seats, quorum, and the queue in depth.
-5. **[Chamber Protocol whitepaper](https://loreum.org/whitepaper)** — full protocol write-up on the public site.
+1. **[Why not just a multisig?](./why-not-multisig.md)** — side-by-side comparison  
+2. **[Getting started](./getting-started.md)** — use the web app  
+3. **[Governance](../protocol/governance.md)** — seats, quorum, delegation in plain language  
+4. **[Treasury actions](../protocol/multisig.md)** — the proposal queue vs Safe  

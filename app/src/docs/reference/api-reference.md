@@ -1,6 +1,8 @@
 # Contract API reference
 
-Generated from the deployed interfaces in `contracts/src/` (`Registry`, `Chamber` / `IChamber`, plus inherited **`IWallet`**, **`IBoard`**, **`IERC4626`**). Prefer NatSpec in-repo for exact wording.
+> **Audience:** developers integrating with or auditing contracts. New users should start with **[What is a Chamber?](../introduction/overview.md)** and **[Governance](../protocol/governance.md)**.
+
+Generated from interfaces in `contracts/src/` (`Registry`, `Chamber` / `IChamber`, plus **`IWallet`**, **`IBoard`**, **`IERC4626`**). Prefer NatSpec in-repo for exact wording.
 
 ## `Registry`
 
