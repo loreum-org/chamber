@@ -1,7 +1,8 @@
 /**
- * Alchemy Data API + optional JSON-RPC (used by wagmi when `VITE_ALCHEMY_API_KEY` is set).
+ * Alchemy Data API for the Chamber assets panel; optional JSON-RPC fallback for wagmi.
  *
- * Set `VITE_ALCHEMY_API_KEY` in `app/.env` (same key for RPC + Token/NFT APIs on supported networks).
+ * Prefer `VITE_*_RPC_URL` in `app/.env` for wagmi (see `src/lib/rpc.ts`). Use `VITE_ALCHEMY_API_KEY`
+ * for indexed token/NFT balances, or as RPC fallback when no per-chain RPC URL is set.
  * @see https://docs.alchemy.com/reference/alchemy-gettokenbalances
  * @see https://docs.alchemy.com/reference/getnftsforowner-v3
  */
