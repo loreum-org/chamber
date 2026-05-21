@@ -1,42 +1,69 @@
-# Multisig wallet (queued execution)
+# Treasury actions (the proposal queue)
 
-The **`Wallet`** mixin inside **`Chamber`** implements a **nonce-ordered transaction queue** keyed by integer **`transactionId`** (also called **`nonce`** in some views). Only **current directors**, verified via **`isDirector(tokenId)`**, may participate.
+This is how a Chamber **spends** — the closest equivalent to **creating a transaction in Gnosis Safe**, but with **director confirmations** instead of a fixed signer list.
 
-## Storage model
+## The lifecycle in plain language
 
-For each transaction the contract stores:
+```mermaid
+sequenceDiagram
+  participant D1 as Director A
+  participant D2 as Director B
+  participant C as Chamber
+  participant T as Target contract
 
-- `target`, `value`, `executed`, `confirmations`  
-- **`dataHash = keccak256(original calldata)`** — raw calldata is **not** persisted (gas savings), only its hash.  
-- Optional **`metadataURI`** if submitted with **`submitTransactionWithMetadata`**.  
+  D1->>C: Submit proposal
+  Note over C: Hash of calldata stored
+  D1->>C: Auto-confirm
+  D2->>C: Confirm
+  Note over C: Quorum reached
+  D1->>C: Execute with same calldata
+  C->>T: Call with value + data
+```
 
-**Execution requires the caller to pass the full calldata again**; the runtime checks **`keccak256(data) == dataHash`** (`DataHashMismatch` on failure).
+1. **Submit** — a director proposes: send ETH to an address, or call another contract with calldata.  
+2. **Confirm** — other directors add confirmations until **quorum** is met.  
+3. **Execute** — someone submits the **exact calldata** again; the contract verifies it matches the stored **hash**, then runs the call.
 
-**`SubmitTransaction`** events include the full **`bytes data`** so indexers and UIs can retain execution payloads.
+If calldata does not match, execution **reverts** (`DataHashMismatch`).
 
-## Lifecycle
+## Why only a hash is stored onchain
 
-1. **Submit** — **`submitTransaction(tokenId, target, value, data)`** validates `target`/`value`, stores the hash, and **auto-confirms** for `tokenId`.  
-2. **Confirm** — Other directors call **`confirmTransaction`**.  
-3. **Execute** — **`executeTransaction(tokenId, transactionId, data)`** requires **`confirmations >= getQuorum()`**, not cancelled, then performs **`target.call{value: value}(data)`** after marking executed (CEI / revert pattern on failure).  
+Full calldata can be large and expensive to store. Chamber stores **`keccak256(calldata)`** and emits the **full calldata in an event** at submit time so apps and indexers can archive it.
 
-**`revokeConfirmation`** lowers the count if governance needs to walk back support before execution.
+**You must keep the original calldata** (copy from the app, logs, or your records) to execute later — same discipline as saving Safe transaction data, but enforced by the contract.
 
-## Self-calls and upgrades
+## Who can participate?
 
-If **`target == address(Chamber)`**, calldata is restricted: only **`upgradeImplementation(address,bytes)`** is permitted (validated by selector). Arbitrary recursive calls into the Chamber are blocked to reduce foot-gun risk.
+Only **current directors** (top-seat NFT controllers) may submit, confirm, execute, revoke confirmations, or vote to cancel.
 
-## Cancellation
+## Compared to a multisig
 
-**`cancelTransaction`** records cancel votes keyed by **`tokenId`**. When **`cancelConfirmations >= getQuorum()`**, the nonce is **cancelled** and cannot proceed to execution; further confirmations revert.
+| Step | Gnosis Safe (typical) | Chamber |
+|------|----------------------|---------|
+| Create tx | Any signer proposes | Director **submits** |
+| Approve | Signers sign offchain/onchain | Directors **confirm** onchain |
+| Threshold | Fixed M-of-N signers | **Quorum** from seat count |
+| Signer set | Manual updates | **Delegation** updates seats |
+| Calldata | Held in Safe UI | Hash onchain; calldata from events |
+
+## Cancelling a proposal
+
+Directors can vote to **cancel** before execution. Enough cancel votes (quorum) marks the proposal **cancelled** — no more confirmations, no execution.
+
+## Upgrades (special case)
+
+A proposal may target **the Chamber itself** only for **`upgradeImplementation`** — the controlled path to upgrade the contract logic via **ProxyAdmin**. Random self-calls are blocked.
 
 ## Batching
 
-- **`submitBatchTransactions`** — multiple proposals in one call; total **ETH** budget must not exceed balance; each entry validated like single submit.  
-- **`confirmBatchTransactions`** / **`executeBatchTransactions`** — loop over IDs; **`executeBatch`** requires a **`bytes[] data`** array aligned with **`transactionIds`**.  
+Directors can submit, confirm, or execute **many proposals in one transaction** to save gas. If any step in a batch fails, the **whole batch** reverts.
 
-If any step in a batch **reverts**, the **entire outer call** reverts (standard Solidity semantics)—there is no partial commit.
+## Safety
 
-## Reentrancy
+External entrypoints use **reentrancy guards**. Execution follows **checks-effects-interactions**: mark executed, then call out; revert and roll back if the call fails.
 
-Submit/confirm/execute/batch/cancel paths on **`Chamber`** use **`nonReentrant`** on the external entrypoints in addition to internal CEI discipline in **`_executeTransaction`**.
+## Read next
+
+- **[Governance](./governance.md)** — quorum and seats  
+- **[Getting started](../introduction/getting-started.md)** — Transactions tab  
+- **[Why not just a multisig?](../introduction/why-not-multisig.md)**  

@@ -62,7 +62,7 @@ function buildDocTree(files: Record<string, any>): DocNode[] {
 
   /** Order of *.md files inside each top-level folder (sidebar within a section). */
   const DIRECTORY_CHILD_ORDER: Record<string, string[]> = {
-    introduction: ['overview', 'chamber-and-sub-chambers', 'getting-started'],
+    introduction: ['overview', 'why-not-multisig', 'chamber-and-sub-chambers', 'getting-started'],
     protocol: ['vision', 'architecture', 'governance', 'vaults', 'multisig', 'design-notes'],
     guides: ['app-routes', 'deployment'],
     reference: ['api-reference', 'sequence-diagrams'],

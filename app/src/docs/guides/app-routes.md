@@ -1,46 +1,48 @@
-# App routes and flows
+# Where everything is in the app
 
-Technical map of URLs in **this** web client (basename-aware). Precise labels change with UX releases; **contract behavior** stays aligned with **`IChamber`** and related interfaces.
+This is a **map of screens** in the Chamber web app. Pair it with **[Getting started](../introduction/getting-started.md)** for a walk-through.
 
-For a conversational introduction to Chambers, see **[Overview](../introduction/overview.md)**.
+## Main routes
 
-| Path | Purpose |
-|------|---------|
-| **`/`** | Dashboard — discovers chambers from the configured Registry |
-| **`/deploy`** | Deploy a new Chamber |
-| **`/chamber/:address`** | Chamber overview and tabs |
-| **`/chamber/:address/:tab`** | Deeplink into a tab |
-| **`/chamber/:address/transactions`** | Transaction queue |
-| **`/chamber/:address/director/:tokenId`** | Director-centric view |
-| **`/docs`**, **`/docs/*`** | This documentation tree |
+| Path | What you do here |
+|------|------------------|
+| **`/`** | **Dashboard** — list Chambers from the Registry |
+| **`/deploy`** | **Create** a new Chamber |
+| **`/chamber/:address`** | **Overview** — summary, tabs, balances |
+| **`/chamber/:address/staking`** | **Deposit / withdraw** underlying tokens |
+| **`/chamber/:address/delegation`** | **Delegate** shares to NFT token IDs |
+| **`/chamber/:address/transactions`** | **Proposal queue** (directors) |
+| **`/chamber/:address/director/:tokenId`** | View tied to one **membership token ID** |
+| **`/docs`** | This documentation |
 
-Director-only controls appear when authentication matches **`isDirector(tokenId)`** for a token ID in the current top seats; share-holder actions (deposit, delegate) depend on balances and allowances.
+## Who sees what?
+
+| Action | Who |
+|--------|-----|
+| Deposit, withdraw, delegate | Anyone with tokens and shares |
+| Submit / confirm / execute proposals | **Directors** only (top-seat NFT controllers) |
+| Deploy a Chamber | Anyone on a network where Registry is configured |
+
+The app checks **onchain** whether your wallet controls a seated NFT before showing director controls.
+
+## Typical journey
 
 ```mermaid
 flowchart TD
-    Start([Open app]) --> Connect[Connect wallet]
-    Connect --> Hub{Choose destination}
-    Hub --> Dashboard[Dashboard /]
-    Hub --> Deploy[Deploy /deploy]
-    Hub --> Chamber[Chamber /chamber/:address]
-    Hub --> Docs[Docs /docs]
-
-    Chamber --> Vault[ERC-4626 deposit or withdraw]
-    Chamber --> Del[Delegate or undelegate shares]
-    Chamber --> Tx[Transaction queue /transactions]
-
-    Tx --> S[Submit proposal]
-    Tx --> C[Confirm]
-    Tx --> E[Execute with calldata]
-    Tx --> X[Cancel votes]
-
-    style Connect fill:#1e3a5f,color:#fff
-    style Vault fill:#0f766e,color:#fff
-    style Tx fill:#7c3aed,color:#fff
+  Start([Open app]) --> Connect[Connect wallet]
+  Connect --> Hub{What next?}
+  Hub --> Deploy[Deploy new Chamber]
+  Hub --> Open[Open existing Chamber]
+  Deploy --> Open
+  Open --> Stake[Staking tab]
+  Open --> Del[Delegation tab]
+  Open --> Tx[Transactions tab]
+  Stake --> Del
+  Del --> Tx
 ```
 
 ## Read next
 
-- **[Getting started](../introduction/getting-started.md)** — user-oriented walk-through  
-- **[Governance](../protocol/governance.md)** — queue semantics and quorum  
-- **[Multisig / wallet behavior](../protocol/multisig.md)** — calldata hashing and execution  
+- **[Getting started](../introduction/getting-started.md)**  
+- **[Governance](../protocol/governance.md)**  
+- **[Treasury actions](../protocol/multisig.md)**  

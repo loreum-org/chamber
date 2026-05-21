@@ -1,73 +1,40 @@
-# React + TypeScript + Vite
+# Loreum landing site
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Marketing site for [loreum.org](https://loreum.org) (React + Vite).
 
-Currently, two official plugins are available:
+## Development
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+cd landing
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Open the URL Vite prints (usually `http://localhost:5173`). **Do not** open `index.html` directly in the browser — that skips Vite and causes MIME errors on `/src/main.tsx`.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Production build
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run build
+npm run preview   # serves dist/ locally
 ```
+
+After `build`, `dist/index.html` must reference bundled files under `/assets/`, **not** `/src/main.tsx`. If you see a MIME error for `main.tsx` in production, the host is serving **source** files instead of **`dist/`**.
+
+## Deploy
+
+| Platform | Settings |
+|----------|----------|
+| **Vercel** | Root: `landing`, uses `vercel.json` |
+| **Netlify** | Base: `landing`, publish: `dist`, uses `netlify.toml` |
+| **Railway** | Root: `landing`, uses `railway.toml` — build then `serve dist` |
+
+Always run `npm run build` before deploy. Publish the **`dist`** folder only.
+
+## Troubleshooting console messages
+
+| Message | Cause |
+|---------|--------|
+| `Failed to load module script … MIME type "text/plain" … main.tsx` | Static host serving dev `index.html` or raw `.tsx` files. Fix: deploy **`dist`** after `npm run build`, or use `npm run dev` locally. |
+| `SES Removing unpermitted intrinsics` / `lockdown-install.js` | Usually a **browser extension** (e.g. MetaMask), not this repo. Safe to ignore if the app loads. |
+| `listener indicated an asynchronous response… message channel closed` | Usually a **browser extension** (Chrome). Not from landing code. |

@@ -1,42 +1,37 @@
 # Loreum Chamber docs
 
-Markdown sources under **`app/src/docs`** render inside the web UI at **`/docs`** (`app/src/pages/Docs.tsx`). They’re organized so **readable product context lands first**, then progressively deeper engineering material.
+These pages explain **what a Chamber is**, **how it works**, and **why you might use one instead of a normal multisig treasury** (for example Gnosis Safe). They are written for newcomers — you do not need to be a Solidity developer to follow the introduction and protocol sections.
 
-Start with **[Overview](./introduction/overview.md)** once, then skim **[Chamber Protocol (online)](https://loreum.org/whitepaper)** on [loreum.org](https://loreum.org) for authoritative protocol narrative.
+Open the docs in the app at **`/docs`**. Start here:
 
----
+## Recommended reading order (new users)
 
-## Narrative (“what Chambers do”)
+1. **[What is a Chamber?](./introduction/overview.md)** — the idea in one sitting  
+2. **[Why not just a multisig?](./introduction/why-not-multisig.md)** — Chamber vs a classic treasury wallet  
+3. **[Chambers and Sub-Chambers](./introduction/chamber-and-sub-chambers.md)** — one treasury, many specialized groups  
+4. **[Getting started](./introduction/getting-started.md)** — connect a wallet and use the app  
 
-1. **[Overview](./introduction/overview.md)** — high-level Chamber story (aligned with the public landing hero + mission).  
-2. **[Chamber and Sub-Chambers](./introduction/chamber-and-sub-chambers.md)** — ecosystem mental model drawn from loreum.org governance framing.  
-3. **[Getting started](./introduction/getting-started.md)** — connect a wallet, routes, Transactions tab, Deploy.
+Then, as you need detail:
 
-## Practical / protocol reference
+| Topic | Page |
+|--------|------|
+| How voting and seats work | **[Governance](./protocol/governance.md)** |
+| How the treasury (vault) works | **[Vault](./protocol/vaults.md)** |
+| How spending proposals work | **[Treasury actions](./protocol/multisig.md)** |
+| Where each screen lives | **[App routes](./guides/app-routes.md)** |
 
-| Doc | Audience |
-|-----|----------|
-| **[Vision & primitives](./protocol/vision.md)** | Why the three-legged design exists |
-| **[Architecture](./protocol/architecture.md)** | Contracts, Registry, proxies |
-| **[Governance](./protocol/governance.md)** | Seats, quorum, delegation flow |
-| **[Vault](./protocol/vaults.md)** | ERC‑4626 and transfer/delegation invariants |
-| **[Wallet / multisig](./protocol/multisig.md)** | Queue execution + calldata hashing |
-| **[Design notes](./protocol/design-notes.md)** | Limits, assumptions, Solidity notes |
+## For builders and auditors
 
-## Guides
+| Topic | Page |
+|--------|------|
+| Design goals | **[Vision](./protocol/vision.md)** |
+| Contracts and Registry | **[Architecture](./protocol/architecture.md)** |
+| Limits and implementation notes | **[Design notes](./protocol/design-notes.md)** |
+| Deploy with Foundry | **[Deployment](./guides/deployment.md)** |
+| Function list | **[API reference](./reference/api-reference.md)** |
+| Flow diagrams | **[Sequence diagrams](./reference/sequence-diagrams.md)** |
+| Security review methodology | **[Security review](./security/security-review.md)** |
 
-- **[App routes](./guides/app-routes.md)** — path map + diagram for this SPA  
-- **[Deployment](./guides/deployment.md)** — Foundry / Registry setups  
+## Full protocol paper
 
-## API & diagrams
-
-- **[API reference](./reference/api-reference.md)**  
-- **[Sequence diagrams](./reference/sequence-diagrams.md)**
-
-## Security
-
-- **[Security review](./security/security-review.md)** methodology  
-
-## Whitepaper gateway
-
-The **interface table** historically living under `/docs/whitepaper` moved navigationally to **[Whitepaper hub → Read online](./whitepaper/read-online.md)**, pointing at **`https://loreum.org/whitepaper`** for the full prose.
+The long-form **[Chamber Protocol whitepaper](https://loreum.org/whitepaper)** on [loreum.org](https://loreum.org) goes deeper on design intent and formal framing. The in-app docs focus on **everyday use** and **plain-language mechanics**.

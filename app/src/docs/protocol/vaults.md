@@ -1,32 +1,42 @@
-# Vault (ERC‑4626)
+# How the treasury (vault) works
 
-Each Chamber is an **ERC‑4626 tokenized vault** wrapping one **underlying ERC‑20** configured at `initialize`. Chamber **share tokens** follow OpenZeppelin’s **`ERC4626Upgradeable`** semantics: `deposit`, `mint`, `withdraw`, and `redeem`, plus `preview*` helpers and standard ERC‑20 transfer behavior.
+Each Chamber is a **tokenized vault** (ERC‑4626). That is a standard way to say: **deposit one token, get share tokens** that represent your fraction of the pool.
 
-## Shares and underlying
+If you only know multisigs: a Safe **holds** tokens but does not issue **shares** that track membership in the group. Chamber does both — treasury **and** transferable **membership in the pot**.
 
-- **Underlying asset** — immutable per proxy (set in `__ERC4626_init`).  
-- **Shares** — fungible ERC‑20 minted to receivers on deposit/mint; burned on withdraw/redeem.  
-- **Decimals offset** — `_decimalsOffset()` returns **`3`**, enabling virtual shares mitigation for classic ERC‑4626 inflation / donation attack classes (see OpenZeppelin ERC‑4626 docs).  
+## Deposit and withdraw
 
-## Delegation constraint
+| Action | What happens |
+|--------|----------------|
+| **Deposit** | You send the Chamber’s **underlying ERC‑20** (for example USDC) into the contract. You receive **Chamber share tokens**. |
+| **Withdraw / Redeem** | You burn shares and receive underlying back (subject to vault liquidity). |
 
-Governance weight is **Chamber share balance delegated to membership token IDs**. To prevent **double use** of the same wei of shares as both “free balance” and delegated weight, **`Chamber._update`** enforces:
+Share price follows ERC‑4626 math: as the vault earns or holds more underlying per share, each share represents a larger claim.
 
-> After any outbound transfer of shares, **`balance(from) - totalHolderDelegations[from]`** must remain non‑negative (effectively: you cannot transfer or burn below what you’ve delegated).
+## Shares vs delegation
 
-Operationally:
+- **Shares** = your economic stake in the treasury.  
+- **Delegation** = how much of that stake you assign to **NFT token IDs** on the board.
 
-- **Withdraw/redeem** respects the same rule as **transfer**.  
-- Users **undelegate first** if they need to unlock balance for transfers or exits.  
+You can hold shares **without** delegating. You cannot delegate **more than your share balance**.
 
-Read helpers: **`getDelegations`**, **`getHolderDelegation`**, **`getTotalHolderDelegations`**.
+## Why you must undelegate before moving shares
 
-## ETH and ERC‑721
+The contract blocks transfers that would leave you with **fewer free shares than you have delegated**. That prevents “double spending” influence — assigning the same shares to leaders while also selling them.
 
-Native ETH can land via **`receive` / `fallback`** (emits **`Received`**).
+**Practical rule:** want to withdraw or transfer? **Undelegate first**, then move shares.
 
-Membership NFTs can be **safely transferred** into the Chamber (`onERC721Received`); these are **not** ERC‑4626 deposits—they emit **`ReceivedERC721`** for indexing/UX.
+## ETH and NFTs sent to the Chamber
 
-## Integrations
+- **ETH** sent to the Chamber address is accepted (useful for gas or donations).  
+- **ERC‑721 membership NFTs** can be received via `safeTransferFrom`; that is **not** a vault deposit — it does not mint shares.
 
-ERC‑4626 compatibility allows composability with aggregators and lending markets **where share behavior is understood**; integrators should note the **delegation lock** on transfers, which is stricter than a plain ERC‑20.
+## Safety note (first depositor attacks)
+
+The implementation uses a **decimals offset** (virtual shares) to reduce classic ERC‑4626 inflation attacks on empty or tiny vaults. Integrators should still follow ERC‑4626 best practices.
+
+## Read next
+
+- **[Getting started](../introduction/getting-started.md)** — deposit in the app  
+- **[Governance](./governance.md)** — delegation and seats  
+- **[Why not just a multisig?](../introduction/why-not-multisig.md)**  

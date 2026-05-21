@@ -3,7 +3,6 @@ import { http } from 'wagmi'
 import { mainnet, sepolia, base, arbitrum, Chain } from 'wagmi/chains'
 import localDeployments from '@/contracts/deployments.json'
 import { alchemySupportsChain, getAlchemyApiKeyFromEnv, getAlchemyV2RpcUrl } from '@/lib/alchemy'
-import { getCustomRpcUrlFromEnv, hasCustomRpcUrl } from '@/lib/rpc'
 
 const productionApp = import.meta.env.PROD
 
@@ -20,7 +19,7 @@ export const LOCAL_CHAIN_ID = localDeployments.chainId || 31337
 
 const alchemyApiKey = getAlchemyApiKeyFromEnv()
 
-/** Public RPC fallbacks when no custom URL or Alchemy key is set (CSP allowlisted). */
+/** Public RPC fallbacks when `VITE_ALCHEMY_API_KEY` is unset (CSP allowlisted). */
 const PUBLIC_RPC: Record<number, string> = {
   [mainnet.id]: 'https://eth.llamarpc.com',
   [sepolia.id]: 'https://rpc.sepolia.org',
@@ -29,8 +28,6 @@ const PUBLIC_RPC: Record<number, string> = {
 }
 
 function rpcHttpUrl(chainId: number, publicUrl: string): string {
-  const custom = getCustomRpcUrlFromEnv(chainId)
-  if (custom) return custom
   if (alchemyApiKey && alchemySupportsChain(chainId)) {
     return getAlchemyV2RpcUrl(chainId, alchemyApiKey) ?? publicUrl
   }
@@ -70,12 +67,8 @@ if (!walletConnectProjectId) {
   }
 }
 
-if (import.meta.env.DEV) {
-  if (hasCustomRpcUrl(mainnet.id) || hasCustomRpcUrl(sepolia.id)) {
-    console.info('[wagmi] Using VITE_*_RPC_URL for configured chains')
-  } else if (alchemyApiKey) {
-    console.info('[wagmi] Alchemy RPC enabled for Ethereum, Sepolia, Base, Arbitrum')
-  }
+if (import.meta.env.DEV && alchemyApiKey) {
+  console.info('[wagmi] Alchemy RPC enabled for Ethereum, Sepolia, Base, Arbitrum, and local RPC')
 }
 
 /** Production: Sepolia, plus Mainnet only when `VITE_MAINNET_REGISTRY` is set. Dev adds Base, Arbitrum, local. */
