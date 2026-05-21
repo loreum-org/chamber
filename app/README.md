@@ -45,29 +45,18 @@ npm install
 
 ### Configuration
 
-Copy `app/.env.example` to `app/.env` and fill in values.
-
-1. **RPC URLs (recommended)** — use full HTTPS endpoints for wallet read/write (not an Alchemy API key alone):
-   ```bash
-   VITE_SEPOLIA_RPC_URL=https://sepolia.infura.io/v3/YOUR_PROJECT_ID
-   VITE_MAINNET_RPC_URL=https://mainnet.infura.io/v3/YOUR_PROJECT_ID
-   ```
-   Optional: `VITE_BASE_RPC_URL`, `VITE_ARBITRUM_RPC_URL`, `VITE_LOCALHOST_RPC_URL` (defaults to `http://127.0.0.1:8545`).
-
-   When a `VITE_*_RPC_URL` is set for a chain, it **overrides** Alchemy for wagmi on that chain.
-
-2. Optional — **Alchemy** for the Chamber assets panel (indexed ERC-20 / NFT holdings). Only needed if you use that UI feature:
+1. Optional — **Alchemy** for indexed chamber assets on the Chamber overview tab. Create an API key at [alchemy.com](https://www.alchemy.com) and add to `app/.env`:
    ```bash
    VITE_ALCHEMY_API_KEY=your_key
    ```
-   If you omit RPC URLs and this key, wagmi falls back to public RPCs listed in `src/lib/wagmi.ts`.
+   Enable Ethereum, Sepolia, Base, and Arbitrum apps in the Alchemy dashboard. The same key powers **wagmi RPC** (read/write on those chains) and the **Chamber assets** panel.
 
-3. Update the WalletConnect Project ID in `src/lib/wagmi.ts`:
+2. Update the WalletConnect Project ID in `src/lib/wagmi.ts`:
    ```typescript
    projectId: 'YOUR_WALLETCONNECT_PROJECT_ID'
    ```
 
-4. Update contract addresses for your deployment in `src/lib/wagmi.ts`:
+3. Update contract addresses for your deployment in `src/lib/wagmi.ts`:
    ```typescript
    export const CONTRACT_ADDRESSES = {
      sepolia: {
