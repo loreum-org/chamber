@@ -1,0 +1,12 @@
+# Used if Railway falls back to Nixpacks (Node 22 + cache outside node_modules avoids EBUSY).
+[variables]
+NIXPACKS_NODE_VERSION = "22"
+
+[phases.install]
+cmds = ["npm ci"]
+
+[phases.build]
+cmds = ["npm run build"]
+
+[start]
+cmd = "npx serve dist -s -l ${PORT:-8080}"

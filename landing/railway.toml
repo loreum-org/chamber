@@ -1,8 +1,9 @@
-# Railway: set service root directory to `landing/` in the dashboard.
+# Railway: service root directory must be `landing/`.
 [build]
-builder = "NIXPACKS"
-buildCommand = "npm ci && npm run build"
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
 
 [deploy]
-startCommand = "npx --yes serve dist -s -l ${PORT:-4173}"
 restartPolicyType = "ON_FAILURE"
+healthcheckPath = "/"
+healthcheckTimeout = 30
