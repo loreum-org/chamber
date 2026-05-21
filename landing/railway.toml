@@ -1,7 +1,7 @@
 # Railway: set service root directory to `landing/` in the dashboard.
 [build]
 builder = "NIXPACKS"
-buildCommand = "npm ci && npm run build"
+buildCommand = "npm run build"
 
 [deploy]
 startCommand = "npx --yes serve dist -s -l ${PORT:-4173}"
