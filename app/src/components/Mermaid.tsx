@@ -6,6 +6,7 @@ mermaid.initialize({
   startOnLoad: true,
   theme: 'dark',
   securityLevel: 'strict',
+  htmlLabels: false,
   fontFamily: 'Inter, system-ui, sans-serif',
   themeVariables: {
     primaryColor: '#1e40af',
@@ -14,7 +15,9 @@ mermaid.initialize({
     lineColor: '#64748b',
     secondaryColor: '#334155',
     tertiaryColor: '#0f172a',
-  }
+    nodeTextColor: '#f1f5f9',
+    textColor: '#f1f5f9',
+  },
 })
 
 interface MermaidProps {

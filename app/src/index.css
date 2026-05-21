@@ -167,8 +167,18 @@
     background: transparent !important;
   }
 
-  .mermaid-container .label {
-    @apply text-slate-300;
+  .mermaid-container svg text,
+  .mermaid-container svg .nodeLabel,
+  .mermaid-container svg .edgeLabel,
+  .mermaid-container svg .label {
+    fill: #e2e8f0;
+  }
+
+  .mermaid-container svg .actor,
+  .mermaid-container svg .messageText,
+  .mermaid-container svg .loopText,
+  .mermaid-container svg .noteText {
+    fill: #e2e8f0;
   }
 }
 
