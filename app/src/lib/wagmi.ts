@@ -1,5 +1,5 @@
 import { getDefaultConfig } from '@rainbow-me/rainbowkit'
-import { http } from 'wagmi'
+import { fallback, http } from 'wagmi'
 import { mainnet, sepolia, base, arbitrum, Chain } from 'wagmi/chains'
 import localDeployments from '@/contracts/deployments.json'
 import { alchemySupportsChain, getAlchemyApiKeyFromEnv, getAlchemyV2RpcUrl } from '@/lib/alchemy'
@@ -19,19 +19,23 @@ export const LOCAL_CHAIN_ID = localDeployments.chainId || 31337
 
 const alchemyApiKey = getAlchemyApiKeyFromEnv()
 
-/** Public RPC fallbacks when `VITE_ALCHEMY_API_KEY` is unset (CSP allowlisted). */
+/** Public RPC fallbacks when `VITE_ALCHEMY_API_KEY` is unset or rate-limited (CSP allowlisted). */
 const PUBLIC_RPC: Record<number, string> = {
   [mainnet.id]: 'https://eth.llamarpc.com',
-  [sepolia.id]: 'https://rpc.sepolia.org',
+  [sepolia.id]: 'https://sepolia.drpc.org',
   [base.id]: 'https://mainnet.base.org',
   [arbitrum.id]: 'https://arb1.arbitrum.io/rpc',
 }
 
-function rpcHttpUrl(chainId: number, publicUrl: string): string {
+function chainTransport(chainId: number, publicUrl: string) {
   if (alchemyApiKey && alchemySupportsChain(chainId)) {
-    return getAlchemyV2RpcUrl(chainId, alchemyApiKey) ?? publicUrl
+    const alchemyUrl = getAlchemyV2RpcUrl(chainId, alchemyApiKey)
+    if (alchemyUrl) {
+      // Alchemy returns plain-text 429 bodies when quota is exceeded; fall back to public RPC.
+      return fallback([http(alchemyUrl), http(publicUrl)])
+    }
   }
-  return publicUrl
+  return http(publicUrl)
 }
 
 // Define localhost chain explicitly with correct chain ID (not offered in production builds)
@@ -80,8 +84,8 @@ export const config = productionApp
         chains: [mainnet, sepolia],
         ssr: false,
         transports: {
-          [mainnet.id]: http(rpcHttpUrl(mainnet.id, PUBLIC_RPC[mainnet.id])),
-          [sepolia.id]: http(rpcHttpUrl(sepolia.id, PUBLIC_RPC[sepolia.id])),
+          [mainnet.id]: chainTransport(mainnet.id, PUBLIC_RPC[mainnet.id]),
+          [sepolia.id]: chainTransport(sepolia.id, PUBLIC_RPC[sepolia.id]),
         },
       })
     : getDefaultConfig({
@@ -90,7 +94,7 @@ export const config = productionApp
         chains: [sepolia],
         ssr: false,
         transports: {
-          [sepolia.id]: http(rpcHttpUrl(sepolia.id, PUBLIC_RPC[sepolia.id])),
+          [sepolia.id]: chainTransport(sepolia.id, PUBLIC_RPC[sepolia.id]),
         },
       })
   : isMainnetConfigured
@@ -100,10 +104,10 @@ export const config = productionApp
         chains: [mainnet, sepolia, base, arbitrum, localhost],
         ssr: false,
         transports: {
-          [mainnet.id]: http(rpcHttpUrl(mainnet.id, PUBLIC_RPC[mainnet.id])),
-          [sepolia.id]: http(rpcHttpUrl(sepolia.id, PUBLIC_RPC[sepolia.id])),
-          [base.id]: http(rpcHttpUrl(base.id, PUBLIC_RPC[base.id])),
-          [arbitrum.id]: http(rpcHttpUrl(arbitrum.id, PUBLIC_RPC[arbitrum.id])),
+          [mainnet.id]: chainTransport(mainnet.id, PUBLIC_RPC[mainnet.id]),
+          [sepolia.id]: chainTransport(sepolia.id, PUBLIC_RPC[sepolia.id]),
+          [base.id]: chainTransport(base.id, PUBLIC_RPC[base.id]),
+          [arbitrum.id]: chainTransport(arbitrum.id, PUBLIC_RPC[arbitrum.id]),
           [localhost.id]: http(localhost.rpcUrls.default.http[0]),
         },
       })
@@ -113,9 +117,9 @@ export const config = productionApp
         chains: [sepolia, base, arbitrum, localhost],
         ssr: false,
         transports: {
-          [sepolia.id]: http(rpcHttpUrl(sepolia.id, PUBLIC_RPC[sepolia.id])),
-          [base.id]: http(rpcHttpUrl(base.id, PUBLIC_RPC[base.id])),
-          [arbitrum.id]: http(rpcHttpUrl(arbitrum.id, PUBLIC_RPC[arbitrum.id])),
+          [sepolia.id]: chainTransport(sepolia.id, PUBLIC_RPC[sepolia.id]),
+          [base.id]: chainTransport(base.id, PUBLIC_RPC[base.id]),
+          [arbitrum.id]: chainTransport(arbitrum.id, PUBLIC_RPC[arbitrum.id]),
           [localhost.id]: http(localhost.rpcUrls.default.http[0]),
         },
       })
