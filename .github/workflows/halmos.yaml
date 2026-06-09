@@ -1,0 +1,40 @@
+name: Halmos Symbolic Verification
+
+on:
+  push:
+    paths:
+      - 'contracts/**'
+      - '.github/workflows/halmos.yaml'
+  pull_request:
+    paths:
+      - 'contracts/**'
+      - '.github/workflows/halmos.yaml'
+
+jobs:
+  halmos:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: contracts
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Checkout submodules
+        working-directory: ${{ github.workspace }}
+        run: |
+          git config --global url."https://github.com/".insteadOf "git@github.com:"
+          git submodule update --init --recursive
+
+      - name: Install Halmos
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: contracts/fv-requirements.txt
+      - run: pip install -r fv-requirements.txt
+
+      - name: Run Halmos symbolic tests
+        run: make ci-halmos
