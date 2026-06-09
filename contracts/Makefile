@@ -29,6 +29,11 @@ LOREUM_WALLET_GOV_HODLER ?= $(LOREUM_LOCAL_GOV_HODLER)
 
 ci-test :; forge test
 
+# Symbolic verification with Halmos (requires: pip install -r fv-requirements.txt)
+halmos :; halmos --match-test '^symbolic' -vv
+
+ci-halmos :; halmos --match-test '^symbolic' -vv
+
 dev-test :; forge test --verbosity -vvv --watch
 
 # Local Anvil: loads snapshot if present, dumps on graceful exit (Ctrl+C).
