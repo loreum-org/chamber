@@ -1,0 +1,495 @@
+{
+  "meta": {
+    "generated": "2026-05-26T00:00:00Z",
+    "sourceCount": 5,
+    "sourceTypes": ["research", "ticket", "memo"],
+    "health": "thin",
+    "notes": [
+      "Five sources migrated from docs/product/ and app positioning — competitive intelligence and internal product review, not user interviews.",
+      "findings-log-2026-03-14.md is a single product-manager review session, not multi-user support tickets.",
+      "No files skipped."
+    ]
+  },
+  "nodes": [
+    {
+      "id": "segment-dao-treasury-teams",
+      "type": "Segment",
+      "label": "DAO / community treasury teams outgrowing fixed multisigs",
+      "provenance": [
+        {
+          "source": "why-not-multisig-positioning.md",
+          "quote": "Many DAOs start with a **multisig treasury** — often **Gnosis Safe** or a similar wallet where **N of M signers** must approve each transaction. That works for small teams. Chamber is for groups that want the **same safety idea** (multiple people must agree) but with **rules that update onchain** as power shifts."
+        }
+      ]
+    },
+    {
+      "id": "segment-community-treasury",
+      "type": "Segment",
+      "label": "Community treasury teams needing structural governance clarity",
+      "provenance": [
+        {
+          "source": "chamber-product-intent.md",
+          "quote": "Chamber pushes those answers into **onchain state**: delegation totals, seat ranking, quorum, and proposal hashes. That is **structural clarity** — useful for communities, contributors, and regulators who ask how governance actually works."
+        }
+      ]
+    },
+    {
+      "id": "competitor-gnosis-safe",
+      "type": "Competitor",
+      "label": "Gnosis Safe (Safe{Wallet})",
+      "provenance": [
+        {
+          "source": "competitive-landscape.md",
+          "quote": "| Gnosis Safe | DAO Treasury / Multisig | Multi-sig wallet, threshold approvals, ERC20/ETH support, delegates | Industry standard, Tally integration, Governor + Zodiac composability | Fixed signer set, no NFT-based governance, no agent support |"
+        }
+      ]
+    },
+    {
+      "id": "competitor-tally",
+      "type": "Competitor",
+      "label": "Tally",
+      "provenance": [
+        {
+          "source": "competitive-landscape.md",
+          "quote": "| Tally | DAO Governance | Governor integration, Safe linking, proposal creation | Single platform for multisig + governance | Relies on Safe for treasury, no native agent/AI |"
+        }
+      ]
+    },
+    {
+      "id": "competitor-nouns-dao",
+      "type": "Competitor",
+      "label": "Nouns DAO",
+      "provenance": [
+        {
+          "source": "competitive-landscape.md",
+          "quote": "| Nouns DAO | NFT Governance | 1 Noun = 1 vote, daily auctions, Prop House, Flows.wtf | Strong brand, fractional $NOUNS, evolving capital deployment | No shared vault per se; treasury managed separately |"
+        }
+      ]
+    },
+    {
+      "id": "competitor-agent-bravo",
+      "type": "Competitor",
+      "label": "Agent Bravo",
+      "provenance": [
+        {
+          "source": "competitive-landscape.md",
+          "quote": "| Agent Bravo | AI Agent Governance | Governor Bravo-compatible voting, policy enactment, Discord integration | AI agents can vote in existing DAOs | No native treasury; depends on Governor + Safe stack |"
+        }
+      ]
+    },
+    {
+      "id": "competitor-onchain-agent-kit",
+      "type": "Competitor",
+      "label": "onchain-agent-kit (EIP-8004)",
+      "provenance": [
+        {
+          "source": "competitive-landscape.md",
+          "quote": "| onchain-agent-kit | AI Agent Tooling | EIP-8004 identity, agent-to-agent protocols, EVM/Solana | Modular, verifiable agent identity | Framework only; no treasury or governance product |"
+        }
+      ]
+    },
+    {
+      "id": "feature-nft-governance",
+      "type": "Feature",
+      "label": "NFT-based governance / membership seats",
+      "provenance": [
+        {
+          "source": "competitive-landscape.md",
+          "quote": "| NFT-based governance | ✓ | ✗ | ✗ | ✓ | ✗ |"
+        }
+      ]
+    },
+    {
+      "id": "feature-agent-ai-support",
+      "type": "Feature",
+      "label": "Agent / AI director support",
+      "provenance": [
+        {
+          "source": "competitive-landscape.md",
+          "quote": "| Agent/AI support | ✓ | ✗ | ✗ | ✗ | ✓ |"
+        }
+      ]
+    },
+    {
+      "id": "feature-erc4626-vault",
+      "type": "Feature",
+      "label": "ERC4626 tokenized vault",
+      "provenance": [
+        {
+          "source": "competitive-landscape.md",
+          "quote": "| ERC4626 vault | ✓ | ✗ | ✗ | ✗ | ✗ |"
+        }
+      ]
+    },
+    {
+      "id": "feature-dynamic-board-seats",
+      "type": "Feature",
+      "label": "Dynamic board seats via delegation leaderboard",
+      "provenance": [
+        {
+          "source": "competitive-landscape.md",
+          "quote": "| Dynamic board seats | ✓ | ✗ | ✗ | ✗ | ✗ |"
+        }
+      ]
+    },
+    {
+      "id": "feature-calldata-hash-queue",
+      "type": "Feature",
+      "label": "Submit → confirm → execute queue with calldata hash verification",
+      "provenance": [
+        {
+          "source": "chamber-product-intent.md",
+          "quote": "each outbound action is **proposed, confirmed to quorum, then executed** with calldata checked against a stored hash."
+        }
+      ]
+    },
+    {
+      "id": "feature-market-driven-board",
+      "type": "Feature",
+      "label": "Market-driven board via delegation to NFT IDs",
+      "provenance": [
+        {
+          "source": "competitive-landscape.md",
+          "quote": "**Market-driven board**: Delegation to NFT IDs creates a leaderboard; top N by stake become directors. Competitors use fixed signers or token-weighted votes."
+        }
+      ]
+    },
+    {
+      "id": "feature-validation-registry-8004",
+      "type": "Feature",
+      "label": "ValidationRegistry (ERC-8004 alignment)",
+      "provenance": [
+        {
+          "source": "competitive-landscape.md",
+          "quote": "**ValidationRegistry (ERC-8004)**: onchain agent attestations; aligns with emerging AI agent trust standards."
+        }
+      ]
+    },
+    {
+      "id": "feature-safe-module-ecosystem",
+      "type": "Feature",
+      "label": "Safe Zodiac module ecosystem",
+      "provenance": [
+        {
+          "source": "competitive-landscape.md",
+          "quote": "**Safe Module Ecosystem**: Gnosis Safe has Zodiac, Governor modules, and a rich module ecosystem. Chamber has no module/plugin system yet."
+        }
+      ]
+    },
+    {
+      "id": "need-onchain-rules-that-update",
+      "type": "Need",
+      "label": "Treasury rules that update onchain as power shifts (not fixed signers)",
+      "provenance": [
+        {
+          "source": "why-not-multisig-positioning.md",
+          "quote": "Chamber is for groups that want the **same safety idea** (multiple people must agree) but with **rules that update onchain** as power shifts."
+        }
+      ]
+    },
+    {
+      "id": "need-know-what-was-approved",
+      "type": "Need",
+      "label": "Know exactly what calldata was approved before execution",
+      "provenance": [
+        {
+          "source": "chamber-product-intent.md",
+          "quote": "**What exactly was approved to run?** — each outbound action is **proposed, confirmed to quorum, then executed** with calldata checked against a stored hash."
+        }
+      ]
+    },
+    {
+      "id": "pain-fixed-signer-set",
+      "type": "Pain",
+      "label": "Fixed signer set in classic multisigs",
+      "provenance": [
+        {
+          "source": "competitive-landscape.md",
+          "quote": "Fixed signer set, no NFT-based governance, no agent support"
+        }
+      ]
+    },
+    {
+      "id": "pain-delegation-raw-token-id",
+      "type": "Pain",
+      "label": "Delegation flow requires manual NFT token ID entry",
+      "provenance": [
+        {
+          "source": "findings-log-2026-03-14.md",
+          "quote": "Delegation flow asks for \"NFT Token ID\" as a number input. Users may not know their NFT token ID; they typically think in terms of \"my NFT\" or wallet/ENS. No picker or NFT selector."
+        }
+      ]
+    },
+    {
+      "id": "pain-hardcoded-explorer",
+      "type": "Pain",
+      "label": "Block explorer links hardcoded to etherscan.io",
+      "provenance": [
+        {
+          "source": "findings-log-2026-03-14.md",
+          "quote": "External links to block explorer use `etherscan.io` hardcoded. On Sepolia, localhost, or other chains, users are sent to mainnet explorer, which shows wrong or no data."
+        }
+      ]
+    },
+    {
+      "id": "pain-no-module-ecosystem",
+      "type": "Pain",
+      "label": "Chamber lacks Safe-style module/plugin ecosystem",
+      "provenance": [
+        {
+          "source": "competitor-deep-research-2026-03-14.md",
+          "quote": "**Threat**: Safe's module ecosystem and Tally integration create a strong incumbent stack. Chamber has no module/plugin system."
+        }
+      ]
+    },
+    {
+      "id": "insight-safe-dominant-incumbent",
+      "type": "Insight",
+      "label": "Safe remains dominant multisig infrastructure ($100B+ secured)",
+      "provenance": [
+        {
+          "source": "competitor-deep-research-2026-03-14.md",
+          "quote": "**Safe (Gnosis Safe)** remains the dominant multisig infrastructure with $100B+ secured"
+        }
+      ]
+    },
+    {
+      "id": "insight-erc8004-differentiator",
+      "type": "Insight",
+      "label": "ERC-8004 alignment is a positioning lever vs agent tooling competitors",
+      "provenance": [
+        {
+          "source": "competitor-deep-research-2026-03-14.md",
+          "quote": "Chamber should emphasize ERC-8004 alignment as a differentiator"
+        }
+      ]
+    },
+    {
+      "id": "insight-flows-wtf-capital-model",
+      "type": "Insight",
+      "label": "Nouns Flows.wtf is an emerging continuous capital deployment model",
+      "provenance": [
+        {
+          "source": "competitor-deep-research-2026-03-14.md",
+          "quote": "**Nouns DAO** has innovated beyond Prop House with **Flows.wtf**—continuous, permissionless fund streaming via token-curated registries."
+        }
+      ]
+    },
+    {
+      "id": "outcome-treasury-transaction-executed",
+      "type": "Outcome",
+      "label": "Quorum-approved treasury transaction successfully executed",
+      "provenance": [
+        {
+          "source": "chamber-product-intent.md",
+          "quote": "and only spends or calls other contracts when **enough directors agree** through an onchain queue."
+        }
+      ]
+    },
+    {
+      "id": "assumption-market-wants-nft-board",
+      "type": "Assumption",
+      "label": "Treasury teams prefer market-driven NFT boards over fixed signers",
+      "risk": "Core positioning and roadmap — if buyers want Safe-like fixed signers, Chamber's differentiation is misaligned.",
+      "provenance": []
+    },
+    {
+      "id": "assumption-agents-as-directors",
+      "type": "Assumption",
+      "label": "Organizations want AI agents as first-class directors with auto-confirm policies",
+      "risk": "Hybrid human-AI governance is a headline differentiator — unvalidated demand.",
+      "provenance": []
+    },
+    {
+      "id": "assumption-erc8004-matters-to-buyers",
+      "type": "Assumption",
+      "label": "ERC-8004 alignment materially influences buyer choice",
+      "risk": "Marketing emphasis on agent trust standards may not match actual procurement criteria.",
+      "provenance": []
+    },
+    {
+      "id": "assumption-delegation-leaderboard-intuitive",
+      "type": "Assumption",
+      "label": "Stakeholders understand and will use delegation-to-NFT-ID mechanics",
+      "risk": "Onboarding and activation — UX findings suggest token ID friction already.",
+      "provenance": []
+    },
+    {
+      "id": "assumption-compete-without-modules",
+      "type": "Assumption",
+      "label": "Chamber can win deals without a module/plugin ecosystem in the near term",
+      "risk": "Go-to-market vs Safe+Zodiac stack — enterprise buyers may require composability.",
+      "provenance": []
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-segment-dao-experiences-fixed-signers",
+      "type": "experiences",
+      "from": "segment-dao-treasury-teams",
+      "to": "pain-fixed-signer-set",
+      "provenance": [
+        {
+          "source": "why-not-multisig-positioning.md",
+          "quote": "You have a **fixed, trusted circle** of signers (for example five founders)."
+        }
+      ]
+    },
+    {
+      "id": "edge-segment-dao-requests-dynamic-board",
+      "type": "requests",
+      "from": "segment-dao-treasury-teams",
+      "to": "feature-market-driven-board",
+      "provenance": [
+        {
+          "source": "competitive-landscape.md",
+          "quote": "**Market-driven board**: Delegation to NFT IDs creates a leaderboard; top N by stake become directors."
+        }
+      ]
+    },
+    {
+      "id": "edge-segment-enterprise-requests-vault",
+      "type": "requests",
+      "from": "segment-community-treasury",
+      "to": "feature-erc4626-vault",
+      "provenance": [
+        {
+          "source": "competitive-landscape.md",
+          "quote": "**ERC4626 vault**: Chamber is a tokenized vault (shares) with deposit/withdraw; Safe holds raw assets."
+        }
+      ]
+    },
+    {
+      "id": "edge-safe-competes-nft-governance",
+      "type": "competes-with",
+      "from": "competitor-gnosis-safe",
+      "to": "feature-nft-governance",
+      "provenance": [
+        {
+          "source": "competitive-landscape.md",
+          "quote": "| NFT-based governance | ✓ | ✗ | ✗ | ✓ | ✗ |"
+        }
+      ]
+    },
+    {
+      "id": "edge-safe-competes-agent-support",
+      "type": "competes-with",
+      "from": "competitor-gnosis-safe",
+      "to": "feature-agent-ai-support",
+      "provenance": [
+        {
+          "source": "competitive-landscape.md",
+          "quote": "Gnosis Safe and Tally have no native agent support."
+        }
+      ]
+    },
+    {
+      "id": "edge-tally-competes-governance-ui",
+      "type": "competes-with",
+      "from": "competitor-tally",
+      "to": "feature-calldata-hash-queue",
+      "provenance": [
+        {
+          "source": "competitive-landscape.md",
+          "quote": "**Proposal UI / Voting UX**: Tally and Nouns have mature proposal creation, voting, and delegation UIs. Chamber's transaction queue is functional but no proposal layer."
+        }
+      ]
+    },
+    {
+      "id": "edge-agent-bravo-competes-agent-support",
+      "type": "competes-with",
+      "from": "competitor-agent-bravo",
+      "to": "feature-agent-ai-support",
+      "provenance": [
+        {
+          "source": "competitive-landscape.md",
+          "quote": "| Agent/AI support | ✓ | ✗ | ✗ | ✗ | ✓ |"
+        }
+      ]
+    },
+    {
+      "id": "edge-pain-token-id-blocks-outcome",
+      "type": "blocks",
+      "from": "pain-delegation-raw-token-id",
+      "to": "outcome-treasury-transaction-executed",
+      "provenance": [
+        {
+          "source": "findings-log-2026-03-14.md",
+          "quote": "**Priority**: P1 (high)"
+        }
+      ]
+    },
+    {
+      "id": "edge-no-modules-blocks-enterprise",
+      "type": "blocks",
+      "from": "pain-no-module-ecosystem",
+      "to": "outcome-treasury-transaction-executed",
+      "provenance": [
+        {
+          "source": "competitor-deep-research-2026-03-14.md",
+          "quote": "consider a module/plugin strategy to compete with Safe's Zodiac ecosystem."
+        }
+      ]
+    },
+    {
+      "id": "edge-intent-assumes-nft-board",
+      "type": "assumes",
+      "from": "feature-market-driven-board",
+      "to": "assumption-market-wants-nft-board",
+      "provenance": [
+        {
+          "source": "chamber-product-intent.md",
+          "quote": "**Who actually leads day to day?** — the **top delegated membership NFTs** on a public leaderboard, not a founder's spreadsheet."
+        }
+      ]
+    },
+    {
+      "id": "edge-intent-assumes-agents",
+      "type": "assumes",
+      "from": "feature-agent-ai-support",
+      "to": "assumption-agents-as-directors",
+      "provenance": [
+        {
+          "source": "chamber-product-intent.md",
+          "quote": "Over time, **software agents** that follow the same onchain rules as everyone else"
+        }
+      ]
+    },
+    {
+      "id": "edge-insight-assumes-8004",
+      "type": "assumes",
+      "from": "insight-erc8004-differentiator",
+      "to": "assumption-erc8004-matters-to-buyers",
+      "provenance": [
+        {
+          "source": "competitor-deep-research-2026-03-14.md",
+          "quote": "Chamber should emphasize ERC-8004 alignment as a differentiator"
+        }
+      ]
+    },
+    {
+      "id": "edge-delegation-pain-assumes-intuitive",
+      "type": "assumes",
+      "from": "pain-delegation-raw-token-id",
+      "to": "assumption-delegation-leaderboard-intuitive",
+      "provenance": [
+        {
+          "source": "findings-log-2026-03-14.md",
+          "quote": "Users may not know their NFT token ID"
+        }
+      ]
+    },
+    {
+      "id": "edge-gap-assumes-no-modules-ok",
+      "type": "assumes",
+      "from": "pain-no-module-ecosystem",
+      "to": "assumption-compete-without-modules",
+      "provenance": [
+        {
+          "source": "competitive-landscape.md",
+          "quote": "Chamber has no module/plugin system yet."
+        }
+      ]
+    }
+  ]
+}

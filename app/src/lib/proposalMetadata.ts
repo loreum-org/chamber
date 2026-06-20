@@ -15,6 +15,8 @@ export interface ProposalMetadata {
   target?: string
   valueEth?: string
   functionName?: string
+  /** Full execution calldata (hex); optional archive for directors on other devices. */
+  calldata?: string
   metadataURI?: string
   createdAt: number
 }

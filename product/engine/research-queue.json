@@ -1,0 +1,153 @@
+{
+  "version": 1,
+  "iteration": 3,
+  "maxSourcesPerIteration": 3,
+  "completionCriteria": {
+    "minSourceCount": 8,
+    "minSourceTypes": 2
+  },
+  "status": "active",
+  "pending": [
+    {
+      "id": "rq-buyer-interviews",
+      "priority": "high",
+      "kind": "validation",
+      "graphNodeId": "assumption-chamber-vs-oz-governor",
+      "question": "Do treasury buyers compose Safe+Governor+Tally+Parcel stacks or want native contracts like Chamber?",
+      "searchQueries": [],
+      "targetSourceType": "interview",
+      "status": "pending",
+      "note": "Manual ingest — walk through full governance stack at each layer"
+    },
+    {
+      "id": "rq-hsg-displacement-validation",
+      "priority": "high",
+      "kind": "validation",
+      "graphNodeId": "assumption-hats-signer-gate-sufficient",
+      "question": "Who uses Hats Signer Gate today and why did they not build/buy a native treasury?",
+      "searchQueries": [
+        "Hats Signer Gate DAO case study",
+        "Hats Protocol Safe multisig governance adoption"
+      ],
+      "targetSourceType": "research",
+      "status": "pending"
+    },
+    {
+      "id": "rq-chamber-segment-vs-oz-governor",
+      "priority": "medium",
+      "kind": "validation",
+      "graphNodeId": "assumption-chamber-vs-oz-governor",
+      "question": "Do NFT/community treasuries avoid OZ Governor entirely?",
+      "searchQueries": [
+        "NFT DAO treasury governance not token voting",
+        "community treasury multisig vs OpenZeppelin Governor"
+      ],
+      "targetSourceType": "research",
+      "status": "pending"
+    },
+    {
+      "id": "rq-zodiac-security-buyer-impact",
+      "priority": "medium",
+      "kind": "validation",
+      "graphNodeId": "assumption-native-queue-security-advantage",
+      "question": "Did June 2026 Zodiac module disclosure change how DAOs evaluate governance stacks?",
+      "searchQueries": [
+        "Zodiac Roles vulnerability DAO response 2026",
+        "Safe module governance security best practices"
+      ],
+      "targetSourceType": "research",
+      "status": "pending"
+    },
+    {
+      "id": "rq-build-vs-partner-coordination",
+      "priority": "medium",
+      "kind": "product",
+      "graphNodeId": "assumption-build-coordination-vs-partner",
+      "question": "Should Chamber integrate Commonwealth/Tally for forum+voting vs build native?",
+      "searchQueries": [
+        "Commonwealth DAO integration API",
+        "Tally governance widget embed"
+      ],
+      "targetSourceType": "research",
+      "status": "pending"
+    }
+  ],
+  "completed": [
+    {
+      "id": "rq-safe-zodiac-landscape",
+      "completedAt": "2026-05-26T12:00:00Z",
+      "sourceFile": "sources/2026-05-26-safe-zodiac-governance-landscape.md",
+      "outcome": "triangulated-partial",
+      "note": "Safe+Zodiac incumbent stack documented; still no buyer quotes"
+    },
+    {
+      "id": "rq-aragon-snapshot-offchain",
+      "completedAt": "2026-05-26T12:00:00Z",
+      "sourceFile": "sources/2026-05-26-aragon-snapshot-governance-tools.md",
+      "outcome": "triangulated-partial",
+      "note": "Snapshot execution gap + Aragon modular governance documented"
+    },
+    {
+      "id": "rq-agent-governance-tools",
+      "completedAt": "2026-05-26T12:00:00Z",
+      "sourceFile": "sources/2026-05-26-extended-governance-competitors.md",
+      "outcome": "triangulated-partial",
+      "note": "Colony, Hats, Karpatkey, ERC-8004 added"
+    },
+    {
+      "id": "rq-nft-governance-alternatives",
+      "completedAt": "2026-05-26T14:00:00Z",
+      "sourceFile": "sources/2026-05-26-moloch-baal-hats-signer-gate-deep.md",
+      "outcome": "single-source",
+      "note": "Hats Signer Gate + Baal ragequit documented; HSG = closest dynamic-board overlap"
+    },
+    {
+      "id": "rq-llama-treasury-automation",
+      "completedAt": "2026-05-26T14:00:00Z",
+      "sourceFile": "sources/2026-05-26-llama-treasury-framework-deep.md",
+      "outcome": "single-source",
+      "note": "Llama policy framework + vote-to-execution coupling"
+    },
+    {
+      "id": "rq-tally-multigov-relay",
+      "completedAt": "2026-05-26T14:00:00Z",
+      "sourceFile": "sources/2026-05-26-tally-multigov-relay-deep.md",
+      "outcome": "single-source",
+      "note": "MultiGov multichain + Relay gasless voting"
+    },
+    {
+      "id": "rq-nouns-flows-agent-zodiac",
+      "completedAt": "2026-05-26T14:00:00Z",
+      "sourceFile": "sources/2026-05-26-nouns-flows-agent-bravo-zodiac-security-deep.md",
+      "outcome": "single-source",
+      "note": "Flows streaming, Agent Bravo policies, Zodiac June 2026 incident"
+    },
+    {
+      "id": "rq-openzeppelin-governor-standalone",
+      "completedAt": "2026-05-26T16:00:00Z",
+      "sourceFile": "sources/2026-05-26-openzeppelin-governor-standalone-deep.md",
+      "outcome": "triangulated-partial",
+      "note": "OZ Governor + Timelock baseline; Tally pairing; offchain calldata at queue/execute"
+    },
+    {
+      "id": "rq-parcel-treasury-ops",
+      "completedAt": "2026-05-26T16:00:00Z",
+      "sourceFile": "sources/2026-05-26-parcel-treasury-ops-deep.md",
+      "outcome": "single-source",
+      "note": "Safe payroll ops layer; governance external; Llama+Parcel stack pattern"
+    },
+    {
+      "id": "rq-commonwealth-governance",
+      "completedAt": "2026-05-26T16:00:00Z",
+      "sourceFile": "sources/2026-05-26-commonwealth-governance-deep.md",
+      "outcome": "single-source",
+      "note": "Unified forum+Snapshot+onchain UX; 700+ DAOs cited; fragmentation wedge"
+    }
+  ],
+  "lastGraphify": "2026-05-26T16:00:00Z",
+  "notes": [
+    "Iteration 3: OZ Governor, Parcel, Commonwealth — governance stack layering model.",
+    "Corpus developing (15 sources). Rich requires 20+ sources and 3+ types.",
+    "Top gap: buyer interviews to validate stack vs native Chamber thesis."
+  ]
+}

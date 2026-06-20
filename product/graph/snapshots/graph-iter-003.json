@@ -1,0 +1,1435 @@
+{
+  "meta": {
+    "generated": "2026-06-20T21:19:22Z",
+    "sourceCount": 15,
+    "sourceTypes": [
+      "research",
+      "ticket",
+      "memo"
+    ],
+    "health": "developing",
+    "notes": [
+      "Fifteen sources: iteration 3 added OpenZeppelin Governor, Parcel, Commonwealth deep dives.",
+      "Still zero user-interview evidence.",
+      "OZ Governor + Tally now explicit as token-DAO baseline; Parcel as Safe ops layer; Commonwealth as coordination UX."
+    ]
+  },
+  "nodes": [
+    {
+      "id": "segment-dao-treasury-teams",
+      "type": "Segment",
+      "label": "DAO / community treasury teams outgrowing fixed multisigs",
+      "provenance": [
+        {
+          "source": "why-not-multisig-positioning.md",
+          "quote": "Many DAOs start with a **multisig treasury** \u2014 often **Gnosis Safe** or a similar wallet where **N of M signers** must approve each transaction. That works for small teams. Chamber is for groups that want the **same safety idea** (multiple people must agree) but with **rules that update onchain** as power shifts."
+        }
+      ]
+    },
+    {
+      "id": "segment-community-treasury",
+      "type": "Segment",
+      "label": "Community treasury teams needing structural governance clarity",
+      "provenance": [
+        {
+          "source": "chamber-product-intent.md",
+          "quote": "Chamber pushes those answers into **onchain state**: delegation totals, seat ranking, quorum, and proposal hashes. That is **structural clarity** \u2014 useful for communities, contributors, and regulators who ask how governance actually works."
+        }
+      ]
+    },
+    {
+      "id": "competitor-gnosis-safe",
+      "type": "Competitor",
+      "label": "Gnosis Safe (Safe{Wallet})",
+      "provenance": [
+        {
+          "source": "competitive-landscape.md",
+          "quote": "| Gnosis Safe | DAO Treasury / Multisig | Multi-sig wallet, threshold approvals, ERC20/ETH support, delegates | Industry standard, Tally integration, Governor + Zodiac composability | Fixed signer set, no NFT-based governance, no agent support |"
+        }
+      ]
+    },
+    {
+      "id": "competitor-tally",
+      "type": "Competitor",
+      "label": "Tally",
+      "provenance": [
+        {
+          "source": "competitive-landscape.md",
+          "quote": "| Tally | DAO Governance | Governor integration, Safe linking, proposal creation | Single platform for multisig + governance | Relies on Safe for treasury, no native agent/AI |"
+        }
+      ]
+    },
+    {
+      "id": "competitor-nouns-dao",
+      "type": "Competitor",
+      "label": "Nouns DAO",
+      "provenance": [
+        {
+          "source": "competitive-landscape.md",
+          "quote": "| Nouns DAO | NFT Governance | 1 Noun = 1 vote, daily auctions, Prop House, Flows.wtf | Strong brand, fractional $NOUNS, evolving capital deployment | No shared vault per se; treasury managed separately |"
+        }
+      ]
+    },
+    {
+      "id": "competitor-agent-bravo",
+      "type": "Competitor",
+      "label": "Agent Bravo",
+      "provenance": [
+        {
+          "source": "competitive-landscape.md",
+          "quote": "| Agent Bravo | AI Agent Governance | Governor Bravo-compatible voting, policy enactment, Discord integration | AI agents can vote in existing DAOs | No native treasury; depends on Governor + Safe stack |"
+        }
+      ]
+    },
+    {
+      "id": "competitor-onchain-agent-kit",
+      "type": "Competitor",
+      "label": "onchain-agent-kit (EIP-8004)",
+      "provenance": [
+        {
+          "source": "competitive-landscape.md",
+          "quote": "| onchain-agent-kit | AI Agent Tooling | EIP-8004 identity, agent-to-agent protocols, EVM/Solana | Modular, verifiable agent identity | Framework only; no treasury or governance product |"
+        }
+      ]
+    },
+    {
+      "id": "feature-nft-governance",
+      "type": "Feature",
+      "label": "NFT-based governance / membership seats",
+      "provenance": [
+        {
+          "source": "competitive-landscape.md",
+          "quote": "| NFT-based governance | \u2713 | \u2717 | \u2717 | \u2713 | \u2717 |"
+        }
+      ]
+    },
+    {
+      "id": "feature-agent-ai-support",
+      "type": "Feature",
+      "label": "Agent / AI director support",
+      "provenance": [
+        {
+          "source": "competitive-landscape.md",
+          "quote": "| Agent/AI support | \u2713 | \u2717 | \u2717 | \u2717 | \u2713 |"
+        }
+      ]
+    },
+    {
+      "id": "feature-erc4626-vault",
+      "type": "Feature",
+      "label": "ERC4626 tokenized vault",
+      "provenance": [
+        {
+          "source": "competitive-landscape.md",
+          "quote": "| ERC4626 vault | \u2713 | \u2717 | \u2717 | \u2717 | \u2717 |"
+        }
+      ]
+    },
+    {
+      "id": "feature-dynamic-board-seats",
+      "type": "Feature",
+      "label": "Dynamic board seats via delegation leaderboard",
+      "provenance": [
+        {
+          "source": "competitive-landscape.md",
+          "quote": "| Dynamic board seats | \u2713 | \u2717 | \u2717 | \u2717 | \u2717 |"
+        }
+      ]
+    },
+    {
+      "id": "feature-calldata-hash-queue",
+      "type": "Feature",
+      "label": "Submit \u2192 confirm \u2192 execute queue with calldata hash verification",
+      "provenance": [
+        {
+          "source": "chamber-product-intent.md",
+          "quote": "each outbound action is **proposed, confirmed to quorum, then executed** with calldata checked against a stored hash."
+        }
+      ]
+    },
+    {
+      "id": "feature-market-driven-board",
+      "type": "Feature",
+      "label": "Market-driven board via delegation to NFT IDs",
+      "provenance": [
+        {
+          "source": "competitive-landscape.md",
+          "quote": "**Market-driven board**: Delegation to NFT IDs creates a leaderboard; top N by stake become directors. Competitors use fixed signers or token-weighted votes."
+        }
+      ]
+    },
+    {
+      "id": "feature-validation-registry-8004",
+      "type": "Feature",
+      "label": "ValidationRegistry (ERC-8004 alignment)",
+      "provenance": [
+        {
+          "source": "competitive-landscape.md",
+          "quote": "**ValidationRegistry (ERC-8004)**: onchain agent attestations; aligns with emerging AI agent trust standards."
+        }
+      ]
+    },
+    {
+      "id": "feature-safe-module-ecosystem",
+      "type": "Feature",
+      "label": "Safe Zodiac module ecosystem",
+      "provenance": [
+        {
+          "source": "competitive-landscape.md",
+          "quote": "**Safe Module Ecosystem**: Gnosis Safe has Zodiac, Governor modules, and a rich module ecosystem. Chamber has no module/plugin system yet."
+        }
+      ]
+    },
+    {
+      "id": "need-onchain-rules-that-update",
+      "type": "Need",
+      "label": "Treasury rules that update onchain as power shifts (not fixed signers)",
+      "provenance": [
+        {
+          "source": "why-not-multisig-positioning.md",
+          "quote": "Chamber is for groups that want the **same safety idea** (multiple people must agree) but with **rules that update onchain** as power shifts."
+        }
+      ]
+    },
+    {
+      "id": "need-know-what-was-approved",
+      "type": "Need",
+      "label": "Know exactly what calldata was approved before execution",
+      "provenance": [
+        {
+          "source": "chamber-product-intent.md",
+          "quote": "**What exactly was approved to run?** \u2014 each outbound action is **proposed, confirmed to quorum, then executed** with calldata checked against a stored hash."
+        }
+      ]
+    },
+    {
+      "id": "pain-fixed-signer-set",
+      "type": "Pain",
+      "label": "Fixed signer set in classic multisigs",
+      "provenance": [
+        {
+          "source": "competitive-landscape.md",
+          "quote": "Fixed signer set, no NFT-based governance, no agent support"
+        }
+      ]
+    },
+    {
+      "id": "pain-delegation-raw-token-id",
+      "type": "Pain",
+      "label": "Delegation flow requires manual NFT token ID entry",
+      "provenance": [
+        {
+          "source": "findings-log-2026-03-14.md",
+          "quote": "Delegation flow asks for \"NFT Token ID\" as a number input. Users may not know their NFT token ID; they typically think in terms of \"my NFT\" or wallet/ENS. No picker or NFT selector."
+        }
+      ]
+    },
+    {
+      "id": "pain-hardcoded-explorer",
+      "type": "Pain",
+      "label": "Block explorer links hardcoded to etherscan.io",
+      "provenance": [
+        {
+          "source": "findings-log-2026-03-14.md",
+          "quote": "External links to block explorer use `etherscan.io` hardcoded. On Sepolia, localhost, or other chains, users are sent to mainnet explorer, which shows wrong or no data."
+        }
+      ]
+    },
+    {
+      "id": "pain-no-module-ecosystem",
+      "type": "Pain",
+      "label": "Chamber lacks Safe-style module/plugin ecosystem",
+      "provenance": [
+        {
+          "source": "competitor-deep-research-2026-03-14.md",
+          "quote": "**Threat**: Safe's module ecosystem and Tally integration create a strong incumbent stack. Chamber has no module/plugin system."
+        }
+      ]
+    },
+    {
+      "id": "insight-safe-dominant-incumbent",
+      "type": "Insight",
+      "label": "Safe remains dominant multisig infrastructure ($100B+ secured)",
+      "provenance": [
+        {
+          "source": "competitor-deep-research-2026-03-14.md",
+          "quote": "**Safe (Gnosis Safe)** remains the dominant multisig infrastructure with $100B+ secured"
+        }
+      ]
+    },
+    {
+      "id": "insight-erc8004-differentiator",
+      "type": "Insight",
+      "label": "ERC-8004 alignment is a positioning lever vs agent tooling competitors",
+      "provenance": [
+        {
+          "source": "competitor-deep-research-2026-03-14.md",
+          "quote": "Chamber should emphasize ERC-8004 alignment as a differentiator"
+        }
+      ]
+    },
+    {
+      "id": "insight-flows-wtf-capital-model",
+      "type": "Insight",
+      "label": "Nouns Flows.wtf is an emerging continuous capital deployment model",
+      "provenance": [
+        {
+          "source": "competitor-deep-research-2026-03-14.md",
+          "quote": "**Nouns DAO** has innovated beyond Prop House with **Flows.wtf**\u2014continuous, permissionless fund streaming via token-curated registries."
+        }
+      ]
+    },
+    {
+      "id": "outcome-treasury-transaction-executed",
+      "type": "Outcome",
+      "label": "Quorum-approved treasury transaction successfully executed",
+      "provenance": [
+        {
+          "source": "chamber-product-intent.md",
+          "quote": "and only spends or calls other contracts when **enough directors agree** through an onchain queue."
+        }
+      ]
+    },
+    {
+      "id": "assumption-market-wants-nft-board",
+      "type": "Assumption",
+      "label": "Treasury teams prefer market-driven NFT boards over fixed signers",
+      "risk": "Core positioning and roadmap \u2014 if buyers want Safe-like fixed signers, Chamber's differentiation is misaligned.",
+      "provenance": []
+    },
+    {
+      "id": "assumption-agents-as-directors",
+      "type": "Assumption",
+      "label": "Organizations want AI agents as first-class directors with auto-confirm policies",
+      "risk": "Hybrid human-AI governance is a headline differentiator \u2014 unvalidated demand.",
+      "provenance": []
+    },
+    {
+      "id": "assumption-erc8004-matters-to-buyers",
+      "type": "Assumption",
+      "label": "ERC-8004 alignment materially influences buyer choice",
+      "risk": "Marketing emphasis on agent trust standards may not match actual procurement criteria.",
+      "provenance": []
+    },
+    {
+      "id": "assumption-delegation-leaderboard-intuitive",
+      "type": "Assumption",
+      "label": "Stakeholders understand and will use delegation-to-NFT-ID mechanics",
+      "risk": "Onboarding and activation \u2014 UX findings suggest token ID friction already.",
+      "provenance": []
+    },
+    {
+      "id": "assumption-compete-without-modules",
+      "type": "Assumption",
+      "label": "Chamber can win deals without a module/plugin ecosystem in the near term",
+      "risk": "Go-to-market vs Safe+Zodiac stack \u2014 enterprise buyers may require composability.",
+      "provenance": []
+    },
+    {
+      "id": "competitor-aragon",
+      "type": "Competitor",
+      "label": "Aragon App (OSx modular governance)",
+      "provenance": [
+        {
+          "source": "2026-05-26-aragon-snapshot-governance-tools.md",
+          "quote": "Deploy your DAO, token, and your governance without writing a single line of code."
+        }
+      ]
+    },
+    {
+      "id": "competitor-snapshot",
+      "type": "Competitor",
+      "label": "Snapshot (offchain voting)",
+      "provenance": [
+        {
+          "source": "2026-05-26-aragon-snapshot-governance-tools.md",
+          "quote": "One important aspect of Snapshot is that it does not actually execute the voting decisions, leaving that up to the DAOs themselves."
+        }
+      ]
+    },
+    {
+      "id": "competitor-colony",
+      "type": "Competitor",
+      "label": "Colony (reputation-based DAO tooling)",
+      "provenance": [
+        {
+          "source": "2026-05-26-extended-governance-competitors.md",
+          "quote": "Colony's unique governance system serves as a powerful foundation for global organizations. Concepts like reputation-based governance and lazy consensus may be new to you, but you'll soon discover what a game-changer they are."
+        }
+      ]
+    },
+    {
+      "id": "competitor-hats-protocol",
+      "type": "Competitor",
+      "label": "Hats Protocol (onchain role trees)",
+      "provenance": [
+        {
+          "source": "2026-05-26-extended-governance-competitors.md",
+          "quote": "Hats Protocol is a protocol for DAO-native roles and credentials that supports revocable delegation of authority and responsibility."
+        }
+      ]
+    },
+    {
+      "id": "competitor-karpatkey",
+      "type": "Competitor",
+      "label": "Karpatkey (non-custodial DAO treasury execution)",
+      "provenance": [
+        {
+          "source": "2026-05-26-extended-governance-competitors.md",
+          "quote": "The core of Karpatkey's non-custodial and trust-minimised solution relies on the most battle-tested tooling to assist DAO treasuries: a proxy Management Safe and the Zodiac Roles Modifier."
+        }
+      ]
+    },
+    {
+      "id": "feature-zodiac-governor-module",
+      "type": "Feature",
+      "label": "Zodiac Governor module (Governor controls Safe avatar)",
+      "provenance": [
+        {
+          "source": "2026-05-26-safe-zodiac-governance-landscape.md",
+          "quote": "The Zodiac Governor module facilitates the management and control of Gnosis Safes by a DAO."
+        }
+      ]
+    },
+    {
+      "id": "feature-zodiac-roles-modifier",
+      "type": "Feature",
+      "label": "Zodiac Roles Modifier (scoped role-based Safe execution)",
+      "provenance": [
+        {
+          "source": "2026-05-26-safe-zodiac-governance-landscape.md",
+          "quote": "Zodiac Roles Modifier is an onchain permissions module for smart accounts."
+        }
+      ]
+    },
+    {
+      "id": "feature-aragon-modular-governance",
+      "type": "Feature",
+      "label": "Aragon modular staged governance processes",
+      "provenance": [
+        {
+          "source": "2026-05-26-aragon-snapshot-governance-tools.md",
+          "quote": "Proposals pass through different stages, each with their own governance configurations, to ensure there are appropriate checks and balances throughout the decision-making process."
+        }
+      ]
+    },
+    {
+      "id": "feature-aragon-safe-integration",
+      "type": "Feature",
+      "label": "Aragon governing bodies from any EVM address (incl. Safe)",
+      "provenance": [
+        {
+          "source": "2026-05-26-aragon-snapshot-governance-tools.md",
+          "quote": "You can now seamlessly add any EVM address like Safes, OpenZeppelin contracts, DAOs, and more, as governance bodies to your organization on Aragon, all in just a few clicks."
+        }
+      ]
+    },
+    {
+      "id": "feature-snapshot-x-avatar-execution",
+      "type": "Feature",
+      "label": "Snapshot X Avatar Execution Strategy for Safe treasuries",
+      "provenance": [
+        {
+          "source": "2026-05-26-aragon-snapshot-governance-tools.md",
+          "quote": "Avatar Execution Strategy -> ideal solution for treasuries on Safe -> executes transactions on an Avatar contract"
+        }
+      ]
+    },
+    {
+      "id": "feature-colony-safe-control",
+      "type": "Feature",
+      "label": "Colony Safe Control Motions (DAO triggers Safe txs via lazy consensus)",
+      "provenance": [
+        {
+          "source": "2026-05-26-extended-governance-competitors.md",
+          "quote": "Now, it's possible for your DAO on Colony to directly control the contents of a Safe(formerly Gnosis Safe) through your DAO governance processes."
+        }
+      ]
+    },
+    {
+      "id": "feature-hats-revocable-roles",
+      "type": "Feature",
+      "label": "Hats revocable ERC-1155 role tokens",
+      "provenance": [
+        {
+          "source": "2026-05-26-extended-governance-competitors.md",
+          "quote": "Hats are represented on-chain by non-transferable tokens that conform to the ERC1155 interface."
+        }
+      ]
+    },
+    {
+      "id": "feature-erc8004-registries",
+      "type": "Feature",
+      "label": "ERC-8004 Identity / Reputation / Validation registries",
+      "provenance": [
+        {
+          "source": "2026-05-26-extended-governance-competitors.md",
+          "quote": "Identity Registry - A minimal on-chain handle based on ERC-721 with URIStorage extension that resolves to an agent's registration file, providing every agent with a portable, censorship-resistant identifier."
+        }
+      ]
+    },
+    {
+      "id": "pain-snapshot-execution-gap",
+      "type": "Pain",
+      "label": "Snapshot votes do not execute \u2014 multisig bridge required",
+      "provenance": [
+        {
+          "source": "2026-05-26-aragon-snapshot-governance-tools.md",
+          "quote": "it's up to the DAO members with access to the multisig to make the decisions. And that is dangerously centralized for DAOs to rely on long-term and for important governance decisions."
+        }
+      ]
+    },
+    {
+      "id": "pain-per-tx-multisig-approval",
+      "type": "Pain",
+      "label": "Safe owners must approve every treasury transaction",
+      "provenance": [
+        {
+          "source": "2026-05-26-safe-zodiac-governance-landscape.md",
+          "quote": "eliminating need for Safe owners/signers to approve every transaction"
+        }
+      ]
+    },
+    {
+      "id": "need-constrained-treasury-execution",
+      "type": "Need",
+      "label": "Execute treasury strategies within pre-approved policy bounds",
+      "provenance": [
+        {
+          "source": "2026-05-26-extended-governance-competitors.md",
+          "quote": "the Zodiac Roles Modifier Module enforces role-based permission presets that can unilaterally make calls to any pre-approved addresses, functions, and variables the role has access to."
+        }
+      ]
+    },
+    {
+      "id": "insight-safe-zodiac-incumbent-stack",
+      "type": "Insight",
+      "label": "Incumbent DAO stack is Safe avatar + Zodiac modules + Governor/Tally UI",
+      "provenance": [
+        {
+          "source": "2026-05-26-safe-zodiac-governance-landscape.md",
+          "quote": "The OZ Governor Module is an opinionated implementation of OpenZeppelin's Governor contracts designed to be used in a Zodiac-style setup, allowing a Avatar (like a Gnosis Safe) to controlled by on-chain governance similar to Compound's Governor Alpha and Bravo."
+        },
+        {
+          "source": "competitor-deep-research-2026-03-14.md",
+          "quote": "**Safe (Gnosis Safe)** remains the dominant multisig infrastructure with $100B+ secured"
+        }
+      ]
+    },
+    {
+      "id": "insight-erc8004-composable-not-governance",
+      "type": "Insight",
+      "label": "ERC-8004 is agent trust infrastructure, not treasury governance",
+      "provenance": [
+        {
+          "source": "2026-05-26-extended-governance-competitors.md",
+          "quote": "While this ERC cryptographically ensures the registration file corresponds to the on-chain agent, it cannot cryptographically guarantee that advertised capabilities are functional and non-malicious."
+        }
+      ]
+    },
+    {
+      "id": "insight-chamber-native-queue-vs-snapshot-gap",
+      "type": "Insight",
+      "label": "Chamber's onchain queue directly addresses Snapshot's execution gap (internal comparison)",
+      "provenance": [
+        {
+          "source": "2026-05-26-aragon-snapshot-governance-tools.md",
+          "quote": "Snapshot is that it does not actually execute the voting decisions, leaving that up to the DAOs themselves."
+        },
+        {
+          "source": "chamber-product-intent.md",
+          "quote": "each outbound action is **proposed, confirmed to quorum, then executed** with calldata checked against a stored hash."
+        }
+      ]
+    },
+    {
+      "id": "assumption-buyers-reject-snapshot-execution-gap",
+      "type": "Assumption",
+      "label": "Target buyers will prefer native onchain execution over Snapshot+Safe bridging",
+      "risk": "Positioning and GTM \u2014 many DAOs may accept Snapshot signaling if Safe execution is 'good enough'.",
+      "provenance": []
+    },
+    {
+      "id": "competitor-llama",
+      "type": "Competitor",
+      "label": "Llama (onchain governance framework)",
+      "provenance": [
+        {
+          "source": "2026-05-26-llama-treasury-framework-deep.md",
+          "quote": "Llama is an onchain governance and access control framework for smart contracts."
+        }
+      ]
+    },
+    {
+      "id": "competitor-moloch-baal",
+      "type": "Competitor",
+      "label": "Moloch v3 / Baal",
+      "provenance": [
+        {
+          "source": "2026-05-26-moloch-baal-hats-signer-gate-deep.md",
+          "quote": "Baal is a governance layer that sits on top of a multisig treasury. It uses the Gnosis Zodiac standards to interface with the treasury."
+        }
+      ]
+    },
+    {
+      "id": "feature-llama-policy-strategies",
+      "type": "Feature",
+      "label": "LlamaPolicy strategies with quorum and action state machine",
+      "provenance": [
+        {
+          "source": "2026-05-26-llama-treasury-framework-deep.md",
+          "quote": "Strategies are configured with time period lengths and quorum thresholds that determine how actions transition between states."
+        }
+      ]
+    },
+    {
+      "id": "feature-tally-multigov",
+      "type": "Feature",
+      "label": "Tally MultiGov multichain hub-and-spoke governance",
+      "provenance": [
+        {
+          "source": "2026-05-26-tally-multigov-relay-deep.md",
+          "quote": "MultiGov organizations use a hub-and-spoke model."
+        }
+      ]
+    },
+    {
+      "id": "feature-tally-relay-gasless",
+      "type": "Feature",
+      "label": "Tally Relay gasless voting via OpenZeppelin Defender",
+      "provenance": [
+        {
+          "source": "2026-05-26-tally-multigov-relay-deep.md",
+          "quote": "Relay is a sponsorship system where organizations can cover the transaction costs for their members' governance activities like voting and delegating."
+        }
+      ]
+    },
+    {
+      "id": "feature-tally-optimistic-governance",
+      "type": "Feature",
+      "label": "Tally optimistic governance (pass unless vetoed)",
+      "provenance": [
+        {
+          "source": "2026-05-26-tally-multigov-relay-deep.md",
+          "quote": "assuming proposals pass unless explicitly vetoed by delegates"
+        }
+      ]
+    },
+    {
+      "id": "feature-baal-ragequit",
+      "type": "Feature",
+      "label": "Moloch Baal ragequit minority protection",
+      "provenance": [
+        {
+          "source": "2026-05-26-moloch-baal-hats-signer-gate-deep.md",
+          "quote": "a member can ragequit (and withdraw their proportional stake) before a proposal is executed, even if the majority has approved it."
+        }
+      ]
+    },
+    {
+      "id": "feature-hats-signer-gate",
+      "type": "Feature",
+      "label": "Hats Signer Gate dynamic Safe signers from hat wearers",
+      "provenance": [
+        {
+          "source": "2026-05-26-moloch-baal-hats-signer-gate-deep.md",
+          "quote": "Grants multisig signing rights to addresses based on whether they are wearing the appropriate hat(s)."
+        }
+      ]
+    },
+    {
+      "id": "feature-nouns-flows-streaming",
+      "type": "Feature",
+      "label": "Nouns Flows.wtf continuous fund streaming",
+      "provenance": [
+        {
+          "source": "2026-05-26-nouns-flows-agent-bravo-zodiac-security-deep.md",
+          "quote": "Flows enables second-by-second fund distribution to approved recipients"
+        }
+      ]
+    },
+    {
+      "id": "feature-agent-bravo-policy-voting",
+      "type": "Feature",
+      "label": "Agent Bravo policy-driven Governor voting",
+      "provenance": [
+        {
+          "source": "2026-05-26-nouns-flows-agent-bravo-zodiac-security-deep.md",
+          "quote": "Cast votes on proposals directly on the blockchain."
+        }
+      ]
+    },
+    {
+      "id": "pain-zodiac-module-vulnerability",
+      "type": "Pain",
+      "label": "Zodiac Roles v2 / Delay v1.1.0 module security vulnerability (June 2026)",
+      "provenance": [
+        {
+          "source": "2026-05-26-nouns-flows-agent-bravo-zodiac-security-deep.md",
+          "quote": "Roles Modifier v2 (versions 2.1.0 and 2.1.1), Delay Modifier v1.1.0"
+        }
+      ]
+    },
+    {
+      "id": "insight-hats-closest-dynamic-signers",
+      "type": "Insight",
+      "label": "Hats Signer Gate is closest composable pattern to dynamic director/signers",
+      "provenance": [
+        {
+          "source": "2026-05-26-moloch-baal-hats-signer-gate-deep.md",
+          "quote": "Removes signers who are no long valid (i.e. no longer wearing the signer hat)"
+        },
+        {
+          "source": "competitive-landscape.md",
+          "quote": "| Dynamic board seats | \u2713 | \u2717 | \u2717 | \u2717 | \u2717 |"
+        }
+      ]
+    },
+    {
+      "id": "insight-llama-governance-vote-coupling",
+      "type": "Insight",
+      "label": "Llama optimizes governance-vote-to-treasury-action coupling",
+      "provenance": [
+        {
+          "source": "2026-05-26-llama-treasury-framework-deep.md",
+          "quote": "tight, automated coupling between governance votes and treasury actions"
+        }
+      ]
+    },
+    {
+      "id": "insight-zodiac-module-security-risk",
+      "type": "Insight",
+      "label": "Zodiac module composability carries third-party security risk (June 2026 incident)",
+      "provenance": [
+        {
+          "source": "2026-05-26-nouns-flows-agent-bravo-zodiac-security-deep.md",
+          "quote": "this is an issue in third-party Zodiac modules, not in Safe"
+        }
+      ]
+    },
+    {
+      "id": "assumption-hats-signer-gate-sufficient",
+      "type": "Assumption",
+      "label": "Teams needing dynamic signers will use Hats+Safe instead of Chamber",
+      "risk": "Chamber's dynamic board differentiator may not motivate migration if HSG is 'good enough'.",
+      "provenance": []
+    },
+    {
+      "id": "assumption-native-queue-security-advantage",
+      "type": "Assumption",
+      "label": "Chamber's native queue is a security advantage over Zodiac module stacks",
+      "risk": "GTM/security positioning after Zodiac incident \u2014 unvalidated buyer belief.",
+      "provenance": []
+    },
+    {
+      "id": "assumption-ragequit-needed",
+      "type": "Assumption",
+      "label": "Target treasuries need Moloch-style ragequit minority exit",
+      "risk": "Product scope \u2014 Baal offers onchain exit; Chamber may lack appeal for contentious communities.",
+      "provenance": []
+    },
+    {
+      "id": "competitor-openzeppelin-governor",
+      "type": "Competitor",
+      "label": "OpenZeppelin Governor (standalone token governance)",
+      "provenance": [
+        {
+          "source": "2026-05-26-openzeppelin-governor-standalone-deep.md",
+          "quote": "For OpenZeppelin Contracts, we set out to build a modular system of Governor contracts so that forking is not needed"
+        }
+      ]
+    },
+    {
+      "id": "competitor-parcel",
+      "type": "Competitor",
+      "label": "Parcel (Safe treasury ops / payroll)",
+      "provenance": [
+        {
+          "source": "2026-05-26-parcel-treasury-ops-deep.md",
+          "quote": "Parcel enables frictionless treasury management for DAOs on top of Gnosis Safe Multisig wallet."
+        }
+      ]
+    },
+    {
+      "id": "competitor-commonwealth",
+      "type": "Competitor",
+      "label": "Commonwealth (Common) governance platform",
+      "provenance": [
+        {
+          "source": "2026-05-26-commonwealth-governance-deep.md",
+          "quote": "Commonwealth is a governance platform for on-chain communities that manages proposals, treasury, voting, membership, and more."
+        }
+      ]
+    },
+    {
+      "id": "feature-oz-governor-timelock-queue",
+      "type": "Feature",
+      "label": "OpenZeppelin Governor timelock queue-before-execute",
+      "provenance": [
+        {
+          "source": "2026-05-26-openzeppelin-governor-standalone-deep.md",
+          "quote": "If a timelock was set up, the first step to execution is queueing."
+        }
+      ]
+    },
+    {
+      "id": "feature-oz-governor-offchain-calldata",
+      "type": "Feature",
+      "label": "OZ Governor stores proposal calldata offchain (events only)",
+      "provenance": [
+        {
+          "source": "2026-05-26-openzeppelin-governor-standalone-deep.md",
+          "quote": "this data is not stored on chain, as a measure to save gas."
+        }
+      ]
+    },
+    {
+      "id": "feature-parcel-safe-payroll",
+      "type": "Feature",
+      "label": "Parcel Safe payroll and mass payouts",
+      "provenance": [
+        {
+          "source": "2026-05-26-parcel-treasury-ops-deep.md",
+          "quote": "we've helped more than 40 DAOs to run payroll, disburse grants and airdrops with mass payouts of over $8M."
+        }
+      ]
+    },
+    {
+      "id": "feature-commonwealth-unified-governance-ui",
+      "type": "Feature",
+      "label": "Commonwealth unified forum + Snapshot + onchain governance UI",
+      "provenance": [
+        {
+          "source": "2026-05-26-commonwealth-governance-deep.md",
+          "quote": "We eliminate the need for multiple governance products / DAO tools."
+        }
+      ]
+    },
+    {
+      "id": "feature-commonwealth-snapshot-bidirectional",
+      "type": "Feature",
+      "label": "Commonwealth Snapshot bidirectional integration",
+      "provenance": [
+        {
+          "source": "2026-05-26-commonwealth-governance-deep.md",
+          "quote": "Communities that utilize Snapshot for off-chain governance are able to create and vote on Snapshot proposals via their community interface."
+        }
+      ]
+    },
+    {
+      "id": "insight-oz-governor-token-dao-baseline",
+      "type": "Insight",
+      "label": "OpenZeppelin Governor + Timelock is the default token-DAO governance baseline",
+      "provenance": [
+        {
+          "source": "2026-05-26-openzeppelin-governor-standalone-deep.md",
+          "quote": "When using a timelock, it is the timelock that will execute proposals and thus the timelock that should hold any funds, ownership, and access control roles."
+        },
+        {
+          "source": "2026-05-26-openzeppelin-governor-standalone-deep.md",
+          "quote": "Tally is a full-fledged application for user owned on-chain governance."
+        }
+      ]
+    },
+    {
+      "id": "insight-parcel-adjacent-not-governance-core",
+      "type": "Insight",
+      "label": "Parcel is treasury ops adjacent \u2014 governance external to Safe+Snapshot",
+      "provenance": [
+        {
+          "source": "2026-05-26-parcel-treasury-ops-deep.md",
+          "quote": "Governance is typically an external step (e.g., a Snapshot vote) before using Parcel as an execution tool."
+        },
+        {
+          "source": "2026-05-26-parcel-treasury-ops-deep.md",
+          "quote": "For maximum robustness, some large DAOs use both: Llama for high-value proposal governance and Parcel for executing the approved recurring payments."
+        }
+      ]
+    },
+    {
+      "id": "insight-commonwealth-coordination-layer",
+      "type": "Insight",
+      "label": "Commonwealth competes on governance coordination UX not custody",
+      "provenance": [
+        {
+          "source": "2026-05-26-commonwealth-governance-deep.md",
+          "quote": "Commonwealth is a great option for DAOs seeking to centralize all of their functions into one app."
+        },
+        {
+          "source": "2026-05-26-commonwealth-governance-deep.md",
+          "quote": "Currently the Frax governance community is highly fragmented (Telegram, Discord, Discourse, Snapshot, on-chain voting)"
+        }
+      ]
+    },
+    {
+      "id": "insight-oz-calldata-parallels-chamber",
+      "type": "Insight",
+      "label": "OZ Governor offchain calldata pattern parallels Chamber dataHash queue UX challenge",
+      "provenance": [
+        {
+          "source": "2026-05-26-openzeppelin-governor-standalone-deep.md",
+          "quote": "both the queue and execute functions require passing in the entire proposal parameters, as opposed to just the proposal id."
+        },
+        {
+          "source": "chamber-product-intent.md",
+          "quote": "calldata checked against a stored hash"
+        }
+      ]
+    },
+    {
+      "id": "pain-governance-tool-fragmentation",
+      "type": "Pain",
+      "label": "DAO governance fragmented across forum, chat, Snapshot, and onchain voting",
+      "provenance": [
+        {
+          "source": "2026-05-26-commonwealth-governance-deep.md",
+          "quote": "Currently the Frax governance community is highly fragmented (Telegram, Discord, Discourse, Snapshot, on-chain voting) and has little transparency into the discussion / voting activity."
+        }
+      ]
+    },
+    {
+      "id": "assumption-chamber-vs-oz-governor",
+      "type": "Assumption",
+      "label": "Chamber target segment will not default to OZ Governor + Tally for treasury governance",
+      "risk": "Segmentation \u2014 token DAOs may see Chamber as redundant vs incumbent Governor stack.",
+      "provenance": []
+    },
+    {
+      "id": "assumption-build-coordination-vs-partner",
+      "type": "Assumption",
+      "label": "Chamber should build full coordination UX vs partner with Commonwealth/Tally",
+      "risk": "Product scope \u2014 Commonwealth 700+ DAO scale on forum/vote UX.",
+      "provenance": []
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-segment-dao-experiences-fixed-signers",
+      "type": "experiences",
+      "from": "segment-dao-treasury-teams",
+      "to": "pain-fixed-signer-set",
+      "provenance": [
+        {
+          "source": "why-not-multisig-positioning.md",
+          "quote": "You have a **fixed, trusted circle** of signers (for example five founders)."
+        }
+      ]
+    },
+    {
+      "id": "edge-segment-dao-requests-dynamic-board",
+      "type": "requests",
+      "from": "segment-dao-treasury-teams",
+      "to": "feature-market-driven-board",
+      "provenance": [
+        {
+          "source": "competitive-landscape.md",
+          "quote": "**Market-driven board**: Delegation to NFT IDs creates a leaderboard; top N by stake become directors."
+        }
+      ]
+    },
+    {
+      "id": "edge-segment-enterprise-requests-vault",
+      "type": "requests",
+      "from": "segment-community-treasury",
+      "to": "feature-erc4626-vault",
+      "provenance": [
+        {
+          "source": "competitive-landscape.md",
+          "quote": "**ERC4626 vault**: Chamber is a tokenized vault (shares) with deposit/withdraw; Safe holds raw assets."
+        }
+      ]
+    },
+    {
+      "id": "edge-safe-competes-nft-governance",
+      "type": "competes-with",
+      "from": "competitor-gnosis-safe",
+      "to": "feature-nft-governance",
+      "provenance": [
+        {
+          "source": "competitive-landscape.md",
+          "quote": "| NFT-based governance | \u2713 | \u2717 | \u2717 | \u2713 | \u2717 |"
+        }
+      ]
+    },
+    {
+      "id": "edge-safe-competes-agent-support",
+      "type": "competes-with",
+      "from": "competitor-gnosis-safe",
+      "to": "feature-agent-ai-support",
+      "provenance": [
+        {
+          "source": "competitive-landscape.md",
+          "quote": "Gnosis Safe and Tally have no native agent support."
+        }
+      ]
+    },
+    {
+      "id": "edge-tally-competes-governance-ui",
+      "type": "competes-with",
+      "from": "competitor-tally",
+      "to": "feature-calldata-hash-queue",
+      "provenance": [
+        {
+          "source": "competitive-landscape.md",
+          "quote": "**Proposal UI / Voting UX**: Tally and Nouns have mature proposal creation, voting, and delegation UIs. Chamber's transaction queue is functional but no proposal layer."
+        }
+      ]
+    },
+    {
+      "id": "edge-agent-bravo-competes-agent-support",
+      "type": "competes-with",
+      "from": "competitor-agent-bravo",
+      "to": "feature-agent-ai-support",
+      "provenance": [
+        {
+          "source": "competitive-landscape.md",
+          "quote": "| Agent/AI support | \u2713 | \u2717 | \u2717 | \u2717 | \u2713 |"
+        }
+      ]
+    },
+    {
+      "id": "edge-pain-token-id-blocks-outcome",
+      "type": "blocks",
+      "from": "pain-delegation-raw-token-id",
+      "to": "outcome-treasury-transaction-executed",
+      "provenance": [
+        {
+          "source": "findings-log-2026-03-14.md",
+          "quote": "**Priority**: P1 (high)"
+        }
+      ]
+    },
+    {
+      "id": "edge-no-modules-blocks-enterprise",
+      "type": "blocks",
+      "from": "pain-no-module-ecosystem",
+      "to": "outcome-treasury-transaction-executed",
+      "provenance": [
+        {
+          "source": "competitor-deep-research-2026-03-14.md",
+          "quote": "consider a module/plugin strategy to compete with Safe's Zodiac ecosystem."
+        }
+      ]
+    },
+    {
+      "id": "edge-intent-assumes-nft-board",
+      "type": "assumes",
+      "from": "feature-market-driven-board",
+      "to": "assumption-market-wants-nft-board",
+      "provenance": [
+        {
+          "source": "chamber-product-intent.md",
+          "quote": "**Who actually leads day to day?** \u2014 the **top delegated membership NFTs** on a public leaderboard, not a founder's spreadsheet."
+        }
+      ]
+    },
+    {
+      "id": "edge-intent-assumes-agents",
+      "type": "assumes",
+      "from": "feature-agent-ai-support",
+      "to": "assumption-agents-as-directors",
+      "provenance": [
+        {
+          "source": "chamber-product-intent.md",
+          "quote": "Over time, **software agents** that follow the same onchain rules as everyone else"
+        }
+      ]
+    },
+    {
+      "id": "edge-insight-assumes-8004",
+      "type": "assumes",
+      "from": "insight-erc8004-differentiator",
+      "to": "assumption-erc8004-matters-to-buyers",
+      "provenance": [
+        {
+          "source": "competitor-deep-research-2026-03-14.md",
+          "quote": "Chamber should emphasize ERC-8004 alignment as a differentiator"
+        }
+      ]
+    },
+    {
+      "id": "edge-delegation-pain-assumes-intuitive",
+      "type": "assumes",
+      "from": "pain-delegation-raw-token-id",
+      "to": "assumption-delegation-leaderboard-intuitive",
+      "provenance": [
+        {
+          "source": "findings-log-2026-03-14.md",
+          "quote": "Users may not know their NFT token ID"
+        }
+      ]
+    },
+    {
+      "id": "edge-gap-assumes-no-modules-ok",
+      "type": "assumes",
+      "from": "pain-no-module-ecosystem",
+      "to": "assumption-compete-without-modules",
+      "provenance": [
+        {
+          "source": "competitive-landscape.md",
+          "quote": "Chamber has no module/plugin system yet."
+        }
+      ]
+    },
+    {
+      "id": "edge-safe-competes-zodiac-ecosystem",
+      "type": "competes-with",
+      "from": "competitor-gnosis-safe",
+      "to": "feature-zodiac-governor-module",
+      "provenance": [
+        {
+          "source": "2026-05-26-safe-zodiac-governance-landscape.md",
+          "quote": "allowing a Avatar (like a Gnosis Safe) to controlled by on-chain governance"
+        }
+      ]
+    },
+    {
+      "id": "edge-aragon-competes-modular-governance",
+      "type": "competes-with",
+      "from": "competitor-aragon",
+      "to": "feature-market-driven-board",
+      "provenance": [
+        {
+          "source": "2026-05-26-aragon-snapshot-governance-tools.md",
+          "quote": "Our thesis is that the future of governance is modular, and our strategy behind this release puts that opportunity right into the hands of any organization."
+        }
+      ]
+    },
+    {
+      "id": "edge-snapshot-competes-calldata-queue",
+      "type": "competes-with",
+      "from": "competitor-snapshot",
+      "to": "feature-calldata-hash-queue",
+      "provenance": [
+        {
+          "source": "2026-05-26-aragon-snapshot-governance-tools.md",
+          "quote": "One important aspect of Snapshot is that it does not actually execute the voting decisions, leaving that up to the DAOs themselves."
+        }
+      ]
+    },
+    {
+      "id": "edge-colony-competes-reputation-vs-delegation",
+      "type": "competes-with",
+      "from": "competitor-colony",
+      "to": "feature-market-driven-board",
+      "provenance": [
+        {
+          "source": "2026-05-26-extended-governance-competitors.md",
+          "quote": "reputation-based governance and lazy consensus"
+        }
+      ]
+    },
+    {
+      "id": "edge-hats-competes-director-seats",
+      "type": "competes-with",
+      "from": "competitor-hats-protocol",
+      "to": "feature-nft-governance",
+      "provenance": [
+        {
+          "source": "2026-05-26-extended-governance-competitors.md",
+          "quote": "Top Hats should be worn by the highest-level governance surface of your organization."
+        }
+      ]
+    },
+    {
+      "id": "edge-karpatkey-uses-zodiac-roles",
+      "type": "supports",
+      "from": "competitor-karpatkey",
+      "to": "feature-zodiac-roles-modifier",
+      "provenance": [
+        {
+          "source": "2026-05-26-extended-governance-competitors.md",
+          "quote": "proxy Management Safe and the Zodiac Roles Modifier."
+        }
+      ]
+    },
+    {
+      "id": "edge-snapshot-pain-execution",
+      "type": "experiences",
+      "from": "segment-dao-treasury-teams",
+      "to": "pain-snapshot-execution-gap",
+      "provenance": [
+        {
+          "source": "2026-05-26-aragon-snapshot-governance-tools.md",
+          "quote": "dangerously centralized for DAOs to rely on long-term and for important governance decisions."
+        }
+      ]
+    },
+    {
+      "id": "edge-need-constrained-execution-requests-roles",
+      "type": "requests",
+      "from": "segment-dao-treasury-teams",
+      "to": "feature-zodiac-roles-modifier",
+      "provenance": [
+        {
+          "source": "2026-05-26-extended-governance-competitors.md",
+          "quote": "role-based permission presets that can unilaterally make calls to any pre-approved addresses, functions, and variables the role has access to."
+        }
+      ]
+    },
+    {
+      "id": "edge-roles-addresses-per-tx-pain",
+      "type": "blocks",
+      "from": "pain-per-tx-multisig-approval",
+      "to": "outcome-treasury-transaction-executed",
+      "provenance": [
+        {
+          "source": "2026-05-26-safe-zodiac-governance-landscape.md",
+          "quote": "allowing professionals like treasury managers to efficiently manage an org's critical functions"
+        }
+      ]
+    },
+    {
+      "id": "edge-assumption-snapshot-gap",
+      "type": "assumes",
+      "from": "insight-chamber-native-queue-vs-snapshot-gap",
+      "to": "assumption-buyers-reject-snapshot-execution-gap",
+      "provenance": [
+        {
+          "source": "chamber-product-intent.md",
+          "quote": "proposed, confirmed to quorum, then executed"
+        }
+      ]
+    },
+    {
+      "id": "edge-erc8004-supports-agent-feature",
+      "type": "supports",
+      "from": "feature-erc8004-registries",
+      "to": "feature-validation-registry-8004",
+      "provenance": [
+        {
+          "source": "2026-05-26-extended-governance-competitors.md",
+          "quote": "Validation Registry - hooks for validator smart contracts to publish validation results."
+        }
+      ]
+    },
+    {
+      "id": "edge-llama-competes-calldata-queue",
+      "type": "competes-with",
+      "from": "competitor-llama",
+      "to": "feature-calldata-hash-queue",
+      "provenance": [
+        {
+          "source": "2026-05-26-llama-treasury-framework-deep.md",
+          "quote": "automating complex treasury operations directly through DAO proposals"
+        }
+      ]
+    },
+    {
+      "id": "edge-tally-competes-proposal-ux",
+      "type": "competes-with",
+      "from": "competitor-tally",
+      "to": "feature-calldata-hash-queue",
+      "provenance": [
+        {
+          "source": "2026-05-26-tally-multigov-relay-deep.md",
+          "quote": "Approved proposals execute automatically with support for arbitrary executable actions."
+        }
+      ]
+    },
+    {
+      "id": "edge-baal-competes-vault-governance",
+      "type": "competes-with",
+      "from": "competitor-moloch-baal",
+      "to": "feature-erc4626-vault",
+      "provenance": [
+        {
+          "source": "2026-05-26-moloch-baal-hats-signer-gate-deep.md",
+          "quote": "Shareholders are the collective DAO admins."
+        }
+      ]
+    },
+    {
+      "id": "edge-hats-competes-dynamic-seats",
+      "type": "competes-with",
+      "from": "feature-hats-signer-gate",
+      "to": "feature-dynamic-board-seats",
+      "provenance": [
+        {
+          "source": "2026-05-26-moloch-baal-hats-signer-gate-deep.md",
+          "quote": "Manages the multisig threshold within the owner-specified range as new signers are added or removed."
+        }
+      ]
+    },
+    {
+      "id": "edge-nouns-competes-capital-deployment",
+      "type": "competes-with",
+      "from": "competitor-nouns-dao",
+      "to": "feature-nouns-flows-streaming",
+      "provenance": [
+        {
+          "source": "2026-05-26-nouns-flows-agent-bravo-zodiac-security-deep.md",
+          "quote": "continuous, community-curated fund streaming"
+        }
+      ]
+    },
+    {
+      "id": "edge-agent-bravo-competes-agent-directors",
+      "type": "competes-with",
+      "from": "competitor-agent-bravo",
+      "to": "feature-agent-ai-support",
+      "provenance": [
+        {
+          "source": "2026-05-26-nouns-flows-agent-bravo-zodiac-security-deep.md",
+          "quote": "AI agents capable of participating in any GovernorBravo-compatible governance system"
+        }
+      ]
+    },
+    {
+      "id": "edge-zodiac-pain-blocks-module-assumption",
+      "type": "blocks",
+      "from": "pain-zodiac-module-vulnerability",
+      "to": "assumption-compete-without-modules",
+      "provenance": [
+        {
+          "source": "2026-05-26-nouns-flows-agent-bravo-zodiac-security-deep.md",
+          "quote": "You are only potentially affected if your account uses one of these specific module versions"
+        }
+      ]
+    },
+    {
+      "id": "edge-insight-hats-assumes-sufficient",
+      "type": "assumes",
+      "from": "insight-hats-closest-dynamic-signers",
+      "to": "assumption-hats-signer-gate-sufficient",
+      "provenance": [
+        {
+          "source": "2026-05-26-moloch-baal-hats-signer-gate-deep.md",
+          "quote": "delegate revocable constrained signing authority"
+        }
+      ]
+    },
+    {
+      "id": "edge-insight-zodiac-assumes-native-security",
+      "type": "assumes",
+      "from": "insight-zodiac-module-security-risk",
+      "to": "assumption-native-queue-security-advantage",
+      "provenance": [
+        {
+          "source": "2026-05-26-nouns-flows-agent-bravo-zodiac-security-deep.md",
+          "quote": "Safe smart contracts... are not affected"
+        }
+      ]
+    },
+    {
+      "id": "edge-llama-supports-safe-stack",
+      "type": "supports",
+      "from": "competitor-llama",
+      "to": "competitor-gnosis-safe",
+      "provenance": [
+        {
+          "source": "2026-05-26-llama-treasury-framework-deep.md",
+          "quote": "enabling automated, permissioned transactions directly from their Gnosis Safe"
+        }
+      ]
+    },
+    {
+      "id": "edge-oz-competes-token-governance",
+      "type": "competes-with",
+      "from": "competitor-openzeppelin-governor",
+      "to": "feature-nft-governance",
+      "provenance": [
+        {
+          "source": "2026-05-26-openzeppelin-governor-standalone-deep.md",
+          "quote": "Voting power is determined based on the number of tokens delegated to each address."
+        }
+      ]
+    },
+    {
+      "id": "edge-oz-competes-calldata-queue",
+      "type": "competes-with",
+      "from": "competitor-openzeppelin-governor",
+      "to": "feature-calldata-hash-queue",
+      "provenance": [
+        {
+          "source": "2026-05-26-openzeppelin-governor-standalone-deep.md",
+          "quote": "If a timelock was set up, the first step to execution is queueing."
+        }
+      ]
+    },
+    {
+      "id": "edge-tally-supports-oz-governor",
+      "type": "supports",
+      "from": "competitor-tally",
+      "to": "competitor-openzeppelin-governor",
+      "provenance": [
+        {
+          "source": "2026-05-26-openzeppelin-governor-standalone-deep.md",
+          "quote": "For all of these options, the Governor will be compatible with Tally"
+        }
+      ]
+    },
+    {
+      "id": "edge-parcel-competes-safe",
+      "type": "competes-with",
+      "from": "competitor-parcel",
+      "to": "competitor-gnosis-safe",
+      "provenance": [
+        {
+          "source": "2026-05-26-parcel-treasury-ops-deep.md",
+          "quote": "Our smart contract utilizes funds stored in Gnosis Safe multisig"
+        }
+      ]
+    },
+    {
+      "id": "edge-parcel-supports-llama-stack",
+      "type": "supports",
+      "from": "competitor-parcel",
+      "to": "competitor-llama",
+      "provenance": [
+        {
+          "source": "2026-05-26-parcel-treasury-ops-deep.md",
+          "quote": "some large DAOs use both: Llama for high-value proposal governance and Parcel for executing the approved recurring payments."
+        }
+      ]
+    },
+    {
+      "id": "edge-commonwealth-competes-tally-ui",
+      "type": "competes-with",
+      "from": "competitor-commonwealth",
+      "to": "competitor-tally",
+      "provenance": [
+        {
+          "source": "2026-05-26-commonwealth-governance-deep.md",
+          "quote": "Commonwealth offers a fully crypto-native forum, voting interface (polls, Snapshot, and on-chain governance)"
+        }
+      ]
+    },
+    {
+      "id": "edge-commonwealth-competes-snapshot",
+      "type": "competes-with",
+      "from": "competitor-commonwealth",
+      "to": "competitor-snapshot",
+      "provenance": [
+        {
+          "source": "2026-05-26-commonwealth-governance-deep.md",
+          "quote": "Communities that utilize Snapshot for off-chain governance are able to create and vote on Snapshot proposals via their community interface."
+        }
+      ]
+    },
+    {
+      "id": "edge-fragmentation-pain-assumes-coordination",
+      "type": "assumes",
+      "from": "pain-governance-tool-fragmentation",
+      "to": "assumption-build-coordination-vs-partner",
+      "provenance": [
+        {
+          "source": "2026-05-26-commonwealth-governance-deep.md",
+          "quote": "We eliminate the need for multiple governance products / DAO tools."
+        }
+      ]
+    },
+    {
+      "id": "edge-oz-baseline-assumes-segment",
+      "type": "assumes",
+      "from": "insight-oz-governor-token-dao-baseline",
+      "to": "assumption-chamber-vs-oz-governor",
+      "provenance": [
+        {
+          "source": "2026-05-26-openzeppelin-governor-standalone-deep.md",
+          "quote": "The OpenZeppelin Governor is a contract for onchain governance, designed to be compatible with existing systems based on Compound's GovernorAlpha and GovernorBravo."
+        }
+      ]
+    }
+  ]
+}

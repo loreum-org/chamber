@@ -1,3 +1,9 @@
+---
+type: memo
+title: "Chamber product intent — what is a Chamber"
+captured: 2026-03-14
+---
+
 # What is a Chamber?
 
 A **Chamber** is a **community treasury with built-in rules**. It holds tokens in a shared vault, lets members **delegate influence** toward recognizable **director seats**, and only spends or calls other contracts when **enough directors agree** through an onchain queue.
@@ -63,7 +69,6 @@ One **root Chamber** can anchor the main treasury. **Sub-Chambers** are addition
 ## Where to go next
 
 1. **[Why not just a multisig?](./why-not-multisig.md)** — side-by-side comparison  
-2. **[Founder exit via Chamber](./founder-exit.md)** — gradual handoff while retaining token stake  
-3. **[Getting started](./getting-started.md)** — use the web app  
-4. **[Governance](../protocol/governance.md)** — seats, quorum, delegation in plain language  
-5. **[Treasury actions](../protocol/multisig.md)** — the proposal queue vs Safe  
+2. **[Getting started](./getting-started.md)** — use the web app  
+3. **[Governance](../protocol/governance.md)** — seats, quorum, delegation in plain language  
+4. **[Treasury actions](../protocol/multisig.md)** — the proposal queue vs Safe  

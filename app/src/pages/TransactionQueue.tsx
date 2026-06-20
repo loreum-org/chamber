@@ -37,6 +37,7 @@ import {
   useUpdateSeats,
   useExecuteSeatsUpdate,
   useChamberRegistryImplementationSync,
+  useProposalCalldata,
 } from '@/hooks'
 import { chamberAbi, erc20Abi } from '@/contracts/abis'
 import { getBlockExplorerAddressUrl, hasProposalCalldata, shortenAddress } from '@/lib/utils'
@@ -46,6 +47,10 @@ import {
   parseProposalMetadataURI,
   setProposalMetadata,
 } from '@/lib/proposalMetadata'
+import {
+  proposalCalldataMatchesHash,
+  setStoredProposalCalldata,
+} from '@/lib/proposalCalldata'
 import type { SeatUpdate, Transaction } from '@/types'
 
 type TabType = 'queue' | 'history' | 'new'
@@ -774,10 +779,31 @@ function TransactionCard({ transaction, chamberAddress, quorum, userTokenId, cha
   const { revoke, isPending: isRevoking } = useRevokeConfirmation(chamberAddress)
   const { cancel, isPending: isCancelling } = useCancelTransaction(chamberAddress)
   const [executeCalldata, setExecuteCalldata] = useState('0x')
+  const [calldataTouched, setCalldataTouched] = useState(false)
+  const onchainMeta = parseProposalMetadataURI(transaction.metadataURI)
+  const proposalMeta = onchainMeta || getProposalMetadata(chamberAddress, transaction.id)
+  const metadataCalldata =
+    proposalMeta?.calldata ??
+    (() => {
+      const custom = (proposalMeta as { custom?: { calldata?: string } } | null)?.custom
+      return typeof custom?.calldata === 'string' ? custom.calldata : undefined
+    })()
+  const { data: resolvedCalldata, isLoading: isResolvingCalldata } = useProposalCalldata(
+    chamberAddress,
+    transaction.id,
+    transaction.dataHash,
+    metadataCalldata,
+  )
 
   useEffect(() => {
     setExecuteCalldata('0x')
+    setCalldataTouched(false)
   }, [transaction.id])
+
+  useEffect(() => {
+    if (calldataTouched || !resolvedCalldata) return
+    setExecuteCalldata(resolvedCalldata.calldata)
+  }, [resolvedCalldata, calldataTouched])
   const { isConfirmed: userHasConfirmed } = useTransactionConfirmation(
     chamberAddress,
     userTokenId,
@@ -813,10 +839,18 @@ function TransactionCard({ transaction, chamberAddress, quorum, userTokenId, cha
     if (needsCalldata) {
       const raw = executeCalldata.trim()
       if (!raw || raw === '0x') {
-        toast.error('Paste the proposal calldata (hex) from the author — it must match the onchain hash.')
+        toast.error(
+          isResolvingCalldata
+            ? 'Loading calldata from chain… try again in a moment.'
+            : 'Calldata not found. Paste the hex from the proposer or wait for archive sync — it must match the onchain hash.',
+        )
         return
       }
       calldata = (raw.startsWith('0x') ? raw : `0x${raw}`) as `0x${string}`
+      if (!proposalCalldataMatchesHash(calldata, transaction.dataHash)) {
+        toast.error('Calldata does not match the onchain commitment hash.')
+        return
+      }
     }
     try {
       await execute(userTokenId, BigInt(transaction.id), calldata)
@@ -857,8 +891,6 @@ function TransactionCard({ transaction, chamberAddress, quorum, userTokenId, cha
 
   const shortTarget = `${transaction.target.slice(0, 10)}...${transaction.target.slice(-8)}`
   const hasData = hasProposalCalldata(transaction.dataHash)
-  const onchainMeta = parseProposalMetadataURI(transaction.metadataURI)
-  const proposalMeta = onchainMeta || getProposalMetadata(chamberAddress, transaction.id)
   const displayTitle = proposalMeta?.title || (hasData ? 'Contract call' : 'Transaction')
   const risk = classifyTransactionRiskFromDataHash(chamberAddress, transaction.target, transaction.value, transaction.dataHash)
   const riskLevel = proposalMeta?.riskLevel || risk.level
@@ -974,11 +1006,36 @@ function TransactionCard({ transaction, chamberAddress, quorum, userTokenId, cha
               <label className="block text-slate-500 text-xs font-medium">
                 Execution calldata (hex)
               </label>
+              {isResolvingCalldata && !calldataTouched && (
+                <p className="text-slate-500 text-xs flex items-center gap-1.5">
+                  <FiLoader className="w-3 h-3 animate-spin" />
+                  Loading calldata from submission event…
+                </p>
+              )}
+              {resolvedCalldata && !calldataTouched && (
+                <p className="text-emerald-400/90 text-xs">
+                  Calldata loaded from{' '}
+                  {resolvedCalldata.source === 'event'
+                    ? 'onchain submit event'
+                    : resolvedCalldata.source === 'metadata'
+                      ? 'proposal metadata'
+                      : 'this browser'}
+                  — review before executing.
+                </p>
+              )}
+              {!isResolvingCalldata && !resolvedCalldata && executeCalldata === '0x' && (
+                <p className="text-amber-400/90 text-xs">
+                  Calldata not archived here. Ask the proposer for the hex, or paste from your records.
+                </p>
+              )}
               <textarea
                 className="input font-mono text-xs min-h-[4rem] resize-y w-full"
                 placeholder="0x… (must match onchain hash)"
                 value={executeCalldata}
-                onChange={(e) => setExecuteCalldata(e.target.value)}
+                onChange={(e) => {
+                  setCalldataTouched(true)
+                  setExecuteCalldata(e.target.value)
+                }}
                 spellCheck={false}
               />
             </div>
@@ -1608,11 +1665,13 @@ function NewTransactionForm({
           target: tokenAddress,
           valueEth: '0',
           functionName: 'transfer',
+          calldata: txData,
           riskLevel: 'medium' as RiskLevel,
           riskSummary: 'Token transfer proposal. Verify token contract, recipient, amount, and treasury balance.',
         }
         const metadataURI = createProposalMetadataURI(metadata)
         await submit(userTokenId, tokenAddress as `0x${string}`, 0n, txData, metadataURI)
+        setStoredProposalCalldata(chamberAddress, nextTransactionId, txData)
         setProposalMetadata(chamberAddress, nextTransactionId, { ...metadata, metadataURI })
         toast.success('Transaction submitted!')
         onSuccess()
@@ -1642,11 +1701,15 @@ function NewTransactionForm({
         target,
         valueEth: formatEther(txValue),
         functionName: txType === 'custom' ? parsedFunction?.name : undefined,
+        calldata: txData !== '0x' ? txData : undefined,
         riskLevel: risk.level,
         riskSummary: risk.summary,
       }
       const metadataURI = createProposalMetadataURI(metadata)
       await submit(userTokenId, target as `0x${string}`, txValue, txData, metadataURI)
+      if (txData !== '0x') {
+        setStoredProposalCalldata(chamberAddress, nextTransactionId, txData)
+      }
       setProposalMetadata(chamberAddress, nextTransactionId, { ...metadata, metadataURI })
       toast.success('Transaction submitted!')
       onSuccess()

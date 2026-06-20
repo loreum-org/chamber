@@ -2,15 +2,31 @@
 
 Product management artifacts for Loreum Chamber.
 
-## Contents
+## mogkit workspace (primary)
+
+Structured product discovery lives at **[`product/`](../product/)** — a
+[mogkit](https://github.com/Waddling-Penguin/mogkit) workspace with:
+
+| Path | Purpose |
+|------|---------|
+| `product/sources/` | Raw research (interviews, tickets, competitive intel) |
+| `product/graph/` | Evidence graph (`graphify` output) |
+| `product/knowledge/` | Analysis artifacts (`assumption-audit`, discovery queries) |
+
+Run mogkit skills via teamshared MCP: `memory_skill_get(name="graphify")`.
+
+## Legacy docs (this folder)
 
 | File | Purpose |
 |------|---------|
-| `findings-log.md` | Chronological log of product findings (issues, improvements, UX, competitive) |
-| `competitive-landscape.md` | Competitor analysis and feature matrix |
-| `competitor-deep-research-YYYY-MM-DD.md` | Deep research reports on competitors (from competitive-landscape) |
+| `findings-log.md` | Chronological product review findings |
+| `competitive-landscape.md` | Competitor matrix (also in `product/sources/`) |
+| `competitor-deep-research-YYYY-MM-DD.md` | Dated deep research reports |
 
-## Usage
+New research should land in `product/sources/` with YAML frontmatter, then
+re-run `graphify`.
 
-- **product-manager-review** — Broader product reviews, findings log, lighter competitive research. See `docs/skills/product-manager-review-skill.md`.
-- **competitor-deep-research** — Deep research on competitors listed in `competitive-landscape.md`. Writes dated reports to `docs/product/`. See `docs/skills/competitor-deep-research-skill.md`.
+## Other skills
+
+- **product-manager-review** — See `docs/skills/product-manager-review-skill.md`
+- **competitor-deep-research** — See `docs/skills/competitor-deep-research-skill.md`

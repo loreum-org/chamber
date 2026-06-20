@@ -1,0 +1,104 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "mogkit discovery graph",
+  "description": "A map of what the source corpus says. Every node and edge carries provenance; unsourced claims are Assumption nodes (empty provenance).",
+  "type": "object",
+  "required": ["meta", "nodes", "edges"],
+  "additionalProperties": false,
+  "properties": {
+    "meta": {
+      "type": "object",
+      "required": ["generated", "sourceCount", "sourceTypes", "health"],
+      "additionalProperties": true,
+      "properties": {
+        "generated": { "type": "string", "description": "ISO-8601 timestamp" },
+        "sourceCount": { "type": "integer", "minimum": 0 },
+        "sourceTypes": { "type": "array", "items": { "type": "string" } },
+        "health": { "type": "string", "enum": ["thin", "developing", "rich"] },
+        "notes": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "type", "label", "provenance"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "description": "stable kebab-case id, type-prefixed" },
+          "type": {
+            "type": "string",
+            "enum": [
+              "Person",
+              "Segment",
+              "Pain",
+              "Need",
+              "Feature",
+              "Competitor",
+              "Insight",
+              "Quote",
+              "Outcome",
+              "Assumption"
+            ]
+          },
+          "label": { "type": "string" },
+          "risk": { "type": "string", "description": "for Assumption nodes: the decision at risk if wrong" },
+          "provenance": {
+            "type": "array",
+            "description": "verbatim evidence. Empty ONLY for Assumption nodes.",
+            "items": {
+              "type": "object",
+              "required": ["source", "quote"],
+              "additionalProperties": false,
+              "properties": {
+                "source": { "type": "string" },
+                "quote": { "type": "string" },
+                "loc": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "type", "from", "to", "provenance"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "type": {
+            "type": "string",
+            "enum": [
+              "experiences",
+              "requests",
+              "blocks",
+              "contradicts",
+              "supports",
+              "belongs-to",
+              "competes-with",
+              "evidences",
+              "assumes"
+            ]
+          },
+          "from": { "type": "string", "description": "source node id" },
+          "to": { "type": "string", "description": "target node id" },
+          "provenance": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["source", "quote"],
+              "additionalProperties": false,
+              "properties": {
+                "source": { "type": "string" },
+                "quote": { "type": "string" },
+                "loc": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
