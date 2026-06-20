@@ -1,10 +1,11 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import Mermaid from '@/components/Mermaid'
 import { FiChevronRight, FiChevronDown, FiFileText, FiFolder } from 'react-icons/fi'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useDocsNav } from '@/contexts/DocsNavContext'
 
 // Import all markdown files in the docs folder
 const docFiles = import.meta.glob('../docs/**/*.md', { as: 'raw', eager: true })
@@ -98,7 +99,17 @@ function buildDocTree(files: Record<string, any>): DocNode[] {
   return root
 }
 
-const NavItem = ({ node, level, activePath }: { node: DocNode; level: number; activePath: string }) => {
+const NavItem = ({
+  node,
+  level,
+  activePath,
+  onNavigate,
+}: {
+  node: DocNode
+  level: number
+  activePath: string
+  onNavigate?: () => void
+}) => {
   const [isOpen, setIsOpen] = useState(true)
   const navigate = useNavigate()
   const isActive = activePath === node.path || (node.path === 'README' && activePath === '')
@@ -117,6 +128,7 @@ const NavItem = ({ node, level, activePath }: { node: DocNode; level: number; ac
         onClick={() => {
           if (node.type === 'file') {
             navigate(`/docs/${node.path}`)
+            onNavigate?.()
           } else {
             setIsOpen(!isOpen)
             // If there's an index file in this directory, navigate to it
@@ -125,6 +137,7 @@ const NavItem = ({ node, level, activePath }: { node: DocNode; level: number; ac
             )
             if (indexPath) {
               navigate(`/docs/${indexPath.path}`)
+              onNavigate?.()
             }
           }
         }}
@@ -148,7 +161,13 @@ const NavItem = ({ node, level, activePath }: { node: DocNode; level: number; ac
             className="overflow-hidden"
           >
             {node.children?.map((child) => (
-              <NavItem key={child.fullPath} node={child} level={level + 1} activePath={activePath} />
+              <NavItem
+                key={child.fullPath}
+                node={child}
+                level={level + 1}
+                activePath={activePath}
+                onNavigate={onNavigate}
+              />
             ))}
           </motion.div>
         )}
@@ -157,12 +176,55 @@ const NavItem = ({ node, level, activePath }: { node: DocNode; level: number; ac
   )
 }
 
+function DocsSidebar({
+  docTree,
+  activePath,
+  onNavigate,
+}: {
+  docTree: DocNode[]
+  activePath: string
+  onNavigate?: () => void
+}) {
+  return (
+    <>
+      <div className="flex items-center gap-2 px-3 mb-4 text-slate-100 font-semibold">
+        <FiFolder className="text-accent-500" />
+        <span>Documentation</span>
+      </div>
+      <div className="space-y-1">
+        {docTree.map((node) => (
+          <NavItem key={node.fullPath} node={node} level={0} activePath={activePath} onNavigate={onNavigate} />
+        ))}
+      </div>
+    </>
+  )
+}
+
 export default function Docs() {
   const { '*': path } = useParams()
   const activePath = path || ''
+  const docsNav = useDocsNav()
   
   const docTree = useMemo(() => buildDocTree(docFiles), [])
   const keys = Object.keys(docFiles)
+
+  useEffect(() => {
+    docsNav?.setIsActive(true)
+    return () => docsNav?.setIsActive(false)
+  }, [docsNav])
+
+  useEffect(() => {
+    docsNav?.closeMobile()
+  }, [activePath, docsNav])
+
+  useEffect(() => {
+    if (!docsNav?.mobileOpen) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = previousOverflow
+    }
+  }, [docsNav?.mobileOpen])
   
   const content = useMemo(() => {
     if (keys.length === 0) {
@@ -202,58 +264,81 @@ export default function Docs() {
   }, [activePath, keys])
 
   return (
-    <div className="flex flex-col md:flex-row gap-8 min-h-[calc(100vh-12rem)]">
-      {/* Sidebar */}
-      <aside className="w-full md:w-64 flex-shrink-0">
-        {import.meta.env.DEV && (
-          <div className="text-[10px] text-slate-500 mb-2">
-            Debug: {keys.length} files found
-          </div>
+    <>
+      {/* Mobile docs nav drawer (toggle lives in Layout header) */}
+      <AnimatePresence>
+        {docsNav?.mobileOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-40 bg-black/60 md:hidden"
+              onClick={() => docsNav.closeMobile()}
+            />
+            <motion.aside
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', bounce: 0, duration: 0.28 }}
+              className="fixed left-0 top-16 bottom-0 z-50 w-[min(20rem,85vw)] bg-[#0d1320] border-r border-slate-800 flex flex-col md:hidden"
+            >
+              <div className="flex-1 overflow-y-auto scroll-container p-4">
+                <DocsSidebar
+                  docTree={docTree}
+                  activePath={activePath}
+                  onNavigate={() => docsNav.closeMobile()}
+                />
+              </div>
+            </motion.aside>
+          </>
         )}
-        <div className="sticky top-24 panel p-4 max-h-[calc(100vh-8rem)] overflow-y-auto scroll-container">
-          <div className="flex items-center gap-2 px-3 mb-4 text-slate-100 font-semibold">
-            <FiFolder className="text-accent-500" />
-            <span>Documentation</span>
-          </div>
-          <div className="space-y-1">
-            {docTree.map((node) => (
-              <NavItem key={node.fullPath} node={node} level={0} activePath={activePath} />
-            ))}
-          </div>
-        </div>
-      </aside>
+      </AnimatePresence>
 
-      {/* Content */}
-      <div className="flex-1 min-w-0">
-        <motion.div
-          key={activePath}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="panel p-8 md:p-12"
-        >
-          <div className="prose prose-invert prose-slate max-w-none prose-headings:font-heading prose-headings:font-bold prose-h1:text-4xl prose-h1:mb-8 prose-h2:text-2xl prose-h2:mt-12 prose-h2:mb-4 prose-h3:text-xl prose-h3:mt-8 prose-h3:mb-3 prose-p:text-slate-400 prose-p:leading-relaxed prose-a:text-accent-400 prose-a:no-underline hover:prose-a:underline prose-strong:text-slate-100 prose-code:text-accent-300 prose-code:bg-slate-800/50 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none prose-ul:list-disc prose-ol:list-decimal">
+      <div className="flex flex-col md:flex-row gap-4 md:gap-8 min-h-[calc(100vh-12rem)]">
+        {/* Desktop sidebar */}
+        <aside className="hidden md:block w-64 flex-shrink-0">
+          {import.meta.env.DEV && (
+            <div className="text-[10px] text-slate-500 mb-2">
+              Debug: {keys.length} files found
+            </div>
+          )}
+          <div className="sticky top-24 panel p-4 max-h-[calc(100vh-8rem)] overflow-y-auto scroll-container">
+            <DocsSidebar docTree={docTree} activePath={activePath} />
+          </div>
+        </aside>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          <motion.div
+            key={activePath}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="panel p-4 sm:p-8 md:p-12"
+          >
+            <div className="prose prose-invert prose-slate max-w-none prose-headings:font-heading prose-headings:font-bold prose-h1:text-3xl sm:prose-h1:text-4xl prose-h1:mb-6 sm:prose-h1:mb-8 prose-h2:text-xl sm:prose-h2:text-2xl prose-h2:mt-8 sm:prose-h2:mt-12 prose-h2:mb-4 prose-h3:text-lg sm:prose-h3:text-xl prose-h3:mt-6 sm:prose-h3:mt-8 prose-h3:mb-3 prose-p:text-slate-400 prose-p:leading-relaxed prose-a:text-accent-400 prose-a:no-underline hover:prose-a:underline prose-strong:text-slate-100 prose-code:text-accent-300 prose-code:bg-slate-800/50 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none prose-ul:list-disc prose-ol:list-decimal">
             <div className="hidden">Debug: content length {content.length}</div>
             <ReactMarkdown 
               remarkPlugins={[remarkGfm]}
               components={{
                 h1({ children }) {
                   return (
-                    <h1 className="text-4xl font-heading font-bold text-slate-100 mb-8 pb-4 border-b border-slate-800/50">
+                    <h1 className="text-3xl sm:text-4xl font-heading font-bold text-slate-100 mb-6 sm:mb-8 pb-4 border-b border-slate-800/50">
                       {children}
                     </h1>
                   )
                 },
                 h2({ children }) {
                   return (
-                    <h2 className="text-2xl font-heading font-bold text-slate-100 mt-12 mb-4 flex items-center gap-3">
-                      <span className="w-1.5 h-6 bg-accent-500 rounded-full" />
+                    <h2 className="text-xl sm:text-2xl font-heading font-bold text-slate-100 mt-8 sm:mt-12 mb-4 flex items-center gap-3">
+                      <span className="w-1.5 h-6 bg-accent-500 rounded-full shrink-0" />
                       {children}
                     </h2>
                   )
                 },
                 h3({ children }) {
                   return (
-                    <h3 className="text-xl font-heading font-bold text-slate-200 mt-8 mb-3">
+                    <h3 className="text-lg sm:text-xl font-heading font-bold text-slate-200 mt-6 sm:mt-8 mb-3">
                       {children}
                     </h3>
                   )
@@ -335,14 +420,14 @@ export default function Docs() {
                 },
                 th({ children }) {
                   return (
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">
                       {children}
                     </th>
                   )
                 },
                 td({ children }) {
                   return (
-                    <td className="px-6 py-4 text-sm text-slate-400 border-t border-slate-700/30">
+                    <td className="px-3 sm:px-6 py-4 text-sm text-slate-400 border-t border-slate-700/30">
                       {children}
                     </td>
                   )
@@ -356,5 +441,6 @@ export default function Docs() {
         </motion.div>
       </div>
     </div>
+    </>
   )
 }
