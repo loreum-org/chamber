@@ -5,7 +5,6 @@ import remarkGfm from 'remark-gfm'
 import Mermaid from '@/components/Mermaid'
 import { FiChevronRight, FiChevronDown, FiFileText, FiFolder } from 'react-icons/fi'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useDocsNav } from '@/contexts/DocsNavContext'
 
 // Import all markdown files in the docs folder
 const docFiles = import.meta.glob('../docs/**/*.md', { as: 'raw', eager: true })
@@ -180,17 +179,21 @@ function DocsSidebar({
   docTree,
   activePath,
   onNavigate,
+  showHeader = true,
 }: {
   docTree: DocNode[]
   activePath: string
   onNavigate?: () => void
+  showHeader?: boolean
 }) {
   return (
     <>
-      <div className="flex items-center gap-2 px-3 mb-4 text-slate-100 font-semibold">
-        <FiFolder className="text-accent-500" />
-        <span>Documentation</span>
-      </div>
+      {showHeader && (
+        <div className="flex items-center gap-2 px-3 mb-4 text-slate-100 font-semibold">
+          <FiFolder className="text-accent-500" />
+          <span>Documentation</span>
+        </div>
+      )}
       <div className="space-y-1">
         {docTree.map((node) => (
           <NavItem key={node.fullPath} node={node} level={0} activePath={activePath} onNavigate={onNavigate} />
@@ -200,31 +203,23 @@ function DocsSidebar({
   )
 }
 
+function formatDocLabel(activePath: string): string {
+  if (!activePath) return 'Overview'
+  const last = activePath.split('/').pop() ?? activePath
+  return last.replace(/-/g, ' ')
+}
+
 export default function Docs() {
   const { '*': path } = useParams()
   const activePath = path || ''
-  const docsNav = useDocsNav()
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
   
   const docTree = useMemo(() => buildDocTree(docFiles), [])
   const keys = Object.keys(docFiles)
 
   useEffect(() => {
-    docsNav?.setIsActive(true)
-    return () => docsNav?.setIsActive(false)
-  }, [docsNav])
-
-  useEffect(() => {
-    docsNav?.closeMobile()
-  }, [activePath, docsNav])
-
-  useEffect(() => {
-    if (!docsNav?.mobileOpen) return
-    const previousOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.body.style.overflow = previousOverflow
-    }
-  }, [docsNav?.mobileOpen])
+    setMobileNavOpen(false)
+  }, [activePath])
   
   const content = useMemo(() => {
     if (keys.length === 0) {
@@ -264,58 +259,75 @@ export default function Docs() {
   }, [activePath, keys])
 
   return (
-    <>
-      {/* Mobile docs nav drawer (toggle lives in Layout header) */}
-      <AnimatePresence>
-        {docsNav?.mobileOpen && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-40 bg-black/60 md:hidden"
-              onClick={() => docsNav.closeMobile()}
-            />
-            <motion.aside
-              initial={{ x: '-100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '-100%' }}
-              transition={{ type: 'spring', bounce: 0, duration: 0.28 }}
-              className="fixed left-0 top-16 bottom-0 z-50 w-[min(20rem,85vw)] bg-[#0d1320] border-r border-slate-800 flex flex-col md:hidden"
-            >
-              <div className="flex-1 overflow-y-auto scroll-container p-4">
-                <DocsSidebar
-                  docTree={docTree}
-                  activePath={activePath}
-                  onNavigate={() => docsNav.closeMobile()}
-                />
-              </div>
-            </motion.aside>
-          </>
-        )}
-      </AnimatePresence>
-
-      <div className="flex flex-col md:flex-row gap-4 md:gap-8 min-h-[calc(100vh-12rem)]">
-        {/* Desktop sidebar */}
-        <aside className="hidden md:block w-64 flex-shrink-0">
-          {import.meta.env.DEV && (
-            <div className="text-[10px] text-slate-500 mb-2">
-              Debug: {keys.length} files found
-            </div>
-          )}
-          <div className="sticky top-24 panel p-4 max-h-[calc(100vh-8rem)] overflow-y-auto scroll-container">
-            <DocsSidebar docTree={docTree} activePath={activePath} />
+    <div className="flex flex-col md:flex-row gap-4 md:gap-8 min-h-[calc(100vh-12rem)]">
+      {/* Desktop sidebar */}
+      <aside className="hidden md:block w-64 flex-shrink-0">
+        {import.meta.env.DEV && (
+          <div className="text-[10px] text-slate-500 mb-2">
+            Debug: {keys.length} files found
           </div>
-        </aside>
+        )}
+        <div className="sticky top-24 panel p-4 max-h-[calc(100vh-8rem)] overflow-y-auto scroll-container">
+          <DocsSidebar docTree={docTree} activePath={activePath} />
+        </div>
+      </aside>
 
-        {/* Content */}
-        <div className="flex-1 min-w-0">
-          <motion.div
-            key={activePath}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="panel p-4 sm:p-8 md:p-12"
+      {/* Content */}
+      <div className="flex-1 min-w-0">
+        {/* Mobile docs nav toggle */}
+        <div className="md:hidden mb-4">
+          <button
+            type="button"
+            onClick={() => setMobileNavOpen((open) => !open)}
+            className="w-full panel px-4 py-3 flex items-center justify-between gap-3 text-left transition-colors hover:border-accent-500/25"
+            aria-expanded={mobileNavOpen}
+            aria-controls="docs-mobile-nav"
           >
+            <span className="flex items-center gap-2 min-w-0">
+              <FiFolder className="text-accent-500 shrink-0" />
+              <span className="flex flex-col min-w-0">
+                <span className="text-xs text-slate-500">Documentation</span>
+                <span className="text-sm font-medium text-slate-100 capitalize truncate">
+                  {formatDocLabel(activePath)}
+                </span>
+              </span>
+            </span>
+            {mobileNavOpen ? (
+              <FiChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
+            ) : (
+              <FiChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
+            )}
+          </button>
+
+          <AnimatePresence>
+            {mobileNavOpen && (
+              <motion.div
+                id="docs-mobile-nav"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                <div className="panel mt-2 p-4 max-h-[min(60vh,24rem)] overflow-y-auto scroll-container">
+                  <DocsSidebar
+                    docTree={docTree}
+                    activePath={activePath}
+                    onNavigate={() => setMobileNavOpen(false)}
+                    showHeader={false}
+                  />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        <motion.div
+          key={activePath}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="panel p-4 sm:p-8 md:p-12"
+        >
             <div className="prose prose-invert prose-slate max-w-none prose-headings:font-heading prose-headings:font-bold prose-h1:text-3xl sm:prose-h1:text-4xl prose-h1:mb-6 sm:prose-h1:mb-8 prose-h2:text-xl sm:prose-h2:text-2xl prose-h2:mt-8 sm:prose-h2:mt-12 prose-h2:mb-4 prose-h3:text-lg sm:prose-h3:text-xl prose-h3:mt-6 sm:prose-h3:mt-8 prose-h3:mb-3 prose-p:text-slate-400 prose-p:leading-relaxed prose-a:text-accent-400 prose-a:no-underline hover:prose-a:underline prose-strong:text-slate-100 prose-code:text-accent-300 prose-code:bg-slate-800/50 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none prose-ul:list-disc prose-ol:list-decimal">
             <div className="hidden">Debug: content length {content.length}</div>
             <ReactMarkdown 
@@ -441,6 +453,5 @@ export default function Docs() {
         </motion.div>
       </div>
     </div>
-    </>
   )
 }

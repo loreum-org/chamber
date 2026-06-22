@@ -1,12 +1,11 @@
 import { Routes, Route } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import Layout from '@/components/Layout'
-import { DocsNavProvider } from '@/contexts/DocsNavContext'
 import { Dashboard, DeployChamber, ChamberDetail, TransactionQueue, Docs, DirectorProfile } from '@/pages'
 
 function App() {
   return (
-    <DocsNavProvider>
+    <>
       <Toaster
         position="top-right"
         toastOptions={{
@@ -42,7 +41,7 @@ function App() {
           <Route path="docs/*" element={<Docs />} />
         </Route>
       </Routes>
-    </DocsNavProvider>
+    </>
   )
 }
 

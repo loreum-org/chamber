@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Outlet, Link, useLocation } from 'react-router-dom'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { motion, AnimatePresence } from 'framer-motion'
-import { FiHome, FiGithub, FiBook, FiPlus, FiMenu, FiX, FiList } from 'react-icons/fi'
+import { FiHome, FiGithub, FiBook, FiPlus, FiMenu, FiX } from 'react-icons/fi'
 import { useAccount, useWriteContract } from 'wagmi'
 import { sepolia } from 'wagmi/chains'
 import { simulateContract } from 'wagmi/actions'
@@ -10,7 +10,6 @@ import { zeroAddress, parseEther } from 'viem'
 import { config, getContractAddresses, LOCAL_CHAIN_ID } from '@/lib/wagmi'
 import { erc721Abi, erc20Abi } from '@/contracts'
 import { formatLocalTestMintToast, formatWalletSendError } from '@/lib/utils'
-import { useDocsNav } from '@/contexts/DocsNavContext'
 import toast from 'react-hot-toast'
 
 const navItems = [
@@ -29,7 +28,6 @@ function isNavActive(itemPath: string, locationPath: string): boolean {
 
 export default function Layout() {
   const location = useLocation()
-  const docsNav = useDocsNav()
   const { chainId, address } = useAccount()
   const { writeContractAsync } = useWriteContract()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -177,30 +175,9 @@ export default function Layout() {
                 )}
               </div>
               <ConnectButton accountStatus="address" chainStatus="icon" showBalance={false} />
-              {docsNav?.isActive && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMobileMenuOpen(false)
-                    docsNav.toggleMobile()
-                  }}
-                  className="md:hidden p-2 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 transition-all"
-                  aria-expanded={docsNav.mobileOpen}
-                  aria-label="Toggle documentation menu"
-                >
-                  {docsNav.mobileOpen ? (
-                    <FiX className="w-5 h-5" />
-                  ) : (
-                    <FiList className="w-5 h-5" />
-                  )}
-                </button>
-              )}
               <button
                 type="button"
-                onClick={() => {
-                  docsNav?.closeMobile()
-                  setMobileMenuOpen((o) => !o)
-                }}
+                onClick={() => setMobileMenuOpen((o) => !o)}
                 className="md:hidden p-2 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 transition-all"
                 aria-label="Toggle menu"
               >
