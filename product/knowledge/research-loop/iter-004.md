@@ -57,4 +57,4 @@ weakest fit is **token protocol DAOs** on OZ Governor + Tally.
 
 ## Git commit
 
-`324a510` — research-loop: iteration 004 — Chambers competitive landscaping
+`3ed2bc0` — research-loop: iteration 004 — Chambers competitive landscaping
