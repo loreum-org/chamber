@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "iteration": 3,
+  "iteration": 4,
   "maxSourcesPerIteration": 3,
   "completionCriteria": {
     "minSourceCount": 8,
@@ -12,35 +12,22 @@
       "id": "rq-buyer-interviews",
       "priority": "high",
       "kind": "validation",
-      "graphNodeId": "assumption-chamber-vs-oz-governor",
-      "question": "Do treasury buyers compose Safe+Governor+Tally+Parcel stacks or want native contracts like Chamber?",
+      "graphNodeId": "assumption-hats-signer-gate-sufficient",
+      "question": "Would Purple/Treasure have chosen Chamber over Safe+Hats? Why not?",
       "searchQueries": [],
       "targetSourceType": "interview",
       "status": "pending",
-      "note": "Manual ingest — walk through full governance stack at each layer"
+      "note": "Manual ingest — highest priority after iter 4 HSG displacement validation"
     },
     {
-      "id": "rq-hsg-displacement-validation",
+      "id": "rq-chamber-wins-nouns-builder",
       "priority": "high",
       "kind": "validation",
-      "graphNodeId": "assumption-hats-signer-gate-sufficient",
-      "question": "Who uses Hats Signer Gate today and why did they not build/buy a native treasury?",
+      "graphNodeId": "assumption-chamber-wins-nouns-builder-segment",
+      "question": "Can Chamber displace Hats as blueprint for Nouns Builder DAOs?",
       "searchQueries": [
-        "Hats Signer Gate DAO case study",
-        "Hats Protocol Safe multisig governance adoption"
-      ],
-      "targetSourceType": "research",
-      "status": "pending"
-    },
-    {
-      "id": "rq-chamber-segment-vs-oz-governor",
-      "priority": "medium",
-      "kind": "validation",
-      "graphNodeId": "assumption-chamber-vs-oz-governor",
-      "question": "Do NFT/community treasuries avoid OZ Governor entirely?",
-      "searchQueries": [
-        "NFT DAO treasury governance not token voting",
-        "community treasury multisig vs OpenZeppelin Governor"
+        "Nouns Builder DAO governance treasury",
+        "Purple DAO Farcaster governance structure"
       ],
       "targetSourceType": "research",
       "status": "pending"
@@ -50,10 +37,10 @@
       "priority": "medium",
       "kind": "validation",
       "graphNodeId": "assumption-native-queue-security-advantage",
-      "question": "Did June 2026 Zodiac module disclosure change how DAOs evaluate governance stacks?",
+      "question": "Did module exploits (SuDAO, Zodiac) change how DAOs evaluate governance stacks?",
       "searchQueries": [
-        "Zodiac Roles vulnerability DAO response 2026",
-        "Safe module governance security best practices"
+        "DAO governance module exploit response 2025 2026",
+        "Safe module security audit best practices treasury"
       ],
       "targetSourceType": "research",
       "status": "pending"
@@ -67,6 +54,19 @@
       "searchQueries": [
         "Commonwealth DAO integration API",
         "Tally governance widget embed"
+      ],
+      "targetSourceType": "research",
+      "status": "pending"
+    },
+    {
+      "id": "rq-founder-multisig-graduation",
+      "priority": "medium",
+      "kind": "validation",
+      "graphNodeId": "segment-dao-treasury-teams",
+      "question": "What triggers founder multisig teams to adopt rules-based governance vs add Safe modules?",
+      "searchQueries": [
+        "DAO outgrow multisig governance transition",
+        "founder multisig to onchain governance migration"
       ],
       "targetSourceType": "research",
       "status": "pending"
@@ -142,12 +142,34 @@
       "sourceFile": "sources/2026-05-26-commonwealth-governance-deep.md",
       "outcome": "single-source",
       "note": "Unified forum+Snapshot+onchain UX; 700+ DAOs cited; fragmentation wedge"
+    },
+    {
+      "id": "rq-hsg-displacement-validation",
+      "completedAt": "2026-07-01T20:00:00Z",
+      "sourceFile": "sources/2026-07-01-hats-signer-gate-displacement-deep.md",
+      "outcome": "triangulated-partial",
+      "note": "Purple/Treasure/Questbook adopt Safe+HSG; displacement pattern confirmed; no buyer interviews"
+    },
+    {
+      "id": "rq-chamber-segment-vs-oz-governor",
+      "completedAt": "2026-07-01T20:00:00Z",
+      "sourceFile": "sources/2026-07-01-nft-community-treasury-segment.md",
+      "outcome": "triangulated-partial",
+      "note": "Two-segment map: token protocol (OZ Governor) vs hybrid Safe+signaling; Chamber ICP hypothesis"
+    },
+    {
+      "id": "rq-competitive-landscape-2026",
+      "completedAt": "2026-07-01T20:00:00Z",
+      "sourceFile": "sources/2026-07-01-dao-governance-competitive-landscape-2026.md",
+      "outcome": "single-source",
+      "note": "Four-segment 2026 market model; Boardroom/Karma added; hybrid stack norm"
     }
   ],
-  "lastGraphify": "2026-05-26T16:00:00Z",
+  "lastGraphify": "2026-07-01T20:00:00Z",
   "notes": [
-    "Iteration 3: OZ Governor, Parcel, Commonwealth — governance stack layering model.",
-    "Corpus developing (15 sources). Rich requires 20+ sources and 3+ types.",
-    "Top gap: buyer interviews to validate stack vs native Chamber thesis."
+    "Iteration 4: HSG displacement validated with case studies; 2026 four-segment competitive landscape.",
+    "Corpus developing (18 sources). Rich requires 20+ sources and 3+ types.",
+    "Top gap: buyer interviews — would adopters choose Chamber over Safe+Hats?",
+    "Competitive landscaping synthesis at knowledge/competitive-landscape-2026-synthesis.md"
   ]
 }
