@@ -1,0 +1,13 @@
+{
+  "name": "pashov",
+  "upstream": "https://github.com/pashov/skills",
+  "commit": "c577eb7799c349de0acb187ba00ca98e14e436fd",
+  "commit_date": "2026-07-09",
+  "default_branch": "main",
+  "fetched": "2026-07-20",
+  "last_verified": "2026-08-11",
+  "files_mirrored": 75,
+  "files_byte_identical": 75,
+  "license": "MIT, (c) 2024 AI Skills Contributors",
+  "omitted": ["fizz/scripts/", "x-ray/scripts/", "static/", ".github/", ".git/"]
+}

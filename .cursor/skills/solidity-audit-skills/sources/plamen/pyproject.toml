@@ -1,0 +1,22 @@
+# Plamen — pytest configuration ONLY.
+#
+# This file intentionally declares NO build-system / project packaging table:
+# it exists solely to give the `scripts/` test suite a config home (markers,
+# selection) so a fast inner loop is possible. `plamen install` and the runtime
+# are unaffected — nothing here changes how the package is installed or run.
+#
+# Marker taxonomy (see scripts/conftest.py for which files each marker is
+# applied to — that is the single source of truth for the file lists):
+#   unit        — fast, mocked, no real subprocess/IO (the default lane)
+#   integration — spawns a real OS subprocess / real tool / real sleep (slower)
+#   slow        — heavyweight even among integration (real driver phase-loop)
+#
+# Fast PR lane:      pytest -m "not integration" -n auto
+# Integration lane:  pytest -m "integration"            (serial; env-guarded)
+# Full/nightly lane: pytest                             (everything, source of truth)
+[tool.pytest.ini_options]
+markers = [
+    "unit: fast, fully-mocked test with no real subprocess/IO (default lane)",
+    "integration: spawns a real OS subprocess, real external tool, or real sleep (slower)",
+    "slow: heavyweight even among integration tests (e.g. the real driver phase-loop)",
+]

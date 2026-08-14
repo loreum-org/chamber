@@ -1,0 +1,13 @@
+{
+  "name": "quillshield",
+  "upstream": "https://github.com/quillai-network/quillshield_skills",
+  "commit": "8bdd3c058704cd855ce29b8e2385708b59152606",
+  "commit_date": "2026-03-30",
+  "default_branch": "main",
+  "fetched": "2026-07-20",
+  "last_verified": "2026-08-11",
+  "files_mirrored": 85,
+  "files_byte_identical": 85,
+  "license": "MIT, (c) 2025 QuillShield",
+  "omitted": [".github/", ".git/"]
+}

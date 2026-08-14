@@ -1,0 +1,52 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(*)",
+      "Read(*)",
+      "Glob(*)",
+      "Grep(*)",
+      "Write(*)",
+      "Edit(*)",
+      "Agent(*)",
+      "NotebookEdit(*)",
+      "WebSearch",
+      "WebFetch(*)",
+      "Task(*)",
+      "ToolSearch(*)",
+      "mcp__slither-analyzer__*",
+      "mcp__unified-vuln-db__*",
+      "mcp__solana-fender__*",
+      "mcp__farofino__*",
+      "mcp__tavily-search__*",
+      "mcp__evm-chain-data__*",
+      "mcp__foundry-suite__*",
+      "mcp__memory__*",
+      "mcp__helius__*"
+    ],
+    "deny": [
+      "Bash(rm -rf /)*",
+      "Bash(rm -rf ~)*",
+      "Bash(rm -rf .)*",
+      "Bash(sudo *)",
+      "Bash(curl * | bash*)",
+      "Bash(curl * | sh*)",
+      "Bash(wget * | bash*)",
+      "Bash(wget * | sh*)",
+      "Bash(git push --force*)",
+      "Bash(git push -f *)",
+      "Bash(git reset --hard*)",
+      "Bash(git clean -fd*)",
+      "Bash(format *)",
+      "Bash(diskpart*)",
+      "Bash(shutdown*)",
+      "Bash(taskkill /f /im*)"
+    ],
+    "defaultMode": "acceptEdits"
+  },
+  "env": {
+    "MCP_TIMEOUT": "30000",
+    "MCP_TOOL_TIMEOUT": "300000",
+    "SOLODIT_API_KEY": ""
+  },
+  "hooks": {}
+}

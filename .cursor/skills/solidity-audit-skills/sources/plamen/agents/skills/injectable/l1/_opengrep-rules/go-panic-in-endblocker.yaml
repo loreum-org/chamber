@@ -1,0 +1,60 @@
+rules:
+  - id: plamen-l1-go-panic-in-endblocker
+    message: >
+      Potential panic in BeginBlocker/EndBlocker/PreBlocker/VoteExtensionHandler.
+      Unlike tx processing, these paths do NOT recover panics — any panic halts
+      the chain. This is the Cosmos SDK ASA-2025-003 / ISA-2025-002 class.
+    languages: [go]
+    severity: ERROR
+    metadata:
+      skill: consensus-safety-invariants
+      cve-reference: ASA-2025-003, ISA-2025-002, ISA-2025-005
+      advisory: https://github.com/cosmos/cosmos-sdk/security/advisories
+      bug-class: panic-chain-halt
+      plamen-tag: "[PANIC-BLOCK]"
+    pattern-either:
+      # Direct panic() inside a BeginBlock receiver method
+      - patterns:
+          - pattern: panic($X)
+          - pattern-inside: |
+              func ($R $T) BeginBlock(...) {
+                ...
+              }
+      - patterns:
+          - pattern: panic($X)
+          - pattern-inside: |
+              func ($R $T) BeginBlock(...) $_ {
+                ...
+              }
+      # Direct panic() inside an EndBlock receiver method
+      - patterns:
+          - pattern: panic($X)
+          - pattern-inside: |
+              func ($R $T) EndBlock(...) {
+                ...
+              }
+      - patterns:
+          - pattern: panic($X)
+          - pattern-inside: |
+              func ($R $T) EndBlock(...) $_ {
+                ...
+              }
+      # Direct panic() inside a PreBlock receiver method
+      - patterns:
+          - pattern: panic($X)
+          - pattern-inside: |
+              func ($R $T) PreBlock(...) {
+                ...
+              }
+      - patterns:
+          - pattern: panic($X)
+          - pattern-inside: |
+              func ($R $T) PreBlock(...) $_ {
+                ...
+              }
+    # Round 4 nuance: the Cosmos advisories (ASA-2025-003, ISA-2025-002,
+    # ISA-2025-005, ASA-2024-003-adjacent) all match this pattern. Extend
+    # with x/group-specific and x/distribution-specific receivers as the
+    # rule pack matures in Week 3 of Phase 1. Also consider adding separate
+    # rules for unchecked division and unchecked slice index inside the
+    # same receiver methods — those are additional panic vectors.

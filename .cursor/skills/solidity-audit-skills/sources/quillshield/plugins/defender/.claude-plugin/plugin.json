@@ -1,0 +1,23 @@
+{
+  "name": "defender",
+  "version": "1.0.0",
+  "description": "Blue-team release-gate skill for smart contract systems. Classifies projects, reviews deployment and upgrade execution paths, inspects CI/CD and dependency trust boundaries, evaluates signer/admin operational security, and produces evidence-based release blockers, warnings, and release verdicts.",
+  "author": "QuillAI Network",
+  "license": "MIT",
+  "homepage": "https://github.com/quillai-network/quillshield_skills",
+  "tags": [
+    "security",
+    "smart-contracts",
+    "release-gate",
+    "deployment",
+    "defence",
+    "blue-team"
+  ],
+  "skills": [
+    {
+      "name": "defender",
+      "path": "skills/defender/SKILL.md",
+      "description": "Deployment-readiness and release-gate defence for blockchain repositories and smart contract systems."
+    }
+  ]
+}

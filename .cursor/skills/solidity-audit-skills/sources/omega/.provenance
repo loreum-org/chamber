@@ -1,0 +1,7 @@
+{
+  "name": "omega",
+  "kind": "original",
+  "upstream": null,
+  "note": "Not a mirror. Original prose by Daoism Systems, derived from the methodology in https://github.com/OmegaAudits/audits (studied at a9891e4, 2026-07-14). Nothing is copied; there is no upstream to pin or diff. See ATTRIBUTION.md.",
+  "license": "MIT, (c) 2026 Daoism Systems"
+}

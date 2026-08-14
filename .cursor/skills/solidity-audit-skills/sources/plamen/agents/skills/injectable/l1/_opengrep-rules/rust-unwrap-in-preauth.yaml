@@ -1,0 +1,51 @@
+rules:
+  - id: plamen-l1-rust-unwrap-in-preauth
+    message: >
+      .unwrap() / .expect() / panic!() in a pre-authentication message handler
+      is a single-packet node-kill primitive. This is the NEAR "Ping of Death"
+      class ($150k Zellic bounty, Dec 2023). Every such call in handshake code
+      is a finding until proven bounded by an earlier length/type check.
+    languages: [rust]
+    severity: ERROR
+    metadata:
+      skill: rust-unsafe-audit / p2p-dos-and-eclipse
+      reference: https://www.zellic.io/blog/near-protocol-bug/
+      bug-class: pre-auth-panic
+      plamen-tag: "[P2P-PANIC-PREAUTH]"
+    pattern-either:
+      # .unwrap() inside a function whose name suggests pre-auth / handshake / verify
+      - patterns:
+          - pattern: $EXPR.unwrap()
+          - pattern-inside: |
+              fn $FN(...) {
+                ...
+              }
+          - metavariable-regex:
+              metavariable: $FN
+              regex: "(?i).*(handshake|handle_hello|process_init|preauth|verify).*"
+      # .expect() in same contexts
+      - patterns:
+          - pattern: $EXPR.expect($MSG)
+          - pattern-inside: |
+              fn $FN(...) {
+                ...
+              }
+          - metavariable-regex:
+              metavariable: $FN
+              regex: "(?i).*(handshake|handle_hello|process_init|preauth|verify).*"
+      # panic!() in signature-verification path
+      - patterns:
+          - pattern: panic!($$$MSG)
+          - pattern-inside: |
+              fn $FN(...) {
+                ...
+              }
+          - metavariable-regex:
+              metavariable: $FN
+              regex: "^(verify|verify_signature|verify_handshake|verify_message|recover).*"
+    # Note: this is a starter pattern. The full NEAR case was in
+    # Signature::verify with Message::from_slice(data).expect("32 bytes")
+    # and RecoveryId::from_i32(recovery).unwrap(). A production rule pack
+    # should also scope by file-path (p2p/, network/, handshake/), and
+    # cover `async fn`, method impls (`impl T { fn ... }`), and slice
+    # indexing patterns (`$SLICE[$I]`) in the same handlers.

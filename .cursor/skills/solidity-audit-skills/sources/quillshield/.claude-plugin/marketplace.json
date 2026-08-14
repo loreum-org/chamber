@@ -1,0 +1,89 @@
+{
+  "name": "quillshield-security-skills",
+  "owner": {
+    "name": "QuillShield"
+  },
+  "metadata": {
+    "description": "QuillShield smart contract security auditing skills for AI agents. Comprehensive coverage of OWASP Smart Contract Top 10 plus proxy/upgrade, signature replay, and token integration vulnerabilities.",
+    "version": "2.0.0"
+  },
+  "plugins": [
+    {
+      "name": "behavioral-state-analysis",
+      "source": "./plugins/behavioral-state-analysis",
+      "description": "Multi-dimensional smart contract security auditing using Behavioral State Analysis (BSA). Combines behavioral intent extraction, parallel threat engines, adversarial simulation with PoC generation, and Bayesian confidence scoring.",
+      "version": "1.0.0",
+      "author": { "name": "QuillShield" }
+    },
+    {
+      "name": "semantic-guard-analysis",
+      "source": "./plugins/semantic-guard-analysis",
+      "description": "Detects logic vulnerabilities by finding functions that bypass security checks the contract consistently applies elsewhere. Based on the Consistency Principle.",
+      "version": "1.0.0",
+      "author": { "name": "QuillShield" }
+    },
+    {
+      "name": "state-invariant-detection",
+      "source": "./plugins/state-invariant-detection",
+      "description": "Automatically infers mathematical relationships between state variables then finds functions that violate them. Catches vulnerabilities behind the biggest DeFi hacks.",
+      "version": "1.0.0",
+      "author": { "name": "QuillShield" }
+    },
+    {
+      "name": "reentrancy-pattern-analysis",
+      "source": "./plugins/reentrancy-pattern-analysis",
+      "description": "Systematically detects all reentrancy variants — classic, cross-function, cross-contract, read-only, and ERC-777/ERC-1155 callback reentrancy.",
+      "version": "1.0.0",
+      "author": { "name": "QuillShield" }
+    },
+    {
+      "name": "oracle-flashloan-analysis",
+      "source": "./plugins/oracle-flashloan-analysis",
+      "description": "Detects price oracle manipulation and flash loan attack vectors. Classifies oracle trust models, identifies stale prices, circular dependencies, and flash loan atomicity exploitation.",
+      "version": "1.0.0",
+      "author": { "name": "QuillShield" }
+    },
+    {
+      "name": "proxy-upgrade-safety",
+      "source": "./plugins/proxy-upgrade-safety",
+      "description": "Detects vulnerabilities in upgradeable proxy architectures — storage layout collisions, uninitialized implementations, function selector clashing, and upgrade path safety.",
+      "version": "1.0.0",
+      "author": { "name": "QuillShield" }
+    },
+    {
+      "name": "input-arithmetic-safety",
+      "source": "./plugins/input-arithmetic-safety",
+      "description": "Detects input validation failures and arithmetic vulnerabilities — precision loss, rounding exploitation, ERC4626 inflation attacks, unsafe casting, and unchecked block risks.",
+      "version": "1.0.0",
+      "author": { "name": "QuillShield" }
+    },
+    {
+      "name": "external-call-safety",
+      "source": "./plugins/external-call-safety",
+      "description": "Detects unsafe external call patterns and token integration vulnerabilities. Covers unchecked return values, fee-on-transfer tokens, rebasing tokens, and callback risks.",
+      "version": "1.0.0",
+      "author": { "name": "QuillShield" }
+    },
+    {
+      "name": "signature-replay-analysis",
+      "source": "./plugins/signature-replay-analysis",
+      "description": "Detects signature replay vulnerabilities. Covers same-chain, cross-chain, cross-contract, nonce-skip, and expired replay types plus EIP-712 and ecrecover safety.",
+      "version": "1.0.0",
+      "author": { "name": "QuillShield" }
+    },
+    {
+      "name": "dos-griefing-analysis",
+      "source": "./plugins/dos-griefing-analysis",
+      "description": "Detects Denial of Service and griefing vulnerabilities — unbounded loops, gas limit exhaustion, external call failure DoS, 63/64 gas griefing, and storage bloat.",
+      "version": "1.0.0",
+      "author": { "name": "QuillShield" }
+    },
+    {
+      "name": "defender",
+      "source": "./plugins/defender",
+      "description": "Blue-team release-gate skill for deploy and upgrade readiness. Reviews CI/CD trust boundaries, deploy script safety, config drift, signer/admin operational security, and outputs an evidence-based release verdict.",
+      "version": "1.0.0",
+      "author": { "name": "QuillShield" }
+    }
+  ]
+}

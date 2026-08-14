@@ -1,0 +1,19 @@
+{
+  "name": "plamen",
+  "upstream": "https://github.com/PlamenTSV/plamen",
+  "commit": "795962b96e254f2e423a2635fe7f8cb8ea1e6d69",
+  "commit_date": "2026-07-15",
+  "default_branch": "main",
+  "fetched": "2026-07-20",
+  "last_verified": "2026-08-11",
+  "files_mirrored": 414,
+  "files_byte_identical": 413,
+  "known_differences": [
+    {
+      "path": "mcp-packages/run-node-mcp.cmd",
+      "reason": "line endings normalised CRLF -> LF on checkout; content otherwise identical"
+    }
+  ],
+  "license": "MIT, (c) 2025-2026 Plamen Contributors",
+  "omitted": ["plamen.py", "plamen", "plamen.sh", "plamen.bat", "_avm_installer.py", "_solana_installer.py", "_sui_installer.py", "write_dedup.py", "scripts/", "codex-adapter/", "plamen_l1/", "CHANGELOG.md", "agent-transcripts/", ".github/", ".git/"]
+}

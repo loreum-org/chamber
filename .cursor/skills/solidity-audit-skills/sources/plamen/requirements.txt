@@ -1,0 +1,6 @@
+# Plamen core - terminal UI + mechanical substrate
+rich==15.0.0
+InquirerPy==0.3.4
+pywinpty>=2.0.14,<3; platform_system=="Windows"
+pydantic>=2,<3  # plamen_contracts.py - mechanical contract schemas
+markdown-it-py>=3,<5  # plamen_markdown.py - mechanical markdown parsing (tested on 4.x)

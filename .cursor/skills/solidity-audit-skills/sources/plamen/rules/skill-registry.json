@@ -1,0 +1,176 @@
+{
+  "version": 1,
+  "standard_skills": {
+    "AUTH_ANALYSIS": {
+      "languages": ["soroban"],
+      "folder": "auth-validation",
+      "path": "agents/skills/soroban/auth-validation/SKILL.md",
+      "trigger_flags": ["ALWAYS", "REQUIRE_AUTH", "AUTH_TREE"],
+      "aliases": [],
+      "used_by": ["soroban_recon", "depth-state-trace", "depth-external"]
+    },
+    "UPGRADE_SAFETY": {
+      "languages": ["soroban"],
+      "folder": "contract-upgradeability",
+      "path": "agents/skills/soroban/contract-upgradeability/SKILL.md",
+      "trigger_flags": ["SOROBAN_UNPROTECTED_UPGRADE", "MIGRATION"],
+      "aliases": ["CONTRACT_UPGRADEABILITY"],
+      "used_by": ["soroban_recon", "depth-state-trace"]
+    },
+    "STORAGE_LIFECYCLE": {
+      "languages": ["soroban"],
+      "folder": "storage-lifecycle",
+      "path": "agents/skills/soroban/storage-lifecycle/SKILL.md",
+      "trigger_flags": ["TEMPORAL", "PERSISTENT_STORAGE", "TEMPORARY_STORAGE"],
+      "aliases": ["STORAGE_TTL_SAFETY"],
+      "used_by": ["soroban_recon", "depth-state-trace"]
+    },
+    "EXTERNAL_PRECONDITION_AUDIT": {
+      "languages": ["soroban", "evm", "solana", "aptos", "sui"],
+      "folder": "external-precondition-audit",
+      "path": "agents/skills/soroban/external-precondition-audit/SKILL.md",
+      "trigger_flags": ["CROSS_CONTRACT", "ORACLE"],
+      "aliases": ["ORACLE_ANALYSIS"],
+      "used_by": ["soroban_recon", "depth-external"]
+    },
+    "AUTHORIZATION_MODEL": {
+      "languages": ["daml"],
+      "folder": "authorization-model",
+      "path": "agents/skills/daml/authorization-model/SKILL.md",
+      "trigger_flags": ["ALWAYS", "MULTI_SIGNATORY", "PARAM_CONTROLLER"],
+      "aliases": [],
+      "used_by": ["daml_recon", "depth-state-trace", "depth-external"]
+    },
+    "CHOICE_SEMANTICS": {
+      "languages": ["daml"],
+      "folder": "choice-semantics",
+      "path": "agents/skills/daml/choice-semantics/SKILL.md",
+      "trigger_flags": ["ALWAYS", "NONCONSUMING_CHOICE", "VALUE_BEARING"],
+      "aliases": [],
+      "used_by": ["daml_recon", "depth-state-trace", "depth-edge-case"]
+    },
+    "CONTRACT_KEY_SAFETY": {
+      "languages": ["daml"],
+      "folder": "contract-key-safety",
+      "path": "agents/skills/daml/contract-key-safety/SKILL.md",
+      "trigger_flags": ["ALWAYS", "CONTRACT_KEY"],
+      "aliases": [],
+      "used_by": ["daml_recon", "depth-state-trace"]
+    },
+    "CID_CAPABILITY_SAFETY": {
+      "languages": ["daml"],
+      "folder": "cid-capability-safety",
+      "path": "agents/skills/daml/cid-capability-safety/SKILL.md",
+      "trigger_flags": ["ALWAYS", "CID_CAPABILITY"],
+      "aliases": [],
+      "used_by": ["daml_recon", "depth-external", "depth-edge-case"]
+    },
+    "PRIVACY_DISCLOSURE": {
+      "languages": ["daml"],
+      "folder": "privacy-disclosure",
+      "path": "agents/skills/daml/privacy-disclosure/SKILL.md",
+      "trigger_flags": ["ALWAYS", "DIVULGENCE_RISK"],
+      "aliases": [],
+      "used_by": ["daml_recon", "depth-edge-case"]
+    },
+    "LOCKING_SEMANTICS": {
+      "languages": ["daml"],
+      "folder": "locking-semantics",
+      "path": "agents/skills/daml/locking-semantics/SKILL.md",
+      "trigger_flags": ["ALWAYS", "LOCKING"],
+      "aliases": [],
+      "used_by": ["daml_recon", "depth-state-trace", "depth-edge-case"]
+    },
+    "ENSURE_INVARIANTS": {
+      "languages": ["daml"],
+      "folder": "ensure-invariants",
+      "path": "agents/skills/daml/ensure-invariants/SKILL.md",
+      "trigger_flags": ["ALWAYS", "ENSURE_PRESENT", "ENSURE_GAP", "DEADLINE"],
+      "aliases": [],
+      "used_by": ["daml_recon", "depth-edge-case"]
+    },
+    "VERIFICATION_PROTOCOL": {
+      "languages": ["daml"],
+      "folder": "verification-protocol",
+      "path": "agents/skills/daml/verification-protocol/SKILL.md",
+      "trigger_flags": ["ALWAYS"],
+      "aliases": [],
+      "used_by": ["security-verifier"]
+    },
+    "SEMI_TRUSTED_ROLES": {
+      "languages": ["daml"],
+      "folder": "semi-trusted-roles",
+      "path": "agents/skills/daml/semi-trusted-roles/SKILL.md",
+      "trigger_flags": ["SEMI_TRUSTED_ROLE"],
+      "aliases": [],
+      "used_by": ["daml_recon", "depth-state-trace"]
+    },
+    "ECONOMIC_DESIGN_AUDIT": {
+      "languages": ["daml"],
+      "folder": "economic-design-audit",
+      "path": "agents/skills/daml/economic-design-audit/SKILL.md",
+      "trigger_flags": ["MONETARY_PARAMETER"],
+      "aliases": [],
+      "used_by": ["daml_recon"]
+    },
+    "SHARE_ALLOCATION_FAIRNESS": {
+      "languages": ["daml"],
+      "folder": "share-allocation-fairness",
+      "path": "agents/skills/daml/share-allocation-fairness/SKILL.md",
+      "trigger_flags": ["SHARE_ALLOCATION"],
+      "aliases": [],
+      "used_by": ["daml_recon", "depth-edge-case"]
+    },
+    "TEMPORAL_PARAMETER_STALENESS": {
+      "languages": ["daml"],
+      "folder": "temporal-parameter-staleness",
+      "path": "agents/skills/daml/temporal-parameter-staleness/SKILL.md",
+      "trigger_flags": ["TEMPORAL"],
+      "aliases": [],
+      "used_by": ["daml_recon", "depth-state-trace"]
+    }
+  },
+  "injectables": {
+    "VAULT_ACCOUNTING": {
+      "execution_mode": "append",
+      "budget_slots": 0,
+      "target_roles": ["depth-token-flow", "depth-edge-case"],
+      "path": "agents/skills/injectable/vault-accounting/SKILL.md"
+    },
+    "LENDING_PROTOCOL_SECURITY": {
+      "execution_mode": "append",
+      "budget_slots": 0,
+      "target_roles": ["depth-token-flow", "depth-state-trace", "depth-external"],
+      "path": "agents/skills/injectable/lending-protocol-security/SKILL.md"
+    }
+  },
+  "niche_agents": {
+    "SEMANTIC_GAP_INVESTIGATOR": {
+      "folder": "semantic-gap-investigator",
+      "trigger_expr": "sync_gaps >= 1 OR accumulation_exposures >= 1 OR conditional_writes >= 1 OR cluster_gaps >= 1",
+      "languages": ["evm", "solana", "aptos", "sui", "soroban"],
+      "output_file": "niche_semantic_gap_findings.md",
+      "budget_slots": 1,
+      "subagent_type": "niche",
+      "path": "agents/skills/niche/semantic-gap-investigator/SKILL.md"
+    },
+    "MULTI_STEP_OPERATION_SAFETY": {
+      "folder": "multi-step-operation-safety",
+      "trigger_expr": "MULTI_STEP_OPS OR PROPOSE_ACCEPT",
+      "languages": ["daml"],
+      "output_file": "niche_multi_step_findings.md",
+      "budget_slots": 1,
+      "subagent_type": "niche",
+      "path": "agents/skills/niche/multi-step-operation-safety/SKILL.md"
+    },
+    "SPEC_COMPLIANCE_AUDIT": {
+      "folder": "spec-compliance-audit",
+      "trigger_expr": "HAS_DOCS",
+      "languages": ["daml"],
+      "output_file": "niche_spec_compliance_findings.md",
+      "budget_slots": 1,
+      "subagent_type": "niche",
+      "path": "agents/skills/niche/spec-compliance-audit/SKILL.md"
+    }
+  }
+}

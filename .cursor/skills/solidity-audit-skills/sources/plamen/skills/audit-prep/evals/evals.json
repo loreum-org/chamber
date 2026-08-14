@@ -1,0 +1,167 @@
+{
+  "skill_name": "audit-prep",
+  "evals": [
+    {
+      "id": 1,
+      "name": "hardhat-small-project",
+      "prompt": "prepare this project for audit",
+      "project_dir": "/path/to/your/hardhat-project",
+      "expected_output": "Full 8-phase audit readiness report for a Hardhat project with 4 contracts. High coverage (95%+), good practices (100), missing deploy scripts and documentation.",
+      "assertions": [
+        {
+          "id": "format-all-phases",
+          "text": "All 8 phases are reported (PHASE 1 through PHASE 8)",
+          "type": "programmatic",
+          "check": "grep -c 'PHASE [1-8]' should return 8"
+        },
+        {
+          "id": "format-end-markers",
+          "text": "All phases have END PHASE markers",
+          "type": "programmatic",
+          "check": "grep -c 'END PHASE' should return 8"
+        },
+        {
+          "id": "format-fail-has-fix",
+          "text": "Every FAIL line is followed by desc: and fix: lines",
+          "type": "programmatic",
+          "check": "Every FAIL block has both desc: and fix: on subsequent lines"
+        },
+        {
+          "id": "detect-hardhat",
+          "text": "Framework detected as Hardhat",
+          "type": "programmatic",
+          "check": "Output contains 'Hardhat' in project summary line"
+        },
+        {
+          "id": "file-count",
+          "text": "In-scope file count is 4",
+          "type": "programmatic",
+          "check": "Output contains '4 files'"
+        },
+        {
+          "id": "coverage-high",
+          "text": "Phase 1 coverage score >= 80 (project has 95%+ branch coverage)",
+          "type": "range",
+          "check": "Phase 1 SCORE >= 80"
+        },
+        {
+          "id": "hygiene-floating-pragma",
+          "text": "Phase 4 flags floating pragma ^0.8.22",
+          "type": "programmatic",
+          "check": "Phase 4 output contains 'floating_pragma' FAIL"
+        },
+        {
+          "id": "practices-perfect",
+          "text": "Phase 6 best practices score >= 90",
+          "type": "range",
+          "check": "Phase 6 SCORE >= 90"
+        },
+        {
+          "id": "deploy-missing",
+          "text": "Phase 7 flags missing deploy scripts",
+          "type": "programmatic",
+          "check": "Phase 7 output contains 'no_deploy_scripts' FAIL"
+        },
+        {
+          "id": "docs-no-trust",
+          "text": "Phase 8 flags missing trust assumptions",
+          "type": "programmatic",
+          "check": "Phase 8 output contains 'no_trust_model' FAIL"
+        },
+        {
+          "id": "no-vuln-analysis",
+          "text": "No vulnerability analysis in output (no H-01, M-01, etc.)",
+          "type": "programmatic",
+          "check": "Output does NOT contain '[H-0' or '[M-0' or 'vulnerability' or 'exploit'"
+        },
+        {
+          "id": "quick-wins-present",
+          "text": "Report ends with Quick Wins section",
+          "type": "programmatic",
+          "check": "Output contains 'Quick Wins'"
+        },
+        {
+          "id": "no-standard-override-flags",
+          "text": "NatSpec check does not flag standard ERC overrides (ownerOf, transferFrom, etc.)",
+          "type": "programmatic",
+          "check": "Phase 3 does NOT contain FAIL for ownerOf, transferFrom, getApproved, isApprovedForAll"
+        },
+        {
+          "id": "no-fuzz-penalty",
+          "text": "No deduction for missing fuzz tests (bonus only)",
+          "type": "programmatic",
+          "check": "Phase 2 does NOT contain a FAIL with deduction for no_fuzz"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "foundry-large-project",
+      "prompt": "prepare this project for audit",
+      "project_dir": "/path/to/your/foundry-project",
+      "expected_output": "Full 8-phase audit readiness report for a Foundry project with 38+ contracts. Uninitialized submodules, missing deploy scripts, missing documentation.",
+      "assertions": [
+        {
+          "id": "format-all-phases",
+          "text": "All 8 phases are reported (PHASE 1 through PHASE 8)",
+          "type": "programmatic",
+          "check": "grep -c 'PHASE [1-8]' should return 8"
+        },
+        {
+          "id": "format-end-markers",
+          "text": "All phases have END PHASE markers",
+          "type": "programmatic",
+          "check": "grep -c 'END PHASE' should return 8"
+        },
+        {
+          "id": "detect-foundry",
+          "text": "Framework detected as Foundry",
+          "type": "programmatic",
+          "check": "Output contains 'Foundry' in project summary line"
+        },
+        {
+          "id": "file-count-large",
+          "text": "In-scope file count >= 35",
+          "type": "range",
+          "check": "File count in summary line >= 35"
+        },
+        {
+          "id": "deps-uninit-submodules",
+          "text": "Phase 5 flags uninitialized git submodules",
+          "type": "programmatic",
+          "check": "Phase 5 output contains 'uninit_submodule' FAIL"
+        },
+        {
+          "id": "practices-no-pause",
+          "text": "Phase 6 flags missing emergency pause mechanism",
+          "type": "programmatic",
+          "check": "Phase 6 output contains 'no_emergency_pause' FAIL"
+        },
+        {
+          "id": "deploy-missing",
+          "text": "Phase 7 flags missing deploy scripts",
+          "type": "programmatic",
+          "check": "Phase 7 output contains 'no_deploy_scripts' FAIL"
+        },
+        {
+          "id": "docs-no-trust",
+          "text": "Phase 8 flags missing trust assumptions",
+          "type": "programmatic",
+          "check": "Phase 8 output contains 'no_trust_model' FAIL"
+        },
+        {
+          "id": "no-vuln-analysis",
+          "text": "No vulnerability analysis in output",
+          "type": "programmatic",
+          "check": "Output does NOT contain '[H-0' or '[M-0' or 'vulnerability' or 'exploit'"
+        },
+        {
+          "id": "hygiene-floating-pragma",
+          "text": "Phase 4 flags floating pragma",
+          "type": "programmatic",
+          "check": "Phase 4 output contains 'floating_pragma' FAIL"
+        }
+      ]
+    }
+  ]
+}

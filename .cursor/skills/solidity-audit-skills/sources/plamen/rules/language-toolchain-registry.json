@@ -1,0 +1,113 @@
+{
+  "version": 1,
+  "languages": {
+    "evm": {
+      "build_command": "forge build",
+      "test_command": "forge test --match-test test_{id} -vvv",
+      "test_filter_mode": "foundry_match_test",
+      "fuzz_engines": [
+        {
+          "name": "forge_fuzz",
+          "command": "forge test --match-test testFuzz_{id} -vvv",
+          "template": "Foundry fuzz test using bound() inputs"
+        }
+      ],
+      "fallback_strategy": "parameterized Foundry unit tests or Hardhat grep tests when Foundry is unavailable",
+      "evidence_tags": ["POC-PASS", "POC-FAIL", "FUZZ-PASS", "CODE-TRACE"],
+      "docs_sources": [
+        "https://book.getfoundry.sh/forge/tests",
+        "https://book.getfoundry.sh/forge/fuzz-testing"
+      ]
+    },
+    "solana": {
+      "build_command": "cargo build-sbf",
+      "test_command": "cargo test test_{id} -- --nocapture",
+      "test_filter_mode": "cargo_name_filter",
+      "test_prewarm_command": "cargo test --no-run",
+      "features": [],
+      "fuzz_engines": [
+        {
+          "name": "trident",
+          "command": "cd trident-tests && trident fuzz run fuzz_0",
+          "template": "Trident fuzz target when available"
+        },
+        {
+          "name": "proptest",
+          "command": "cargo test proptest_{id} -- --nocapture",
+          "template": "bounded Rust proptest fallback"
+        }
+      ],
+      "fallback_strategy": "native cargo tests with bounded account/message fixtures when Anchor or Trident is unavailable",
+      "evidence_tags": ["POC-PASS", "POC-FAIL", "FUZZ-PASS", "CODE-TRACE"],
+      "docs_sources": [
+        "https://solana.com/docs/programs",
+        "https://www.anchor-lang.com/docs/testing"
+      ]
+    },
+    "aptos": {
+      "build_command": "aptos move compile",
+      "test_command": "aptos move test --filter test_{id}",
+      "test_filter_mode": "aptos_filter",
+      "fuzz_engines": [],
+      "fallback_strategy": "boundary-value Move unit tests with multiple concrete input sets",
+      "evidence_tags": ["POC-PASS", "POC-FAIL", "CODE-TRACE"],
+      "docs_sources": [
+        "https://aptos.dev/en/build/smart-contracts/book/unit-testing"
+      ]
+    },
+    "sui": {
+      "build_command": "sui move build",
+      "test_command": "sui move test {test_name}",
+      "test_filter_mode": "positional_filter",
+      "fuzz_engines": [
+        {
+          "name": "move_random_test",
+          "command": "sui move test --rand-num-iters {iters} {test_name}",
+          "template": "#[random_test]"
+        }
+      ],
+      "fallback_strategy": "boundary-value parameterized tests when random-input tests cannot compile",
+      "evidence_tags": ["POC-PASS", "POC-FAIL", "CODE-TRACE"],
+      "docs_sources": [
+        "https://move-book.com/testing/testing-basics",
+        "https://move-book.com/testing/random-test/"
+      ]
+    },
+    "soroban": {
+      "build_command": "stellar contract build",
+      "test_command": "cargo test --features testutils test_{id}",
+      "test_filter_mode": "cargo_name_filter",
+      "test_prewarm_command": "cargo test --no-run",
+      "features": ["testutils"],
+      "fuzz_engines": [
+        {
+          "name": "cargo_fuzz",
+          "command": "cargo +nightly fuzz run fuzz_{id}",
+          "template_path": "prompts/soroban/phase4b-invariant-fuzz.md",
+          "output_file": "cargo_fuzz_findings.md"
+        },
+        {
+          "name": "proptest",
+          "command": "cargo test --features testutils proptest_{id}",
+          "output_file": "proptest_findings.md"
+        }
+      ],
+      "fallback_strategy": "proptest with bounded inputs or boundary-value parameterized tests",
+      "evidence_tags": ["POC-PASS", "POC-FAIL", "FUZZ-PASS", "CODE-TRACE"],
+      "docs_sources": ["https://developers.stellar.org/docs/build/smart-contracts"]
+    },
+    "daml": {
+      "build_command": "daml build",
+      "test_command": "daml test --files {file}",
+      "test_filter_mode": "daml_no_filter",
+      "fuzz_engines": [],
+      "fallback_strategy": "boundary-value parameterized DAML Script () functions (min/mid/max/empty-list) when no fuzzer is available; DLint is style-only, no security SAST",
+      "evidence_tags": ["POC-PASS", "POC-FAIL", "CODE-TRACE"],
+      "docs_sources": [
+        "https://docs.daml.com/daml/intro/0_Intro.html",
+        "https://docs.daml.com/daml-script/index.html",
+        "https://docs.daml.com/daml/intro/9_Dependencies.html"
+      ]
+    }
+  }
+}

@@ -1,0 +1,80 @@
+rules:
+  - id: plamen-l1-go-integer-underflow-p2p-count
+    message: >
+      Possible integer underflow in p2p request handler: `count - 1` when `count`
+      is uint-typed and attacker-controlled can underflow to UINT_MAX, bypassing
+      maxServe-style upper bounds. This is the Geth CVE-2024-32972 (GetHeadersFrom)
+      pattern. The enclosing function takes a request object as input and the
+      `count` variable is derived from a field on that request.
+    languages: [go]
+    severity: WARNING
+    metadata:
+      skill: mempool-asymmetric-dos / p2p-dos-and-eclipse
+      cve-reference: CVE-2024-32972
+      advisory: https://github.com/ethereum/go-ethereum/security/advisories/GHSA-4xc9-8hmq-j652
+      bug-class: integer-underflow
+      plamen-tag: "[MP-BOUNDARY:count-underflow]"
+    pattern-either:
+      # Case 1: `count` is a local variable derived from a request field
+      #         (e.g. `count := query.Amount` at the top of the function),
+      #         then `count - 1` is used anywhere in the same function without
+      #         a preceding `if count == 0` guard. This is the Geth
+      #         CVE-2024-32972 shape — the offending subtraction is a function
+      #         argument, not an assignment.
+      - patterns:
+          - pattern: $COUNT - 1
+          - pattern-inside: |
+              func $F(...) $_ {
+                ...
+                $COUNT := $REQ.$AMOUNT
+                ...
+              }
+          - pattern-not-inside: |
+              func $F(...) $_ {
+                ...
+                if $COUNT == 0 {
+                  ...
+                }
+                ...
+              }
+      # Case 2: `count` is a direct uint64 parameter of the enclosing function.
+      #         Covers simple "helper that takes count and subtracts 1"
+      #         patterns, e.g. `func (h *handler) doFoo(count uint64) {...}`.
+      - patterns:
+          - pattern: $COUNT - 1
+          - pattern-inside: |
+              func $F(..., $COUNT uint64, ...) $_ {
+                ...
+              }
+          - pattern-not-inside: |
+              func $F(..., $COUNT uint64, ...) $_ {
+                ...
+                if $COUNT == 0 {
+                  ...
+                }
+                ...
+              }
+      # Case 3: receiver method variant of case 2.
+      - patterns:
+          - pattern: $COUNT - 1
+          - pattern-inside: |
+              func ($R $T) $F(..., $COUNT uint64, ...) $_ {
+                ...
+              }
+          - pattern-not-inside: |
+              func ($R $T) $F(..., $COUNT uint64, ...) $_ {
+                ...
+                if $COUNT == 0 {
+                  ...
+                }
+                ...
+              }
+    # Note: this rule matches the Geth CVE-2024-32972 shape and similar. Known
+    # false-positive risk: any function that reads a count-like field from a
+    # request and subtracts 1 without an explicit zero-check — but only for
+    # uint-typed counts where the underflow is actually exploitable. The
+    # `depth-network-surface` agent is expected to filter these down to the
+    # ones on a permissionless path. Fixture coverage in
+    # _opengrep-rules/fixtures/ should include: (a) the CVE reproduction,
+    # (b) a zero-check-guarded variant (must not fire), (c) an int-typed count
+    # (signed subtraction is not an underflow in the same way).

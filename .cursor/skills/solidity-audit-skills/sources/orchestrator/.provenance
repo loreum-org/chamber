@@ -1,0 +1,7 @@
+{
+  "name": "orchestrator",
+  "kind": "original",
+  "upstream": null,
+  "note": "Not a mirror. Original prose by Daoism Systems. Cross-collection autonomous audit entry point: profiles a target, routes to relevant skills across all four collections, dispatches four methodology orchestrators, and cross-verifies their findings.",
+  "license": "MIT, (c) 2026 Daoism Systems"
+}

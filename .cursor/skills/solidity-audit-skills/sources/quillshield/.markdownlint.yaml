@@ -1,0 +1,13 @@
+# Markdown lint config — permissive so existing docs pass CI.
+# Set default: true and fix issues, or enable specific rules (e.g. MD009, MD010), to tighten later.
+default: false
+
+# Optional: enable these one at a time and fix as you go
+# MD009: true   # no trailing spaces
+# MD010: true   # no tabs
+# MD012: true   # no multiple consecutive blank lines
+# MD022: true   # blanks around headings
+# MD031: true   # blanks around fenced code
+# MD032: true   # blanks around lists
+# MD034: true   # no bare URLs (use <url>)
+# MD041: true   # first line in file should be top-level heading
