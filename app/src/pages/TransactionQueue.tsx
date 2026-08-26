@@ -218,7 +218,7 @@ export default function TransactionQueue() {
     return (
       <div className="flex flex-col items-center justify-center min-h-64 gap-4 text-center">
         <FiLoader className="w-10 h-10 text-accent-400 animate-spin" />
-        <p className="text-slate-400 text-sm">Verifying chamber registration…</p>
+        <p className="text-slate-400 text-sm">Verifying chamber…</p>
       </div>
     )
   }
@@ -228,7 +228,7 @@ export default function TransactionQueue() {
       <div className="flex flex-col items-center justify-center min-h-64 gap-4 text-center">
         <FiAlertCircle className="w-12 h-12 text-red-400" />
         <h2 className="font-heading text-xl font-bold text-slate-100">Not a Chamber</h2>
-        <p className="text-slate-400">This address is not registered in the Registry.</p>
+        <p className="text-slate-400">This address does not look like a Chamber contract.</p>
         <Link to="/" className="btn btn-primary">Back to Dashboard</Link>
       </div>
     )

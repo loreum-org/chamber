@@ -3,6 +3,7 @@ pragma solidity ^0.8.30;
 
 import {Script, console} from "forge-std/Script.sol";
 import {Registry} from "src/Registry.sol";
+import {Factory} from "src/Factory.sol";
 import {DeployRegistry as DeployRegistryLib} from "test/utils/DeployRegistry.sol";
 import {MockERC20} from "test/mock/MockERC20.sol";
 import {MockERC721} from "test/mock/MockERC721.sol";
@@ -28,9 +29,13 @@ contract DeployAllAnvil is Script {
 
         vm.startBroadcast();
 
-        // Deploy Registry
+        // Deploy Registry (deprecated index + legacy create path)
         Registry registry = DeployRegistryLib.deploy(admin);
         console.log("Registry deployed at:", address(registry));
+
+        // Deploy Factory (preferred create path; shares the Registry Chamber implementation)
+        Factory factory = new Factory(registry.implementation(), admin);
+        console.log("Factory deployed at:", address(factory));
 
         // Deploy MockERC20
         MockERC20 mockERC20 = new MockERC20(tokenName, tokenSymbol, initialSupply);
@@ -49,6 +54,7 @@ contract DeployAllAnvil is Script {
 
         // Write deployment addresses to JSON file for the app to consume
         string memory json = vm.serializeAddress("deployment", "registry", address(registry));
+        json = vm.serializeAddress("deployment", "factory", address(factory));
         json = vm.serializeAddress("deployment", "chamberImplementation", registry.implementation());
         json = vm.serializeAddress("deployment", "mockERC20", address(mockERC20));
         json = vm.serializeAddress("deployment", "mockERC721", address(mockERC721));

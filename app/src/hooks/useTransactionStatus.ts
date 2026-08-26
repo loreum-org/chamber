@@ -2,7 +2,7 @@ import { useEffect, useCallback, useRef, useState } from 'react'
 import { useWaitForTransactionReceipt, useWatchPendingTransactions, useWriteContract } from 'wagmi'
 import { type Hash } from 'viem'
 import toast from 'react-hot-toast'
-import { chamberAbi, erc20Abi, registryAbi } from '@/contracts/abis'
+import { chamberAbi, erc20Abi, factoryAbi, registryAbi } from '@/contracts/abis'
 
 export type TransactionStatus = 'idle' | 'pending' | 'confirming' | 'success' | 'error'
 
@@ -546,14 +546,15 @@ export function useTokenApproveWithStatus(
  * Enhanced hook for creating chambers with status tracking
  */
 export function useCreateChamberWithStatus(
-  registryAddress: `0x${string}` | undefined,
-  options?: UseTransactionStatusOptions
+  createAddress: `0x${string}` | undefined,
+  options?: UseTransactionStatusOptions & { abi?: typeof factoryAbi | typeof registryAbi }
 ) {
   const { writeContract, data: hash, isPending, error: writeError } = useWriteContract()
   const transactionStatus = useTransactionStatus({
     hash,
     ...options,
   })
+  const createAbi = options?.abi ?? registryAbi
 
   const createChamber = async (
     erc20Token: `0x${string}`,
@@ -562,12 +563,12 @@ export function useCreateChamberWithStatus(
     name: string,
     symbol: string
   ) => {
-    if (!registryAddress) return
+    if (!createAddress) return
     try {
       transactionStatus.reset()
       const txHash = await writeContract({
-        address: registryAddress,
-        abi: registryAbi,
+        address: createAddress,
+        abi: createAbi,
         functionName: 'createChamber',
         args: [erc20Token, erc721Token, BigInt(seats), name, symbol],
       })

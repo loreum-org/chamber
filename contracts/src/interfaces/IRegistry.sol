@@ -4,10 +4,11 @@ pragma solidity ^0.8.30;
 /**
  * @title IRegistry
  * @author xhad, Loreum DAO LLC
- * @notice Minimal read API for chamber hierarchy links (parent / child chambers).
- * @dev `Registry` implements this interface plus deployment and indexing functions.
- *      Parent/child relationships are set in `createChamber` when `erc20Token` is itself a
- *      registered chamber, modelling sub-chambers that use another chamber's token as asset.
+ * @notice DEPRECATED index: minimal read API for chamber hierarchy links (parent / child).
+ * @dev Prefer {IFactory} for new deploys. `Registry` still implements this interface plus
+ *      the original deployment and indexing functions. Parent/child relationships are set
+ *      in `Registry.createChamber` when `erc20Token` is itself a registered chamber.
+ *      The Factory does not write this graph; existing links stay on this index only.
  */
 interface IRegistry {
     /**
