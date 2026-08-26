@@ -5,6 +5,7 @@ import {IBoard} from "./interfaces/IBoard.sol";
 import {
     ReentrancyGuardTransientUpgradeable
 } from "lib/openzeppelin-contracts-upgradeable/contracts/utils/ReentrancyGuardTransientUpgradeable.sol";
+import {EnumerableSet} from "lib/openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
 
 /**
  * @title Board
@@ -17,6 +18,8 @@ import {
  *      a full operation in a single `nonReentrant` without a nested-lock revert.
  */
 abstract contract Board is ReentrancyGuardTransientUpgradeable {
+    using EnumerableSet for EnumerableSet.UintSet;
+
     /**
      * @notice Node structure for the doubly linked list
      * @dev next and prev are uint128, packed into one storage slot.
@@ -51,6 +54,7 @@ abstract contract Board is ReentrancyGuardTransientUpgradeable {
      * @notice ERC-7201 namespaced storage layout for Board
      * @dev size and seats are uint32, sharing one 32-byte slot (max values 50 and 20 fit
      *      comfortably). Reentrancy is handled by OpenZeppelin `ReentrancyGuardTransientUpgradeable`.
+     *      `evictedTokenIds` is appended after `seatedAt` so existing ERC-7201 slots stay stable.
      * @custom:storage-location erc7201:loreum.Board
      */
     struct BoardStorage {
@@ -63,6 +67,9 @@ abstract contract Board is ReentrancyGuardTransientUpgradeable {
         /// @notice First block at which `tokenId` may exercise director rights.
         /// @dev Zero means no checkpoint: a pre-upgrade incumbent, or a token not in the top set.
         mapping(uint256 tokenId => uint256 seatedAtBlock) seatedAt;
+        /// @dev TokenIds removed by MAX_NODES tail eviction. Empty after in-place upgrade
+        ///      until a new eviction; getDelegations unions this with leftover holder amounts.
+        EnumerableSet.UintSet evictedTokenIds;
     }
 
     /// @notice Maximum number of nodes allowed in the linked list
@@ -253,8 +260,11 @@ abstract contract Board is ReentrancyGuardTransientUpgradeable {
         BoardStorage storage $ = _getBoardStorage();
         if ($.size >= MAX_NODES) {
             if (amount <= $.nodes[$.tail].amount) revert IBoard.MaxNodesReached();
-            _remove($.tail);
+            uint256 evicted = $.tail;
+            _remove(evicted);
+            $.evictedTokenIds.add(evicted);
         }
+        $.evictedTokenIds.remove(tokenId);
 
         if ($.head == 0) {
             _initializeFirstNode(tokenId, amount);

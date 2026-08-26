@@ -144,6 +144,7 @@ contract Chamber is ERC4626Upgradeable, Board, Wallet, IChamber, IERC721Receiver
         }
 
         _delegate(tokenId, amount);
+        _syncTrackedDelegations(msg.sender);
 
         emit IChamber.DelegationUpdated(msg.sender, tokenId, $.holderDelegation[msg.sender][tokenId]);
     }
@@ -173,6 +174,8 @@ contract Chamber is ERC4626Upgradeable, Board, Wallet, IChamber, IERC721Receiver
         if ($b.nodes[tokenId].tokenId == tokenId) {
             _undelegate(tokenId, amount);
         }
+
+        _syncTrackedDelegations(msg.sender);
 
         emit IChamber.DelegationUpdated(msg.sender, tokenId, newDelegation);
     }
@@ -252,7 +255,9 @@ contract Chamber is ERC4626Upgradeable, Board, Wallet, IChamber, IERC721Receiver
 
     /**
      * @notice Returns the list of tokenIds to which the holder has delegated tokens and the corresponding amounts
-     * @dev Reads the per-holder enumerable set so board-evicted tokenIds remain discoverable.
+     * @dev Prefers the per-holder enumerable set (insertion order, including evicted ids). After an
+     *      in-place upgrade the set is empty, so leftover `holderDelegation` amounts are unioned from
+     *      the live board list and the eviction index. Empty holders stay empty.
      * @param holder The address holding Chamber shares that delegated voting weight
      * @return tokenIds The list of tokenIds
      * @return amounts The list of amounts delegated to each tokenId
@@ -264,13 +269,127 @@ contract Chamber is ERC4626Upgradeable, Board, Wallet, IChamber, IERC721Receiver
         returns (uint256[] memory tokenIds, uint256[] memory amounts)
     {
         if (holder == address(0)) revert IChamber.ZeroAddress();
+        return _collectDelegations(holder);
+    }
 
+    /**
+     * @dev Union of the holder set with leftover board/evicted amounts. When the set already
+     *      accounts for `totalHolderDelegations`, extras are skipped so insertion order is kept.
+     */
+    function _collectDelegations(address holder)
+        private
+        view
+        returns (uint256[] memory tokenIds, uint256[] memory amounts)
+    {
         ChamberStorage storage $c = _getChamberStorage();
-        tokenIds = $c.holderDelegatedTokenIds[holder].values();
-        uint256 count = tokenIds.length;
-        amounts = new uint256[](count);
-        for (uint256 i = 0; i < count;) {
-            amounts[i] = $c.holderDelegation[holder][tokenIds[i]];
+        EnumerableSet.UintSet storage tracked = $c.holderDelegatedTokenIds[holder];
+        uint256[] memory setIds = tracked.values();
+        uint256 setLen = setIds.length;
+
+        uint256 trackedTotal;
+        for (uint256 i = 0; i < setLen;) {
+            trackedTotal += $c.holderDelegation[holder][setIds[i]];
+            unchecked {
+                ++i;
+            }
+        }
+
+        if (trackedTotal == $c.totalHolderDelegations[holder]) {
+            tokenIds = setIds;
+            amounts = new uint256[](setLen);
+            for (uint256 i = 0; i < setLen;) {
+                amounts[i] = $c.holderDelegation[holder][setIds[i]];
+                unchecked {
+                    ++i;
+                }
+            }
+            return (tokenIds, amounts);
+        }
+
+        BoardStorage storage $b = _getBoardStorage();
+        uint256 maxLen = setLen + uint256($b.size) + $b.evictedTokenIds.length();
+        uint256[] memory tmpIds = new uint256[](maxLen);
+        uint256[] memory tmpAmts = new uint256[](maxLen);
+        uint256 n;
+
+        for (uint256 i = 0; i < setLen;) {
+            uint256 id = setIds[i];
+            uint256 amount = $c.holderDelegation[holder][id];
+            if (amount > 0) {
+                tmpIds[n] = id;
+                tmpAmts[n] = amount;
+                unchecked {
+                    ++n;
+                }
+            }
+            unchecked {
+                ++i;
+            }
+        }
+
+        uint256 tokenId = $b.head;
+        while (tokenId != 0) {
+            uint256 amount = $c.holderDelegation[holder][tokenId];
+            if (amount > 0 && !tracked.contains(tokenId)) {
+                tmpIds[n] = tokenId;
+                tmpAmts[n] = amount;
+                unchecked {
+                    ++n;
+                }
+            }
+            tokenId = uint256($b.nodes[tokenId].next);
+        }
+
+        uint256 evictedLen = $b.evictedTokenIds.length();
+        for (uint256 i = 0; i < evictedLen;) {
+            uint256 evictedId = $b.evictedTokenIds.at(i);
+            uint256 amount = $c.holderDelegation[holder][evictedId];
+            if (amount > 0 && !tracked.contains(evictedId) && $b.nodes[evictedId].tokenId != evictedId) {
+                tmpIds[n] = evictedId;
+                tmpAmts[n] = amount;
+                unchecked {
+                    ++n;
+                }
+            }
+            unchecked {
+                ++i;
+            }
+        }
+
+        tokenIds = new uint256[](n);
+        amounts = new uint256[](n);
+        for (uint256 i = 0; i < n;) {
+            tokenIds[i] = tmpIds[i];
+            amounts[i] = tmpAmts[i];
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
+    /**
+     * @dev Lazy-backfill the holder set from leftover board/evicted amounts after an upgrade.
+     *      Does not require an off-chain holder list; only the caller is synced.
+     */
+    function _syncTrackedDelegations(address holder) private {
+        ChamberStorage storage $c = _getChamberStorage();
+        BoardStorage storage $b = _getBoardStorage();
+        EnumerableSet.UintSet storage tracked = $c.holderDelegatedTokenIds[holder];
+
+        uint256 tokenId = $b.head;
+        while (tokenId != 0) {
+            if ($c.holderDelegation[holder][tokenId] > 0) {
+                tracked.add(tokenId);
+            }
+            tokenId = uint256($b.nodes[tokenId].next);
+        }
+
+        uint256 evictedLen = $b.evictedTokenIds.length();
+        for (uint256 i = 0; i < evictedLen;) {
+            uint256 evictedId = $b.evictedTokenIds.at(i);
+            if ($c.holderDelegation[holder][evictedId] > 0) {
+                tracked.add(evictedId);
+            }
             unchecked {
                 ++i;
             }
