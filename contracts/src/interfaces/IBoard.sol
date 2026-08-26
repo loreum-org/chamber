@@ -55,10 +55,11 @@ interface IBoard {
 
     /**
      * @notice First block at which `tokenId` may exercise director rights.
-     * @dev Zero if the token is not currently seated. Set to `block.number + SEATING_DELAY`
-     *      when the token newly enters the live top-`seats` set.
+     * @dev Zero means no checkpoint: a pre-upgrade incumbent already in the top set
+     *      (treated as mature), or a token that is not seated. Newly entering tokenIds
+     *      are set to `block.number + SEATING_DELAY`.
      * @param tokenId The membership token ID
-     * @return seatedAtBlock Activation block, or zero if not seated
+     * @return seatedAtBlock Activation block, or zero if no checkpoint is stored
      */
     function getSeatedAt(uint256 tokenId) external view returns (uint256 seatedAtBlock);
 

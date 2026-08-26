@@ -144,6 +144,125 @@ contract FindingH02SeatingDelayTest is Test {
         assertEq(chamber.getTransactionCount(), 1);
     }
 
+    /// @dev ERC-7201 Board storage + inlined SeatUpdate (4 slots) + head + tail + packed size/seats.
+    bytes32 private constant _BOARD_STORAGE_SLOT = 0xae916af301d5dc481b59b170e7db23e36b830da7017e456f99549768499c8800;
+    uint256 private constant _SEATED_AT_SLOT_OFFSET = 8;
+
+    /**
+     * @notice After an in-place impl upgrade, `seatedAt` is unset (0) for every incumbent.
+     *         Those directors must still submit/confirm/execute immediately.
+     */
+    function test_H02_PostUpgradeUnsetSeatedAt_IncumbentsCanActImmediately() public {
+        deal(address(chamber), 1 ether);
+        _simulatePostUpgradeStorage(1);
+        _simulatePostUpgradeStorage(2);
+        assertEq(chamber.getSeatedAt(1), 0);
+        assertEq(chamber.getSeatedAt(2), 0);
+
+        vm.prank(user1);
+        chamber.submitTransaction(1, address(0x3), 1 ether, "");
+        vm.prank(user2);
+        chamber.confirmTransaction(2, 0);
+        vm.prank(user1);
+        chamber.executeTransaction(1, 0, "");
+
+        (bool executed,,,,) = chamber.getTransaction(0);
+        assertTrue(executed, "upgrade must not lock incumbents with unset seatedAt");
+    }
+
+    /**
+     * @notice Post-upgrade incumbents stay live; a tokenId that newly enters the top set
+     *         still waits `SEATING_DELAY` even after a later board mutation.
+     */
+    function test_H02_PostUpgradeUnsetSeatedAt_NewSeatStillWaits() public {
+        _simulatePostUpgradeStorage(1);
+        _simulatePostUpgradeStorage(2);
+        assertEq(chamber.getSeatedAt(1), 0);
+
+        vm.prank(user1);
+        chamber.submitTransaction(1, address(0x3), 0, "");
+
+        _seat(user3, 3, 50 ether);
+        assertGt(chamber.getSeatedAt(3), 0, "new seat still receives an activation block");
+        assertEq(chamber.getSeatedAt(1), 0, "incumbent checkpoint stays unset after refresh");
+
+        vm.prank(user3);
+        vm.expectRevert(IChamber.DirectorNotSeated.selector);
+        chamber.confirmTransaction(3, 0);
+
+        vm.prank(user2);
+        chamber.confirmTransaction(2, 0);
+        assertTrue(chamber.getConfirmation(2, 0));
+
+        vm.roll(block.number + SEATING_DELAY);
+        vm.prank(user3);
+        chamber.confirmTransaction(3, 0);
+        assertTrue(chamber.getConfirmation(3, 0));
+    }
+
+    /**
+     * @notice A later delegate (which runs `_refreshSeating`) must not stamp incumbents
+     *         and lock them for a block.
+     */
+    function test_H02_PostUpgradeUnsetSeatedAt_RefreshDoesNotLockIncumbents() public {
+        _simulatePostUpgradeStorage(1);
+        _simulatePostUpgradeStorage(2);
+
+        token.mint(user1, 1 ether);
+        vm.startPrank(user1);
+        token.approve(address(chamber), 1 ether);
+        chamber.deposit(1 ether, user1);
+        chamber.delegate(1, 1 ether);
+        vm.stopPrank();
+
+        assertEq(chamber.getSeatedAt(1), 0, "refresh must not assign an activation to an incumbent");
+
+        vm.prank(user1);
+        chamber.submitTransaction(1, address(0x3), 0, "");
+        assertEq(chamber.getTransactionCount(), 1);
+    }
+
+    function test_H02_PostUpgradeUnsetSeatedAt_ReentryStillWaits() public {
+        _simulatePostUpgradeStorage(1);
+        _simulatePostUpgradeStorage(2);
+
+        _seat(user3, 3, 50 ether);
+        vm.roll(block.number + SEATING_DELAY);
+
+        vm.prank(user3);
+        chamber.undelegate(3, 50 ether);
+        assertEq(chamber.getSeatedAt(3), 0);
+
+        vm.prank(user3);
+        chamber.delegate(3, 50 ether);
+        assertGt(chamber.getSeatedAt(3), 0);
+
+        vm.prank(user3);
+        vm.expectRevert(IChamber.DirectorNotSeated.selector);
+        chamber.submitTransaction(3, address(0x3), 0, "");
+
+        vm.prank(user1);
+        chamber.submitTransaction(1, address(0x3), 0, "");
+        assertEq(chamber.getTransactionCount(), 1);
+    }
+
+    function _seatedAtSlot(uint256 tokenId) internal pure returns (bytes32) {
+        return keccak256(abi.encode(tokenId, uint256(_BOARD_STORAGE_SLOT) + _SEATED_AT_SLOT_OFFSET));
+    }
+
+    /// @dev Zero `seatedAt[tokenId]` as an in-place upgrade would: the new mapping is empty.
+    function _simulatePostUpgradeStorage(uint256 tokenId) internal {
+        uint256 recorded = chamber.getSeatedAt(tokenId);
+        assertGt(recorded, 0, "precondition: token has a checkpoint to clear");
+        assertEq(
+            uint256(vm.load(address(chamber), _seatedAtSlot(tokenId))),
+            recorded,
+            "seatedAt ERC-7201 slot offset must match BoardStorage layout"
+        );
+        vm.store(address(chamber), _seatedAtSlot(tokenId), bytes32(0));
+        assertEq(chamber.getSeatedAt(tokenId), 0);
+    }
+
     function _seat(address user, uint256 tokenId, uint256 amount) internal {
         try nft.ownerOf(tokenId) returns (address owner) {
             if (owner != user) revert("token already minted to another owner");
