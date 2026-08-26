@@ -193,6 +193,9 @@ interface IChamber is IERC4626, IBoard, IWallet {
     /// @notice Thrown when caller is not a director
     error NotDirector();
 
+    /// @notice Thrown when a tokenId is in the live top seats but the seating delay has not elapsed
+    error DirectorNotSeated();
+
     /// @notice Thrown when address is zero
     error ZeroAddress();
 

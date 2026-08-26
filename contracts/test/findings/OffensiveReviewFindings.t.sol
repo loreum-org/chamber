@@ -48,6 +48,7 @@ contract OffensiveReviewFindingsTest is Test {
         _depositAndDelegate(user1, 1, small);
         _depositAndDelegate(user2, 2, small);
         _depositAndDelegate(user3, 3, small);
+        vm.roll(block.number + 1);
     }
 
     function _depositAndDelegate(address user, uint256 tokenId, uint256 amount) internal {
@@ -111,6 +112,7 @@ contract OffensiveReviewFindingsTest is Test {
         _depositAndDelegate(user6, 6, large);
         _depositAndDelegate(user7, 7, large);
         _depositAndDelegate(user8, 8, large);
+        vm.roll(block.number + 1);
 
         assertFalse(_isDirectorToken(1), "token 1 should no longer be in top seats");
         assertFalse(_isDirectorToken(2), "token 2 should no longer be in top seats");
@@ -139,6 +141,7 @@ contract OffensiveReviewFindingsTest is Test {
         token.approve(address(chamber), amount);
         chamber.deposit(amount, address(this));
         chamber.delegate(tokenId, amount);
+        vm.roll(block.number + 1);
 
         assertTrue(_isDirectorToken(tokenId));
 

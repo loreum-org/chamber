@@ -642,12 +642,22 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
 
         while (current != 0 && remaining > 0) {
             if (current == tokenId) {
+                if (!_isSeatingMature(tokenId)) revert IChamber.DirectorNotSeated();
                 return;
             }
             current = $b.nodes[current].next;
             remaining--;
         }
         revert IChamber.NotDirector();
+    }
+
+    /**
+     * @notice Block number when `tokenId` last entered the live top-`seats` set.
+     * @param tokenId The membership token ID
+     * @return seatedAtBlock Seating block, or zero if not seated
+     */
+    function getSeatedAt(uint256 tokenId) public view override returns (uint256 seatedAtBlock) {
+        return _getSeatedAt(tokenId);
     }
 
     /// PROXY UPGRADE FUNCTIONS ///
