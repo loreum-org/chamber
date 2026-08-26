@@ -41,7 +41,7 @@ contract FindingH02SeatingDelayTest is Test {
 
         _seat(user3, 3, 50 ether);
 
-        assertEq(chamber.getSeatedAt(3), block.number, "new top-seat token records this block");
+        assertEq(chamber.getSeatedAt(3), block.number + SEATING_DELAY, "new top-seat token activates next block");
         assertTrue(_isLiveDirector(3), "live ranking includes the new token immediately");
 
         vm.prank(user3);
@@ -110,7 +110,7 @@ contract FindingH02SeatingDelayTest is Test {
         _seat(user3, 3, 50 ether);
 
         assertEq(chamber.getSeatedAt(1), seatedAtBefore, "incumbent seating checkpoint is unchanged");
-        assertTrue(block.number >= seatedAtBefore + SEATING_DELAY);
+        assertTrue(block.number >= seatedAtBefore);
 
         vm.prank(user1);
         chamber.submitTransaction(1, address(0x3), 0, "");
@@ -131,7 +131,7 @@ contract FindingH02SeatingDelayTest is Test {
 
         vm.prank(user3);
         chamber.delegate(3, 50 ether);
-        assertEq(chamber.getSeatedAt(3), block.number);
+        assertEq(chamber.getSeatedAt(3), block.number + SEATING_DELAY);
 
         vm.prank(user3);
         vm.expectRevert(IChamber.DirectorNotSeated.selector);

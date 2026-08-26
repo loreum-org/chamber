@@ -1791,7 +1791,6 @@ contract ChamberTest is Test {
 
         // Delegate tokens to Chamber A's tokenId
         chamberB.delegate(tokenId, delegationAmount);
-        vm.roll(block.number + 1);
 
         // 3. Verify Chamber A is now a director of Chamber B
         // Chamber A should be in top 3 positions (seats = 3)
@@ -1805,14 +1804,6 @@ contract ChamberTest is Test {
         }
         assertTrue(chamberAIsDirector, "Chamber A should be a director of Chamber B");
 
-        // 4. Chamber A (via authorizedAddress) submits a transaction on Chamber B
-        // This simulates Chamber A acting as director
-        bytes memory testData = abi.encodeWithSignature("testFunction()");
-        chamberB.submitTransaction(tokenId, address(0x1234), 0, testData);
-
-        // Verify transaction was submitted
-        assertEq(chamberB.getTransactionCount(), 1);
-
         // 5. Get other directors to confirm (need quorum)
         // Mint more NFTs and delegate to get more directors
         uint256 tokenId2 = 2;
@@ -1822,6 +1813,14 @@ contract ChamberTest is Test {
         // Delegate to tokenId2
         chamberB.delegate(tokenId2, 500e18);
         vm.roll(block.number + 1);
+
+        // 4. Chamber A (via authorizedAddress) submits a transaction on Chamber B
+        // This simulates Chamber A acting as director
+        bytes memory testData = abi.encodeWithSignature("testFunction()");
+        chamberB.submitTransaction(tokenId, address(0x1234), 0, testData);
+
+        // Verify transaction was submitted
+        assertEq(chamberB.getTransactionCount(), 1);
 
         // testUser2 confirms the transaction
         vm.prank(testUser2);
@@ -1869,7 +1868,6 @@ contract ChamberTest is Test {
 
         // Delegate tokens to Chamber A's tokenId
         chamberB.delegate(tokenId, delegationAmount);
-        vm.roll(block.number + 1);
 
         // 3. Verify Chamber A is now a director of Chamber B
         address[] memory directors = chamberB.getDirectors();
@@ -1886,6 +1884,24 @@ contract ChamberTest is Test {
         uint256 transferAmount = 100e18;
         MockERC20(address(token)).mint(address(chamberB), transferAmount);
 
+        // 6. Get other directors to confirm (need quorum)
+        // Create second director
+        uint256 tokenId2 = 2;
+        address director2 = address(0x20);
+        MockERC721(address(nft)).mintWithTokenId(director2, tokenId2);
+
+        // Delegate to tokenId2
+        chamberB.delegate(tokenId2, 500e18);
+
+        // Create third director
+        uint256 tokenId3 = 3;
+        address director3 = address(0x30);
+        MockERC721(address(nft)).mintWithTokenId(director3, tokenId3);
+
+        // Delegate to tokenId3
+        chamberB.delegate(tokenId3, 400e18);
+        vm.roll(block.number + 1);
+
         // 5. Chamber A (via authorizedAddress) submits a transaction on Chamber B
         // This transaction will transfer tokens from Chamber B to Chamber C
         bytes memory transferData = abi.encodeWithSelector(IERC20.transfer.selector, address(chamberC), transferAmount);
@@ -1896,28 +1912,9 @@ contract ChamberTest is Test {
         // Verify transaction was submitted
         assertEq(chamberB.getTransactionCount(), 1);
 
-        // 6. Get other directors to confirm (need quorum)
-        // Create second director
-        uint256 tokenId2 = 2;
-        address director2 = address(0x20);
-        MockERC721(address(nft)).mintWithTokenId(director2, tokenId2);
-
-        // Delegate to tokenId2
-        chamberB.delegate(tokenId2, 500e18);
-        vm.roll(block.number + 1);
-
         // director2 confirms the transaction
         vm.prank(director2);
         chamberB.confirmTransaction(tokenId2, 0);
-
-        // Create third director
-        uint256 tokenId3 = 3;
-        address director3 = address(0x30);
-        MockERC721(address(nft)).mintWithTokenId(director3, tokenId3);
-
-        // Delegate to tokenId3
-        chamberB.delegate(tokenId3, 400e18);
-        vm.roll(block.number + 1);
 
         // director3 confirms the transaction
         vm.prank(director3);
