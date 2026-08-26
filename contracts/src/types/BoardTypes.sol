@@ -4,23 +4,27 @@ pragma solidity ^0.8.30;
 /**
  * @title BoardTypes
  * @author xhad, Loreum DAO LLC
- * @notice Legacy reference structs for documentation and offchain tooling.
- * @dev Canonical onchain layout is `Board.Node` (packed `uint128` links) and `Board.SeatUpdate`; do not assume byte-for-byte equivalence.
+ * @notice Shared structs matching on-chain `Board` storage layouts.
+ * @dev `Node.next` / `Node.prev` are `uint128` and pack into one slot, matching `Board.Node`.
+ *      `IBoard.getMember` ABI-widens those links to `uint256`; this library describes storage,
+ *      not that getter ABI.
  */
 library BoardTypes {
     /**
      * @notice Node structure for the doubly linked list
-     * @dev Each node represents a token delegation with links to maintain sorted order
+     * @dev Each node represents a token delegation with links to maintain sorted order.
+     *      next and prev are uint128, packed into one storage slot.
+     *      tokenIds > type(uint128).max are rejected at insertion time.
      * @param tokenId Unique identifier for the token
      * @param amount Total amount of tokens delegated to this node
      * @param next TokenId of the next node in the sorted list (0 if none)
      * @param prev TokenId of the previous node in the sorted list (0 if none)
      */
     struct Node {
-        uint256 tokenId;
-        uint256 amount;
-        uint256 next;
-        uint256 prev;
+        uint256 tokenId; // slot 0
+        uint256 amount; // slot 1
+        uint128 next; // slot 2 lower 128 bits
+        uint128 prev; // slot 2 upper 128 bits
     }
 
     /**
