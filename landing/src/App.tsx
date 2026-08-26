@@ -46,13 +46,17 @@ function App() {
           <a href="#mission" className="hover:text-space-accent transition-colors">MISSION</a>
           <a href="#technology" className="hover:text-space-accent transition-colors">TECHNOLOGY</a>
           <a href="#governance" className="hover:text-space-accent transition-colors">GOVERNANCE</a>
+          <Link to="/team" className="hover:text-space-accent transition-colors">TEAM</Link>
         </div>
-        <a 
-          href={chamberAppUrl}
-          className="hidden md:flex items-center gap-2 border border-white/20 px-6 py-2 rounded-full hover:bg-white/10 transition-all text-sm tracking-wide"
-        >
-          LAUNCH APP
-        </a>
+        <div className="flex items-center gap-4">
+          <Link to="/team" className="md:hidden text-sm tracking-wide font-light hover:text-space-accent transition-colors">TEAM</Link>
+          <a 
+            href={chamberAppUrl}
+            className="hidden md:flex items-center gap-2 border border-white/20 px-6 py-2 rounded-full hover:bg-white/10 transition-all text-sm tracking-wide"
+          >
+            LAUNCH APP
+          </a>
+        </div>
       </nav>
 
       {/* Hero Section */}
@@ -576,6 +580,7 @@ function App() {
           <div>
             <h4 className="font-bold tracking-widest text-sm mb-6">PLATFORM</h4>
             <ul className="space-y-4 text-sm text-gray-400 font-light">
+              <li><Link to="/team" className="hover:text-white transition-colors">Team</Link></li>
               <li><a href="#" className="hover:text-white transition-colors">Agents</a></li>
               <li><a href="#" className="hover:text-white transition-colors">Chambers</a></li>
               <li><a href="#" className="hover:text-white transition-colors">Security</a></li>

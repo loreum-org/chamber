@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import './index.css'
 import App from './App.tsx'
 import Whitepaper from './Whitepaper.tsx'
+import Team from './Team.tsx'
 
 /** React Router preserves scroll across routes unless we reset it explicitly. */
 function ScrollToTop() {
@@ -21,6 +22,7 @@ createRoot(document.getElementById('root')!).render(
       <Routes>
         <Route path="/" element={<App />} />
         <Route path="/whitepaper" element={<Whitepaper />} />
+        <Route path="/team" element={<Team />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>,
