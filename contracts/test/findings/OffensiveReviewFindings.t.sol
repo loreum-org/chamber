@@ -112,7 +112,9 @@ contract OffensiveReviewFindingsTest is Test {
         _depositAndDelegate(user6, 6, large);
         _depositAndDelegate(user7, 7, large);
         _depositAndDelegate(user8, 8, large);
-        vm.roll(block.number + 1);
+        // Second roll in this test: `block.number` is the test-tx start, so +2 reaches
+        // the block after the new directors' seating checkpoint.
+        vm.roll(block.number + 2);
 
         assertFalse(_isDirectorToken(1), "token 1 should no longer be in top seats");
         assertFalse(_isDirectorToken(2), "token 2 should no longer be in top seats");

@@ -54,11 +54,11 @@ interface IBoard {
     function getDirectors() external view returns (address[] memory directors);
 
     /**
-     * @notice Block number when `tokenId` last entered the live top-`seats` set.
-     * @dev Zero if the token is not currently seated. Director confirm/execute rights require
-     *      this checkpoint plus `SEATING_DELAY` blocks.
+     * @notice First block at which `tokenId` may exercise director rights.
+     * @dev Zero if the token is not currently seated. Set to `block.number + SEATING_DELAY`
+     *      when the token newly enters the live top-`seats` set.
      * @param tokenId The membership token ID
-     * @return seatedAtBlock Seating block, or zero if not seated
+     * @return seatedAtBlock Activation block, or zero if not seated
      */
     function getSeatedAt(uint256 tokenId) external view returns (uint256 seatedAtBlock);
 

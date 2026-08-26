@@ -55,7 +55,7 @@ abstract contract Board {
         uint256 tail;
         uint32 size; // packed with seats (shares one slot)
         uint32 seats; // packed with size (shares one slot)
-        /// @notice Block number when `tokenId` last entered the top-`seats` set. Zero if not seated.
+        /// @notice First block at which `tokenId` may exercise director rights. Zero if not seated.
         mapping(uint256 tokenId => uint256 seatedAtBlock) seatedAt;
     }
 
@@ -527,19 +527,20 @@ abstract contract Board {
 
     /**
      * @notice Syncs seating checkpoints after a board mutation.
-     * @dev TokenIds newly entering the top-`seats` set record `block.number`. TokenIds that
-     *      remain seated keep their original block. TokenIds that leave the top set are cleared.
+     * @dev TokenIds newly entering the top-`seats` set record `block.number + SEATING_DELAY`
+     *      (the first block they may act). TokenIds that remain seated keep their original
+     *      activation block. TokenIds that leave the top set are cleared.
      */
     function _refreshSeating() internal {
         BoardStorage storage $ = _getBoardStorage();
         uint256 current = $.head;
         uint256 remaining = $.seats;
-        uint256 seatedBlock = block.number;
+        uint256 activationBlock = block.number + SEATING_DELAY;
 
         while (current != 0) {
             if (remaining != 0) {
                 if ($.seatedAt[current] == 0) {
-                    $.seatedAt[current] = seatedBlock;
+                    $.seatedAt[current] = activationBlock;
                 }
                 unchecked {
                     --remaining;
@@ -552,9 +553,9 @@ abstract contract Board {
     }
 
     /**
-     * @notice Returns the block a tokenId last entered the top-`seats` set.
+     * @notice Returns the first block a tokenId may exercise director rights.
      * @param tokenId The membership token ID
-     * @return seatedAtBlock Seating block, or zero if the token is not seated
+     * @return seatedAtBlock Activation block, or zero if the token is not seated
      */
     function _getSeatedAt(uint256 tokenId) internal view returns (uint256 seatedAtBlock) {
         return _getBoardStorage().seatedAt[tokenId];
@@ -563,10 +564,10 @@ abstract contract Board {
     /**
      * @notice Whether a top-seat tokenId has completed the seating delay.
      * @param tokenId The membership token ID
-     * @return True if `seatedAt` is set and `SEATING_DELAY` blocks have elapsed
+     * @return True if `seatedAt` is set and the current block has reached that activation block
      */
     function _isSeatingMature(uint256 tokenId) internal view returns (bool) {
         uint256 seatedAt = _getBoardStorage().seatedAt[tokenId];
-        return seatedAt != 0 && block.number >= seatedAt + SEATING_DELAY;
+        return seatedAt != 0 && block.number >= seatedAt;
     }
 }
