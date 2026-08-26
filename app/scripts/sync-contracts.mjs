@@ -10,7 +10,10 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const appRoot = join(__dirname, '..')
 const repoContracts = join(appRoot, '..', 'contracts')
 const appContracts = join(appRoot, 'contracts')
-const files = ['index.ts', 'abis.ts', 'deployments.json', 'deployments.d.ts']
+// `abis.ts` is hand-maintained in the app. `contracts/abis.ts` still lags
+// the landed interfaces (pause, seating, registry paging, M-04/M-06).
+// Do not overwrite until the handwritten repo ABI is regenerated.
+const files = ['index.ts', 'deployments.json', 'deployments.d.ts']
 
 function copyFromRepo() {
   mkdirSync(appContracts, { recursive: true })

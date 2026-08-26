@@ -158,7 +158,10 @@ export default function DelegationManager({
       'ZeroAmount': 'Amount cannot be zero',
       'InvalidTokenId': 'This member ID does not exist',
       'NotDirector': 'You are not a director',
+      'DirectorNotSeated': 'Your seat is not mature yet',
       'ExceedsDelegatedAmount': 'Amount exceeds your delegated balance',
+      'AssetAmountMismatch': 'Fee-on-transfer or rebasing tokens are not supported',
+      'EnforcedPause': 'This chamber is paused',
     }
     
     // Check for custom error name in message

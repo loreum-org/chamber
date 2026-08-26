@@ -178,6 +178,54 @@ export function useChamberEvents(
   useWatchContractEvent({
     address: isValidAddress ? chamberAddress : undefined,
     abi: chamberAbi,
+    eventName: 'TransactionDeadlineSet',
+    onLogs: (logs) => {
+      if (import.meta.env.DEV) console.log('Chamber TransactionDeadlineSet event:', logs)
+      invalidateChamberQueries()
+      onTransactionEvent?.()
+    },
+    enabled: watchEnabled,
+  })
+
+  useWatchContractEvent({
+    address: isValidAddress ? chamberAddress : undefined,
+    abi: chamberAbi,
+    eventName: 'Paused',
+    onLogs: (logs) => {
+      if (import.meta.env.DEV) console.log('Chamber Paused event:', logs)
+      invalidateChamberQueries()
+      onVaultEvent?.()
+    },
+    enabled: watchEnabled,
+  })
+
+  useWatchContractEvent({
+    address: isValidAddress ? chamberAddress : undefined,
+    abi: chamberAbi,
+    eventName: 'Unpaused',
+    onLogs: (logs) => {
+      if (import.meta.env.DEV) console.log('Chamber Unpaused event:', logs)
+      invalidateChamberQueries()
+      onVaultEvent?.()
+    },
+    enabled: watchEnabled,
+  })
+
+  useWatchContractEvent({
+    address: isValidAddress ? chamberAddress : undefined,
+    abi: chamberAbi,
+    eventName: 'SeatUpdateCancelled',
+    onLogs: (logs) => {
+      if (import.meta.env.DEV) console.log('Chamber SeatUpdateCancelled event:', logs)
+      invalidateChamberQueries()
+      onBoardEvent?.()
+    },
+    enabled: watchEnabled,
+  })
+
+  useWatchContractEvent({
+    address: isValidAddress ? chamberAddress : undefined,
+    abi: chamberAbi,
     eventName: 'SetSeats',
     onLogs: (logs) => {
       if (import.meta.env.DEV) console.log('Chamber SetSeats event:', logs)

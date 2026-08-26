@@ -7,8 +7,9 @@ import {
   useChainId,
   usePublicClient,
 } from 'wagmi'
-import { zeroAddress, type Hex } from 'viem'
+import { zeroAddress, type Hex, type PublicClient } from 'viem'
 import { registryAbi, chamberAbi } from '@/contracts/abis'
+import { REGISTRY_PAGE_SIZE } from '@/lib/chamberGovernance'
 import {
   getContractAddresses,
   hasValidAddresses,
@@ -32,36 +33,92 @@ export function useHasValidConfig() {
   }
 }
 
+function isValidAddress(addr: string | undefined): addr is `0x${string}` {
+  return !!addr && addr !== zeroAddress && addr.startsWith('0x') && addr.length === 42
+}
+
+async function pageRegistryAddresses(
+  client: PublicClient,
+  registryAddress: `0x${string}`,
+  pageFn: 'getChambers' | 'getAssets',
+  countFn: 'getChamberCount' | 'getAssetCount',
+): Promise<`0x${string}`[]> {
+  const count = (await client.readContract({
+    address: registryAddress,
+    abi: registryAbi,
+    functionName: countFn,
+  })) as bigint
+
+  const out: `0x${string}`[] = []
+  for (let skip = 0n; skip < count; skip += REGISTRY_PAGE_SIZE) {
+    const page = (await client.readContract({
+      address: registryAddress,
+      abi: registryAbi,
+      functionName: pageFn,
+      args: [REGISTRY_PAGE_SIZE, skip],
+    })) as `0x${string}`[]
+    out.push(...page)
+    if (page.length === 0) break
+  }
+  return out.filter(isValidAddress)
+}
+
+async function pageKeyedRegistryAddresses(
+  client: PublicClient,
+  registryAddress: `0x${string}`,
+  pageFn: 'getChambersByAsset' | 'getChildChambers',
+  countFn: 'getChambersByAssetCount' | 'getChildChamberCount',
+  key: `0x${string}`,
+  fallbackFn: 'getChambersByAsset' | 'getChildChambers',
+): Promise<`0x${string}`[]> {
+  try {
+    const count = (await client.readContract({
+      address: registryAddress,
+      abi: registryAbi,
+      functionName: countFn,
+      args: [key],
+    })) as bigint
+
+    const out: `0x${string}`[] = []
+    for (let skip = 0n; skip < count; skip += REGISTRY_PAGE_SIZE) {
+      const page = (await client.readContract({
+        address: registryAddress,
+        abi: registryAbi,
+        functionName: pageFn,
+        args: [key, REGISTRY_PAGE_SIZE, skip],
+      })) as `0x${string}`[]
+      out.push(...page)
+      if (page.length === 0) break
+    }
+    return out.filter(isValidAddress)
+  } catch {
+    const page = (await client.readContract({
+      address: registryAddress,
+      abi: registryAbi,
+      functionName: fallbackFn,
+      args: [key],
+    })) as `0x${string}`[]
+    return page.filter(isValidAddress)
+  }
+}
+
 export function useAllChambers() {
   const registryAddress = useRegistryAddress()
-  const isValidRegistry = registryAddress && 
-    registryAddress !== '0x0000000000000000000000000000000000000000' &&
-    registryAddress.startsWith('0x') &&
-    registryAddress.length === 42
-  
-  const { data, isLoading, error, refetch } = useReadContract({
-    address: isValidRegistry ? registryAddress : undefined,
-    abi: registryAbi,
-    functionName: 'getAllChambers',
-    query: { 
-      enabled: !!isValidRegistry,
-      retry: 2,
-      retryDelay: 1000,
+  const publicClient = usePublicClient()
+  const isValidRegistry = isValidAddress(registryAddress)
+
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ['registry-chambers-paged', registryAddress],
+    enabled: isValidRegistry && !!publicClient,
+    staleTime: 15_000,
+    queryFn: async () => {
+      if (!publicClient || !isValidRegistry) return []
+      return pageRegistryAddresses(publicClient, registryAddress, 'getChambers', 'getChamberCount')
     },
   })
 
-  // Filter out invalid addresses from the result
-  const validChambers = data 
-    ? (data as `0x${string}`[]).filter((addr) => 
-        addr && 
-        addr !== '0x0000000000000000000000000000000000000000' &&
-        addr.startsWith('0x') &&
-        addr.length === 42
-      )
-    : undefined
-
   return {
-    chambers: validChambers,
+    chambers: data,
     isLoading,
     error,
     refetch,
@@ -112,17 +169,28 @@ export function useIsChamber(address: `0x${string}` | undefined) {
 
 export function useChambersByAsset(asset: `0x${string}` | undefined) {
   const registryAddress = useRegistryAddress()
-  
-  const { data, isLoading, error, refetch } = useReadContract({
-    address: registryAddress,
-    abi: registryAbi,
-    functionName: 'getChambersByAsset',
-    args: asset ? [asset] : undefined,
-    query: { enabled: !!asset && registryAddress !== '0x0000000000000000000000000000000000000000' },
+  const publicClient = usePublicClient()
+  const isValidRegistry = isValidAddress(registryAddress)
+
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ['registry-chambers-by-asset-paged', registryAddress, asset],
+    enabled: !!asset && isValidRegistry && !!publicClient,
+    staleTime: 15_000,
+    queryFn: async () => {
+      if (!publicClient || !isValidRegistry || !asset) return []
+      return pageKeyedRegistryAddresses(
+        publicClient,
+        registryAddress,
+        'getChambersByAsset',
+        'getChambersByAssetCount',
+        asset,
+        'getChambersByAsset',
+      )
+    },
   })
 
   return {
-    chambers: data as `0x${string}`[] | undefined,
+    chambers: data,
     isLoading,
     error,
     refetch,
@@ -131,16 +199,31 @@ export function useChambersByAsset(asset: `0x${string}` | undefined) {
 
 export function useAssets() {
   const registryAddress = useRegistryAddress()
-  
-  const { data, isLoading, error, refetch } = useReadContract({
-    address: registryAddress,
-    abi: registryAbi,
-    functionName: 'getAssets',
-    query: { enabled: registryAddress !== '0x0000000000000000000000000000000000000000' },
+  const publicClient = usePublicClient()
+  const isValidRegistry = isValidAddress(registryAddress)
+
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ['registry-assets-paged', registryAddress],
+    enabled: isValidRegistry && !!publicClient,
+    staleTime: 15_000,
+    queryFn: async () => {
+      if (!publicClient || !isValidRegistry) return []
+      try {
+        return await pageRegistryAddresses(publicClient, registryAddress, 'getAssets', 'getAssetCount')
+      } catch {
+        const page = (await publicClient.readContract({
+          address: registryAddress,
+          abi: registryAbi,
+          functionName: 'getAssets',
+          args: [],
+        })) as `0x${string}`[]
+        return page.filter(isValidAddress)
+      }
+    },
   })
 
   return {
-    assets: data as `0x${string}`[] | undefined,
+    assets: data,
     isLoading,
     error,
     refetch,
@@ -218,17 +301,28 @@ export function useParentChamber(chamber: `0x${string}` | undefined) {
 
 export function useChildChambers(chamber: `0x${string}` | undefined) {
   const registryAddress = useRegistryAddress()
-  
-  const { data, isLoading, error, refetch } = useReadContract({
-    address: registryAddress,
-    abi: registryAbi,
-    functionName: 'getChildChambers',
-    args: chamber ? [chamber] : undefined,
-    query: { enabled: !!chamber && registryAddress !== '0x0000000000000000000000000000000000000000' },
+  const publicClient = usePublicClient()
+  const isValidRegistry = isValidAddress(registryAddress)
+
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ['registry-child-chambers-paged', registryAddress, chamber],
+    enabled: !!chamber && isValidRegistry && !!publicClient,
+    staleTime: 15_000,
+    queryFn: async () => {
+      if (!publicClient || !isValidRegistry || !chamber) return []
+      return pageKeyedRegistryAddresses(
+        publicClient,
+        registryAddress,
+        'getChildChambers',
+        'getChildChamberCount',
+        chamber,
+        'getChildChambers',
+      )
+    },
   })
 
   return {
-    childChambers: data as `0x${string}`[] | undefined,
+    childChambers: data,
     isLoading,
     error,
     refetch,

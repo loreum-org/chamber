@@ -238,6 +238,41 @@ export const chamberAbi = [
     outputs: [],
     stateMutability: 'nonpayable',
   },
+  {
+    type: 'function',
+    name: 'cancelSeatUpdate',
+    inputs: [{ name: 'tokenId', type: 'uint256' }],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'getSeatedAt',
+    inputs: [{ name: 'tokenId', type: 'uint256' }],
+    outputs: [{ name: 'seatedAtBlock', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'pause',
+    inputs: [],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'unpause',
+    inputs: [],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'paused',
+    inputs: [],
+    outputs: [{ name: '', type: 'bool' }],
+    stateMutability: 'view',
+  },
   // Wallet/Transaction functions
   {
     type: 'function',
@@ -374,6 +409,27 @@ export const chamberAbi = [
   },
   {
     type: 'function',
+    name: 'getTransactionRequiredQuorum',
+    inputs: [{ name: 'nonce', type: 'uint256' }],
+    outputs: [{ name: 'requiredQuorum', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'getTransactionDeadline',
+    inputs: [{ name: 'nonce', type: 'uint256' }],
+    outputs: [{ name: 'deadline', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'isTransactionExpired',
+    inputs: [{ name: 'nonce', type: 'uint256' }],
+    outputs: [{ name: '', type: 'bool' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
     name: 'getConfirmation',
     inputs: [
       { name: 'tokenId', type: 'uint256' },
@@ -468,6 +524,29 @@ export const chamberAbi = [
     type: 'event',
     name: 'TransactionCancelled',
     inputs: [{ name: 'nonce', type: 'uint256', indexed: true }],
+  },
+  {
+    type: 'event',
+    name: 'TransactionDeadlineSet',
+    inputs: [
+      { name: 'nonce', type: 'uint256', indexed: true },
+      { name: 'deadline', type: 'uint256', indexed: false },
+    ],
+  },
+  {
+    type: 'event',
+    name: 'Paused',
+    inputs: [{ name: 'account', type: 'address', indexed: false }],
+  },
+  {
+    type: 'event',
+    name: 'Unpaused',
+    inputs: [{ name: 'account', type: 'address', indexed: false }],
+  },
+  {
+    type: 'event',
+    name: 'SeatUpdateCancelled',
+    inputs: [{ name: 'tokenId', type: 'uint256', indexed: true }],
   },
   {
     type: 'event',
@@ -600,6 +679,10 @@ export const chamberAbi = [
   { type: 'error', name: 'InvalidTransaction', inputs: [] },
   { type: 'error', name: 'NotAuthorized', inputs: [] },
   { type: 'error', name: 'AssetAmountMismatch', inputs: [] },
+  { type: 'error', name: 'EnforcedPause', inputs: [] },
+  { type: 'error', name: 'ExpectedPause', inputs: [] },
+  { type: 'error', name: 'TransactionExpired', inputs: [] },
+  { type: 'error', name: 'InvalidDeadline', inputs: [] },
   // OZ ERC20 errors for better error decoding
   {
     type: 'error',
@@ -693,9 +776,45 @@ export const registryAbi = [
   },
   {
     type: 'function',
+    name: 'getChambersByAsset',
+    inputs: [
+      { name: 'asset', type: 'address' },
+      { name: 'limit', type: 'uint256' },
+      { name: 'skip', type: 'uint256' },
+    ],
+    outputs: [{ name: '', type: 'address[]' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'getChambersByAssetCount',
+    inputs: [{ name: 'asset', type: 'address' }],
+    outputs: [{ name: 'count', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
     name: 'getChildChambers',
     inputs: [{ name: 'chamber', type: 'address' }],
     outputs: [{ name: '', type: 'address[]' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'getChildChambers',
+    inputs: [
+      { name: 'chamber', type: 'address' },
+      { name: 'limit', type: 'uint256' },
+      { name: 'skip', type: 'uint256' },
+    ],
+    outputs: [{ name: '', type: 'address[]' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'getChildChamberCount',
+    inputs: [{ name: 'chamber', type: 'address' }],
+    outputs: [{ name: 'count', type: 'uint256' }],
     stateMutability: 'view',
   },
   {
@@ -710,6 +829,30 @@ export const registryAbi = [
     name: 'getAssets',
     inputs: [],
     outputs: [{ name: '', type: 'address[]' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'getAssets',
+    inputs: [
+      { name: 'limit', type: 'uint256' },
+      { name: 'skip', type: 'uint256' },
+    ],
+    outputs: [{ name: '', type: 'address[]' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'getAssetCount',
+    inputs: [],
+    outputs: [{ name: 'count', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'MAX_PAGE_SIZE',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256' }],
     stateMutability: 'view',
   },
   {

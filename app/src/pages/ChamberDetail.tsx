@@ -223,6 +223,24 @@ function ChamberDetailContent({ chamberAddress }: { chamberAddress: `0x${string}
 
   return (
     <div className="space-y-6">
+      {chamberInfo.paused && (
+        <motion.div
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-xl border border-red-500/30 bg-red-500/5 px-4 py-3 text-sm text-red-100"
+          role="status"
+        >
+          <div className="flex items-start gap-3">
+            <FiAlertTriangle className="w-5 h-5 shrink-0 text-red-400 mt-0.5" aria-hidden />
+            <div>
+              <p className="font-medium text-red-100">Chamber paused</p>
+              <p className="text-red-100/80 leading-relaxed">
+                Deposits, withdrawals, and wallet execute are halted. Directors can still submit and confirm an unpause proposal.
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      )}
       {implSync.implMismatch && !implSync.isLoading && implSync.registryImplementation && (
         <motion.div
           initial={{ opacity: 0, y: -6 }}

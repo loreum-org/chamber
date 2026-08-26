@@ -1,8 +1,9 @@
 import { useMemo } from 'react'
-import { useReadContract, useReadContracts, useWriteContract, useWaitForTransactionReceipt, useSimulateContract, useAccount } from 'wagmi'
+import { useReadContract, useReadContracts, useWriteContract, useWaitForTransactionReceipt, useSimulateContract, useAccount, useBlockNumber } from 'wagmi'
 import { isAddress } from 'viem'
 import { chamberAbi, erc20Abi, erc721Abi } from '@/contracts/abis'
 import { chamberVersionBytes32ToLabel } from '@/lib/utils'
+import { isSeatingMature } from '@/lib/chamberGovernance'
 import type { Transaction, BoardMember, SeatUpdate } from '@/types'
 
 /** Public RPC / long block times: retry eth_call simulation and refresh state after txs. */
@@ -227,6 +228,16 @@ export function useChamberInfo(chamberAddress: `0x${string}` | undefined) {
     },
   })
 
+  const { data: paused } = useReadContract({
+    address: isValidAddress ? chamberAddress : undefined,
+    abi: chamberAbi,
+    functionName: 'paused',
+    query: {
+      enabled: !!isValidAddress,
+      retry: false,
+    },
+  })
+
   return {
     name: name as string | undefined,
     symbol: symbol as string | undefined,
@@ -239,6 +250,7 @@ export function useChamberInfo(chamberAddress: `0x${string}` | undefined) {
     assetToken: assetToken as `0x${string}` | undefined,
     nftToken: nftToken as `0x${string}` | undefined,
     version: chamberVersionBytes32ToLabel(versionBytes32 as `0x${string}` | undefined),
+    paused: paused === true,
   }
 }
 
@@ -867,4 +879,75 @@ export function useExecuteSeatsUpdate(chamberAddress: `0x${string}` | undefined)
   }
 
   return { executeSeatsUpdate, isPending, isConfirming, isSuccess, error, hash }
+}
+
+export function useCancelSeatUpdate(chamberAddress: `0x${string}` | undefined) {
+  const { writeContractAsync, data: hash, isPending, error } = useWriteContract()
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
+
+  const cancelSeatUpdate = async (tokenId: bigint) => {
+    if (!chamberAddress) return
+    return writeContractAsync({
+      address: chamberAddress,
+      abi: chamberAbi,
+      functionName: 'cancelSeatUpdate',
+      args: [tokenId],
+    })
+  }
+
+  return { cancelSeatUpdate, isPending, isConfirming, isSuccess, error, hash }
+}
+
+export function useSeatedAt(chamberAddress: `0x${string}` | undefined, tokenId: bigint | undefined) {
+  const { data, refetch } = useReadContract({
+    address: chamberAddress,
+    abi: chamberAbi,
+    functionName: 'getSeatedAt',
+    args: tokenId !== undefined ? [tokenId] : undefined,
+    query: {
+      enabled: !!chamberAddress && tokenId !== undefined,
+      retry: false,
+    },
+  })
+
+  return { seatedAt: data as bigint | undefined, refetch }
+}
+
+/**
+ * Combined director action gate (H-02): connected address owns a current
+ * top-seat tokenId AND seating is mature (`block.number >= seatedAt`).
+ * If `getSeatedAt` is not deployed yet, treat the seat as mature.
+ */
+export function useDirectorActionGate(
+  chamberAddress: `0x${string}` | undefined,
+  userAddress: `0x${string}` | undefined,
+  directors: `0x${string}`[] | undefined,
+  members: { tokenId: bigint }[],
+) {
+  const directorIndex =
+    userAddress && directors
+      ? directors.findIndex((d) => d.toLowerCase() === userAddress.toLowerCase())
+      : -1
+  const tokenId =
+    directorIndex >= 0 && directorIndex < members.length ? members[directorIndex].tokenId : undefined
+
+  const { seatedAt } = useSeatedAt(chamberAddress, tokenId)
+  const { data: blockNumber } = useBlockNumber({
+    query: {
+      enabled: !!chamberAddress && tokenId !== undefined,
+      refetchInterval: 4_000,
+    },
+  })
+
+  const getterMissing = tokenId !== undefined && seatedAt === undefined
+  const seated = tokenId === undefined ? false : getterMissing ? true : isSeatingMature(seatedAt, blockNumber)
+  const seatingPending = tokenId !== undefined && !getterMissing && !seated
+
+  return {
+    tokenId,
+    seatedAt,
+    blockNumber,
+    canAct: tokenId !== undefined && seated,
+    seatingPending,
+  }
 }

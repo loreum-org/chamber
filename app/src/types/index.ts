@@ -1,11 +1,19 @@
 export interface Transaction {
   id: number
   executed: boolean
+  /** Stored confirmation counter (includes evicted tokenIds until they revoke). */
   confirmations: number
+  /** Confirmations whose tokenId is still in the live top-seat set (H-01). */
+  liveConfirmations?: number
+  /** max(submit snapshot, live quorum) — M-04. */
+  requiredConfirmations?: number
   target: `0x${string}`
   value: bigint
-  /** `keccak256(calldata)` stored onchain; full calldata must be supplied at execution. */
+  /** `keccak256(calldata)` stored onchain; full calldata must be supplied at execution unless stored (L-04). */
   dataHash: `0x${string}`
+  /** Exclusive-after unix timestamp (M-06). */
+  deadline?: bigint
+  expired?: boolean
 }
 
 export interface BoardMember {
@@ -42,9 +50,10 @@ export interface ChamberInfo {
   assetToken: `0x${string}`
   nftToken: `0x${string}`
   version: string
+  paused?: boolean
 }
 
 export interface TransactionQueueItem extends Transaction {
-  status: 'pending' | 'ready' | 'executed' | 'failed'
+  status: 'pending' | 'ready' | 'executed' | 'failed' | 'cancelled' | 'expired'
   requiredConfirmations: number
 }

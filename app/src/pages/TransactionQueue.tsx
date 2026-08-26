@@ -36,11 +36,28 @@ import {
   useSeatUpdate,
   useUpdateSeats,
   useExecuteSeatsUpdate,
+  useCancelSeatUpdate,
+  useDirectorActionGate,
+  useUserNFTs,
   useChamberRegistryImplementationSync,
   useProposalCalldata,
 } from '@/hooks'
 import { chamberAbi, erc20Abi } from '@/contracts/abis'
 import { getBlockExplorerAddressUrl, hasProposalCalldata, shortenAddress } from '@/lib/utils'
+import {
+  UPGRADE_SELECTOR,
+  PAUSE_SELECTOR,
+  UNPAUSE_SELECTOR,
+  SEAT_UPDATE_TIMELOCK_SEC,
+  SEAT_UPDATE_EXPIRY_SEC,
+  isAllowedChamberSelfCall,
+  isChamberSelfCall,
+  isUnpauseCall,
+  selectorOf,
+  requiredExecuteConfirmations,
+  computeQueueTxStatus,
+} from '@/lib/chamberGovernance'
+import type { TransactionQueueItem } from '@/types'
 import {
   createProposalMetadataURI,
   getProposalMetadata,
@@ -51,27 +68,21 @@ import {
   proposalCalldataMatchesHash,
   setStoredProposalCalldata,
 } from '@/lib/proposalCalldata'
-import type { SeatUpdate, Transaction } from '@/types'
+import type { SeatUpdate } from '@/types'
 
 type TabType = 'queue' | 'history' | 'new'
 
 type RiskLevel = 'low' | 'medium' | 'high'
 
-const UPGRADE_SELECTOR = '0xc89311b6'
 const MAX_BOARD_SEATS = 20
 
-function isChamberSelfCall(chamberAddress: `0x${string}`, target: string) {
-  return target.toLowerCase() === chamberAddress.toLowerCase()
-}
-
-function isAllowedChamberSelfCall(chamberAddress: `0x${string}`, target: string, data: `0x${string}`) {
-  return !isChamberSelfCall(chamberAddress, target) || data.startsWith(UPGRADE_SELECTOR)
-}
-
 function classifyTransactionRisk(chamberAddress: `0x${string}`, target: `0x${string}`, value: bigint, data: `0x${string}`) {
-  const isSelfCall = target.toLowerCase() === chamberAddress.toLowerCase()
-  const isUpgrade = isSelfCall && data.startsWith(UPGRADE_SELECTOR)
-  const hasUnknownCallData = data !== '0x' && !isUpgrade
+  const isSelfCall = isChamberSelfCall(chamberAddress, target)
+  const selector = selectorOf(data)
+  const isUpgrade = isSelfCall && selector === UPGRADE_SELECTOR
+  const isPause = isSelfCall && selector === PAUSE_SELECTOR
+  const isUnpause = isSelfCall && selector === UNPAUSE_SELECTOR
+  const hasUnknownCallData = data !== '0x' && !isUpgrade && !isPause && !isUnpause
   const sendsEth = value > 0n
 
   if (isUpgrade) {
@@ -79,6 +90,22 @@ function classifyTransactionRisk(chamberAddress: `0x${string}`, target: `0x${str
       level: 'high' as RiskLevel,
       label: 'High risk: protocol upgrade',
       summary: 'Changes Chamber implementation. Confirm implementation address, audit status, and migration notes before approval.',
+    }
+  }
+
+  if (isPause) {
+    return {
+      level: 'high' as RiskLevel,
+      label: 'High risk: pause vault',
+      summary: 'Halts deposits, withdrawals, and wallet execute until the board unpauses.',
+    }
+  }
+
+  if (isUnpause) {
+    return {
+      level: 'high' as RiskLevel,
+      label: 'High risk: unpause vault',
+      summary: 'Restores deposits, withdrawals, and wallet execute after a pause.',
     }
   }
 
@@ -216,14 +243,28 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
   const [searchParams, setSearchParams] = useSearchParams()
 
   const [activeTab, setActiveTab] = useState<TabType>('queue')
-  const [transactions, setTransactions] = useState<
-    (Transaction & { status: string; cancelled?: boolean; cancelConfirmations?: number; metadataURI?: string })[]
-  >([])
+  type QueueTx = TransactionQueueItem & {
+    cancelled?: boolean
+    cancelConfirmations?: number
+    metadataURI?: string
+    leftoverTokenId?: bigint
+  }
+
+  const [transactions, setTransactions] = useState<QueueTx[]>([])
   
   const chamberInfo = useChamberInfo(chamberAddress)
   const implSync = useChamberRegistryImplementationSync(chamberAddress)
   const { members } = useBoardMembers(chamberAddress, chamberInfo.seats || 5)
   const { seatUpdate, refetch: refetchSeatUpdate } = useSeatUpdate(chamberAddress)
+  const { tokenIds: ownedTokenIds } = useUserNFTs(chamberInfo.nftToken, userAddress)
+  const directorGate = useDirectorActionGate(
+    chamberAddress,
+    userAddress,
+    chamberInfo.directors,
+    members,
+  )
+  const canAct = directorGate.canAct
+  const userTokenId = directorGate.tokenId
 
   const upgradeProposalIntent = searchParams.get('proposal') === 'upgrade'
   const registryUpgradeDraft =
@@ -321,6 +362,71 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
     },
   })
 
+  const directorTokenKey = members.map((m) => m.tokenId.toString()).join(',')
+  const directorTokenIds = useMemo(
+    () => (directorTokenKey ? directorTokenKey.split(',').map((id) => BigInt(id)) : []),
+    [directorTokenKey],
+  )
+  const ownedTokenKey = ownedTokenIds.map((id) => id.toString()).join(',')
+  const ownedTokenIdsStable = useMemo(
+    () => (ownedTokenKey ? ownedTokenKey.split(',').map((id) => BigInt(id)) : []),
+    [ownedTokenKey],
+  )
+
+  const { data: requiredQuorumData } = useReadContracts({
+    contracts: transactionIds.map((id) => ({
+      address: chamberAddress,
+      abi: chamberAbi,
+      functionName: 'getTransactionRequiredQuorum' as const,
+      args: [BigInt(id)] as const,
+    })),
+    query: { enabled: transactionCount > 0, retry: false },
+  })
+
+  const { data: expiredData } = useReadContracts({
+    contracts: transactionIds.map((id) => ({
+      address: chamberAddress,
+      abi: chamberAbi,
+      functionName: 'isTransactionExpired' as const,
+      args: [BigInt(id)] as const,
+    })),
+    query: { enabled: transactionCount > 0, retry: false },
+  })
+
+  const { data: deadlineData } = useReadContracts({
+    contracts: transactionIds.map((id) => ({
+      address: chamberAddress,
+      abi: chamberAbi,
+      functionName: 'getTransactionDeadline' as const,
+      args: [BigInt(id)] as const,
+    })),
+    query: { enabled: transactionCount > 0, retry: false },
+  })
+
+  const { data: liveConfirmData } = useReadContracts({
+    contracts: transactionIds.flatMap((id) =>
+      directorTokenIds.map((tokenId) => ({
+        address: chamberAddress,
+        abi: chamberAbi,
+        functionName: 'getConfirmation' as const,
+        args: [tokenId, BigInt(id)] as const,
+      })),
+    ),
+    query: { enabled: transactionCount > 0 && directorTokenIds.length > 0 },
+  })
+
+  const { data: leftoverConfirmData } = useReadContracts({
+    contracts: transactionIds.flatMap((id) =>
+      ownedTokenIdsStable.map((tokenId) => ({
+        address: chamberAddress,
+        abi: chamberAbi,
+        functionName: 'getConfirmation' as const,
+        args: [tokenId, BigInt(id)] as const,
+      })),
+    ),
+    query: { enabled: transactionCount > 0 && ownedTokenIdsStable.length > 0 },
+  })
+
   // Watch for transaction events and auto-refresh when transactions are mined
   useChamberEvents(chamberAddress, {
     onTransactionEvent: () => {
@@ -348,7 +454,11 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
         metadataList[i] = r.status === 'success' && typeof r.result === 'string' ? r.result : ''
       })
 
-      const txs: (Transaction & { status: string; cancelled?: boolean; cancelConfirmations?: number; metadataURI?: string })[] = []
+      const liveQuorum = chamberInfo.quorum || 1
+      const directorCount = directorTokenIds.length
+      const ownedCount = ownedTokenIdsStable.length
+
+      const txs: QueueTx[] = []
       transactionsData.forEach((result, index) => {
         if (result.status === 'success' && result.result) {
           const [executed, confirmations, target, value, dataHash] = result.result as [
@@ -359,54 +469,102 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
             `0x${string}`,
           ]
           const cancelled = cancelledList[index] ?? false
-          const status = cancelled ? 'cancelled' : executed ? 'executed' : confirmations >= (chamberInfo.quorum || 1) ? 'ready' : 'pending'
+          const snapshotResult = requiredQuorumData?.[index]
+          const snapshot =
+            snapshotResult?.status === 'success' && snapshotResult.result !== undefined
+              ? Number(snapshotResult.result)
+              : undefined
+          const required = requiredExecuteConfirmations(snapshot, liveQuorum)
+
+          let liveConfirmations = 0
+          if (directorCount > 0 && liveConfirmData) {
+            const offset = index * directorCount
+            for (let i = 0; i < directorCount; i++) {
+              const row = liveConfirmData[offset + i]
+              if (row?.status === 'success' && row.result === true) liveConfirmations += 1
+            }
+          } else {
+            liveConfirmations = confirmations
+          }
+
+          const expiredResult = expiredData?.[index]
+          const expired =
+            expiredResult?.status === 'success' ? expiredResult.result === true : false
+          const deadlineResult = deadlineData?.[index]
+          const deadline =
+            deadlineResult?.status === 'success' && typeof deadlineResult.result === 'bigint'
+              ? deadlineResult.result
+              : undefined
+
+          let leftoverTokenId: bigint | undefined
+          if (ownedCount > 0 && leftoverConfirmData) {
+            const offset = index * ownedCount
+            for (let i = 0; i < ownedCount; i++) {
+              const row = leftoverConfirmData[offset + i]
+              if (row?.status === 'success' && row.result === true) {
+                leftoverTokenId = ownedTokenIdsStable[i]
+                break
+              }
+            }
+          }
+
+          const status = computeQueueTxStatus({
+            executed,
+            cancelled,
+            expired,
+            liveConfirmations,
+            requiredConfirmations: required,
+          })
           txs.push({
             id: index,
             executed,
             confirmations,
+            liveConfirmations,
+            requiredConfirmations: required,
             target,
             value,
             dataHash,
+            deadline,
+            expired,
             status,
             cancelled,
             cancelConfirmations: cancelConfirmationsList[index] ?? 0,
             metadataURI: metadataList[index] || undefined,
+            leftoverTokenId,
           })
         }
       })
       setTransactions(txs)
     }
-  }, [transactionsData, cancelledData, cancelConfirmationsData, metadataData, chamberInfo.quorum])
+  }, [
+    transactionsData,
+    cancelledData,
+    cancelConfirmationsData,
+    metadataData,
+    requiredQuorumData,
+    expiredData,
+    deadlineData,
+    liveConfirmData,
+    leftoverConfirmData,
+    chamberInfo.quorum,
+    directorTokenIds,
+    ownedTokenIdsStable,
+  ])
 
-  const pendingTransactions = transactions.filter(tx => !tx.executed && tx.status !== 'ready' && !tx.cancelled)
-  const readyTransactions = transactions.filter(tx => !tx.executed && tx.status === 'ready' && !tx.cancelled)
+  const pendingTransactions = transactions.filter(tx => tx.status === 'pending')
+  const readyTransactions = transactions.filter(tx => tx.status === 'ready')
+  const expiredTransactions = transactions.filter(tx => tx.status === 'expired')
   const cancelledTransactions = transactions.filter(tx => tx.cancelled)
   const executedTransactions = transactions.filter(tx => tx.executed)
   const hasSeatProposal = !!seatUpdate && seatUpdate.timestamp > 0n
   const seatProposalReady = hasSeatProposal && seatUpdate
     ? seatUpdate.supporters.length >= Number(seatUpdate.requiredQuorum) &&
-      BigInt(Math.floor(Date.now() / 1000)) >= seatUpdate.timestamp + SEAT_TIMELOCK_SEC
+      BigInt(Math.floor(Date.now() / 1000)) >= seatUpdate.timestamp + SEAT_UPDATE_TIMELOCK_SEC
     : false
   const boardProposalCount = hasSeatProposal ? 1 : 0
-  const queueCount = pendingTransactions.length + readyTransactions.length + boardProposalCount
+  const queueCount = pendingTransactions.length + readyTransactions.length + expiredTransactions.length + boardProposalCount
 
-  // Check if user is a director and get their token ID
-  // Directors array contains wallet addresses of NFT owners for board member token IDs
-  const userTokenId = useMemo(() => {
-    if (!userAddress || !chamberInfo.directors || !members.length) return undefined
-    
-    // Find the index of user's address in the directors array
-    const directorIndex = chamberInfo.directors.findIndex(
-      (director) => director.toLowerCase() === userAddress.toLowerCase()
-    )
-    
-    // If user is a director, get the corresponding token ID from members
-    if (directorIndex >= 0 && directorIndex < members.length) {
-      return members[directorIndex].tokenId
-    }
-    
-    return undefined
-  }, [userAddress, chamberInfo.directors, members])
+  const actionTokenId = canAct ? userTokenId : undefined
 
   return (
     <div className="space-y-6">
@@ -434,7 +592,7 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
             </div>
           </div>
 
-          {userTokenId !== undefined ? (
+          {canAct ? (
             <button
               onClick={() => setActiveTab('new')}
               className="btn btn-primary"
@@ -443,12 +601,25 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
               New Proposal
             </button>
           ) : (
-            <div className="text-slate-500 text-sm italic hidden md:block">Director access required</div>
+            <div className="text-slate-500 text-sm italic hidden md:block">
+              {directorGate.seatingPending ? 'Director seating is not mature yet' : 'Director access required'}
+            </div>
           )}
         </div>
 
+        {chamberInfo.paused && (
+          <div className="mt-4 rounded-xl border border-red-500/30 bg-red-500/5 px-4 py-3 text-sm text-red-200">
+            This chamber is paused. Deposits, withdrawals, and execute are halted. Directors can still submit and confirm an unpause proposal.
+          </div>
+        )}
+        {directorGate.seatingPending && (
+          <div className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-200">
+            You hold a live board seat, but director actions unlock at block {directorGate.seatedAt?.toString() ?? '…'}.
+          </div>
+        )}
+
         {/* Stats */}
-        <div className="grid grid-cols-5 gap-4 mt-6 pt-6 border-t border-slate-700/30">
+        <div className="grid grid-cols-6 gap-4 mt-6 pt-6 border-t border-slate-700/30">
           <div className="stat-card text-center">
             <div className="font-heading text-xl font-bold text-amber-400">
               {pendingTransactions.length + (hasSeatProposal && !seatProposalReady ? 1 : 0)}
@@ -460,6 +631,12 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
               {readyTransactions.length + (seatProposalReady ? 1 : 0)}
             </div>
             <div className="text-slate-500 text-xs mt-1">Ready</div>
+          </div>
+          <div className="stat-card text-center">
+            <div className="font-heading text-xl font-bold text-red-400/80">
+              {expiredTransactions.length}
+            </div>
+            <div className="text-slate-500 text-xs mt-1">Expired</div>
           </div>
           <div className="stat-card text-center">
             <div className="font-heading text-xl font-bold text-slate-500">
@@ -487,7 +664,7 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
         {[
           { id: 'queue', label: 'Queue', count: queueCount },
           { id: 'history', label: 'History', count: executedTransactions.length },
-          { id: 'new', label: userTokenId !== undefined ? 'New Proposal' : 'New Proposal', count: 0 },
+          { id: 'new', label: 'New Proposal', count: 0 },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -537,7 +714,7 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
                 </h3>
                 <BoardProposalCard
                   chamberAddress={chamberAddress}
-                  userTokenId={userTokenId}
+                  userTokenId={actionTokenId}
                   currentSeats={chamberInfo.seats ?? 5}
                   seatUpdate={seatUpdate}
                   onChanged={refetchSeatUpdate}
@@ -557,8 +734,10 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
                     key={tx.id}
                     transaction={tx}
                     chamberAddress={chamberAddress}
-                    quorum={chamberInfo.quorum || 1}
-                    userTokenId={userTokenId}
+                    quorum={tx.requiredConfirmations}
+                    userTokenId={actionTokenId}
+                    leftoverTokenId={tx.leftoverTokenId}
+                    paused={chamberInfo.paused}
                     chainId={chainId}
                   />
                 ))}
@@ -577,11 +756,34 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
                     key={tx.id}
                     transaction={tx}
                     chamberAddress={chamberAddress}
-                    quorum={chamberInfo.quorum || 1}
-                    userTokenId={userTokenId}
+                    quorum={tx.requiredConfirmations}
+                    userTokenId={actionTokenId}
+                    leftoverTokenId={tx.leftoverTokenId}
+                    paused={chamberInfo.paused}
                     chainId={chainId}
                   />
                 ))}
+
+            {expiredTransactions.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="font-heading font-semibold text-red-400/80 flex items-center gap-2">
+                  <FiClock className="w-4 h-4" />
+                  Expired
+                </h3>
+                {expiredTransactions.map((tx) => (
+                  <TransactionCard
+                    key={tx.id}
+                    transaction={tx}
+                    chamberAddress={chamberAddress}
+                    quorum={tx.requiredConfirmations}
+                    userTokenId={actionTokenId}
+                    leftoverTokenId={tx.leftoverTokenId}
+                    paused={chamberInfo.paused}
+                    chainId={chainId}
+                  />
+                ))}
+              </div>
+            )}
               </div>
             )}
 
@@ -597,15 +799,17 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
                     key={tx.id}
                     transaction={tx}
                     chamberAddress={chamberAddress}
-                    quorum={chamberInfo.quorum || 1}
-                    userTokenId={userTokenId}
+                    quorum={tx.requiredConfirmations}
+                    userTokenId={actionTokenId}
+                    leftoverTokenId={tx.leftoverTokenId}
+                    paused={chamberInfo.paused}
                     chainId={chainId}
                   />
                 ))}
               </div>
             )}
 
-            {pendingTransactions.length === 0 && readyTransactions.length === 0 && cancelledTransactions.length === 0 && !hasSeatProposal && (
+            {pendingTransactions.length === 0 && readyTransactions.length === 0 && expiredTransactions.length === 0 && cancelledTransactions.length === 0 && !hasSeatProposal && (
               <div className="panel p-12 text-center">
                 <FiShield className="w-12 h-12 text-slate-600 mx-auto mb-4" />
                 <h3 className="font-heading text-xl font-semibold text-slate-300 mb-2">
@@ -625,7 +829,7 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
             )}
 
             {/* Non-director banner when there are pending txs */}
-            {userTokenId === undefined && (pendingTransactions.length > 0 || readyTransactions.length > 0 || cancelledTransactions.length > 0) && (
+            {!canAct && (pendingTransactions.length > 0 || readyTransactions.length > 0 || expiredTransactions.length > 0 || cancelledTransactions.length > 0) && (
               <div className="panel p-4 border-amber-500/30 bg-amber-500/5">
                 <p className="text-amber-400 text-sm">
                   You&apos;re not a director. Delegate shares to a member to participate in governance.
@@ -655,8 +859,10 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
                   key={tx.id}
                   transaction={tx}
                   chamberAddress={chamberAddress}
-                  quorum={chamberInfo.quorum || 1}
-                  userTokenId={userTokenId}
+                  quorum={tx.requiredConfirmations}
+                  userTokenId={actionTokenId}
+                  leftoverTokenId={tx.leftoverTokenId}
+                  paused={chamberInfo.paused}
                   chainId={chainId}
                 />
               ))
@@ -681,7 +887,7 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
           >
-            {userTokenId !== undefined ? (
+            {canAct ? (
               <NewTransactionForm
                 key={registryUpgradeDraft?.newImplementation ?? 'default'}
                 chamberAddress={chamberAddress}
@@ -766,14 +972,16 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
 
 // Transaction Card Component
 interface TransactionCardProps {
-  transaction: Transaction & { status: string; cancelled?: boolean; cancelConfirmations?: number; metadataURI?: string }
+  transaction: TransactionQueueItem & { cancelled?: boolean; cancelConfirmations?: number; metadataURI?: string; leftoverTokenId?: bigint }
   chamberAddress: `0x${string}`
   quorum: number
   userTokenId?: bigint
+  leftoverTokenId?: bigint
+  paused?: boolean
   chainId: number
 }
 
-function TransactionCard({ transaction, chamberAddress, quorum, userTokenId, chainId }: TransactionCardProps) {
+function TransactionCard({ transaction, chamberAddress, quorum, userTokenId, leftoverTokenId, paused, chainId }: TransactionCardProps) {
   const { confirm, isPending: isConfirming } = useConfirmTransaction(chamberAddress)
   const { execute, isPending: isExecuting } = useExecuteTransaction(chamberAddress)
   const { revoke, isPending: isRevoking } = useRevokeConfirmation(chamberAddress)
@@ -794,6 +1002,16 @@ function TransactionCard({ transaction, chamberAddress, quorum, userTokenId, cha
     transaction.dataHash,
     metadataCalldata,
   )
+  const { data: onchainStoredCalldata } = useReadContract({
+    address: chamberAddress,
+    abi: chamberAbi,
+    functionName: 'getTransactionCalldata',
+    args: [BigInt(transaction.id)],
+    query: { enabled: hasProposalCalldata(transaction.dataHash), retry: false },
+  })
+  const hasOnchainPreimage =
+    (typeof onchainStoredCalldata === 'string' && onchainStoredCalldata !== '0x') ||
+    resolvedCalldata?.source === 'onchain'
 
   useEffect(() => {
     setExecuteCalldata('0x')
@@ -806,7 +1024,7 @@ function TransactionCard({ transaction, chamberAddress, quorum, userTokenId, cha
   }, [resolvedCalldata, calldataTouched])
   const { isConfirmed: userHasConfirmed } = useTransactionConfirmation(
     chamberAddress,
-    userTokenId,
+    leftoverTokenId ?? userTokenId,
     transaction.id
   )
   const { hasVotedToCancel } = useTransactionCancelConfirmation(
@@ -817,7 +1035,11 @@ function TransactionCard({ transaction, chamberAddress, quorum, userTokenId, cha
 
   const handleConfirm = async () => {
     if (!userTokenId) {
-      toast.error('You must be a director to confirm')
+      toast.error('You must be a seated director to confirm')
+      return
+    }
+    if (transaction.expired) {
+      toast.error('This transaction has expired')
       return
     }
     try {
@@ -831,7 +1053,11 @@ function TransactionCard({ transaction, chamberAddress, quorum, userTokenId, cha
 
   const handleExecute = async () => {
     if (!userTokenId) {
-      toast.error('You must be a director to execute')
+      toast.error('You must be a seated director to execute')
+      return
+    }
+    if (transaction.expired) {
+      toast.error('This transaction has expired')
       return
     }
     const needsCalldata = hasProposalCalldata(transaction.dataHash)
@@ -839,17 +1065,22 @@ function TransactionCard({ transaction, chamberAddress, quorum, userTokenId, cha
     if (needsCalldata) {
       const raw = executeCalldata.trim()
       if (!raw || raw === '0x') {
-        toast.error(
-          isResolvingCalldata
-            ? 'Loading calldata from chain… try again in a moment.'
-            : 'Calldata not found. Paste the hex from the proposer or wait for archive sync — it must match the onchain hash.',
-        )
-        return
-      }
-      calldata = (raw.startsWith('0x') ? raw : `0x${raw}`) as `0x${string}`
-      if (!proposalCalldataMatchesHash(calldata, transaction.dataHash)) {
-        toast.error('Calldata does not match the onchain commitment hash.')
-        return
+        if (hasOnchainPreimage) {
+          calldata = '0x'
+        } else {
+          toast.error(
+            isResolvingCalldata
+              ? 'Loading calldata from chain… try again in a moment.'
+              : 'Calldata not found. Paste the hex from the proposer or wait for archive sync — it must match the onchain hash.',
+          )
+          return
+        }
+      } else {
+        calldata = (raw.startsWith('0x') ? raw : `0x${raw}`) as `0x${string}`
+        if (!proposalCalldataMatchesHash(calldata, transaction.dataHash)) {
+          toast.error('Calldata does not match the onchain commitment hash.')
+          return
+        }
       }
     }
     try {
@@ -861,13 +1092,19 @@ function TransactionCard({ transaction, chamberAddress, quorum, userTokenId, cha
     }
   }
 
+  const revokeTokenId = leftoverTokenId ?? userTokenId
+
   const handleRevoke = async () => {
-    if (!userTokenId) {
-      toast.error('You must be a director to revoke')
+    if (!revokeTokenId) {
+      toast.error('No leftover confirmation to revoke')
+      return
+    }
+    if (transaction.expired) {
+      toast.error('This transaction has expired')
       return
     }
     try {
-      await revoke(userTokenId, BigInt(transaction.id))
+      await revoke(revokeTokenId, BigInt(transaction.id))
       toast.success('Confirmation revoked!')
     } catch (err) {
       console.error(err)
@@ -897,6 +1134,16 @@ function TransactionCard({ transaction, chamberAddress, quorum, userTokenId, cha
   const riskSummary = proposalMeta?.riskSummary || risk.summary
 
   const isCancelled = transaction.cancelled === true
+  const isExpired = transaction.status === 'expired' || transaction.expired === true
+  const liveConfirmations = transaction.liveConfirmations ?? transaction.confirmations
+  const requiredConfirmations = transaction.requiredConfirmations || quorum
+  const executeBlockedByPause =
+    !!paused &&
+    !isUnpauseCall(
+      chamberAddress,
+      transaction.target,
+      (resolvedCalldata?.calldata ?? executeCalldata) as `0x${string}`,
+    )
 
   return (
     <motion.div
@@ -905,6 +1152,8 @@ function TransactionCard({ transaction, chamberAddress, quorum, userTokenId, cha
       className={`panel p-4 ${
         isCancelled
           ? 'opacity-60 border-slate-600/50 bg-slate-800/30'
+          : isExpired
+          ? 'opacity-70 border-red-500/25 bg-red-500/5'
           : transaction.executed
           ? 'opacity-75'
           : transaction.status === 'ready'
@@ -918,6 +1167,8 @@ function TransactionCard({ transaction, chamberAddress, quorum, userTokenId, cha
           w-12 h-12 rounded-xl flex items-center justify-center text-sm font-bold shrink-0
           ${isCancelled
             ? 'bg-slate-600/30 text-slate-500'
+            : isExpired
+            ? 'bg-red-500/15 text-red-400'
             : transaction.executed 
             ? 'bg-slate-500/20 text-slate-500' 
             : transaction.status === 'ready'
@@ -947,8 +1198,11 @@ function TransactionCard({ transaction, chamberAddress, quorum, userTokenId, cha
                 Executed
               </span>
             )}
-            {!transaction.executed && transaction.status === 'ready' && !isCancelled && (
+            {!transaction.executed && transaction.status === 'ready' && !isCancelled && !isExpired && (
               <span className="badge badge-success">Ready</span>
+            )}
+            {isExpired && !transaction.executed && !isCancelled && (
+              <span className="badge bg-red-500/15 text-red-400 border-red-500/30">Expired</span>
             )}
             {isCancelled && (
               <span className="badge bg-slate-600/50 text-slate-400 border-slate-500/30">
@@ -991,7 +1245,7 @@ function TransactionCard({ transaction, chamberAddress, quorum, userTokenId, cha
             )}
             <span className="flex items-center gap-1">
               <FiCheck className="w-3 h-3" />
-              {transaction.confirmations} / {quorum}
+              {liveConfirmations} / {requiredConfirmations}
             </span>
             {!isCancelled && !transaction.executed && (transaction.cancelConfirmations ?? 0) > 0 && (
               <span className="flex items-center gap-1 text-amber-400/80">
@@ -1015,15 +1269,22 @@ function TransactionCard({ transaction, chamberAddress, quorum, userTokenId, cha
               {resolvedCalldata && !calldataTouched && (
                 <p className="text-emerald-400/90 text-xs">
                   Calldata loaded from{' '}
-                  {resolvedCalldata.source === 'event'
-                    ? 'onchain submit event'
-                    : resolvedCalldata.source === 'metadata'
-                      ? 'proposal metadata'
-                      : 'this browser'}
+                  {resolvedCalldata.source === 'onchain'
+                    ? 'on-chain calldata store'
+                    : resolvedCalldata.source === 'event'
+                      ? 'onchain submit event'
+                      : resolvedCalldata.source === 'metadata'
+                        ? 'proposal metadata'
+                        : 'this browser'}
                   — review before executing.
                 </p>
               )}
-              {!isResolvingCalldata && !resolvedCalldata && executeCalldata === '0x' && (
+              {!isResolvingCalldata && !resolvedCalldata && executeCalldata === '0x' && hasOnchainPreimage && (
+                <p className="text-emerald-400/90 text-xs">
+                  Calldata is stored on-chain. Execute may pass empty data.
+                </p>
+              )}
+              {!isResolvingCalldata && !resolvedCalldata && executeCalldata === '0x' && !hasOnchainPreimage && (
                 <p className="text-amber-400/90 text-xs">
                   Calldata not archived here. Ask the proposer for the hex, or paste from your records.
                 </p>
@@ -1046,7 +1307,7 @@ function TransactionCard({ transaction, chamberAddress, quorum, userTokenId, cha
             <div className="mt-3 h-1.5 bg-slate-800 rounded-full overflow-hidden">
               <motion.div
                 initial={{ width: 0 }}
-                animate={{ width: `${(transaction.confirmations / quorum) * 100}%` }}
+                animate={{ width: `${(liveConfirmations / Math.max(1, requiredConfirmations)) * 100}%` }}
                 className={`h-full rounded-full ${
                   transaction.status === 'ready'
                     ? 'bg-emerald-500'
@@ -1058,34 +1319,38 @@ function TransactionCard({ transaction, chamberAddress, quorum, userTokenId, cha
         </div>
 
         {/* Actions */}
-        {!transaction.executed && !isCancelled && userTokenId !== undefined && (
+        {!transaction.executed && !isCancelled && (userTokenId !== undefined || leftoverTokenId !== undefined) && (
           <div className="flex items-center gap-2">
-            <button
-              onClick={handleCancel}
-              disabled={isCancelling || hasVotedToCancel}
-              className="btn btn-secondary py-2 px-3 border-slate-600 hover:border-slate-500 text-slate-400 hover:text-slate-200"
-              title={hasVotedToCancel ? 'You have voted to cancel' : 'Vote to cancel (requires quorum)'}
-            >
-              {isCancelling ? (
-                <FiLoader className="w-4 h-4 animate-spin" />
-              ) : hasVotedToCancel ? (
-                <>
-                  <FiX className="w-4 h-4" />
-                  Voted to cancel
-                </>
-              ) : (
-                <>
-                  <FiX className="w-4 h-4" />
-                  Cancel
-                </>
-              )}
-            </button>
-            {userHasConfirmed && (
+            {userTokenId !== undefined && (
+              <button
+                onClick={handleCancel}
+                disabled={isCancelling || hasVotedToCancel}
+                className="btn btn-secondary py-2 px-3 border-slate-600 hover:border-slate-500 text-slate-400 hover:text-slate-200"
+                title={hasVotedToCancel ? 'You have voted to cancel' : 'Vote to cancel (requires quorum)'}
+              >
+                {isCancelling ? (
+                  <FiLoader className="w-4 h-4 animate-spin" />
+                ) : hasVotedToCancel ? (
+                  <>
+                    <FiX className="w-4 h-4" />
+                    Voted to cancel
+                  </>
+                ) : (
+                  <>
+                    <FiX className="w-4 h-4" />
+                    Cancel
+                  </>
+                )}
+              </button>
+            )}
+            {!isExpired && (leftoverTokenId !== undefined || userHasConfirmed) && (
               <button
                 onClick={handleRevoke}
                 disabled={isRevoking}
                 className="btn btn-secondary py-2 px-3 border-amber-500/30 hover:border-amber-500/50"
-                title="Revoke your confirmation"
+                title={leftoverTokenId !== undefined && userTokenId === undefined
+                  ? 'Revoke leftover confirmation from a former seat'
+                  : 'Revoke your confirmation'}
               >
                 {isRevoking ? (
                   <FiLoader className="w-4 h-4 animate-spin" />
@@ -1094,7 +1359,7 @@ function TransactionCard({ transaction, chamberAddress, quorum, userTokenId, cha
                 )}
               </button>
             )}
-            {transaction.status !== 'ready' && (
+            {userTokenId !== undefined && !isExpired && transaction.status !== 'ready' && (
               <button
                 onClick={handleConfirm}
                 disabled={isConfirming || userHasConfirmed}
@@ -1110,11 +1375,12 @@ function TransactionCard({ transaction, chamberAddress, quorum, userTokenId, cha
                 )}
               </button>
             )}
-            {transaction.status === 'ready' && (
+            {userTokenId !== undefined && !isExpired && transaction.status === 'ready' && (
               <button
                 onClick={handleExecute}
-                disabled={isExecuting}
+                disabled={isExecuting || executeBlockedByPause}
                 className="btn btn-primary py-2 px-3"
+                title={executeBlockedByPause ? 'Chamber is paused' : undefined}
               >
                 {isExecuting ? (
                   <FiLoader className="w-4 h-4 animate-spin" />
@@ -1138,7 +1404,9 @@ function TransactionCard({ transaction, chamberAddress, quorum, userTokenId, cha
             {transaction.dataHash}
           </code>
           <p className="text-slate-500 text-xs mt-2">
-            Only the hash is stored onchain. To execute, directors must supply the exact calldata bytes (or use <span className="font-mono">0x</span> for plain ETH with no call data).
+            {hasOnchainPreimage
+              ? 'Self-call calldata is stored on-chain. Execute may pass empty data, or re-supply the original bytes.'
+              : 'Only the hash is stored onchain. To execute, directors must supply the exact calldata bytes (or use 0x for plain ETH with no call data).'}
           </p>
         </div>
       ) : null}
@@ -1158,8 +1426,6 @@ const PROPOSAL_TEMPLATES = [
   { id: 'treasury-transfer', label: 'Treasury Transfer', title: 'Treasury Transfer', description: '', txType: 'eth' as const },
   { id: 'custom', label: 'Custom Call', title: '', description: '', txType: 'custom' as const },
 ]
-
-const SEAT_TIMELOCK_SEC = 7n * 24n * 60n * 60n
 
 function formatDurationSeconds(total: number): string {
   if (total <= 0) return '0m'
@@ -1191,18 +1457,30 @@ function BoardProposalCard({
     isPending: isExecPending,
     isConfirming: isExecConfirming,
   } = useExecuteSeatsUpdate(chamberAddress)
+  const {
+    cancelSeatUpdate,
+    isPending: isCancelPending,
+    isConfirming: isCancelConfirming,
+  } = useCancelSeatUpdate(chamberAddress)
 
   const supported =
     userTokenId !== undefined &&
     seatUpdate.supporters.some((id) => id === userTokenId)
   const nowSec = BigInt(Math.floor(Date.now() / 1000))
-  const timelockEnd = seatUpdate.timestamp + SEAT_TIMELOCK_SEC
+  const timelockEnd = seatUpdate.timestamp + SEAT_UPDATE_TIMELOCK_SEC
+  const expiryEnd = seatUpdate.timestamp + SEAT_UPDATE_EXPIRY_SEC
   const timelockExpired = nowSec >= timelockEnd
+  const proposalExpired = nowSec >= expiryEnd
   const supporterCount = seatUpdate.supporters.length
   const requiredQuorum = Number(seatUpdate.requiredQuorum)
   const quorumReached = supporterCount >= requiredQuorum
   const ready = quorumReached && timelockExpired
-  const busy = isSupportPending || isSupportConfirming || isExecPending || isExecConfirming
+  const isProposer =
+    userTokenId !== undefined &&
+    seatUpdate.supporters.length > 0 &&
+    seatUpdate.supporters[0] === userTokenId
+  const canCancelProposal = userTokenId !== undefined && (isProposer || proposalExpired)
+  const busy = isSupportPending || isSupportConfirming || isExecPending || isExecConfirming || isCancelPending || isCancelConfirming
 
   const support = async () => {
     if (userTokenId === undefined) {
@@ -1229,6 +1507,20 @@ function BoardProposalCard({
       toast.success('Board proposal executed')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Execute failed')
+    }
+  }
+
+  const cancelProposal = async () => {
+    if (userTokenId === undefined) {
+      toast.error('You must be a director to cancel board proposals')
+      return
+    }
+    try {
+      await cancelSeatUpdate(userTokenId)
+      await onChanged()
+      toast.success('Board proposal cancelled')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Cancel failed')
     }
   }
 
@@ -1271,7 +1563,13 @@ function BoardProposalCard({
               <span>
                 Timelock:{' '}
                 <span className={timelockExpired ? 'text-emerald-400' : 'text-slate-200'}>
-                  {timelockExpired ? 'Expired' : `~${formatDurationSeconds(Math.max(0, Number(timelockEnd - nowSec)))} left`}
+                  {timelockExpired ? 'Unlocked' : `~${formatDurationSeconds(Math.max(0, Number(timelockEnd - nowSec)))} left`}
+                </span>
+              </span>
+              <span>
+                Cancel after:{' '}
+                <span className={proposalExpired ? 'text-amber-300' : 'text-slate-200'}>
+                  {proposalExpired ? 'Any director' : `~${formatDurationSeconds(Math.max(0, Number(expiryEnd - nowSec)))} (14d)`}
                 </span>
               </span>
               <span>
@@ -1307,6 +1605,24 @@ function BoardProposalCard({
                   <>
                     <FiCheck className="w-4 h-4" />
                     Support
+                  </>
+                )}
+              </button>
+            )}
+            {canCancelProposal && (
+              <button
+                type="button"
+                onClick={() => void cancelProposal()}
+                disabled={busy}
+                className="btn btn-secondary py-2 px-3 border-slate-600 hover:border-slate-500 text-slate-400 hover:text-slate-200"
+                title={isProposer ? 'Proposer can cancel anytime' : 'Proposal expired — any director may cancel'}
+              >
+                {isCancelPending || isCancelConfirming ? (
+                  <FiLoader className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    <FiX className="w-4 h-4" />
+                    Cancel
                   </>
                 )}
               </button>
@@ -1802,7 +2118,7 @@ function NewTransactionForm({
                 <div>
                   <h4 className="font-medium text-slate-100 text-sm">Board Proposal</h4>
                   <p className="text-slate-400 text-xs mt-1">
-                    Directors propose and support seat changes directly. Once quorum is reached, execution unlocks after the 7-day timelock.
+                    Directors propose and support seat changes directly. Once quorum is reached, execution unlocks after the 7-day timelock. The proposer can cancel anytime; any current director can cancel after 14 days.
                   </p>
                 </div>
               </div>

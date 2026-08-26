@@ -158,6 +158,8 @@ export default function TreasuryOverview({ chamberAddress, chamberInfo, userBala
       'ExceedsDelegatedAmount': 'Cannot withdraw - some shares are delegated',
       'ERC20InsufficientAllowance': 'Token approval required',
       'ERC20InsufficientBalance': 'Insufficient token balance',
+      'AssetAmountMismatch': 'Fee-on-transfer or rebasing tokens revert on deposit',
+      'EnforcedPause': 'This chamber is paused',
     }
     
     // Check for custom error name in message
@@ -225,8 +227,15 @@ export default function TreasuryOverview({ chamberAddress, chamberInfo, userBala
     }
   }
 
+  const vaultPaused = chamberInfo.paused === true
+
   return (
     <div className="space-y-6">
+      {vaultPaused && (
+        <div className="rounded-xl border border-red-500/30 bg-red-500/5 px-4 py-3 text-sm text-red-200">
+          This chamber is paused. Deposits and withdrawals are halted until the board unpauses.
+        </div>
+      )}
       {/* Treasury Stats */}
       <div className="grid md:grid-cols-3 gap-5">
         <motion.div
@@ -452,7 +461,7 @@ export default function TreasuryOverview({ chamberAddress, chamberInfo, userBala
                 <button
                   type="button"
                   onClick={handleDeposit}
-                  disabled={isDepositing || isDepositConfirming || !depositAmount || !!(depositAmount && !isDepositValid && !isDepositSimulating)}
+                  disabled={vaultPaused || isDepositing || isDepositConfirming || !depositAmount || !!(depositAmount && !isDepositValid && !isDepositSimulating)}
                   className="btn btn-primary w-full"
                 >
                   {isDepositing || isDepositConfirming ? (
@@ -568,7 +577,7 @@ export default function TreasuryOverview({ chamberAddress, chamberInfo, userBala
               <button
                 type="button"
                 onClick={handleWithdraw}
-                disabled={isWithdrawing || isWithdrawConfirming || !withdrawAmount || !!(withdrawAmount && !isWithdrawValid && !isWithdrawSimulating)}
+                disabled={vaultPaused || isWithdrawing || isWithdrawConfirming || !withdrawAmount || !!(withdrawAmount && !isWithdrawValid && !isWithdrawSimulating)}
                 className="btn w-full border border-rose-500/40 bg-rose-600/90 text-white hover:bg-rose-500 shadow-sm disabled:opacity-50"
               >
                 {isWithdrawing || isWithdrawConfirming ? (
