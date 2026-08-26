@@ -111,6 +111,24 @@ interface IChamber is IERC4626, IBoard, IWallet {
      */
     function upgradeImplementation(address newImplementation, bytes calldata data) external;
 
+    /**
+     * @notice Pauses vault deposit/withdraw/mint/redeem and wallet execution.
+     * @dev Must be called with `msg.sender == address(this)` after board quorum (via `executeTransaction`).
+     *      Direct EOA or director calls revert. While paused, only a quorum self-call to {unpause} may execute.
+     */
+    function pause() external;
+
+    /**
+     * @notice Unpauses vault operations and wallet execution.
+     * @dev Must be called with `msg.sender == address(this)` after board quorum (via `executeTransaction`).
+     */
+    function unpause() external;
+
+    /**
+     * @notice Returns true if the chamber is paused.
+     */
+    function paused() external view returns (bool);
+
     /// Events
     /**
      * @notice Emitted when delegation is updated

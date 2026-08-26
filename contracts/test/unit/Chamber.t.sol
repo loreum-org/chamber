@@ -1617,7 +1617,7 @@ contract ChamberTest is Test {
     }
 
     function test_Chamber_Version() public view {
-        assertEq(chamber.VERSION(), bytes32("1.1.4"));
+        assertEq(chamber.VERSION(), bytes32("1.1.5"));
     }
 
     // ─── acceptAdmin (no-op) ───────────────────────────────────────────
