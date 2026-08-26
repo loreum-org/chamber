@@ -62,20 +62,17 @@ contract MockBoard is Board {
     }
 
     /**
-     * @notice Sets the transient circuit-breaker lock and immediately tries to delegate again
+     * @notice Holds the OZ transient reentrancy lock and immediately tries to delegate again
      *         in the same call — simulates reentrancy to verify the guard fires.
      */
-    function lockAndDelegate(uint256 tokenId, uint256 amount) public {
-        _circuitBreakerBefore();
-        _delegate(tokenId, amount); // Should revert with CircuitBreakerActive
+    function lockAndDelegate(uint256 tokenId, uint256 amount) public nonReentrant {
+        _delegate(tokenId, amount); // Should revert with ReentrancyGuardReentrantCall
     }
 
     /**
-     * @notice Locks the board and tries to reposition within the same call
-     *         (used to test that reposition is guarded when called from a locked context).
+     * @notice Holds the OZ transient reentrancy lock and tries to reposition in the same call.
      */
-    function lockAndReposition(uint256 tokenId) public {
-        _circuitBreakerBefore();
-        _reposition(tokenId); // NodeDoesNotExist if not inserted; CircuitBreakerActive path via _delegate
+    function lockAndReposition(uint256 tokenId) public nonReentrant {
+        _reposition(tokenId);
     }
 }

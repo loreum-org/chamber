@@ -131,7 +131,8 @@ interface IBoard {
     /// @notice Thrown when the linked list has reached its maximum size
     error MaxNodesReached();
 
-    /// @notice Thrown when circuit breaker is active
+    /// @notice Reserved error (not reverted by current Board source); kept for ABI compatibility.
+    /// @dev Board now reverts with OpenZeppelin `ReentrancyGuardReentrantCall` on reentrancy.
     error CircuitBreakerActive();
 
     /// @notice Thrown when a non-proposer attempts to cancel a seat update proposal (Fix Finding 14)

@@ -4,6 +4,7 @@ pragma solidity ^0.8.24;
 import {Test} from "lib/forge-std/src/Test.sol";
 import {MockBoard} from "test/mock/MockBoard.sol";
 import {IBoard} from "src/interfaces/IBoard.sol";
+import {ReentrancyGuardTransient} from "lib/openzeppelin-contracts/contracts/utils/ReentrancyGuardTransient.sol";
 
 contract BoardTest is Test {
     MockBoard board;
@@ -414,16 +415,16 @@ contract BoardTest is Test {
     // ─── Circuit breaker ───────────────────────────────────────────────
 
     function test_Board_CircuitBreakerActive_Delegate_Reverts() public {
-        // lockAndDelegate acquires the transient lock then immediately calls _delegate in the
-        // same transaction, simulating reentrancy. The second _delegate should revert.
-        vm.expectRevert(IBoard.CircuitBreakerActive.selector);
+        // lockAndDelegate holds the OZ transient lock then immediately calls _delegate in the
+        // same transaction, simulating reentrancy. The nested _delegate should revert.
+        vm.expectRevert(ReentrancyGuardTransient.ReentrancyGuardReentrantCall.selector);
         board.lockAndDelegate(1, 100);
     }
 
     function test_Board_CircuitBreakerActive_Undelegate_Reverts() public {
         board.exposed_delegate(1, 100);
 
-        vm.expectRevert(IBoard.CircuitBreakerActive.selector);
+        vm.expectRevert(ReentrancyGuardTransient.ReentrancyGuardReentrantCall.selector);
         board.lockAndDelegate(1, 50);
     }
 

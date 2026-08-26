@@ -13,9 +13,6 @@ import {
 } from "lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {ERC20Upgradeable} from "lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
 import {IERC1271} from "lib/openzeppelin-contracts/contracts/interfaces/IERC1271.sol";
-import {
-    ReentrancyGuardUpgradeable
-} from "lib/openzeppelin-contracts-upgradeable/contracts/utils/ReentrancyGuardUpgradeable.sol";
 import {ProxyAdmin} from "lib/openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 import {
     ITransparentUpgradeableProxy
@@ -26,8 +23,10 @@ import {StorageSlot} from "lib/openzeppelin-contracts/contracts/utils/StorageSlo
  * @title Chamber Contract
  * @notice This contract is a smart vault for managing assets with a board of directors
  * @author xhad, Loreum DAO LLC
+ * @dev Wallet `nonReentrant` modifiers come from {Board}'s {ReentrancyGuardTransient}
+ *      (replaces the previous {ReentrancyGuardUpgradeable} parent).
  */
-contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Wallet, IChamber, IERC721Receiver {
+contract Chamber is ERC4626Upgradeable, Board, Wallet, IChamber, IERC721Receiver {
     /**
      * @notice ERC-7201 namespaced storage layout for Chamber
      * @dev Packing: `nft` (address, 20 bytes) sits alone in its slot; remaining fields are
@@ -100,7 +99,6 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
 
         __ERC4626_init(IERC20(erc20Token));
         __ERC20_init(_name, _symbol);
-        __ReentrancyGuard_init();
 
         ChamberStorage storage $ = _getChamberStorage();
         $.nft = IERC721(erc721Token);
