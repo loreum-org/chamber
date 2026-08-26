@@ -20,6 +20,11 @@ contract Registry is AccessControl, Initializable, IRegistry {
     /// @notice Role for managing the registry configuration
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
+    /// @notice Maximum addresses a single registry getter may return
+    /// @dev Unbounded copies of `chambers` / by-asset / child / asset indexes can OOG.
+    ///      Paginated getters are the supported API; convenience getters return this first page.
+    uint256 public constant MAX_PAGE_SIZE = 256;
+
     /**
      * @notice ERC-7201 namespaced storage layout for Registry
      * @dev Address fields (20 bytes each) cannot be packed together in the same 32-byte slot.
@@ -172,11 +177,12 @@ contract Registry is AccessControl, Initializable, IRegistry {
     }
 
     /**
-     * @notice Returns all deployed chambers
+     * @notice Returns the first page of deployed chambers
+     * @dev Capped at `MAX_PAGE_SIZE`. Use `getChambers(limit, skip)` to page the full index.
      * @return Array of chamber addresses
      */
     function getAllChambers() external view returns (address[] memory) {
-        return _getRegistryStorage().chambers;
+        return _page(_getRegistryStorage().chambers, MAX_PAGE_SIZE, 0);
     }
 
     /**
@@ -189,29 +195,12 @@ contract Registry is AccessControl, Initializable, IRegistry {
 
     /**
      * @notice Returns a subset of chambers for pagination
-     * @param limit The maximum number of chambers to return
+     * @param limit The maximum number of chambers to return (clamped to `MAX_PAGE_SIZE`)
      * @param skip The number of chambers to skip
      * @return Array of chamber addresses
      */
     function getChambers(uint256 limit, uint256 skip) external view returns (address[] memory) {
-        address[] storage allChambers = _getRegistryStorage().chambers;
-        uint256 total = allChambers.length;
-        if (skip >= total) {
-            return new address[](0);
-        }
-
-        uint256 remaining = total - skip;
-        uint256 count = remaining < limit ? remaining : limit;
-        address[] memory result = new address[](count);
-
-        for (uint256 i = 0; i < count;) {
-            result[i] = allChambers[skip + i];
-            unchecked {
-                ++i;
-            }
-        }
-
-        return result;
+        return _page(_getRegistryStorage().chambers, limit, skip);
     }
 
     /**
@@ -224,20 +213,64 @@ contract Registry is AccessControl, Initializable, IRegistry {
     }
 
     /**
-     * @notice Returns all chambers for a given asset
+     * @notice Returns the first page of chambers for a given asset
+     * @dev Capped at `MAX_PAGE_SIZE`. Use `getChambersByAsset(asset, limit, skip)` to page.
      * @param asset The asset address
      * @return Array of chamber addresses
      */
     function getChambersByAsset(address asset) external view returns (address[] memory) {
-        return _getRegistryStorage().chambersByAsset[asset];
+        return _page(_getRegistryStorage().chambersByAsset[asset], MAX_PAGE_SIZE, 0);
     }
 
     /**
-     * @notice Returns all unique assets (Organizations)
+     * @notice Returns a paginated list of chambers for a given asset
+     * @param asset The asset address
+     * @param limit The maximum number of chambers to return (clamped to `MAX_PAGE_SIZE`)
+     * @param skip The number of chambers to skip
+     * @return Array of chamber addresses
+     */
+    function getChambersByAsset(address asset, uint256 limit, uint256 skip)
+        external
+        view
+        returns (address[] memory)
+    {
+        return _page(_getRegistryStorage().chambersByAsset[asset], limit, skip);
+    }
+
+    /**
+     * @notice Returns the number of chambers indexed for a given asset
+     * @param asset The asset address
+     * @return The number of chambers using `asset`
+     */
+    function getChambersByAssetCount(address asset) external view returns (uint256) {
+        return _getRegistryStorage().chambersByAsset[asset].length;
+    }
+
+    /**
+     * @notice Returns the first page of unique assets (Organizations)
+     * @dev Capped at `MAX_PAGE_SIZE`. Use `getAssets(limit, skip)` to page.
      * @return Array of asset addresses
      */
     function getAssets() external view returns (address[] memory) {
-        return _getRegistryStorage().assets;
+        return _page(_getRegistryStorage().assets, MAX_PAGE_SIZE, 0);
+    }
+
+    /**
+     * @notice Returns a paginated list of unique assets
+     * @param limit The maximum number of assets to return (clamped to `MAX_PAGE_SIZE`)
+     * @param skip The number of assets to skip
+     * @return Array of asset addresses
+     */
+    function getAssets(uint256 limit, uint256 skip) external view returns (address[] memory) {
+        return _page(_getRegistryStorage().assets, limit, skip);
+    }
+
+    /**
+     * @notice Returns the number of unique assets indexed by the registry
+     * @return The number of assets
+     */
+    function getAssetCount() external view returns (uint256) {
+        return _getRegistryStorage().assets.length;
     }
 
     /**
@@ -250,12 +283,73 @@ contract Registry is AccessControl, Initializable, IRegistry {
     }
 
     /**
-     * @notice Returns all child chambers for a given parent chamber
+     * @notice Returns the first page of child chambers for a given parent chamber
+     * @dev Capped at `MAX_PAGE_SIZE`. Child links are permissionless index metadata
+     *      (anyone may create a chamber whose asset is an existing chamber share token).
+     *      Use `getChildChambers(chamber, limit, skip)` to page the full index.
      * @param chamber The parent chamber address
      * @return Array of child chamber addresses
      */
     function getChildChambers(address chamber) external view returns (address[] memory) {
-        return _getRegistryStorage().childChambers[chamber];
+        return _page(_getRegistryStorage().childChambers[chamber], MAX_PAGE_SIZE, 0);
+    }
+
+    /**
+     * @notice Returns a paginated list of child chambers for a given parent chamber
+     * @param chamber The parent chamber address
+     * @param limit The maximum number of children to return (clamped to `MAX_PAGE_SIZE`)
+     * @param skip The number of children to skip
+     * @return Array of child chamber addresses
+     */
+    function getChildChambers(address chamber, uint256 limit, uint256 skip)
+        external
+        view
+        returns (address[] memory)
+    {
+        return _page(_getRegistryStorage().childChambers[chamber], limit, skip);
+    }
+
+    /**
+     * @notice Returns the number of child chambers indexed under a parent
+     * @param chamber The parent chamber address
+     * @return The number of child index entries
+     */
+    function getChildChamberCount(address chamber) external view returns (uint256) {
+        return _getRegistryStorage().childChambers[chamber].length;
+    }
+
+    /**
+     * @notice Copies a bounded slice from a storage address array
+     * @dev `limit` of 0 returns an empty page. Limits above `MAX_PAGE_SIZE` are clamped.
+     * @param items Source storage array
+     * @param limit Requested page size
+     * @param skip Number of entries to skip
+     * @return result Memory copy of the selected slice
+     */
+    function _page(address[] storage items, uint256 limit, uint256 skip)
+        internal
+        view
+        returns (address[] memory result)
+    {
+        uint256 total = items.length;
+        if (skip >= total || limit == 0) {
+            return new address[](0);
+        }
+
+        if (limit > MAX_PAGE_SIZE) {
+            limit = MAX_PAGE_SIZE;
+        }
+
+        uint256 remaining = total - skip;
+        uint256 count = remaining < limit ? remaining : limit;
+        result = new address[](count);
+
+        for (uint256 i = 0; i < count;) {
+            result[i] = items[skip + i];
+            unchecked {
+                ++i;
+            }
+        }
     }
 
     /**

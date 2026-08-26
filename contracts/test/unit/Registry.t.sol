@@ -296,4 +296,142 @@ contract RegistryTest is Test {
         vm.expectRevert();
         registry.setChamberImplementation(address(newImpl));
     }
+
+    /// @dev ERC-7201 `RegistryStorage` namespace; `chambers` is field index 2.
+    bytes32 internal constant _REGISTRY_STORAGE_SLOT =
+        0xf6315592a63ddf317bd8b41aa1ba894c04251b3cfbd8a95258342cd83f2a4600;
+
+    function _chambersArraySlot() internal pure returns (bytes32) {
+        return bytes32(uint256(_REGISTRY_STORAGE_SLOT) + 2);
+    }
+
+    function _assetsArraySlot() internal pure returns (bytes32) {
+        return bytes32(uint256(_REGISTRY_STORAGE_SLOT) + 3);
+    }
+
+    function _chambersByAssetArraySlot(address asset) internal pure returns (bytes32) {
+        return keccak256(abi.encode(asset, bytes32(uint256(_REGISTRY_STORAGE_SLOT) + 6)));
+    }
+
+    function _childChambersArraySlot(address parent) internal pure returns (bytes32) {
+        return keccak256(abi.encode(parent, bytes32(uint256(_REGISTRY_STORAGE_SLOT) + 8)));
+    }
+
+    function test_Registry_GetChambers_LimitZero_Empty() public {
+        registry.createChamber(address(token), address(nft), 5, "C1", "C1");
+        address[] memory page = registry.getChambers(0, 0);
+        assertEq(page.length, 0);
+    }
+
+    function test_Registry_GetChambers_ClampsOversizedLimit() public {
+        address first = registry.createChamber(address(token), address(nft), 5, "C1", "C1");
+        vm.store(address(registry), _chambersArraySlot(), bytes32(uint256(10_000)));
+
+        address[] memory page = registry.getChambers(type(uint256).max, 0);
+        assertEq(page.length, registry.MAX_PAGE_SIZE());
+        assertEq(page[0], first);
+    }
+
+    function test_Registry_GetAllChambers_CapsAtMaxPageSize() public {
+        address first = registry.createChamber(address(token), address(nft), 5, "C1", "C1");
+        vm.store(address(registry), _chambersArraySlot(), bytes32(uint256(10_000)));
+
+        assertEq(registry.getChamberCount(), 10_000);
+
+        address[] memory page = registry.getAllChambers();
+        assertEq(page.length, registry.MAX_PAGE_SIZE());
+        assertEq(page[0], first);
+
+        address[] memory next = registry.getChambers(registry.MAX_PAGE_SIZE(), registry.MAX_PAGE_SIZE());
+        assertEq(next.length, registry.MAX_PAGE_SIZE());
+    }
+
+    function test_Registry_GetChambersByAsset_PaginationAndCap() public {
+        address chamber1 = registry.createChamber(address(token), address(nft), 5, "C1", "C1");
+        address chamber2 = registry.createChamber(address(token), address(nft), 3, "C2", "C2");
+        address chamber3 = registry.createChamber(address(token), address(nft), 4, "C3", "C3");
+
+        assertEq(registry.getChambersByAssetCount(address(token)), 3);
+
+        address[] memory page = registry.getChambersByAsset(address(token), 2, 0);
+        assertEq(page.length, 2);
+        assertEq(page[0], chamber1);
+        assertEq(page[1], chamber2);
+
+        page = registry.getChambersByAsset(address(token), 2, 2);
+        assertEq(page.length, 1);
+        assertEq(page[0], chamber3);
+
+        page = registry.getChambersByAsset(address(token), 2, 5);
+        assertEq(page.length, 0);
+
+        vm.store(address(registry), _chambersByAssetArraySlot(address(token)), bytes32(uint256(10_000)));
+        assertEq(registry.getChambersByAssetCount(address(token)), 10_000);
+        address[] memory capped = registry.getChambersByAsset(address(token));
+        assertEq(capped.length, registry.MAX_PAGE_SIZE());
+        assertEq(capped[0], chamber1);
+
+        address[] memory clamped = registry.getChambersByAsset(address(token), type(uint256).max, 0);
+        assertEq(clamped.length, registry.MAX_PAGE_SIZE());
+    }
+
+    function test_Registry_GetAssets_PaginationAndCap() public {
+        MockERC20 token2 = new MockERC20("Token2", "T2", 1e18);
+        MockERC20 token3 = new MockERC20("Token3", "T3", 1e18);
+
+        registry.createChamber(address(token), address(nft), 5, "C1", "C1");
+        registry.createChamber(address(token2), address(nft), 3, "C2", "C2");
+        registry.createChamber(address(token3), address(nft), 4, "C3", "C3");
+
+        assertEq(registry.getAssetCount(), 3);
+
+        address[] memory page = registry.getAssets(2, 0);
+        assertEq(page.length, 2);
+        assertEq(page[0], address(token));
+        assertEq(page[1], address(token2));
+
+        page = registry.getAssets(2, 2);
+        assertEq(page.length, 1);
+        assertEq(page[0], address(token3));
+
+        vm.store(address(registry), _assetsArraySlot(), bytes32(uint256(10_000)));
+        assertEq(registry.getAssetCount(), 10_000);
+        address[] memory capped = registry.getAssets();
+        assertEq(capped.length, registry.MAX_PAGE_SIZE());
+        assertEq(capped[0], address(token));
+    }
+
+    function test_Registry_GetChildChambers_PaginationAndCap() public {
+        address payable parent = registry.createChamber(address(token), address(nft), 5, "Parent", "PAR");
+        MockERC721 nft2 = new MockERC721("NFT2", "NFT2");
+        MockERC721 nft3 = new MockERC721("NFT3", "NFT3");
+        MockERC721 nft4 = new MockERC721("NFT4", "NFT4");
+
+        address child1 = registry.createChamber(parent, address(nft2), 3, "Child1", "CH1");
+        address child2 = registry.createChamber(parent, address(nft3), 3, "Child2", "CH2");
+        address child3 = registry.createChamber(parent, address(nft4), 3, "Child3", "CH3");
+
+        assertEq(registry.getChildChamberCount(parent), 3);
+
+        address[] memory page = registry.getChildChambers(parent, 2, 0);
+        assertEq(page.length, 2);
+        assertEq(page[0], child1);
+        assertEq(page[1], child2);
+
+        page = registry.getChildChambers(parent, 2, 2);
+        assertEq(page.length, 1);
+        assertEq(page[0], child3);
+
+        page = registry.getChildChambers(parent, 1, 10);
+        assertEq(page.length, 0);
+
+        vm.store(address(registry), _childChambersArraySlot(parent), bytes32(uint256(10_000)));
+        assertEq(registry.getChildChamberCount(parent), 10_000);
+        address[] memory capped = registry.getChildChambers(parent);
+        assertEq(capped.length, registry.MAX_PAGE_SIZE());
+        assertEq(capped[0], child1);
+
+        address[] memory clamped = registry.getChildChambers(parent, type(uint256).max, 0);
+        assertEq(clamped.length, registry.MAX_PAGE_SIZE());
+    }
 }
