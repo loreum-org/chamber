@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAccount, useBalance, useReadContract, useReadContracts, useChainId } from 'wagmi'
@@ -43,6 +43,7 @@ import TreasuryOverview from '@/components/TreasuryOverview'
 import DelegationManager from '@/components/DelegationManager'
 import ChamberAssetsAlchemy from '@/components/ChamberAssetsAlchemy'
 import { NftRetryableImage } from '@/components/NftRetryableImage'
+import { addRecentChamber } from '@/lib/recentChambers'
 import { getBlockExplorerAddressUrl, shortenAddress } from '@/lib/utils'
 import type { SeatUpdate } from '@/types'
 
@@ -71,7 +72,7 @@ export default function ChamberDetail() {
     return (
       <div className="flex flex-col items-center justify-center min-h-64 gap-4 text-center">
         <FiLoader className="w-10 h-10 text-accent-400 animate-spin" />
-        <p className="text-slate-400 text-sm">Verifying chamber registration…</p>
+        <p className="text-slate-400 text-sm">Verifying chamber…</p>
       </div>
     )
   }
@@ -81,7 +82,7 @@ export default function ChamberDetail() {
       <div className="flex flex-col items-center justify-center min-h-64 gap-4 text-center">
         <FiAlertTriangle className="w-12 h-12 text-red-400" />
         <h2 className="font-heading text-xl font-bold text-slate-100">Not a Chamber</h2>
-        <p className="text-slate-400">This address is not registered in the Registry.</p>
+        <p className="text-slate-400">This address does not look like a Chamber contract.</p>
         <Link to="/" className="btn btn-primary">Back to Dashboard</Link>
       </div>
     )
@@ -95,6 +96,10 @@ function ChamberDetailContent({ chamberAddress }: { chamberAddress: `0x${string}
   const navigate = useNavigate()
   const { address: userAddress } = useAccount()
   const chainId = useChainId()
+
+  useEffect(() => {
+    addRecentChamber(chainId, chamberAddress)
+  }, [chainId, chamberAddress])
 
   const activeTab: Tab = tab && validTabs.includes(tab as Tab) ? (tab as Tab) : 'overview'
   

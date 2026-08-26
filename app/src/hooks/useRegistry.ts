@@ -8,11 +8,12 @@ import {
   usePublicClient,
 } from 'wagmi'
 import { zeroAddress, type Hex, type PublicClient } from 'viem'
-import { registryAbi, chamberAbi } from '@/contracts/abis'
+import { registryAbi, chamberAbi, factoryAbi } from '@/contracts/abis'
 import { REGISTRY_PAGE_SIZE } from '@/lib/chamberGovernance'
 import {
   getContractAddresses,
   hasValidAddresses,
+  isNonZeroAddress,
 } from '@/lib/wagmi'
 import {
   ERC1967_IMPLEMENTATION_SLOT,
@@ -23,6 +24,11 @@ import {
 export function useRegistryAddress() {
   const chainId = useChainId()
   return getContractAddresses(chainId)?.registry ?? '0x0000000000000000000000000000000000000000' as `0x${string}`
+}
+
+export function useFactoryAddress() {
+  const chainId = useChainId()
+  return getContractAddresses(chainId)?.factory ?? '0x0000000000000000000000000000000000000000' as `0x${string}`
 }
 
 export function useHasValidConfig() {
@@ -153,18 +159,45 @@ export function useChamberCount() {
   }
 }
 
+/**
+ * Probe the address (`VERSION` / `nft` / `getSeats`) instead of requiring Registry.isChamber.
+ * Registry.isChamber remains a soft hint for chambers that are still in the deprecated index.
+ */
 export function useIsChamber(address: `0x${string}` | undefined) {
   const registryAddress = useRegistryAddress()
-  
-  const { data } = useReadContract({
-    address: registryAddress,
+  const registryOk = isNonZeroAddress(registryAddress)
+
+  const {
+    data: probe,
+    isFetched: probeFetched,
+    isFetching: probeFetching,
+  } = useReadContracts({
+    contracts: address
+      ? [
+          { address, abi: chamberAbi, functionName: 'VERSION' as const },
+          { address, abi: chamberAbi, functionName: 'nft' as const },
+          { address, abi: chamberAbi, functionName: 'getSeats' as const },
+        ]
+      : [],
+    query: { enabled: !!address, retry: 1 },
+  })
+
+  const { data: registryHint, isFetched: hintFetched } = useReadContract({
+    address: registryOk ? registryAddress : undefined,
     abi: registryAbi,
     functionName: 'isChamber',
     args: address ? [address] : undefined,
-    query: { enabled: !!address && registryAddress !== '0x0000000000000000000000000000000000000000' },
+    query: { enabled: !!address && registryOk },
   })
 
-  return data as boolean | undefined
+  if (!address) return undefined
+
+  const looksLikeChamber = !!probe?.some((r) => r.status === 'success' && r.result !== undefined)
+  if (looksLikeChamber) return true
+  if (registryHint === true) return true
+  if (probeFetched && (!registryOk || hintFetched)) return false
+  if (probeFetching) return undefined
+  return undefined
 }
 
 export function useChambersByAsset(asset: `0x${string}` | undefined) {
@@ -231,12 +264,10 @@ export function useAssets() {
 }
 
 /**
- * Groups chambers by their membership NFT (ERC721).
- * Organizations are defined by shared membership token.
+ * Groups the given chambers by their membership NFT (ERC721).
+ * Pass the user's chambers — do not crawl the world index.
  */
-export function useOrganizationsByNFT() {
-  const { chambers, isLoading: chambersLoading } = useAllChambers()
-  
+export function useOrganizationsByNFT(chambers?: readonly `0x${string}`[]) {
   const validChambers = (chambers ?? []).filter(
     (addr): addr is `0x${string}` =>
       !!addr &&
@@ -276,7 +307,7 @@ export function useOrganizationsByNFT() {
 
   return {
     organizations,
-    isLoading: chambersLoading || nftsLoading,
+    isLoading: nftsLoading && validChambers.length > 0,
   }
 }
 
@@ -330,7 +361,10 @@ export function useChildChambers(chamber: `0x${string}` | undefined) {
 }
 
 export function useCreateChamber() {
+  const factoryAddress = useFactoryAddress()
   const registryAddress = useRegistryAddress()
+  const createAddress = isNonZeroAddress(factoryAddress) ? factoryAddress : registryAddress
+  const createAbi = isNonZeroAddress(factoryAddress) ? factoryAbi : registryAbi
   const { writeContract, data: hash, isPending, error } = useWriteContract()
   const { isLoading: isConfirming, isSuccess, data: receipt } = useWaitForTransactionReceipt({ hash })
 
@@ -342,8 +376,8 @@ export function useCreateChamber() {
     symbol: string
   ) => {
     writeContract({
-      address: registryAddress,
-      abi: registryAbi,
+      address: createAddress,
+      abi: createAbi,
       functionName: 'createChamber',
       args: [erc20Token, erc721Token, BigInt(seats), name, symbol],
     })
@@ -366,25 +400,31 @@ export function useCreateChamber() {
  * its implementation pointer, existing proxies may lag until upgraded.
  */
 export function useChamberRegistryImplementationSync(chamberAddress: `0x${string}` | undefined) {
+  const factoryAddress = useFactoryAddress()
   const registryAddress = useRegistryAddress()
   const chainId = useChainId()
   const publicClient = usePublicClient()
-  const registryOk =
-    registryAddress &&
-    registryAddress !== zeroAddress &&
-    registryAddress.startsWith('0x') &&
-    registryAddress.length === 42
+  const factoryOk = isNonZeroAddress(factoryAddress)
+  const registryOk = isNonZeroAddress(registryAddress)
 
-  const { data: registryImplementation, isLoading: registryImplLoading } = useReadContract({
-    address: registryOk ? registryAddress : undefined,
-    abi: registryAbi,
+  const { data: factoryImplementation, isLoading: factoryImplLoading } = useReadContract({
+    address: factoryOk ? factoryAddress : undefined,
+    abi: factoryAbi,
     functionName: 'implementation',
-    query: { enabled: !!registryOk && !!chamberAddress },
+    query: { enabled: factoryOk && !!chamberAddress },
   })
 
+  const { data: registryImplementation, isLoading: registryImplLoading } = useReadContract({
+    address: registryOk && !factoryOk ? registryAddress : undefined,
+    abi: registryAbi,
+    functionName: 'implementation',
+    query: { enabled: registryOk && !factoryOk && !!chamberAddress },
+  })
+
+  const preferredImpl = factoryOk ? factoryImplementation : registryImplementation
   const regImpl =
-    registryImplementation && registryImplementation !== zeroAddress
-      ? (registryImplementation as `0x${string}`)
+    preferredImpl && preferredImpl !== zeroAddress
+      ? (preferredImpl as `0x${string}`)
       : undefined
 
   const { data: proxyImplementationAddress, isLoading: slotLoading } = useQuery({
@@ -428,8 +468,8 @@ export function useChamberRegistryImplementationSync(chamberAddress: `0x${string
     chamberVersionLabel,
     registryImplementationVersionLabel,
     implMismatch,
-    registryAddress: registryOk ? registryAddress : undefined,
+    registryAddress: factoryOk ? factoryAddress : registryOk ? registryAddress : undefined,
     isLoading:
-      registryImplLoading || slotLoading || chamberVerLoading || registryVerLoading,
+      factoryImplLoading || registryImplLoading || slotLoading || chamberVerLoading || registryVerLoading,
   }
 }

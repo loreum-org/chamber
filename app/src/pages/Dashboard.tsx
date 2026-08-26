@@ -1,35 +1,42 @@
 import { useEffect, useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useAccount, usePublicClient, useChainId, useReadContracts } from 'wagmi'
-import { formatUnits } from 'viem'
-import { multicall } from 'viem/actions'
-import { useQuery } from '@tanstack/react-query'
-import { FiLayers, FiPlus, FiAlertTriangle, FiGrid, FiBriefcase, FiShield, FiUser } from 'react-icons/fi'
-import { useAllChambers, useChamberCount, useHasValidConfig, useOrganizationsByNFT } from '@/hooks'
+import { useAccount, useChainId, useReadContracts } from 'wagmi'
+import { formatUnits, isAddress } from 'viem'
+import { FiLayers, FiPlus, FiAlertTriangle, FiUser, FiBriefcase, FiShield, FiArrowRight } from 'react-icons/fi'
+import { useHasValidConfig, useMyChambers, useOrganizationsByNFT } from '@/hooks'
 import { erc721Abi } from '@/contracts'
-import { chamberAbi } from '@/contracts/abis'
-import ChamberCard from '@/components/ChamberCard'
 import { isMainnetConfigured } from '@/lib/wagmi'
+import ChamberCard from '@/components/ChamberCard'
 
 export default function Dashboard() {
-  const { isConnected, address: userAddress } = useAccount()
+  const { isConnected } = useAccount()
   const location = useLocation()
+  const navigate = useNavigate()
   const chainId = useChainId()
-  const [viewMode, setViewMode] = useState<'all' | 'organizations'>('all')
+  const [viewMode, setViewMode] = useState<'mine' | 'organizations'>('mine')
+  const [openAddress, setOpenAddress] = useState('')
+  const [openError, setOpenError] = useState<string | null>(null)
 
-  const { chambers, isLoading, refetch: refetchChambers, error: chambersError } = useAllChambers()
-  const { count: chamberCount, refetch: refetchCount, isLoading: countLoading, error: countError, registryAddress } = useChamberCount()
-  const { organizations, isLoading: orgsLoading } = useOrganizationsByNFT()
+  const {
+    chambers: myChambers,
+    isLoading,
+    refetch: refetchMine,
+    error: chambersError,
+    recents,
+    remember,
+    factoryAddress,
+    registryAddress,
+  } = useMyChambers()
+  const myAddresses = myChambers.map((entry) => entry.address)
+  const { organizations, isLoading: orgsLoading } = useOrganizationsByNFT(myAddresses)
   const { isValid } = useHasValidConfig()
 
-  // Refetch when navigating to dashboard so newly created chambers appear immediately
   useEffect(() => {
     if (location.pathname === '/') {
-      refetchChambers()
-      refetchCount()
+      refetchMine()
     }
-  }, [location.pathname, refetchChambers, refetchCount])
+  }, [location.pathname, refetchMine])
 
   const getNetworkName = (id: number) => {
     switch (id) {
@@ -40,55 +47,17 @@ export default function Dashboard() {
     }
   }
 
-  const validChambers = chambers || []
-
-  const publicClient = usePublicClient()
-  const participationQuery = useQuery({
-    queryKey: ['dashboard-chamber-participation', chainId, userAddress, validChambers.join()],
-    enabled: !!publicClient && !!userAddress && validChambers.length > 0,
-    staleTime: 30_000,
-    queryFn: async () => {
-      if (!publicClient || !userAddress) throw new Error('Missing client or account')
-      const directorReads = validChambers.map((address) => ({
-        address,
-        abi: chamberAbi,
-        functionName: 'getDirectors' as const,
-      }))
-      const balanceReads = validChambers.map((address) => ({
-        address,
-        abi: chamberAbi,
-        functionName: 'balanceOf' as const,
-        args: [userAddress] as const,
-      }))
-      const [dirs, bals] = await Promise.all([
-        multicall(publicClient, { contracts: directorReads, allowFailure: true }),
-        multicall(publicClient, { contracts: balanceReads, allowFailure: true }),
-      ])
-      return { dirs, bals }
-    },
-  })
-
-  const allDirectors = participationQuery.data?.dirs.map((r) =>
-    r.status === 'success'
-      ? ({ status: 'success' as const, result: r.result })
-      : ({ status: 'failure' as const }),
-  )
-  const allBalances = participationQuery.data?.bals.map((r) =>
-    r.status === 'success'
-      ? ({ status: 'success' as const, result: r.result })
-      : ({ status: 'failure' as const }),
-  )
-
-  const myChambers = validChambers.filter((_addr, i) => {
-    const dirs = allDirectors?.[i]?.result as `0x${string}`[] | undefined
-    const bal = allBalances?.[i]?.result as bigint | undefined
-    const isDirector = dirs?.some((d) => d.toLowerCase() === userAddress?.toLowerCase())
-    const hasBalance = bal !== undefined && bal > 0n
-    return isDirector || hasBalance
-  })
-
-  const myChambersReady =
-    !!userAddress && validChambers.length > 0 && participationQuery.isSuccess && participationQuery.data !== undefined
+  const handleOpenAddress = (e: React.FormEvent) => {
+    e.preventDefault()
+    const value = openAddress.trim()
+    if (!isAddress(value)) {
+      setOpenError('Enter a valid chamber address')
+      return
+    }
+    setOpenError(null)
+    remember(value)
+    navigate(`/chamber/${value}`)
+  }
 
   return (
     <div className="space-y-10">
@@ -105,7 +74,6 @@ export default function Dashboard() {
         </motion.div>
       )}
 
-      {/* Configuration Warning */}
       {!isValid && !(chainId === 1 && !isMainnetConfigured) && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
@@ -117,16 +85,23 @@ export default function Dashboard() {
             <div>
               <h4 className="font-medium text-amber-400 mb-1">Contract Addresses Not Configured</h4>
               <p className="text-slate-400 text-sm">
-                No Registry contract address configured for <strong>{getNetworkName(chainId)}</strong> (Chain ID: {chainId}).
+                No Factory or Registry address configured for <strong>{getNetworkName(chainId)}</strong> (Chain ID: {chainId}).
                 {chainId === 31337 ? (
                   <>
-                    {' '}Deploy contracts to Anvil and update your <code className="text-accent-400">.env</code> file:
+                    {' '}Deploy contracts to Anvil and update your <code className="text-accent-400">.env</code> file
+                    (Factory preferred; Registry is enough for legacy deploys):
                     <code className="block mt-2 p-2 bg-slate-800/50 rounded text-xs">
+                      VITE_LOCALHOST_FACTORY=0x...your_factory_address
+                    </code>
+                    <code className="block mt-1 p-2 bg-slate-800/50 rounded text-xs">
                       VITE_LOCALHOST_REGISTRY=0x...your_registry_address
                     </code>
                   </>
                 ) : (
-                  <> Update your <code className="text-accent-400">.env</code> file with the contract addresses.</>
+                  <>
+                    {' '}Set <code className="text-accent-400">VITE_*_FACTORY</code> or{' '}
+                    <code className="text-accent-400">VITE_*_REGISTRY</code> in your <code className="text-accent-400">.env</code> file.
+                  </>
                 )}
               </p>
             </div>
@@ -134,8 +109,7 @@ export default function Dashboard() {
         </motion.div>
       )}
 
-      {/* Dev debug info – only shown when there are errors */}
-      {import.meta.env.DEV && (countError || chambersError || !isValid) && (
+      {import.meta.env.DEV && (chambersError || !isValid) && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -143,17 +117,15 @@ export default function Dashboard() {
         >
           <div className="text-xs font-mono text-slate-400 space-y-1">
             <div><strong>Chain ID:</strong> {chainId} ({getNetworkName(chainId)})</div>
+            <div><strong>Factory Address:</strong> {factoryAddress || 'Not set'}</div>
             <div><strong>Registry Address:</strong> {registryAddress || 'Not set'}</div>
             <div><strong>Config Valid:</strong> {isValid ? 'Yes' : 'No'}</div>
-            {countError && <div className="text-red-400"><strong>Count Error:</strong> {countError.message}</div>}
-            {chambersError && <div className="text-red-400"><strong>Chambers Error:</strong> {chambersError.message}</div>}
-            <div><strong>Chamber Count:</strong> {chamberCount}</div>
-            <div><strong>Chambers Array Length:</strong> {validChambers.length}</div>
+            {chambersError && <div className="text-red-400"><strong>My Chambers Error:</strong> {chambersError.message}</div>}
+            <div><strong>My Chambers:</strong> {myChambers.length}</div>
           </div>
         </motion.div>
       )}
 
-      {/* Hero Section */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -177,7 +149,7 @@ export default function Dashboard() {
                 Loreum Chambers
               </h1>
               <p className="text-slate-500 text-xs sm:text-sm mt-0.5 leading-snug">
-                Liquid, decentralized governance.
+                Your chambers, not a global directory.
               </p>
             </div>
           </div>
@@ -185,9 +157,9 @@ export default function Dashboard() {
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2 sm:justify-end sm:shrink-0 text-sm border-t border-slate-700/35 pt-3 sm:border-0 sm:pt-0">
             <div className="flex items-baseline gap-1.5">
               <span className="text-lg font-heading font-bold gradient-text tabular-nums">
-                {countLoading ? '…' : chamberCount || validChambers.length}
+                {isLoading && isConnected ? '…' : myChambers.length}
               </span>
-              <span className="text-slate-500 text-xs">active</span>
+              <span className="text-slate-500 text-xs">mine</span>
             </div>
             <span className="hidden sm:inline h-3 w-px bg-slate-600/60" aria-hidden />
             <div className="flex items-center gap-1.5">
@@ -209,67 +181,23 @@ export default function Dashboard() {
         </div>
       </motion.div>
 
-      {/* My Participation — only when connected and has involvement */}
-      {isConnected && userAddress && myChambersReady && myChambers.length > 0 && (
-        <motion.section
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="space-y-4"
-        >
-          <div className="flex items-center gap-3">
-            <FiUser className="w-4 h-4 text-accent-400" />
-            <h2 className="font-heading text-lg font-semibold text-slate-100">Your Participation</h2>
-            <span className="badge badge-primary">{myChambers.length}</span>
-          </div>
-          <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 340px), 1fr))' }}>
-            {myChambers.map((addr) => {
-              const idx = validChambers.indexOf(addr)
-              const dirs = allDirectors?.[idx]?.result as `0x${string}`[] | undefined
-              const bal = allBalances?.[idx]?.result as bigint | undefined
-              const isDirector = dirs?.some((d) => d.toLowerCase() === userAddress.toLowerCase())
-              return (
-                <div key={addr} className="relative">
-                  {isDirector && (
-                    <div className="absolute -top-2 -left-2 z-10">
-                      <span className="badge bg-accent-600/80 text-white border-accent-500/40 text-[10px]">
-                        <FiShield className="w-3 h-3 mr-1" />
-                        Director
-                      </span>
-                    </div>
-                  )}
-                  {bal !== undefined && bal > 0n && !isDirector && (
-                    <div className="absolute -top-2 -left-2 z-10">
-                      <span className="badge bg-slate-700 text-slate-300 border-slate-600 text-[10px]">
-                        {parseFloat(formatUnits(bal, 18)).toFixed(2)} shares
-                      </span>
-                    </div>
-                  )}
-                  <ChamberCard address={addr as `0x${string}`} />
-                </div>
-              )
-            })}
-          </div>
-        </motion.section>
-      )}
-
-      {/* Chambers List */}
-      <section id="chambers" className="space-y-6">
+      <section className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h2 className="font-heading text-2xl font-bold text-slate-100">Registry</h2>
-            <p className="text-slate-500 text-sm mt-1">Active governance instances</p>
+            <h2 className="font-heading text-2xl font-bold text-slate-100">My chambers</h2>
+            <p className="text-slate-500 text-sm mt-1">Chambers you created, direct, or hold shares in</p>
           </div>
 
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1 p-1 bg-slate-900/80 rounded-xl border border-slate-700/50">
               <button
-                onClick={() => setViewMode('all')}
+                onClick={() => setViewMode('mine')}
                 className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                  viewMode === 'all' ? 'bg-accent-500/10 text-accent-400 shadow-sm' : 'text-slate-400 hover:text-slate-200'
+                  viewMode === 'mine' ? 'bg-accent-500/10 text-accent-400 shadow-sm' : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
-                <FiGrid className="w-4 h-4" />
-                All
+                <FiUser className="w-4 h-4" />
+                Mine
               </button>
               <button
                 onClick={() => setViewMode('organizations')}
@@ -289,16 +217,54 @@ export default function Dashboard() {
           </div>
         </div>
 
+        <form onSubmit={handleOpenAddress} className="panel p-4 flex flex-col sm:flex-row gap-3 sm:items-end">
+          <div className="flex-1 min-w-0">
+            <label className="block text-slate-400 text-xs font-medium mb-1.5">Open address</label>
+            <input
+              type="text"
+              placeholder="0x… chamber address"
+              className="input font-mono"
+              value={openAddress}
+              onChange={(e) => {
+                setOpenAddress(e.target.value)
+                if (openError) setOpenError(null)
+              }}
+            />
+            {openError && <p className="text-red-400 text-xs mt-1.5">{openError}</p>}
+          </div>
+          <button type="submit" className="btn btn-secondary shrink-0">
+            Open
+            <FiArrowRight className="w-4 h-4" />
+          </button>
+        </form>
+
+        {recents.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-slate-500 text-xs uppercase tracking-wider">Recents</span>
+            {recents.map((addr) => (
+              <Link
+                key={addr}
+                to={`/chamber/${addr}`}
+                className="badge bg-slate-800 text-slate-300 border-slate-600/60 font-mono text-[11px] hover:text-slate-100"
+              >
+                {addr.slice(0, 8)}…{addr.slice(-6)}
+              </Link>
+            ))}
+          </div>
+        )}
+
         <AnimatePresence mode="wait">
-          {viewMode === 'all' ? (
+          {viewMode === 'mine' ? (
             <motion.div
-              key="all-chambers"
+              key="my-chambers"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
               transition={{ duration: 0.2 }}
             >
-              {isLoading ? (
+              {!isConnected ? (
+                <EmptyChambers disconnected />
+              ) : isLoading ? (
                 <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 340px), 1fr))' }}>
                   {[1, 2, 3].map((i) => (
                     <div key={i} className="card animate-pulse">
@@ -308,16 +274,32 @@ export default function Dashboard() {
                     </div>
                   ))}
                 </div>
-              ) : validChambers.length > 0 ? (
+              ) : myChambers.length > 0 ? (
                 <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 340px), 1fr))' }}>
-                  {validChambers.map((address, index) => (
+                  {myChambers.map((entry, index) => (
                     <motion.div
-                      key={address}
+                      key={entry.address}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.05 }}
+                      className="relative"
                     >
-                      <ChamberCard address={address as `0x${string}`} />
+                      {entry.isDirector && (
+                        <div className="absolute -top-2 -left-2 z-10">
+                          <span className="badge bg-accent-600/80 text-white border-accent-500/40 text-[10px]">
+                            <FiShield className="w-3 h-3 mr-1" />
+                            Director
+                          </span>
+                        </div>
+                      )}
+                      {entry.balance > 0n && !entry.isDirector && (
+                        <div className="absolute -top-2 -left-2 z-10">
+                          <span className="badge bg-slate-700 text-slate-300 border-slate-600 text-[10px]">
+                            {parseFloat(formatUnits(entry.balance, 18)).toFixed(2)} shares
+                          </span>
+                        </div>
+                      )}
+                      <ChamberCard address={entry.address} />
                     </motion.div>
                   ))}
                 </div>
@@ -334,13 +316,15 @@ export default function Dashboard() {
               transition={{ duration: 0.2 }}
               className="space-y-8"
             >
-              {orgsLoading ? (
+              {!isConnected ? (
+                <EmptyChambers disconnected />
+              ) : orgsLoading ? (
                 <div className="space-y-8">
-                  {[1, 2].map(i => (
+                  {[1, 2].map((i) => (
                     <div key={i} className="space-y-4">
                       <div className="h-8 bg-slate-800 rounded-lg w-1/4 animate-pulse" />
                       <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 340px), 1fr))' }}>
-                        {[1, 2].map(j => (
+                        {[1, 2].map((j) => (
                           <div key={j} className="card h-40 animate-pulse" />
                         ))}
                       </div>
@@ -407,7 +391,7 @@ function OrganizationGroup({ nftToken, chambers, index }: { nftToken: `0x${strin
   )
 }
 
-function EmptyChambers() {
+function EmptyChambers({ disconnected = false }: { disconnected?: boolean }) {
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -417,13 +401,17 @@ function EmptyChambers() {
       <div className="w-16 h-16 bg-slate-800/80 rounded-2xl flex items-center justify-center mx-auto mb-5">
         <FiLayers className="w-8 h-8 text-slate-600" />
       </div>
-      <h3 className="font-heading text-xl font-semibold text-slate-300 mb-2">No Chambers Yet</h3>
+      <h3 className="font-heading text-xl font-semibold text-slate-300 mb-2">
+        {disconnected ? 'Connect to see your chambers' : 'No chambers yet'}
+      </h3>
       <p className="text-slate-500 max-w-md mx-auto mb-6">
-        No Chambers have been deployed yet. Deploy the first one to get started.
+        {disconnected
+          ? 'Connect a wallet to list chambers you created, direct, or hold. You can also open one by address.'
+          : 'Deploy a chamber, or paste an address above if it is not in this wallet’s recents yet.'}
       </p>
       <Link to="/deploy" className="btn btn-primary inline-flex">
         <FiPlus className="w-4 h-4" />
-        Deploy Your First Chamber
+        Deploy a Chamber
       </Link>
     </motion.div>
   )

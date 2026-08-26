@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAccount, useReadContract } from 'wagmi'
-import { isAddress, zeroAddress } from 'viem'
+import { isAddress, parseEventLogs, zeroAddress } from 'viem'
 import { useQueryClient } from '@tanstack/react-query'
 import { FiAlertCircle, FiCheck, FiLoader, FiArrowRight, FiArrowLeft, FiCopy } from 'react-icons/fi'
-import { useCreateChamberWithStatus } from '@/hooks'
-import { useRegistryAddress } from '@/hooks/useRegistry'
+import { useCreateChamberTarget, useCreateChamberWithStatus } from '@/hooks'
 import { getContractAddresses } from '@/lib/wagmi'
+import { addRecentChamber } from '@/lib/recentChambers'
+import { factoryAbi, registryAbi } from '@/contracts/abis'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { erc20Abi, erc721Abi } from '@/contracts'
 import toast from 'react-hot-toast'
@@ -24,11 +25,12 @@ function isValidAddress(s: string): boolean {
 
 export default function DeployChamber() {
   const { isConnected, chainId } = useAccount()
-  const registryAddress = useRegistryAddress()
+  const { address: createAddress, abi: createAbi, source: createSource } = useCreateChamberTarget()
   const queryClient = useQueryClient()
 
   const [step, setStep] = useState<Step>('form')
   const [deployedTxHash, setDeployedTxHash] = useState<string | undefined>()
+  const [deployedChamber, setDeployedChamber] = useState<`0x${string}` | undefined>()
   const [formData, setFormData] = useState({
     erc20Token: '',
     erc721Token: '',
@@ -45,30 +47,32 @@ export default function DeployChamber() {
     error,
     hash,
     reset,
-  } = useCreateChamberWithStatus(registryAddress, {
-    onSuccess: () => {
-      const registryAddrLower = registryAddress?.toLowerCase()
-      if (registryAddrLower) {
-        queryClient.invalidateQueries({
-          predicate: (query) => {
-            try {
-              return JSON.stringify(query.queryKey).toLowerCase().includes(registryAddrLower)
-            } catch { return false }
-          },
+  } = useCreateChamberWithStatus(createAddress, {
+    abi: createAbi,
+    onSuccess: (receipt) => {
+      const createAddrLower = createAddress?.toLowerCase()
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          try {
+            const str = JSON.stringify(query.queryKey).toLowerCase()
+            return str.includes('my-chambers') ||
+              (createAddrLower ? str.includes(createAddrLower) : false)
+          } catch { return false }
+        },
+      })
+      try {
+        const parsed = parseEventLogs({
+          abi: createSource === 'factory' ? factoryAbi : registryAbi,
+          logs: receipt?.logs ?? [],
+          eventName: 'ChamberCreated',
         })
-        setTimeout(() => {
-          queryClient.refetchQueries({
-            predicate: (query) => {
-              try {
-                const str = JSON.stringify(query.queryKey).toLowerCase()
-                return str.includes(registryAddrLower) &&
-                  (str.includes('getallchambers') ||
-                    str.includes('getchambercount') ||
-                    str.includes('registry-chambers'))
-              } catch { return false }
-            },
-          })
-        }, 500)
+        const chamber = parsed[0]?.args?.chamber as `0x${string}` | undefined
+        if (chamber && typeof chainId === 'number') {
+          addRecentChamber(chainId, chamber)
+          setDeployedChamber(chamber)
+        }
+      } catch {
+        // receipt may omit decoded logs; dashboard getLogs / recents still pick it up
       }
       setDeployedTxHash(hash)
       setStep('success')
@@ -215,8 +219,8 @@ export default function DeployChamber() {
             </div>
           )}
           <div className="flex gap-3 justify-center">
-            <Link to="/" className="btn btn-primary">
-              Go to Dashboard
+            <Link to={deployedChamber ? `/chamber/${deployedChamber}` : '/'} className="btn btn-primary">
+              {deployedChamber ? 'Open Chamber' : 'Go to Dashboard'}
               <FiArrowRight className="w-4 h-4" />
             </Link>
             <button

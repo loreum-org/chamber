@@ -6,13 +6,21 @@ import { alchemySupportsChain, getAlchemyApiKeyFromEnv, getAlchemyV2RpcUrl } fro
 
 const productionApp = import.meta.env.PROD
 
-const ZERO_REGISTRY = '0x0000000000000000000000000000000000000000'
+const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as `0x${string}`
 
-/** Mainnet is only offered when `VITE_MAINNET_REGISTRY` is set (same rule as `hasValidAddresses(1)`). */
-const mainnetRegistryRaw = import.meta.env.VITE_MAINNET_REGISTRY?.trim() ?? ''
+function envAddress(raw: string | undefined): string {
+  return raw?.trim() ?? ''
+}
+
+function isConfiguredAddress(raw: string): boolean {
+  return raw !== '' && raw.toLowerCase() !== ZERO_ADDRESS
+}
+
+/** Mainnet is offered when `VITE_MAINNET_FACTORY` or `VITE_MAINNET_REGISTRY` is set. */
+const mainnetFactoryRaw = envAddress(import.meta.env.VITE_MAINNET_FACTORY)
+const mainnetRegistryRaw = envAddress(import.meta.env.VITE_MAINNET_REGISTRY)
 export const isMainnetConfigured =
-  mainnetRegistryRaw !== '' &&
-  mainnetRegistryRaw.toLowerCase() !== ZERO_REGISTRY
+  isConfiguredAddress(mainnetFactoryRaw) || isConfiguredAddress(mainnetRegistryRaw)
 
 // Use the chain ID from deployments.json so that localhost accurately matches Anvil forks (dev only)
 export const LOCAL_CHAIN_ID = localDeployments.chainId || 31337
@@ -75,7 +83,7 @@ if (import.meta.env.DEV && alchemyApiKey) {
   console.info('[wagmi] Alchemy RPC enabled for Ethereum, Sepolia, Base, Arbitrum, and local RPC')
 }
 
-/** Production: Sepolia, plus Mainnet only when `VITE_MAINNET_REGISTRY` is set. Dev adds Base, Arbitrum, local. */
+/** Production: Sepolia, plus Mainnet when factory or registry env is set. Dev adds Base, Arbitrum, local. */
 export const config = productionApp
   ? isMainnetConfigured
     ? getDefaultConfig({
@@ -126,50 +134,62 @@ export const config = productionApp
 
 // Contract addresses - localhost uses auto-generated deployments.json from `make deploy-anvil-all`
 // Testnet/mainnet addresses can be overridden with environment variables
+function addressFromEnv(...candidates: (string | undefined)[]): `0x${string}` {
+  for (const raw of candidates) {
+    const value = envAddress(raw)
+    if (isConfiguredAddress(value)) return value as `0x${string}`
+  }
+  return ZERO_ADDRESS
+}
+
 export const CONTRACT_ADDRESSES = {
   // Sepolia testnet addresses
   sepolia: {
-    registry: (import.meta.env.VITE_SEPOLIA_REGISTRY || '0x0000000000000000000000000000000000000000') as `0x${string}`,
-    chamberImplementation: (import.meta.env.VITE_SEPOLIA_CHAMBER_IMPL || '0x0000000000000000000000000000000000000000') as `0x${string}`,
-    mockERC20: (import.meta.env.VITE_SEPOLIA_MOCK_ERC20 ||
-      '0x0000000000000000000000000000000000000000') as `0x${string}`,
-    mockERC721: (import.meta.env.VITE_SEPOLIA_MOCK_ERC721 ||
-      '0x0000000000000000000000000000000000000000') as `0x${string}`,
+    registry: addressFromEnv(import.meta.env.VITE_SEPOLIA_REGISTRY),
+    factory: addressFromEnv(import.meta.env.VITE_SEPOLIA_FACTORY),
+    chamberImplementation: addressFromEnv(import.meta.env.VITE_SEPOLIA_CHAMBER_IMPL),
+    mockERC20: addressFromEnv(import.meta.env.VITE_SEPOLIA_MOCK_ERC20),
+    mockERC721: addressFromEnv(import.meta.env.VITE_SEPOLIA_MOCK_ERC721),
   },
   mainnet: {
-    registry: (import.meta.env.VITE_MAINNET_REGISTRY || '0x0000000000000000000000000000000000000000') as `0x${string}`,
-    chamberImplementation: (import.meta.env.VITE_MAINNET_CHAMBER_IMPL || '0x0000000000000000000000000000000000000000') as `0x${string}`,
-    mockERC20: '0x0000000000000000000000000000000000000000' as `0x${string}`,
-    mockERC721: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+    registry: addressFromEnv(import.meta.env.VITE_MAINNET_REGISTRY),
+    factory: addressFromEnv(import.meta.env.VITE_MAINNET_FACTORY),
+    chamberImplementation: addressFromEnv(import.meta.env.VITE_MAINNET_CHAMBER_IMPL),
+    mockERC20: ZERO_ADDRESS as `0x${string}`,
+    mockERC721: ZERO_ADDRESS as `0x${string}`,
   },
   base: {
-    registry: (import.meta.env.VITE_BASE_REGISTRY || '0x0000000000000000000000000000000000000000') as `0x${string}`,
-    chamberImplementation: (import.meta.env.VITE_BASE_CHAMBER_IMPL || '0x0000000000000000000000000000000000000000') as `0x${string}`,
-    mockERC20: '0x0000000000000000000000000000000000000000' as `0x${string}`,
-    mockERC721: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+    registry: addressFromEnv(import.meta.env.VITE_BASE_REGISTRY),
+    factory: addressFromEnv(import.meta.env.VITE_BASE_FACTORY),
+    chamberImplementation: addressFromEnv(import.meta.env.VITE_BASE_CHAMBER_IMPL),
+    mockERC20: ZERO_ADDRESS as `0x${string}`,
+    mockERC721: ZERO_ADDRESS as `0x${string}`,
   },
   arbitrum: {
-    registry: (import.meta.env.VITE_ARBITRUM_REGISTRY || '0x0000000000000000000000000000000000000000') as `0x${string}`,
-    chamberImplementation: (import.meta.env.VITE_ARBITRUM_CHAMBER_IMPL || '0x0000000000000000000000000000000000000000') as `0x${string}`,
-    mockERC20: '0x0000000000000000000000000000000000000000' as `0x${string}`,
-    mockERC721: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+    registry: addressFromEnv(import.meta.env.VITE_ARBITRUM_REGISTRY),
+    factory: addressFromEnv(import.meta.env.VITE_ARBITRUM_FACTORY),
+    chamberImplementation: addressFromEnv(import.meta.env.VITE_ARBITRUM_CHAMBER_IMPL),
+    mockERC20: ZERO_ADDRESS as `0x${string}`,
+    mockERC721: ZERO_ADDRESS as `0x${string}`,
   },
   // Localhost - auto-populated from deployments.json via `make deploy-anvil-all`
   localhost: {
-    registry: localDeployments.registry as `0x${string}`,
-    chamberImplementation: localDeployments.chamberImplementation as `0x${string}`,
-    mockERC20: localDeployments.mockERC20 as `0x${string}`,
-    mockERC721: localDeployments.mockERC721 as `0x${string}`,
+    registry: addressFromEnv(localDeployments.registry, import.meta.env.VITE_LOCALHOST_REGISTRY),
+    factory: addressFromEnv(localDeployments.factory, import.meta.env.VITE_LOCALHOST_FACTORY),
+    chamberImplementation: addressFromEnv(localDeployments.chamberImplementation),
+    mockERC20: addressFromEnv(localDeployments.mockERC20),
+    mockERC721: addressFromEnv(localDeployments.mockERC721),
   },
 } as const
 
 // Export localhost deployment info for convenience
 export const localhostDeployment = {
   ...localDeployments,
-  registry: localDeployments.registry as `0x${string}`,
-  chamberImplementation: localDeployments.chamberImplementation as `0x${string}`,
-  mockERC20: localDeployments.mockERC20 as `0x${string}`,
-  mockERC721: localDeployments.mockERC721 as `0x${string}`,
+  registry: CONTRACT_ADDRESSES.localhost.registry,
+  factory: CONTRACT_ADDRESSES.localhost.factory,
+  chamberImplementation: CONTRACT_ADDRESSES.localhost.chamberImplementation,
+  mockERC20: CONTRACT_ADDRESSES.localhost.mockERC20,
+  mockERC721: CONTRACT_ADDRESSES.localhost.mockERC721,
 }
 
 export function getContractAddresses(chainId: number) {
@@ -195,9 +215,13 @@ export function getContractAddresses(chainId: number) {
   }
 }
 
-// Helper to check if we have valid addresses configured
+export function isNonZeroAddress(addr: string | undefined): addr is `0x${string}` {
+  return !!addr && addr !== ZERO_ADDRESS && addr.startsWith('0x') && addr.length === 42
+}
+
+// Helper to check if we have valid addresses configured (factory or registry)
 export function hasValidAddresses(chainId: number): boolean {
   const addresses = getContractAddresses(chainId)
   if (!addresses) return false
-  return addresses.registry !== '0x0000000000000000000000000000000000000000'
+  return isNonZeroAddress(addresses.factory) || isNonZeroAddress(addresses.registry)
 }

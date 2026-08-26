@@ -14,8 +14,14 @@ import {IRegistry} from "./interfaces/IRegistry.sol";
 /**
  * @title Registry
  * @author xhad, Loreum DAO LLC
- * @notice Central registry for deploying and managing Chamber instances
- * @dev Uses OpenZeppelin `TransparentUpgradeableProxy`; registry is proxy admin until
+ * @notice DEPRECATED as a world directory and create path. Historical index of chambers
+ *         deployed through this contract, plus the original `createChamber` entrypoint.
+ * @dev Prefer {Factory} for new deploys. Existing chambers stay valid. This contract is
+ *      not migrated and must not be in-place-upgraded as part of the Factory cut.
+ *      Enumerable getters (`getAllChambers`, `getChambersByAsset`, parent/child tables)
+ *      remain for already-indexed addresses only.
+ *
+ *      Uses OpenZeppelin `TransparentUpgradeableProxy`; registry is proxy admin until
  *      `ProxyAdmin` ownership is transferred to each chamber.
  *
  *      Roles use OpenZeppelin 5.1.0 `AccessControlUpgradeable` (ERC-7201 namespace

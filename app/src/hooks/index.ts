@@ -1,5 +1,6 @@
 export * from './useChamber'
 export * from './useRegistry'
+export * from './useMyChambers'
 export * from './useTransactionStatus'
 export * from './useChamberEvents'
 export * from './useNftTokenImage'

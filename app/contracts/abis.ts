@@ -891,6 +891,95 @@ export const registryAbi = [
   },
 ] as const
 
+// Factory ABI — thin Chamber deployer (no world directory)
+export const factoryAbi = [
+  {
+    type: 'constructor',
+    inputs: [
+      { name: 'implementation_', type: 'address' },
+      { name: 'admin', type: 'address' },
+    ],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'createChamber',
+    inputs: [
+      { name: 'erc20Token', type: 'address' },
+      { name: 'erc721Token', type: 'address' },
+      { name: 'seats', type: 'uint256' },
+      { name: 'name', type: 'string' },
+      { name: 'symbol', type: 'string' },
+    ],
+    outputs: [{ name: 'chamber', type: 'address' }],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'setImplementation',
+    inputs: [{ name: 'newImplementation', type: 'address' }],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'implementation',
+    inputs: [],
+    outputs: [{ name: '', type: 'address' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'owner',
+    inputs: [],
+    outputs: [{ name: '', type: 'address' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'transferOwnership',
+    inputs: [{ name: 'newOwner', type: 'address' }],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'renounceOwnership',
+    inputs: [],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'event',
+    name: 'ChamberCreated',
+    inputs: [
+      { name: 'chamber', type: 'address', indexed: true },
+      { name: 'asset', type: 'address', indexed: true },
+      { name: 'nft', type: 'address', indexed: true },
+      { name: 'seats', type: 'uint256', indexed: false },
+      { name: 'name', type: 'string', indexed: false },
+      { name: 'symbol', type: 'string', indexed: false },
+      { name: 'creator', type: 'address', indexed: false },
+    ],
+  },
+  {
+    type: 'event',
+    name: 'ChamberImplementationUpdated',
+    inputs: [
+      { name: 'previousImplementation', type: 'address', indexed: true },
+      { name: 'newImplementation', type: 'address', indexed: true },
+    ],
+  },
+  {
+    type: 'event',
+    name: 'OwnershipTransferred',
+    inputs: [
+      { name: 'previousOwner', type: 'address', indexed: true },
+      { name: 'newOwner', type: 'address', indexed: true },
+    ],
+  },
+] as const
+
 // ERC20 ABI for token interactions
 export const erc20Abi = [
   {

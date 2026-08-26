@@ -21,6 +21,7 @@ const forgeOutRoot = join(repoRoot, 'contracts', 'out');
 // Contracts to sync ABIs for
 const contracts = [
   { name: 'Registry', path: 'src/Registry.sol' },
+  { name: 'Factory', path: 'src/Factory.sol' },
   { name: 'Chamber', path: 'src/Chamber.sol' },
   { name: 'MockERC20', path: 'test/mock/MockERC20.sol' },
   { name: 'MockERC721', path: 'test/mock/MockERC721.sol' },
