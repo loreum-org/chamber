@@ -9,9 +9,11 @@ import {IChamber} from "src/interfaces/IChamber.sol";
 import {MockERC20} from "test/mock/MockERC20.sol";
 import {MockERC721} from "test/mock/MockERC721.sol";
 import {DeployRegistry} from "test/utils/DeployRegistry.sol";
+import {IAccessControl} from "lib/openzeppelin-contracts/contracts/access/IAccessControl.sol";
 import {ProxyAdmin} from "lib/openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 import {Clones} from "lib/openzeppelin-contracts/contracts/proxy/Clones.sol";
 import {
+    ITransparentUpgradeableProxy,
     TransparentUpgradeableProxy
 } from "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
@@ -291,9 +293,12 @@ contract RegistryTest is Test {
     function test_Registry_SetChamberImplementation_NotAdmin_Reverts() public {
         Chamber newImpl = new Chamber();
         address stranger = makeAddr("stranger");
+        bytes32 adminRole = registry.ADMIN_ROLE();
 
         vm.prank(stranger);
-        vm.expectRevert();
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, stranger, adminRole)
+        );
         registry.setChamberImplementation(address(newImpl));
     }
 
@@ -375,32 +380,6 @@ contract RegistryTest is Test {
         assertEq(clamped.length, registry.MAX_PAGE_SIZE());
     }
 
-    function test_Registry_GetAssets_PaginationAndCap() public {
-        MockERC20 token2 = new MockERC20("Token2", "T2", 1e18);
-        MockERC20 token3 = new MockERC20("Token3", "T3", 1e18);
-
-        registry.createChamber(address(token), address(nft), 5, "C1", "C1");
-        registry.createChamber(address(token2), address(nft), 3, "C2", "C2");
-        registry.createChamber(address(token3), address(nft), 4, "C3", "C3");
-
-        assertEq(registry.getAssetCount(), 3);
-
-        address[] memory page = registry.getAssets(2, 0);
-        assertEq(page.length, 2);
-        assertEq(page[0], address(token));
-        assertEq(page[1], address(token2));
-
-        page = registry.getAssets(2, 2);
-        assertEq(page.length, 1);
-        assertEq(page[0], address(token3));
-
-        vm.store(address(registry), _assetsArraySlot(), bytes32(uint256(10_000)));
-        assertEq(registry.getAssetCount(), 10_000);
-        address[] memory capped = registry.getAssets();
-        assertEq(capped.length, registry.MAX_PAGE_SIZE());
-        assertEq(capped[0], address(token));
-    }
-
     function test_Registry_GetChildChambers_PaginationAndCap() public {
         address payable parent = registry.createChamber(address(token), address(nft), 5, "Parent", "PAR");
         MockERC721 nft2 = new MockERC721("NFT2", "NFT2");
@@ -433,5 +412,135 @@ contract RegistryTest is Test {
 
         address[] memory clamped = registry.getChildChambers(parent, type(uint256).max, 0);
         assertEq(clamped.length, registry.MAX_PAGE_SIZE());
+    }
+
+    function test_Registry_GetAssets_PaginationAndCap() public {
+        MockERC20 token2 = new MockERC20("Token2", "T2", 1e18);
+        MockERC20 token3 = new MockERC20("Token3", "T3", 1e18);
+
+        registry.createChamber(address(token), address(nft), 5, "C1", "C1");
+        registry.createChamber(address(token2), address(nft), 3, "C2", "C2");
+        registry.createChamber(address(token3), address(nft), 4, "C3", "C3");
+
+        assertEq(registry.getAssetCount(), 3);
+
+        address[] memory page = registry.getAssets(2, 0);
+        assertEq(page.length, 2);
+        assertEq(page[0], address(token));
+        assertEq(page[1], address(token2));
+
+        page = registry.getAssets(2, 2);
+        assertEq(page.length, 1);
+        assertEq(page[0], address(token3));
+
+        vm.store(address(registry), _assetsArraySlot(), bytes32(uint256(10_000)));
+        assertEq(registry.getAssetCount(), 10_000);
+        address[] memory capped = registry.getAssets();
+        assertEq(capped.length, registry.MAX_PAGE_SIZE());
+        assertEq(capped[0], address(token));
+    }
+
+    /// @dev OZ 5.1.0 `AccessControlUpgradeable` ERC-7201 slot (`openzeppelin.storage.AccessControl`).
+    bytes32 internal constant _ACCESS_CONTROL_STORAGE =
+        0x02dd7bc7dec4dceedda775e58dd541e08a116c6c53815c0bd028192f7b626800;
+
+    /// @dev ERC-1967 admin slot (OpenZeppelin `ERC1967Utils.ADMIN_SLOT`)
+    bytes32 internal constant _ERC1967_ADMIN_SLOT = 0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
+
+    function _roleMemberSlot(bytes32 namespace, bytes32 role, address account) internal pure returns (bytes32) {
+        bytes32 roleDataSlot = keccak256(abi.encode(role, namespace));
+        return keccak256(abi.encode(account, roleDataSlot));
+    }
+
+    function _registryProxyAdmin() internal view returns (ProxyAdmin) {
+        return ProxyAdmin(address(uint160(uint256(vm.load(address(registry), _ERC1967_ADMIN_SLOT)))));
+    }
+
+    function test_Registry_AccessControlUsesErc7201Namespace() public view {
+        bytes32 defaultAdminRole = registry.DEFAULT_ADMIN_ROLE();
+        bytes32 adminRole = registry.ADMIN_ROLE();
+
+        assertEq(
+            uint256(vm.load(address(registry), _roleMemberSlot(_ACCESS_CONTROL_STORAGE, defaultAdminRole, admin))), 1
+        );
+        assertEq(uint256(vm.load(address(registry), _roleMemberSlot(_ACCESS_CONTROL_STORAGE, adminRole, admin))), 1);
+
+        // Legacy non-upgradeable AccessControl stored `_roles` at sequential slot 0.
+        assertEq(uint256(vm.load(address(registry), _roleMemberSlot(bytes32(0), defaultAdminRole, admin))), 0);
+        assertEq(uint256(vm.load(address(registry), _roleMemberSlot(bytes32(0), adminRole, admin))), 0);
+    }
+
+    function test_Registry_GrantAndRevokeAdminRole() public {
+        address operator = makeAddr("operator");
+        bytes32 adminRole = registry.ADMIN_ROLE();
+        Chamber newImpl = new Chamber();
+
+        vm.prank(admin);
+        registry.grantRole(adminRole, operator);
+        assertTrue(registry.hasRole(adminRole, operator));
+
+        vm.prank(operator);
+        registry.setChamberImplementation(address(newImpl));
+        assertEq(registry.implementation(), address(newImpl));
+
+        vm.prank(admin);
+        registry.revokeRole(adminRole, operator);
+        assertFalse(registry.hasRole(adminRole, operator));
+
+        vm.prank(operator);
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, operator, adminRole)
+        );
+        registry.setChamberImplementation(address(implementation));
+    }
+
+    function test_Registry_NonAdminCannotGrantRole() public {
+        address stranger = makeAddr("stranger");
+        bytes32 adminRole = registry.ADMIN_ROLE();
+        bytes32 defaultAdminRole = registry.DEFAULT_ADMIN_ROLE();
+
+        vm.prank(stranger);
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, stranger, defaultAdminRole)
+        );
+        registry.grantRole(adminRole, stranger);
+    }
+
+    function test_Registry_InitializeCannotBeCalledTwice() public {
+        vm.expectRevert();
+        registry.initialize(address(implementation), admin);
+    }
+
+    function test_Registry_UpgradePreservesRolesCreateChamberAndChamberIsolation() public {
+        address chamberBefore = registry.createChamber(address(token), address(nft), 5, "C1", "C1");
+        address chamberProxyAdmin = IChamber(chamberBefore).getProxyAdmin();
+        assertEq(ProxyAdmin(chamberProxyAdmin).owner(), chamberBefore);
+        assertNotEq(ProxyAdmin(chamberProxyAdmin).owner(), address(registry));
+
+        address chamberImpl = registry.implementation();
+        Registry newRegistryImpl = new Registry();
+        ProxyAdmin registryProxyAdmin = _registryProxyAdmin();
+        assertEq(registryProxyAdmin.owner(), admin);
+
+        vm.prank(admin);
+        registryProxyAdmin.upgradeAndCall(ITransparentUpgradeableProxy(address(registry)), address(newRegistryImpl), "");
+
+        assertTrue(registry.hasRole(registry.DEFAULT_ADMIN_ROLE(), admin));
+        assertTrue(registry.hasRole(registry.ADMIN_ROLE(), admin));
+        assertEq(registry.getChamberCount(), 1);
+        assertTrue(registry.isChamber(chamberBefore));
+        assertEq(registry.implementation(), chamberImpl);
+
+        // Existing chamber still owns its ProxyAdmin after a Registry implementation upgrade.
+        assertEq(ProxyAdmin(chamberProxyAdmin).owner(), chamberBefore);
+        assertEq(IChamber(chamberBefore).getProxyAdmin(), chamberProxyAdmin);
+
+        address chamberAfter = registry.createChamber(address(token), address(nft), 3, "C2", "C2");
+        assertTrue(registry.isChamber(chamberAfter));
+        assertEq(registry.getChamberCount(), 2);
+
+        address afterProxyAdmin = IChamber(chamberAfter).getProxyAdmin();
+        assertEq(ProxyAdmin(afterProxyAdmin).owner(), chamberAfter);
+        assertNotEq(afterProxyAdmin, chamberProxyAdmin);
     }
 }
