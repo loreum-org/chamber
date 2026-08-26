@@ -52,7 +52,7 @@ Directors can vote to **cancel** before execution. Enough cancel votes (quorum) 
 
 ## Upgrades (special case)
 
-A proposal may target **the Chamber itself** only for **`upgradeImplementation`** — the controlled path to upgrade the contract logic via **ProxyAdmin**. Random self-calls are blocked.
+A proposal may target **the Chamber itself** only for **`upgradeImplementation`** — the controlled path to upgrade the contract logic via **ProxyAdmin**. Random self-calls are blocked. Those self-calls persist calldata onchain so a confirmed upgrade can still be executed if event logs are unavailable. Ordinary treasury calls stay hash-only.
 
 ## Batching
 
