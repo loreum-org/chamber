@@ -1,48 +1,26 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import {IBoard} from "./interfaces/IBoard.sol";
 import {
     ReentrancyGuardTransientUpgradeable
 } from "lib/openzeppelin-contracts-upgradeable/contracts/utils/ReentrancyGuardTransientUpgradeable.sol";
-import {EnumerableSet} from "lib/openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
+import {BoardTypes} from "src/types/BoardTypes.sol";
+import {BoardLib} from "src/libraries/BoardLib.sol";
 
 /**
  * @title Board
  * @author xhad, Loreum DAO LLC
  * @notice Manages a sorted linked list of nodes representing token delegations and board seats
- * @dev Abstract contract that implements core board functionality including delegation tracking
- *      and seat management. Uses a doubly linked list to maintain sorted order of delegations.
- *      Reentrancy uses OpenZeppelin `ReentrancyGuardTransientUpgradeable` (EIP-1153) at public
- *      entry points. Internals (`_delegate` / `_undelegate`) are unguarded so callers can wrap
- *      a full operation in a single `nonReentrant` without a nested-lock revert.
+ * @dev Core logic lives in {BoardLib} (linked library) to keep `Chamber` under EIP-170.
  */
 abstract contract Board is ReentrancyGuardTransientUpgradeable {
-    using EnumerableSet for EnumerableSet.UintSet;
-
-    /**
-     * @notice Node structure for the doubly linked list
-     * @dev next and prev are uint128, packed into one storage slot.
-     *      tokenIds > type(uint128).max are rejected at insertion time.
-     * @param tokenId Unique identifier for the token
-     * @param amount Total amount of tokens delegated to this node
-     * @param next TokenId of the next node in the sorted list (0 if none)
-     * @param prev TokenId of the previous node in the sorted list (0 if none)
-     */
     struct Node {
-        uint256 tokenId; // slot 0
-        uint256 amount; // slot 1
-        uint128 next; // slot 2 lower 128 bits
-        uint128 prev; // slot 2 upper 128 bits
+        uint256 tokenId;
+        uint256 amount;
+        uint128 next;
+        uint128 prev;
     }
 
-    /**
-     * @notice Structure representing a proposal to update the number of board seats
-     * @param proposedSeats The proposed new number of seats
-     * @param timestamp When the proposal was created
-     * @param requiredQuorum The quorum required at proposal time
-     * @param supporters Array of tokenIds that have supported this proposal
-     */
     struct SeatUpdate {
         uint256 proposedSeats;
         uint256 timestamp;
@@ -50,600 +28,73 @@ abstract contract Board is ReentrancyGuardTransientUpgradeable {
         uint256[] supporters;
     }
 
-    /**
-     * @notice ERC-7201 namespaced storage layout for Board
-     * @dev size and seats are uint32, sharing one 32-byte slot (max values 50 and 20 fit
-     *      comfortably). Reentrancy is handled by OpenZeppelin `ReentrancyGuardTransientUpgradeable`.
-     *      `evictedTokenIds` is appended after `seatedAt` so existing ERC-7201 slots stay stable.
-     * @custom:storage-location erc7201:loreum.Board
-     */
-    struct BoardStorage {
-        mapping(uint256 => Node) nodes;
-        SeatUpdate seatUpdate;
-        uint256 head;
-        uint256 tail;
-        uint32 size; // packed with seats (shares one slot)
-        uint32 seats; // packed with size (shares one slot)
-        /// @notice First block at which `tokenId` may exercise director rights.
-        /// @dev Zero means no checkpoint: a pre-upgrade incumbent, or a token not in the top set.
-        mapping(uint256 tokenId => uint256 seatedAtBlock) seatedAt;
-        /// @dev TokenIds removed by MAX_NODES tail eviction. Empty after in-place upgrade
-        ///      until a new eviction; getDelegations unions this with leftover holder amounts.
-        EnumerableSet.UintSet evictedTokenIds;
-    }
-
-    /// @notice Maximum number of nodes allowed in the linked list
-    uint256 internal constant MAX_NODES = 50;
-
-    /// @notice Blocks a newly seated tokenId must wait before exercising director rights.
-    /// @dev One block is the smallest delay that closes same-transaction board capture of
-    ///      confirm / execute / upgrade. Incumbents keep their checkpoint; `seatedAt == 0`
-    ///      is treated as mature so a live in-place upgrade cannot lock existing directors.
-    uint256 internal constant SEATING_DELAY = 1;
-
-    /// @notice Delay after a seat-update proposal is created before it may be executed
-    uint256 internal constant SEAT_UPDATE_TIMELOCK = 7 days;
-
-    /// @notice Age after which any current director may delete a seat-update proposal.
-    /// @dev Longer than {SEAT_UPDATE_TIMELOCK} so a quorum-ready proposal has an execute window
-    ///      before a minority can clear the single slot (Finding 14). Unblocks the slot when the
-    ///      original proposer has left and cannot cancel (H-03).
-    uint256 internal constant SEAT_UPDATE_EXPIRY = 14 days;
-
     /// @dev keccak256(abi.encode(uint256(keccak256("erc7201:loreum.Board")) - 1)) & ~bytes32(uint256(0xff))
     bytes32 private constant _BOARD_STORAGE_SLOT = 0xae916af301d5dc481b59b170e7db23e36b830da7017e456f99549768499c8800;
 
-    function _getBoardStorage() internal pure returns (BoardStorage storage $) {
+    function _getBoardStorage() internal pure returns (BoardTypes.BoardStorage storage $) {
         assembly {
             $.slot := _BOARD_STORAGE_SLOT
         }
     }
 
-    /// @dev Events and errors are defined in IBoard interface
-
-    /// FUNCTIONS ///
-
-    /**
-     * @notice Retrieves node information for a given tokenId
-     * @param tokenId The token ID to query
-     * @return Node struct containing the node's data
-     */
     function _getNode(uint256 tokenId) internal view returns (Node memory) {
-        return _getBoardStorage().nodes[tokenId];
+        BoardTypes.Node memory node = BoardLib.getNode(_getBoardStorage(), tokenId);
+        return Node({tokenId: node.tokenId, amount: node.amount, next: node.next, prev: node.prev});
     }
 
-    /**
-     * @notice Handles token delegation to a specific tokenId
-     * @dev Updates or creates a node and maintains sorted order.
-     *      Callers must hold the shared OZ `nonReentrant` lock for the full public operation.
-     * @param tokenId The token ID to delegate to
-     * @param amount The amount of tokens to delegate
-     */
     function _delegate(uint256 tokenId, uint256 amount) internal {
-        uint256[] memory prevTop = _topTokenIds();
-        BoardStorage storage $ = _getBoardStorage();
-        Node storage node = $.nodes[tokenId];
-        if (node.tokenId == tokenId) {
-            node.amount += amount;
-            _reposition(tokenId);
-        } else {
-            _insert(tokenId, amount);
-        }
-        _refreshSeating(prevTop);
-        emit IBoard.Delegate(msg.sender, tokenId, amount);
+        BoardLib.delegate(_getBoardStorage(), tokenId, amount, msg.sender);
     }
 
-    /**
-     * @notice Handles token undelegation from a specific tokenId
-     * @dev Reduces delegation amount or removes node if amount becomes zero.
-     *      Callers must hold the shared OZ `nonReentrant` lock for the full public operation.
-     * @param tokenId The token ID to undelegate from
-     * @param amount The amount of tokens to undelegate
-     */
     function _undelegate(uint256 tokenId, uint256 amount) internal {
-        uint256[] memory prevTop = _topTokenIds();
-        BoardStorage storage $ = _getBoardStorage();
-        Node storage node = $.nodes[tokenId];
-        if (node.tokenId != tokenId) revert IBoard.NodeDoesNotExist();
-        if (amount > node.amount) revert IBoard.AmountExceedsDelegation();
-
-        node.amount -= amount;
-
-        if (node.amount == 0) {
-            _remove(tokenId);
-        } else {
-            _reposition(tokenId);
-        }
-        _refreshSeating(prevTop);
-        emit IBoard.Undelegate(msg.sender, tokenId, amount);
+        BoardLib.undelegate(_getBoardStorage(), tokenId, amount, msg.sender);
     }
 
-    /**
-     * @notice Repositions a node in the sorted list after its amount changes
-     * @dev Uses an in-place directional nudge: bubbles the node UP if its amount increased
-     *      (swap with predecessor until sorted), or sinks it DOWN if amount decreased.
-     *      Compared to the previous remove+re-insert approach, this avoids a full `delete`
-     *      (4-slot zero write + SSTORE refund complexity) and a fresh cold-slot insert scan.
-     *      Worst case is still O(N), but the common single-step move costs ~6 SSTOREs vs ~14+.
-     *      Called only from a `nonReentrant` public entry (_delegate / _undelegate).
-     * @param tokenId The token ID to reposition
-     */
     function _reposition(uint256 tokenId) internal {
-        BoardStorage storage $ = _getBoardStorage();
-        if ($.nodes[tokenId].tokenId != tokenId) revert IBoard.NodeDoesNotExist();
-        uint256 amount = $.nodes[tokenId].amount;
-
-        // Bubble UP: node's amount increased, move toward head
-        while ($.nodes[tokenId].prev != 0 && amount > $.nodes[$.nodes[tokenId].prev].amount) {
-            _swapUp(tokenId, $);
-        }
-
-        // If we didn't move up, try sinking DOWN: amount decreased, move toward tail
-        // (Equal amounts keep current position — descending order, ties stay in place)
-        if ($.nodes[tokenId].prev == 0 || amount <= $.nodes[$.nodes[tokenId].prev].amount) {
-            while ($.nodes[tokenId].next != 0 && amount < $.nodes[$.nodes[tokenId].next].amount) {
-                _swapDown(tokenId, $);
-            }
-        }
+        BoardLib.reposition(_getBoardStorage(), tokenId);
     }
 
-    /**
-     * @notice Swaps tokenId one position toward the head (with its predecessor).
-     * @dev Before: A ↔ prevId ↔ tokenId ↔ B
-     *      After:  A ↔ tokenId ↔ prevId ↔ B
-     *      Modifies at most 6 pointer fields + possibly head/tail.
-     */
-    function _swapUp(uint256 tokenId, BoardStorage storage $) private {
-        uint256 prevId = uint256($.nodes[tokenId].prev);
-        uint256 aId = uint256($.nodes[prevId].prev);
-        uint256 bId = uint256($.nodes[tokenId].next);
-
-        // tokenId takes prevId's position
-        if (aId != 0) {
-            $.nodes[aId].next = uint128(tokenId);
-        } else {
-            $.head = tokenId;
-        }
-        $.nodes[tokenId].prev = uint128(aId);
-        $.nodes[tokenId].next = uint128(prevId);
-
-        // prevId takes tokenId's old position
-        $.nodes[prevId].prev = uint128(tokenId);
-        $.nodes[prevId].next = uint128(bId);
-        if (bId != 0) {
-            $.nodes[bId].prev = uint128(prevId);
-        } else {
-            $.tail = prevId;
-        }
-    }
-
-    /**
-     * @notice Swaps tokenId one position toward the tail (with its successor).
-     * @dev Before: A ↔ tokenId ↔ nextId ↔ B
-     *      After:  A ↔ nextId ↔ tokenId ↔ B
-     *      Modifies at most 6 pointer fields + possibly head/tail.
-     */
-    function _swapDown(uint256 tokenId, BoardStorage storage $) private {
-        uint256 nextId = uint256($.nodes[tokenId].next);
-        uint256 aId = uint256($.nodes[tokenId].prev);
-        uint256 bId = uint256($.nodes[nextId].next);
-
-        // nextId takes tokenId's position
-        if (aId != 0) {
-            $.nodes[aId].next = uint128(nextId);
-        } else {
-            $.head = nextId;
-        }
-        $.nodes[nextId].prev = uint128(aId);
-        $.nodes[nextId].next = uint128(tokenId);
-
-        // tokenId goes after nextId
-        $.nodes[tokenId].prev = uint128(nextId);
-        $.nodes[tokenId].next = uint128(bId);
-        if (bId != 0) {
-            $.nodes[bId].prev = uint128(tokenId);
-        } else {
-            $.tail = tokenId;
-        }
-    }
-
-    /**
-     * @notice Inserts a new node into the sorted linked list
-     * @dev Maintains descending order by amount.
-     *      Rejects tokenIds > type(uint128).max since next/prev are stored as uint128.
-     * @param tokenId The token ID to insert
-     * @param amount The delegation amount for the node
-     */
     function _insert(uint256 tokenId, uint256 amount) internal {
-        if (tokenId > type(uint128).max) revert IBoard.TokenIdTooLarge();
-
-        BoardStorage storage $ = _getBoardStorage();
-        if ($.size >= MAX_NODES) {
-            if (amount <= $.nodes[$.tail].amount) revert IBoard.MaxNodesReached();
-            uint256 evicted = $.tail;
-            _remove(evicted);
-            $.evictedTokenIds.add(evicted);
-        }
-        $.evictedTokenIds.remove(tokenId);
-
-        if ($.head == 0) {
-            _initializeFirstNode(tokenId, amount);
-        } else {
-            _insertNodeInOrder(tokenId, amount);
-        }
-        unchecked {
-            $.size++;
-        }
+        BoardLib.insert(_getBoardStorage(), tokenId, amount);
     }
 
-    /**
-     * @notice Initializes the first node in an empty list
-     * @param tokenId The token ID for the first node
-     * @param amount The delegation amount
-     */
-    function _initializeFirstNode(uint256 tokenId, uint256 amount) private {
-        BoardStorage storage $ = _getBoardStorage();
-        $.nodes[tokenId] = Node({tokenId: tokenId, amount: amount, next: 0, prev: 0});
-        $.head = tokenId;
-        $.tail = tokenId;
-    }
-
-    /**
-     * @notice Inserts a node in sorted order within an existing list
-     * @dev Traverses from head to find correct position based on amount
-     * @param tokenId The token ID to insert
-     * @param amount The delegation amount
-     */
-    function _insertNodeInOrder(uint256 tokenId, uint256 amount) private {
-        BoardStorage storage $ = _getBoardStorage();
-        uint256 current = $.head;
-        uint256 previous;
-
-        unchecked {
-            while (current != 0 && amount <= $.nodes[current].amount) {
-                previous = current;
-                current = uint256($.nodes[current].next);
-            }
-
-            Node storage newNode = $.nodes[tokenId];
-            newNode.tokenId = tokenId;
-            newNode.amount = amount;
-            newNode.next = uint128(current);
-            newNode.prev = uint128(previous);
-
-            if (current == 0) {
-                $.nodes[previous].next = uint128(tokenId);
-                $.tail = tokenId;
-            } else if (previous == 0) {
-                $.nodes[current].prev = uint128(tokenId);
-                $.head = tokenId;
-            } else {
-                $.nodes[previous].next = uint128(tokenId);
-                $.nodes[current].prev = uint128(tokenId);
-            }
-        }
-    }
-
-    /**
-     * @notice Removes a node from the linked list
-     * @param tokenId The token ID to remove
-     * @return True if removal was successful
-     */
     function _remove(uint256 tokenId) internal returns (bool) {
-        BoardStorage storage $ = _getBoardStorage();
-        Node storage node = $.nodes[tokenId];
-
-        if (node.tokenId != tokenId) {
-            return false;
-        }
-
-        uint256 prev = uint256(node.prev);
-        uint256 next = uint256(node.next);
-
-        if (prev != 0) {
-            $.nodes[prev].next = uint128(next);
-        } else {
-            $.head = next;
-        }
-
-        if (next != 0) {
-            $.nodes[next].prev = uint128(prev);
-        } else {
-            $.tail = prev;
-        }
-
-        delete $.nodes[tokenId];
-        if ($.seatedAt[tokenId] != 0) {
-            delete $.seatedAt[tokenId];
-        }
-
-        if ($.size > 0) {
-            unchecked {
-                $.size--;
-            }
-        }
-        return true;
+        return BoardLib.remove(_getBoardStorage(), tokenId);
     }
 
-    /**
-     * @notice Retrieves the top N nodes from the sorted list
-     * @param count The number of top nodes to retrieve
-     * @return tokenIds Array of token IDs in descending order by amount
-     * @return amounts Array of corresponding delegation amounts
-     */
     function _getTop(uint256 count) internal view returns (uint256[] memory, uint256[] memory) {
-        BoardStorage storage $ = _getBoardStorage();
-        uint256 _size = $.size;
-
-        if (_size == 0) {
-            return (new uint256[](0), new uint256[](0));
-        }
-
-        uint256 resultCount = count > _size ? _size : count;
-        uint256[] memory tokenIds = new uint256[](resultCount);
-        uint256[] memory amounts = new uint256[](resultCount);
-
-        uint256 current = $.head;
-        for (uint256 i = 0; i < resultCount && current != 0; i++) {
-            tokenIds[i] = current;
-            amounts[i] = $.nodes[current].amount;
-            current = uint256($.nodes[current].next);
-        }
-
-        return (tokenIds, amounts);
+        return BoardLib.getTop(_getBoardStorage(), count);
     }
 
-    /**
-     * @notice Calculates the current quorum requirement
-     * @dev Exact integer formula: `1 + (seats * 51) / 100` (Solidity truncating division).
-     *      This is not a real-number "51% of seats + 1". For many seat counts the result
-     *      is about 55–67% of seats. One- and two-seat chambers require 100% of seats
-     *      (`quorum == seats`). Quorum is token-weighted: it counts distinct director
-     *      `tokenId` confirmations, not unique addresses. One address holding `quorum`
-     *      top-seat membership NFTs can satisfy quorum alone (a single-actor treasury).
-     *      Confirmations are not capped per owner.
-     * @return The number of confirmations required for quorum
-     */
     function _getQuorum() internal view returns (uint256) {
-        return 1 + (_getBoardStorage().seats * 51) / 100;
+        return BoardLib.getQuorum(_getBoardStorage());
     }
 
-    /**
-     * @notice Returns the current number of board seats
-     * @return The current number of seats
-     */
     function _getSeats() internal view returns (uint256) {
-        return _getBoardStorage().seats;
+        return BoardLib.getSeats(_getBoardStorage());
     }
 
-    /**
-     * @notice Sets or proposes a new number of board seats
-     * @dev Initial call sets seats directly; subsequent calls create/update proposals.
-     *      A different `numOfSeats` cancels the active proposal: the original proposer may
-     *      cancel at any time, and after {SEAT_UPDATE_EXPIRY} any director may cancel (H-03).
-     * @param tokenId The token ID proposing the change (0 for initial setup)
-     * @param numOfSeats The proposed number of seats
-     */
     function _setSeats(uint256 tokenId, uint256 numOfSeats) internal {
-        if (numOfSeats <= 0) revert IBoard.InvalidNumSeats();
-
-        BoardStorage storage $ = _getBoardStorage();
-
-        if ($.seats == 0) {
-            $.seats = uint32(numOfSeats);
-            emit IBoard.ExecuteSetSeats(tokenId, numOfSeats);
-            return;
-        }
-
-        SeatUpdate storage proposal = $.seatUpdate;
-
-        if (proposal.timestamp == 0) {
-            proposal.proposedSeats = numOfSeats;
-            proposal.timestamp = block.timestamp;
-            proposal.requiredQuorum = _getQuorum();
-        } else {
-            if (proposal.proposedSeats != numOfSeats) {
-                _authorizeSeatUpdateCancel(proposal, tokenId);
-                delete $.seatUpdate;
-                emit IBoard.SeatUpdateCancelled(tokenId);
-                return;
-            }
-
-            for (uint256 i; i < proposal.supporters.length;) {
-                if (proposal.supporters[i] == tokenId) {
-                    revert IBoard.AlreadySentUpdateRequest();
-                }
-                unchecked {
-                    ++i;
-                }
-            }
-        }
-
-        proposal.supporters.push(tokenId);
-        emit IBoard.SetSeats(tokenId, numOfSeats);
+        BoardLib.setSeats(_getBoardStorage(), tokenId, numOfSeats);
     }
 
-    /**
-     * @notice Executes a pending seat update proposal
-     * @dev Requires proposal to exist, timelock expired, and quorum maintained.
-     *      Builds the top-seat set in a single O(seats) list walk, then checks each supporter
-     *      against that in-memory set — O(supporters × seats) in the worst case but with only
-     *      memory reads after the initial walk (vs. the old approach of one full SLOAD walk per
-     *      supporter). Eliminates up to 380 redundant SLOADs when seats = supporters = 20.
-     * @param tokenId The token ID executing the update
-     */
     function _executeSeatsUpdate(uint256 tokenId) internal {
-        uint256[] memory prevTop = _topTokenIds();
-        BoardStorage storage $ = _getBoardStorage();
-        SeatUpdate storage proposal = $.seatUpdate;
-
-        if (proposal.timestamp == 0) revert IBoard.InvalidProposal();
-        if (block.timestamp < proposal.timestamp + SEAT_UPDATE_TIMELOCK) revert IBoard.TimelockNotExpired();
-
-        // Build the top-seat set with a single O(seats) list walk
-        uint256 s = $.seats;
-        uint256[] memory topIds = new uint256[](s);
-        uint256 current = $.head;
-        uint256 filled;
-        unchecked {
-            while (current != 0 && filled < s) {
-                topIds[filled] = current;
-                current = uint256($.nodes[current].next);
-                ++filled;
-            }
-        }
-
-        // Count valid supporters using in-memory set (O(1) per member after the walk above)
-        uint256 validSupport;
-        uint256 supportersLen = proposal.supporters.length;
-        unchecked {
-            for (uint256 i; i < supportersLen; ++i) {
-                uint256 sup = proposal.supporters[i];
-                for (uint256 j; j < filled; ++j) {
-                    if (topIds[j] == sup) {
-                        ++validSupport;
-                        break;
-                    }
-                }
-            }
-        }
-
-        if (validSupport < proposal.requiredQuorum) {
-            revert IBoard.InsufficientVotes();
-        }
-
-        uint256 newSeats = proposal.proposedSeats;
-        $.seats = uint32(newSeats);
-        delete $.seatUpdate;
-        _refreshSeating(prevTop);
-        emit IBoard.ExecuteSetSeats(tokenId, newSeats);
+        BoardLib.executeSeatsUpdate(_getBoardStorage(), tokenId);
     }
 
-    /**
-     * @notice Current top-`seats` tokenIds, in rank order (empty slots omitted).
-     */
-    function _topTokenIds() internal view returns (uint256[] memory ids) {
-        BoardStorage storage $ = _getBoardStorage();
-        uint256 n = $.seats;
-        if (n == 0 || $.head == 0) {
-            return new uint256[](0);
-        }
-
-        ids = new uint256[](n);
-        uint256 current = $.head;
-        uint256 filled;
-        unchecked {
-            while (current != 0 && filled < n) {
-                ids[filled] = current;
-                current = uint256($.nodes[current].next);
-                ++filled;
-            }
-        }
-        if (filled == n) {
-            return ids;
-        }
-
-        uint256[] memory trimmed = new uint256[](filled);
-        for (uint256 i; i < filled;) {
-            trimmed[i] = ids[i];
-            unchecked {
-                ++i;
-            }
-        }
-        return trimmed;
-    }
-
-    function _wasInTop(uint256 tokenId, uint256[] memory prevTop) private pure returns (bool) {
-        uint256 len = prevTop.length;
-        for (uint256 i; i < len;) {
-            if (prevTop[i] == tokenId) return true;
-            unchecked {
-                ++i;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * @notice Syncs seating checkpoints after a board mutation.
-     * @dev Only tokenIds that newly enter the top-`seats` set (absent from `prevTop`)
-     *      receive `block.number + SEATING_DELAY`. Incumbents — including post-upgrade
-     *      directors whose `seatedAt` is still zero — keep their checkpoint. TokenIds
-     *      that leave the top set are cleared so a later re-entry waits again.
-     * @param prevTop Top-seat tokenIds captured before the mutation
-     */
-    function _refreshSeating(uint256[] memory prevTop) internal {
-        BoardStorage storage $ = _getBoardStorage();
-        uint256 current = $.head;
-        uint256 remaining = $.seats;
-        uint256 activationBlock = block.number + SEATING_DELAY;
-
-        while (current != 0) {
-            if (remaining != 0) {
-                if ($.seatedAt[current] == 0 && !_wasInTop(current, prevTop)) {
-                    $.seatedAt[current] = activationBlock;
-                }
-                unchecked {
-                    --remaining;
-                }
-            } else if ($.seatedAt[current] != 0) {
-                delete $.seatedAt[current];
-            }
-            current = uint256($.nodes[current].next);
-        }
-    }
-
-    /**
-     * @notice Returns the first block a tokenId may exercise director rights.
-     * @param tokenId The membership token ID
-     * @return seatedAtBlock Activation block, or zero if no checkpoint is stored
-     */
-    function _getSeatedAt(uint256 tokenId) internal view returns (uint256 seatedAtBlock) {
-        return _getBoardStorage().seatedAt[tokenId];
-    }
-
-    /**
-     * @notice Whether a live top-seat tokenId may exercise director rights.
-     * @dev `seatedAt == 0` is mature: live in-place upgrades leave this mapping unset,
-     *      so incumbents already on the board must keep confirm/execute/submit.
-     *      Newly entering tokenIds always receive a non-zero activation block.
-     * @param tokenId The membership token ID (caller has already verified top-seat membership)
-     * @return True if the seating delay has elapsed, or no checkpoint is stored
-     */
-    function _isSeatingMature(uint256 tokenId) internal view returns (bool) {
-        uint256 seatedAt = _getBoardStorage().seatedAt[tokenId];
-        if (seatedAt == 0) return true;
-        return block.number >= seatedAt;
-    }
-
-    /**
-     * @notice Deletes a pending seat-update proposal.
-     * @dev The original proposer may cancel at any time. After {SEAT_UPDATE_EXPIRY}, any caller
-     *      (Chamber gates this to a current director) may clear the single slot so a departed
-     *      proposer cannot permanently block later seat changes.
-     * @param tokenId The token ID requesting cancellation
-     */
     function _cancelSeatUpdate(uint256 tokenId) internal {
-        BoardStorage storage $ = _getBoardStorage();
-        SeatUpdate storage proposal = $.seatUpdate;
-        if (proposal.timestamp == 0) revert IBoard.InvalidProposal();
-
-        _authorizeSeatUpdateCancel(proposal, tokenId);
-        delete $.seatUpdate;
-        emit IBoard.SeatUpdateCancelled(tokenId);
+        BoardLib.cancelSeatUpdate(_getBoardStorage(), tokenId);
     }
 
-    /**
-     * @notice Reverts unless `tokenId` may cancel the active seat-update proposal.
-     * @dev Proposer (`supporters[0]`) may always cancel. After expiry, any director may cancel.
-     */
-    function _authorizeSeatUpdateCancel(SeatUpdate storage proposal, uint256 tokenId) internal view {
-        if (proposal.supporters.length > 0 && proposal.supporters[0] == tokenId) {
-            return;
-        }
-        if (proposal.timestamp != 0 && block.timestamp >= proposal.timestamp + SEAT_UPDATE_EXPIRY) {
-            return;
-        }
-        revert IBoard.OnlyProposerCanCancel();
+    function _topTokenIds() internal view returns (uint256[] memory) {
+        return BoardLib.topTokenIds(_getBoardStorage());
+    }
+
+    function _getSeatedAt(uint256 tokenId) internal view returns (uint256) {
+        return BoardLib.getSeatedAt(_getBoardStorage(), tokenId);
+    }
+
+    function _isSeatingMature(uint256 tokenId) internal view returns (bool) {
+        return BoardLib.isSeatingMature(_getBoardStorage(), tokenId);
     }
 }

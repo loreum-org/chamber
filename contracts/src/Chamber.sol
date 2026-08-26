@@ -3,6 +3,8 @@ pragma solidity ^0.8.30;
 
 import {Board} from "src/Board.sol";
 import {Wallet} from "src/Wallet.sol";
+import {BoardTypes} from "src/types/BoardTypes.sol";
+import {WalletTypes} from "src/types/WalletTypes.sol";
 import {IChamber} from "src/interfaces/IChamber.sol";
 import {IWallet} from "src/interfaces/IWallet.sol";
 import {IERC20} from "lib/openzeppelin-contracts/contracts/interfaces/IERC20.sol";
@@ -176,7 +178,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
         }
 
         // Only update board if node still exists (handles evicted nodes — Fix Finding 11)
-        BoardStorage storage $b = _getBoardStorage();
+        BoardTypes.BoardStorage storage $b = _getBoardStorage();
         if ($b.nodes[tokenId].tokenId == tokenId) {
             _undelegate(tokenId, amount);
         }
@@ -312,7 +314,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
             return (tokenIds, amounts);
         }
 
-        BoardStorage storage $b = _getBoardStorage();
+        BoardTypes.BoardStorage storage $b = _getBoardStorage();
         uint256 maxLen = setLen + uint256($b.size) + $b.evictedTokenIds.length();
         uint256[] memory tmpIds = new uint256[](maxLen);
         uint256[] memory tmpAmts = new uint256[](maxLen);
@@ -379,7 +381,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
      */
     function _syncTrackedDelegations(address holder) private {
         ChamberStorage storage $c = _getChamberStorage();
-        BoardStorage storage $b = _getBoardStorage();
+        BoardTypes.BoardStorage storage $b = _getBoardStorage();
         EnumerableSet.UintSet storage tracked = $c.holderDelegatedTokenIds[holder];
 
         uint256 tokenId = $b.head;
@@ -429,7 +431,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
      * @return uint256[] memory supporters
      */
     function getSeatUpdate() public view override returns (uint256, uint256, uint256, uint256[] memory) {
-        SeatUpdate storage proposal = _getBoardStorage().seatUpdate;
+        BoardTypes.SeatUpdate storage proposal = _getBoardStorage().seatUpdate;
         return (proposal.proposedSeats, proposal.timestamp, proposal.requiredQuorum, proposal.supporters);
     }
 
@@ -552,9 +554,9 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
         nonReentrant
         isDirector(tokenId)
     {
-        WalletStorage storage $w = _getWalletStorage();
+        WalletTypes.WalletStorage storage $w = _getWalletStorage();
         if (transactionId >= $w.transactions.length) revert IWallet.TransactionDoesNotExist();
-        Transaction storage transaction = $w.transactions[transactionId];
+        WalletTypes.Transaction storage transaction = $w.transactions[transactionId];
         if (transaction.executed) revert IWallet.TransactionAlreadyExecuted();
         if ($w.isConfirmed[transactionId][tokenId]) revert IWallet.TransactionAlreadyConfirmed();
 
@@ -579,9 +581,9 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
         nonReentrant
         isDirector(tokenId)
     {
-        WalletStorage storage $w = _getWalletStorage();
+        WalletTypes.WalletStorage storage $w = _getWalletStorage();
         if (transactionId >= $w.transactions.length) revert IWallet.TransactionDoesNotExist();
-        Transaction storage transaction = $w.transactions[transactionId];
+        WalletTypes.Transaction storage transaction = $w.transactions[transactionId];
         if (transaction.executed) revert IWallet.TransactionAlreadyExecuted();
         if ($w.cancelled[transactionId]) revert IWallet.TransactionAlreadyCancelled();
         _notExpired(transactionId);
@@ -617,9 +619,9 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
         nonReentrant
         isDirector(tokenId)
     {
-        WalletStorage storage $w = _getWalletStorage();
+        WalletTypes.WalletStorage storage $w = _getWalletStorage();
         if (transactionId >= $w.transactions.length) revert IWallet.TransactionDoesNotExist();
-        Transaction storage transaction = $w.transactions[transactionId];
+        WalletTypes.Transaction storage transaction = $w.transactions[transactionId];
         if (transaction.executed) revert IWallet.TransactionAlreadyExecuted();
 
         _recordCancelVote(tokenId, transactionId);
@@ -740,11 +742,11 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
     {
         if (transactionIds.length == 0) revert IChamber.ZeroAmount();
 
-        WalletStorage storage $w = _getWalletStorage();
+        WalletTypes.WalletStorage storage $w = _getWalletStorage();
         for (uint256 i = 0; i < transactionIds.length;) {
             uint256 transactionId = transactionIds[i];
             if (transactionId >= $w.transactions.length) revert IWallet.TransactionDoesNotExist();
-            Transaction storage transaction = $w.transactions[transactionId];
+            WalletTypes.Transaction storage transaction = $w.transactions[transactionId];
 
             if (transaction.executed) revert IWallet.TransactionAlreadyExecuted();
             if ($w.isConfirmed[transactionId][tokenId]) revert IWallet.TransactionAlreadyConfirmed();
@@ -777,11 +779,11 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
         if (transactionIds.length == 0) revert IChamber.ZeroAmount();
         if (transactionIds.length != data.length) revert IChamber.ArrayLengthsMustMatch();
 
-        WalletStorage storage $w = _getWalletStorage();
+        WalletTypes.WalletStorage storage $w = _getWalletStorage();
         for (uint256 i = 0; i < transactionIds.length;) {
             uint256 transactionId = transactionIds[i];
             if (transactionId >= $w.transactions.length) revert IWallet.TransactionDoesNotExist();
-            Transaction storage transaction = $w.transactions[transactionId];
+            WalletTypes.Transaction storage transaction = $w.transactions[transactionId];
 
             if (transaction.executed) revert IWallet.TransactionAlreadyExecuted();
             _notExpired(transactionId);
@@ -857,7 +859,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
 
     /// @dev True when `tokenId` is among the current top `_getSeats()` nodes.
     function _isInTopSeats(uint256 tokenId) internal view returns (bool) {
-        BoardStorage storage $b = _getBoardStorage();
+        BoardTypes.BoardStorage storage $b = _getBoardStorage();
         uint256 current = $b.head;
         uint256 remaining = _getSeats();
 
@@ -879,7 +881,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
         mapping(uint256 nonce => mapping(uint256 tokenId => bool)) storage flags,
         uint256 nonce
     ) internal view returns (uint256 count) {
-        BoardStorage storage $b = _getBoardStorage();
+        BoardTypes.BoardStorage storage $b = _getBoardStorage();
         uint256 current = $b.head;
         uint256 remaining = _getSeats();
         unchecked {

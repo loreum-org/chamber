@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
+import {EnumerableSet} from "lib/openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
+
 /**
  * @title BoardTypes
  * @author xhad, Loreum DAO LLC
@@ -10,15 +12,13 @@ pragma solidity ^0.8.30;
  *      not that getter ABI.
  */
 library BoardTypes {
+    using EnumerableSet for EnumerableSet.UintSet;
+
     /**
      * @notice Node structure for the doubly linked list
      * @dev Each node represents a token delegation with links to maintain sorted order.
      *      next and prev are uint128, packed into one storage slot.
      *      tokenIds > type(uint128).max are rejected at insertion time.
-     * @param tokenId Unique identifier for the token
-     * @param amount Total amount of tokens delegated to this node
-     * @param next TokenId of the next node in the sorted list (0 if none)
-     * @param prev TokenId of the previous node in the sorted list (0 if none)
      */
     struct Node {
         uint256 tokenId; // slot 0
@@ -29,10 +29,6 @@ library BoardTypes {
 
     /**
      * @notice Structure representing a proposal to update the number of board seats
-     * @param proposedSeats The proposed new number of seats
-     * @param timestamp When the proposal was created
-     * @param requiredQuorum The quorum required at proposal time
-     * @param supporters Array of tokenIds that have supported this proposal
      */
     struct SeatUpdate {
         uint256 proposedSeats;
@@ -40,4 +36,34 @@ library BoardTypes {
         uint256 requiredQuorum;
         uint256[] supporters;
     }
+
+    /**
+     * @notice ERC-7201 namespaced storage layout for Board
+     * @custom:storage-location erc7201:loreum.Board
+     */
+    struct BoardStorage {
+        mapping(uint256 => Node) nodes;
+        SeatUpdate seatUpdate;
+        uint256 head;
+        uint256 tail;
+        uint32 size;
+        uint32 seats;
+        mapping(uint256 tokenId => uint256 seatedAtBlock) seatedAt;
+        EnumerableSet.UintSet evictedTokenIds;
+    }
+
+    /// @dev keccak256(abi.encode(uint256(keccak256("erc7201:loreum.Board")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 internal constant STORAGE_SLOT = 0xae916af301d5dc481b59b170e7db23e36b830da7017e456f99549768499c8800;
+
+    /// @notice Maximum number of nodes allowed in the linked list
+    uint256 internal constant MAX_NODES = 50;
+
+    /// @notice Blocks a newly seated tokenId must wait before exercising director rights
+    uint256 internal constant SEATING_DELAY = 1;
+
+    /// @notice Delay after a seat-update proposal is created before it may be executed
+    uint256 internal constant SEAT_UPDATE_TIMELOCK = 7 days;
+
+    /// @notice Age after which any current director may delete a seat-update proposal
+    uint256 internal constant SEAT_UPDATE_EXPIRY = 14 days;
 }
