@@ -288,9 +288,10 @@ Batch functions reduce transaction overhead:
 
 ### Chamber Limitations
 
-- **Single NFT Contract**: One ERC721 per Chamber
-- **Single Asset**: One ERC20 asset per Chamber
-- **No Multi-Asset**: Cannot hold multiple ERC20 tokens
+- **Single NFT Contract**: One ERC721 per Chamber for **membership / director identity**
+- **Single Asset**: One ERC20 asset per Chamber as the **ERC-4626 vault underlying**
+- **No Multi-Asset vault**: The vault cannot hold multiple ERC20 tokens as the share-accounting asset
+- **NFT custody**: `onERC721Received` accepts any ERC-721 for treasury custody (not limited to the membership NFT). There is no ERC-1155 receiver; ERC-1155 `safeTransferFrom` reverts.
 
 ## Future Enhancements
 
