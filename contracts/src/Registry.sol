@@ -229,11 +229,7 @@ contract Registry is AccessControl, Initializable, IRegistry {
      * @param skip The number of chambers to skip
      * @return Array of chamber addresses
      */
-    function getChambersByAsset(address asset, uint256 limit, uint256 skip)
-        external
-        view
-        returns (address[] memory)
-    {
+    function getChambersByAsset(address asset, uint256 limit, uint256 skip) external view returns (address[] memory) {
         return _page(_getRegistryStorage().chambersByAsset[asset], limit, skip);
     }
 
@@ -301,11 +297,7 @@ contract Registry is AccessControl, Initializable, IRegistry {
      * @param skip The number of children to skip
      * @return Array of child chamber addresses
      */
-    function getChildChambers(address chamber, uint256 limit, uint256 skip)
-        external
-        view
-        returns (address[] memory)
-    {
+    function getChildChambers(address chamber, uint256 limit, uint256 skip) external view returns (address[] memory) {
         return _page(_getRegistryStorage().childChambers[chamber], limit, skip);
     }
 
