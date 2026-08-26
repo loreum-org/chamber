@@ -293,12 +293,11 @@ contract RegistryTest is Test {
     function test_Registry_SetChamberImplementation_NotAdmin_Reverts() public {
         Chamber newImpl = new Chamber();
         address stranger = makeAddr("stranger");
+        bytes32 adminRole = registry.ADMIN_ROLE();
 
         vm.prank(stranger);
         vm.expectRevert(
-            abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, stranger, registry.ADMIN_ROLE()
-            )
+            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, stranger, adminRole)
         );
         registry.setChamberImplementation(address(newImpl));
     }
@@ -497,14 +496,14 @@ contract RegistryTest is Test {
 
     function test_Registry_NonAdminCannotGrantRole() public {
         address stranger = makeAddr("stranger");
+        bytes32 adminRole = registry.ADMIN_ROLE();
+        bytes32 defaultAdminRole = registry.DEFAULT_ADMIN_ROLE();
 
         vm.prank(stranger);
         vm.expectRevert(
-            abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, stranger, registry.DEFAULT_ADMIN_ROLE()
-            )
+            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, stranger, defaultAdminRole)
         );
-        registry.grantRole(registry.ADMIN_ROLE(), stranger);
+        registry.grantRole(adminRole, stranger);
     }
 
     function test_Registry_InitializeCannotBeCalledTwice() public {
@@ -518,6 +517,7 @@ contract RegistryTest is Test {
         assertEq(ProxyAdmin(chamberProxyAdmin).owner(), chamberBefore);
         assertNotEq(ProxyAdmin(chamberProxyAdmin).owner(), address(registry));
 
+        address chamberImpl = registry.implementation();
         Registry newRegistryImpl = new Registry();
         ProxyAdmin registryProxyAdmin = _registryProxyAdmin();
         assertEq(registryProxyAdmin.owner(), admin);
@@ -529,7 +529,7 @@ contract RegistryTest is Test {
         assertTrue(registry.hasRole(registry.ADMIN_ROLE(), admin));
         assertEq(registry.getChamberCount(), 1);
         assertTrue(registry.isChamber(chamberBefore));
-        assertEq(registry.implementation(), address(implementation));
+        assertEq(registry.implementation(), chamberImpl);
 
         // Existing chamber still owns its ProxyAdmin after a Registry implementation upgrade.
         assertEq(ProxyAdmin(chamberProxyAdmin).owner(), chamberBefore);
