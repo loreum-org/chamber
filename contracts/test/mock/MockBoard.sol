@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {Board} from "src/Board.sol";
+import {BoardTypes} from "src/types/BoardTypes.sol";
 
 contract MockBoard is Board {
     function exposed_delegate(uint256 tokenId, uint256 amount) public nonReentrant {
@@ -61,7 +62,7 @@ contract MockBoard is Board {
     }
 
     function getSeatUpdate() public view returns (uint256, uint256, uint256, uint256[] memory) {
-        SeatUpdate storage proposal = _getBoardStorage().seatUpdate;
+        BoardTypes.SeatUpdate storage proposal = _getBoardStorage().seatUpdate;
         return (proposal.proposedSeats, proposal.timestamp, proposal.requiredQuorum, proposal.supporters);
     }
 
