@@ -443,6 +443,8 @@ Foundry is configured as `make ci-test` → `forge test` in `contracts/` (CI: `.
 
 No failing tests. No production compiler warnings. No new severity items from the build.
 
+GitHub Actions `Forge Tests` on `567e48c` (`cursor/chamber-src-security-review-7960`): **success** (1 check, no failures).
+
 ---
 
 ## Recommended next hardening steps
