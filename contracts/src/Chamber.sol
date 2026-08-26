@@ -6,15 +6,13 @@ import {Wallet} from "src/Wallet.sol";
 import {IChamber} from "src/interfaces/IChamber.sol";
 import {IWallet} from "src/interfaces/IWallet.sol";
 import {IERC20} from "lib/openzeppelin-contracts/contracts/interfaces/IERC20.sol";
+import {IERC4626} from "lib/openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 import {IERC721} from "lib/openzeppelin-contracts/contracts/interfaces/IERC721.sol";
 import {IERC721Receiver} from "lib/openzeppelin-contracts/contracts/token/ERC721/IERC721Receiver.sol";
 import {
     ERC4626Upgradeable
 } from "lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {ERC20Upgradeable} from "lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
-import {
-    ReentrancyGuardUpgradeable
-} from "lib/openzeppelin-contracts-upgradeable/contracts/utils/ReentrancyGuardUpgradeable.sol";
 import {ProxyAdmin} from "lib/openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 import {
     ITransparentUpgradeableProxy
@@ -26,7 +24,7 @@ import {StorageSlot} from "lib/openzeppelin-contracts/contracts/utils/StorageSlo
  * @notice This contract is a smart vault for managing assets with a board of directors
  * @author xhad, Loreum DAO LLC
  */
-contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Wallet, IChamber, IERC721Receiver {
+contract Chamber is ERC4626Upgradeable, Board, Wallet, IChamber, IERC721Receiver {
     /**
      * @notice ERC-7201 namespaced storage layout for Chamber
      * @dev Packing: `nft` (address, 20 bytes) sits alone in its slot; remaining fields are
@@ -102,7 +100,7 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
 
         __ERC4626_init(IERC20(erc20Token));
         __ERC20_init(_name, _symbol);
-        __ReentrancyGuard_init();
+        __ReentrancyGuardTransient_init();
 
         ChamberStorage storage $ = _getChamberStorage();
         $.nft = IERC721(erc721Token);
@@ -115,7 +113,7 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
      * @param tokenId The tokenId to which tokens are delegated
      * @param amount The amount of tokens to delegate
      */
-    function delegate(uint256 tokenId, uint256 amount) external override {
+    function delegate(uint256 tokenId, uint256 amount) external override nonReentrant {
         if (tokenId == 0) revert IChamber.ZeroTokenId();
         if (amount == 0) revert IChamber.ZeroAmount();
 
@@ -148,7 +146,7 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
      * @param tokenId The tokenId from which tokens are undelegated
      * @param amount The amount of tokens to undelegate
      */
-    function undelegate(uint256 tokenId, uint256 amount) external override {
+    function undelegate(uint256 tokenId, uint256 amount) external override nonReentrant {
         if (tokenId == 0) revert IChamber.ZeroTokenId();
         if (amount == 0) revert IChamber.ZeroAmount();
 
@@ -324,7 +322,7 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
      * @param tokenId The tokenId proposing the update
      * @param numOfSeats The new number of seats
      */
-    function updateSeats(uint256 tokenId, uint256 numOfSeats) public override isDirector(tokenId) {
+    function updateSeats(uint256 tokenId, uint256 numOfSeats) public override nonReentrant isDirector(tokenId) {
         if (numOfSeats == 0) revert IChamber.ZeroSeats();
         if (numOfSeats > MAX_SEATS) revert IChamber.TooManySeats();
         _setSeats(tokenId, numOfSeats);
@@ -334,7 +332,7 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
      * @notice Executes a pending seat update proposal if it has enough support and the timelock has expired
      * @param tokenId The tokenId executing the update
      */
-    function executeSeatsUpdate(uint256 tokenId) public override isDirector(tokenId) {
+    function executeSeatsUpdate(uint256 tokenId) public override nonReentrant isDirector(tokenId) {
         _executeSeatsUpdate(tokenId);
     }
 
@@ -749,6 +747,10 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
     /**
      * @notice Upgrades the Chamber implementation via `ProxyAdmin.upgradeAndCall`
      * @dev Reverts with `NotAuthorized` if this contract is not the `ProxyAdmin` owner.
+     *      Must not take `nonReentrant`: the only legitimate caller is this contract via
+     *      `executeTransaction` (`msg.sender == address(this)`), which already holds the shared
+     *      guard. A nested `nonReentrant` would make every upgrade revert. External reentry is
+     *      already rejected by the `NotAuthorized` sender check.
      * @param newImplementation The new implementation address
      * @param data Optional initialization data for the new implementation
      */
@@ -766,6 +768,48 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
 
         ITransparentUpgradeableProxy proxy = ITransparentUpgradeableProxy(address(this));
         proxyAdmin.upgradeAndCall(proxy, newImplementation, data);
+    }
+
+    /// ERC-4626 OVERRIDES ///
+
+    /// @inheritdoc ERC4626Upgradeable
+    function deposit(uint256 assets, address receiver)
+        public
+        override(ERC4626Upgradeable, IERC4626)
+        nonReentrant
+        returns (uint256)
+    {
+        return super.deposit(assets, receiver);
+    }
+
+    /// @inheritdoc ERC4626Upgradeable
+    function mint(uint256 shares, address receiver)
+        public
+        override(ERC4626Upgradeable, IERC4626)
+        nonReentrant
+        returns (uint256)
+    {
+        return super.mint(shares, receiver);
+    }
+
+    /// @inheritdoc ERC4626Upgradeable
+    function withdraw(uint256 assets, address receiver, address owner)
+        public
+        override(ERC4626Upgradeable, IERC4626)
+        nonReentrant
+        returns (uint256)
+    {
+        return super.withdraw(assets, receiver, owner);
+    }
+
+    /// @inheritdoc ERC4626Upgradeable
+    function redeem(uint256 shares, address receiver, address owner)
+        public
+        override(ERC4626Upgradeable, IERC4626)
+        nonReentrant
+        returns (uint256)
+    {
+        return super.redeem(shares, receiver, owner);
     }
 
     /// ERC20 OVERRIDES ///

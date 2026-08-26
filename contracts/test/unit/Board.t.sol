@@ -4,6 +4,9 @@ pragma solidity ^0.8.24;
 import {Test} from "lib/forge-std/src/Test.sol";
 import {MockBoard} from "test/mock/MockBoard.sol";
 import {IBoard} from "src/interfaces/IBoard.sol";
+import {
+    ReentrancyGuardTransientUpgradeable
+} from "lib/openzeppelin-contracts-upgradeable/contracts/utils/ReentrancyGuardTransientUpgradeable.sol";
 
 contract BoardTest is Test {
     MockBoard board;
@@ -411,20 +414,20 @@ contract BoardTest is Test {
         assertEq(amounts.length, 0);
     }
 
-    // ─── Circuit breaker ───────────────────────────────────────────────
+    // ─── Shared OZ reentrancy guard ────────────────────────────────────
 
-    function test_Board_CircuitBreakerActive_Delegate_Reverts() public {
-        // lockAndDelegate acquires the transient lock then immediately calls _delegate in the
-        // same transaction, simulating reentrancy. The second _delegate should revert.
-        vm.expectRevert(IBoard.CircuitBreakerActive.selector);
+    function test_Board_ReentrancyGuard_Delegate_Reverts() public {
+        // lockAndDelegate holds nonReentrant then calls exposed_delegate, which is also
+        // nonReentrant. The nested entry should revert with the shared OZ error.
+        vm.expectRevert(ReentrancyGuardTransientUpgradeable.ReentrancyGuardReentrantCall.selector);
         board.lockAndDelegate(1, 100);
     }
 
-    function test_Board_CircuitBreakerActive_Undelegate_Reverts() public {
+    function test_Board_ReentrancyGuard_Undelegate_Reverts() public {
         board.exposed_delegate(1, 100);
 
-        vm.expectRevert(IBoard.CircuitBreakerActive.selector);
-        board.lockAndDelegate(1, 50);
+        vm.expectRevert(ReentrancyGuardTransientUpgradeable.ReentrancyGuardReentrantCall.selector);
+        board.lockAndUndelegate(1, 50);
     }
 
     // ─── executeSeatsUpdate: supporter no longer in top seats ──────────
