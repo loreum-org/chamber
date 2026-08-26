@@ -336,6 +336,14 @@ contract Chamber is ERC4626Upgradeable, Board, Wallet, IChamber, IERC721Receiver
         _executeSeatsUpdate(tokenId);
     }
 
+    /**
+     * @notice Deletes the pending seat-update proposal
+     * @param tokenId The tokenId requesting cancellation
+     */
+    function cancelSeatUpdate(uint256 tokenId) public override nonReentrant isDirector(tokenId) {
+        _cancelSeatUpdate(tokenId);
+    }
+
     /// WALLET ///
 
     /**

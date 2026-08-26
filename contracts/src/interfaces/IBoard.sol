@@ -144,7 +144,7 @@ interface IBoard {
     ///         Kept for ABI compatibility.
     error CircuitBreakerActive();
 
-    /// @notice Thrown when a non-proposer attempts to cancel a seat update proposal (Fix Finding 14)
+    /// @notice Thrown when a non-proposer attempts to cancel a seat update proposal before expiry (Fix Finding 14 / H-03)
     error OnlyProposerCanCancel();
 
     /// @notice Thrown when a tokenId exceeds type(uint128).max (Node.next/prev are packed as uint128)

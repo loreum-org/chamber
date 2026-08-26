@@ -48,6 +48,10 @@ contract MockBoard is Board {
         _executeSeatsUpdate(tokenId);
     }
 
+    function cancelSeatUpdate(uint256 tokenId) public {
+        _cancelSeatUpdate(tokenId);
+    }
+
     function getQuorum() public view returns (uint256) {
         return _getQuorum();
     }

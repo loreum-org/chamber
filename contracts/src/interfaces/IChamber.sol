@@ -80,6 +80,14 @@ interface IChamber is IERC4626, IBoard, IWallet {
     function executeSeatsUpdate(uint256 tokenId) external;
 
     /**
+     * @notice Deletes the pending seat-update proposal.
+     * @dev The original proposer may cancel at any time. After the 14-day expiry, any current
+     *      director may clear the single slot (H-03). Does not change the 7-day execute timelock.
+     * @param tokenId The director token ID requesting cancellation
+     */
+    function cancelSeatUpdate(uint256 tokenId) external;
+
+    /**
      * @notice Optional hook reserved for registry flows; current implementation is a no-op.
      * @dev The registry transfers `ProxyAdmin` ownership to the chamber directly after deployment.
      */
