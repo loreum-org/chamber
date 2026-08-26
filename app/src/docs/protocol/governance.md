@@ -37,16 +37,20 @@ If delegation shifts and token 42 drops out of the top five, that wallet is **no
 
 Spending uses the **transaction queue**. Each proposal needs enough **confirmations** from directors.
 
-Quorum is **not** “half of directors.” It is computed as:
+Quorum is **not** “half of directors” and is **not** a real-number “51% of seats + 1.” It is computed as:
 
 \[
 \text{quorum} = 1 + \lfloor \text{seats} \times 51 / 100 \rfloor
 \]
 
+This is the Solidity integer formula `1 + (seats * 51) / 100`. For many seat counts the result is about 55–67% of seats. One- and two-seat chambers require 100% of seats.
+
 Examples:
 
 | Seats | Confirmations needed |
 |------:|---------------------:|
+| 1 | 1 |
+| 2 | 2 |
 | 3 | 2 |
 | 5 | 3 |
 | 7 | 4 |

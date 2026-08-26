@@ -37,6 +37,7 @@ interface IBoard {
 
     /**
      * @notice Wallet multisig confirmation threshold: `1 + (seats * 51) / 100`.
+     * @dev Integer (truncating) division. One- and two-seat chambers require all seats.
      * @return quorum Minimum confirmations required to execute a transaction
      */
     function getQuorum() external view returns (uint256 quorum);

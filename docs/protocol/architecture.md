@@ -74,7 +74,7 @@ struct SeatUpdate {
 - **Sorted Linked List**: Maintains nodes sorted by delegation amount (descending)
 - **Circuit Breaker**: Prevents reentrancy during repositioning
 - **Seat Management**: Dynamic seat updates with timelock and quorum
-- **Quorum Calculation**: `1 + (seats * 51) / 100`
+- **Quorum Calculation**: `1 + (seats * 51) / 100` (integer division; one- and two-seat chambers require all seats)
 
 **Operations**:
 - `_delegate()`: Add/update delegation, maintain sorted order

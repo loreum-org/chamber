@@ -106,7 +106,10 @@ Token holders delegate their voting power to NFT token IDs. The delegation amoun
 
 ### Quorum
 
-Quorum is calculated as `1 + (seats * 51) / 100`, ensuring majority approval. For example:
+Quorum is calculated as `1 + (seats * 51) / 100` (integer division). This is not a simple majority:
+one- and two-seat chambers require 100% of seats. For example:
+- 1 seat → quorum = 1 + (1 * 51) / 100 = 1
+- 2 seats → quorum = 1 + (2 * 51) / 100 = 2
 - 5 seats → quorum = 1 + (5 * 51) / 100 = 3
 - 7 seats → quorum = 1 + (7 * 51) / 100 = 4
 

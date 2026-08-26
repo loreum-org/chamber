@@ -54,7 +54,7 @@ Three onchain components separate **capital ownership** from **operational contr
 flowchart LR
   V[Vault<br/>ERC-4626 treasury<br/>Shares = ownership]
   B[Board<br/>Dynamic directors<br/>Top N delegators]
-  Q[Tx queue<br/>Submit → confirm → execute<br/>Quorum: 1 + seats × 51%]
+  Q[Tx queue<br/>Submit → confirm → execute<br/>Quorum: 1 + (seats × 51) / 100]
 
   V -.->|Proposes| B
   B -->|Approves| Q
@@ -170,7 +170,7 @@ The founder keeps economic stake but no longer controls operations. The communit
 
 **Director capability** — New directors may lack founder expertise. Plan onboarding and a transition period.
 
-**Quorum friction** — Getting `1 + (seats × 51%)` approvals may slow decisions initially. Community engagement is required.
+**Quorum friction** — Getting `1 + (seats × 51) / 100` approvals may slow decisions initially. Community engagement is required. One- and two-seat chambers require all seats.
 
 **Price volatility** — Exit announcements may move markets. Mitigate with clear communication.
 

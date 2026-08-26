@@ -395,7 +395,10 @@ abstract contract Board {
 
     /**
      * @notice Calculates the current quorum requirement
-     * @dev Quorum is 51% of seats + 1
+     * @dev Exact integer formula: `1 + (seats * 51) / 100` (Solidity truncating division).
+     *      This is not a real-number "51% of seats + 1". For many seat counts the result
+     *      is about 55–67% of seats. One- and two-seat chambers require 100% of seats
+     *      (`quorum == seats`).
      * @return The number of confirmations required for quorum
      */
     function _getQuorum() internal view returns (uint256) {

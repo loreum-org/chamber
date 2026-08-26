@@ -199,6 +199,7 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
 
     /**
      * @notice Retrieves the current quorum
+     * @dev Integer formula `1 + (seats * 51) / 100`. One- and two-seat chambers require all seats.
      * @return The current quorum value
      */
     function getQuorum() public view override returns (uint256) {

@@ -205,7 +205,7 @@ Returns total number of nodes in board.
 #### `getQuorum() → uint256`
 Returns current quorum requirement.
 
-**Returns**: Quorum value (1 + (seats * 51) / 100)
+**Returns**: Quorum value (`1 + (seats * 51) / 100`). One- and two-seat chambers require all seats.
 
 ---
 
