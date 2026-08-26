@@ -2,6 +2,9 @@
 pragma solidity ^0.8.30;
 
 import {IBoard} from "./interfaces/IBoard.sol";
+import {
+    ReentrancyGuardTransientUpgradeable
+} from "lib/openzeppelin-contracts-upgradeable/contracts/utils/ReentrancyGuardTransientUpgradeable.sol";
 
 /**
  * @title Board
@@ -9,9 +12,11 @@ import {IBoard} from "./interfaces/IBoard.sol";
  * @notice Manages a sorted linked list of nodes representing token delegations and board seats
  * @dev Abstract contract that implements core board functionality including delegation tracking
  *      and seat management. Uses a doubly linked list to maintain sorted order of delegations.
- *
+ *      Reentrancy uses OpenZeppelin `ReentrancyGuardTransientUpgradeable` (EIP-1153) at public
+ *      entry points. Internals (`_delegate` / `_undelegate`) are unguarded so callers can wrap
+ *      a full operation in a single `nonReentrant` without a nested-lock revert.
  */
-abstract contract Board {
+abstract contract Board is ReentrancyGuardTransientUpgradeable {
     /**
      * @notice Node structure for the doubly linked list
      * @dev next and prev are uint128, packed into one storage slot.
@@ -45,7 +50,7 @@ abstract contract Board {
     /**
      * @notice ERC-7201 namespaced storage layout for Board
      * @dev size and seats are uint32, sharing one 32-byte slot (max values 50 and 20 fit
-     *      comfortably). locked has been removed; reentrancy is handled via transient storage.
+     *      comfortably). Reentrancy is handled by OpenZeppelin `ReentrancyGuardTransientUpgradeable`.
      * @custom:storage-location erc7201:loreum.Board
      */
     struct BoardStorage {
@@ -69,14 +74,6 @@ abstract contract Board {
     ///      is treated as mature so a live in-place upgrade cannot lock existing directors.
     uint256 internal constant SEATING_DELAY = 1;
 
-    /**
-     * @dev Transient storage slot used for the circuit-breaker reentrancy lock.
-     *      Uses a domain-separated value to avoid collisions with other contracts that
-     *      might also use transient storage in the same call chain.
-     *      Value: uint256(keccak256("loreum.Board.circuitBreaker"))
-     */
-    uint256 private constant _TRANSIENT_LOCK_SLOT = 0x63a9d87af1ca3d71f80fefdfe0f7c45cfede4a17e7c60e4bd0c022a28e82e0c;
-
     /// @dev keccak256(abi.encode(uint256(keccak256("erc7201:loreum.Board")) - 1)) & ~bytes32(uint256(0xff))
     bytes32 private constant _BOARD_STORAGE_SLOT = 0xae916af301d5dc481b59b170e7db23e36b830da7017e456f99549768499c8800;
 
@@ -87,38 +84,6 @@ abstract contract Board {
     }
 
     /// @dev Events and errors are defined in IBoard interface
-
-    /// MODIFIERS ///
-
-    /**
-     * @notice Circuit-breaker modifier using EIP-1153 transient storage.
-     * @dev Sets a transient lock on entry; clears it after body executes.
-     *      TSTORE/TLOAD cost ~100 gas each vs. ~20k/2.1k for SSTORE/SLOAD on a cold slot.
-     */
-    modifier circuitBreaker() {
-        _circuitBreakerBefore();
-        _;
-        _circuitBreakerAfter();
-    }
-
-    function _circuitBreakerBefore() internal {
-        bool locked;
-        uint256 slot = _TRANSIENT_LOCK_SLOT;
-        assembly {
-            locked := tload(slot)
-        }
-        if (locked) revert IBoard.CircuitBreakerActive();
-        assembly {
-            tstore(slot, 1)
-        }
-    }
-
-    function _circuitBreakerAfter() internal {
-        uint256 slot = _TRANSIENT_LOCK_SLOT;
-        assembly {
-            tstore(slot, 0)
-        }
-    }
 
     /// FUNCTIONS ///
 
@@ -134,11 +99,11 @@ abstract contract Board {
     /**
      * @notice Handles token delegation to a specific tokenId
      * @dev Updates or creates a node and maintains sorted order.
-     *      The circuitBreaker modifier locks transient storage for the full operation.
+     *      Callers must hold the shared OZ `nonReentrant` lock for the full public operation.
      * @param tokenId The token ID to delegate to
      * @param amount The amount of tokens to delegate
      */
-    function _delegate(uint256 tokenId, uint256 amount) internal circuitBreaker {
+    function _delegate(uint256 tokenId, uint256 amount) internal {
         uint256[] memory prevTop = _topTokenIds();
         BoardStorage storage $ = _getBoardStorage();
         Node storage node = $.nodes[tokenId];
@@ -155,11 +120,11 @@ abstract contract Board {
     /**
      * @notice Handles token undelegation from a specific tokenId
      * @dev Reduces delegation amount or removes node if amount becomes zero.
-     *      The circuitBreaker modifier locks transient storage for the full operation.
+     *      Callers must hold the shared OZ `nonReentrant` lock for the full public operation.
      * @param tokenId The token ID to undelegate from
      * @param amount The amount of tokens to undelegate
      */
-    function _undelegate(uint256 tokenId, uint256 amount) internal circuitBreaker {
+    function _undelegate(uint256 tokenId, uint256 amount) internal {
         uint256[] memory prevTop = _topTokenIds();
         BoardStorage storage $ = _getBoardStorage();
         Node storage node = $.nodes[tokenId];
@@ -184,7 +149,7 @@ abstract contract Board {
      *      Compared to the previous remove+re-insert approach, this avoids a full `delete`
      *      (4-slot zero write + SSTORE refund complexity) and a fresh cold-slot insert scan.
      *      Worst case is still O(N), but the common single-step move costs ~6 SSTOREs vs ~14+.
-     *      Called only from within a circuitBreaker-locked context (_delegate / _undelegate).
+     *      Called only from a `nonReentrant` public entry (_delegate / _undelegate).
      * @param tokenId The token ID to reposition
      */
     function _reposition(uint256 tokenId) internal {

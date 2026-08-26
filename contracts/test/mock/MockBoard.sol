@@ -4,11 +4,11 @@ pragma solidity ^0.8.24;
 import {Board} from "src/Board.sol";
 
 contract MockBoard is Board {
-    function exposed_delegate(uint256 tokenId, uint256 amount) public {
+    function exposed_delegate(uint256 tokenId, uint256 amount) public nonReentrant {
         _delegate(tokenId, amount);
     }
 
-    function exposed_undelegate(uint256 tokenId, uint256 amount) public {
+    function exposed_undelegate(uint256 tokenId, uint256 amount) public nonReentrant {
         _undelegate(tokenId, amount);
     }
 
@@ -62,20 +62,18 @@ contract MockBoard is Board {
     }
 
     /**
-     * @notice Sets the transient circuit-breaker lock and immediately tries to delegate again
-     *         in the same call — simulates reentrancy to verify the guard fires.
+     * @notice Holds the shared OZ lock and immediately calls `exposed_delegate`.
+     *         Simulates reentrancy so the second `nonReentrant` entry reverts.
      */
-    function lockAndDelegate(uint256 tokenId, uint256 amount) public {
-        _circuitBreakerBefore();
-        _delegate(tokenId, amount); // Should revert with CircuitBreakerActive
+    function lockAndDelegate(uint256 tokenId, uint256 amount) public nonReentrant {
+        this.exposed_delegate(tokenId, amount);
     }
 
     /**
-     * @notice Locks the board and tries to reposition within the same call
-     *         (used to test that reposition is guarded when called from a locked context).
+     * @notice Holds the shared OZ lock and immediately calls `exposed_undelegate`.
+     *         Simulates reentrancy so the second `nonReentrant` entry reverts.
      */
-    function lockAndReposition(uint256 tokenId) public {
-        _circuitBreakerBefore();
-        _reposition(tokenId); // NodeDoesNotExist if not inserted; CircuitBreakerActive path via _delegate
+    function lockAndUndelegate(uint256 tokenId, uint256 amount) public nonReentrant {
+        this.exposed_undelegate(tokenId, amount);
     }
 }

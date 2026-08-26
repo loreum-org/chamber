@@ -140,7 +140,8 @@ interface IBoard {
     /// @notice Thrown when the linked list has reached its maximum size
     error MaxNodesReached();
 
-    /// @notice Thrown when circuit breaker is active
+    /// @notice Deprecated: reentrancy now reverts with OZ `ReentrancyGuardReentrantCall`.
+    ///         Kept for ABI compatibility.
     error CircuitBreakerActive();
 
     /// @notice Thrown when a non-proposer attempts to cancel a seat update proposal (Fix Finding 14)

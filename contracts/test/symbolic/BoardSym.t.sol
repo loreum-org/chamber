@@ -52,7 +52,7 @@ contract BoardSymTest is Test, SymTest {
         _assertSortedDescending(board.getSize());
     }
 
-    /// @dev Reentrancy guard blocks a second delegate while the circuit breaker is held
+    /// @dev Shared OZ reentrancy guard blocks a second delegate while the lock is held
     function symbolicCircuitBreakerBlocksReentrantDelegate() public {
         uint256 tokenId = svm.createUint(128, "tokenId");
         uint256 amount = svm.createUint256("amount");
