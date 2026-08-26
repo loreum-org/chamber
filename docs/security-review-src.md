@@ -430,15 +430,18 @@ These were explicitly checked on the current source. “Cleared” means the pre
 
 ## Build and tests
 
-Foundry is configured as `make ci-test` → `forge test` in `contracts/` (CI: `.github/workflows/forge.yaml`). This environment did not ship `forge` in `PATH`; the toolchain was installed to run the suite.
+Foundry is configured as `make ci-test` → `forge test` in `contracts/` (CI: `.github/workflows/forge.yaml`). This review environment did not ship `forge` in `PATH`; Foundry v1.7.1 was installed to run the suite. Symbolic Halmos tests (`test/symbolic`, `--match-test symbolic`) were not executed here.
 
-**Status at report publication**: recorded in the PR after the first `forge test` / compiler-warning pass. Compiler warnings and failing tests are findings if present.
+**Result (2026-08-26, `forge test --no-match-test symbolic` in `contracts/`)**:
 
-Existing characterization tests that **assert the vulnerable behavior still works** (not remediations):
+- **277 passed, 0 failed, 0 skipped** (21 suites), including unit, fuzz, e2e, upgrade, and `test/findings/*`.
+- **Production `src/` compiled with no Solc warnings.**
+- One Solc warning **2072** (unused local `initialHead`) in `test/fuzz/BoardFuzz.t.sol:157` — test hygiene only, not a `src/` defect. Not promoted to a production finding.
+- Offensive characterization tests **passed by observing still-open behavior** (not remediations):
+  - `OffensiveReviewFindings.t.sol` — stale confirmations (H-01), permissive ERC-1271 (M-01), factory spam (L-01)
+- Defensive tests that assert **fixed** behavior remain in `contracts/test/findings/` (Findings 1–4, 6–7, 9, 11, 14, etc.).
 
-- `contracts/test/findings/OffensiveReviewFindings.t.sol` — stale confirmations (H-01), permissive ERC-1271 (M-01), factory spam (L-01)
-
-Defensive tests that assert **fixed** behavior remain in `contracts/test/findings/` (Findings 1–4, 6–7, 9, 11, 14, etc.).
+No failing tests. No production compiler warnings. No new severity items from the build.
 
 ---
 
@@ -464,6 +467,6 @@ Do not copy or embed OpenZeppelin sources. Depend on the already-vendored 5.1.0 
 - No bytecode-changing remediations were made.
 - No exploit payloads or reproduction procedures are included.
 - Teamshared memory/skills were unavailable (see Methodology).
-- Formal verification (`halmos`) and Slither were not required for this deliverable; Halmos coverage exists separately under `contracts/test/symbolic/`.
+- Formal verification (`halmos`) and Slither were not run for this deliverable; Halmos coverage exists separately under `contracts/test/symbolic/`. `forge test` excluding symbolic tests: 277 passed / 0 failed.
 - Economic NFT-market assumptions (how easy quorum NFTs are to obtain) are qualitative.
 )
