@@ -54,6 +54,15 @@ interface IBoard {
     function getDirectors() external view returns (address[] memory directors);
 
     /**
+     * @notice Block number when `tokenId` last entered the live top-`seats` set.
+     * @dev Zero if the token is not currently seated. Director confirm/execute rights require
+     *      this checkpoint plus `SEATING_DELAY` blocks.
+     * @param tokenId The membership token ID
+     * @return seatedAtBlock Seating block, or zero if not seated
+     */
+    function getSeatedAt(uint256 tokenId) external view returns (uint256 seatedAtBlock);
+
+    /**
      * @notice Active seat-change proposal, if any.
      * @return proposedSeats Target seat count
      * @return timestamp Proposal start (`block.timestamp`); zero if no proposal

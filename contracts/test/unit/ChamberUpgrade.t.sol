@@ -82,6 +82,7 @@ contract ChamberUpgradeTest is Test {
         chamber.deposit(amount, user3);
         chamber.delegate(3, amount);
         vm.stopPrank();
+        vm.roll(block.number + 1);
     }
 
     function test_Chamber_GetProxyAdmin() public view {

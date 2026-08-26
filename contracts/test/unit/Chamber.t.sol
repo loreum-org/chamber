@@ -154,6 +154,7 @@ contract ChamberTest is Test {
         MockERC20(address(token)).approve(address(chamber), amount);
         chamber.deposit(amount, user1);
         chamber.delegate(tokenId, 1);
+        vm.roll(block.number + 1);
 
         chamber.submitTransaction(1, target, value, data);
         vm.stopPrank();
@@ -183,6 +184,7 @@ contract ChamberTest is Test {
         MockERC20(address(token)).approve(address(chamber), amount);
         chamber.deposit(amount, user1);
         chamber.delegate(tokenId, 1);
+        vm.roll(block.number + 1);
 
         chamber.submitTransactionWithMetadata(1, target, value, data, metadataURI);
         vm.stopPrank();
@@ -212,6 +214,7 @@ contract ChamberTest is Test {
         MockERC20(address(token)).approve(address(chamber), amount);
         chamber.deposit(amount, user1);
         chamber.delegate(tokenId, 1);
+        vm.roll(block.number + 1);
 
         chamber.submitTransaction(1, target, value, data);
         vm.stopPrank();
@@ -234,6 +237,7 @@ contract ChamberTest is Test {
         MockERC20(address(token)).approve(address(chamber), amount);
         chamber.deposit(amount, user1);
         chamber.delegate(tokenId, 1);
+        vm.roll(block.number + 1);
 
         chamber.submitTransaction(1, target, value, data);
         chamber.revokeConfirmation(1, 0);
@@ -266,22 +270,29 @@ contract ChamberTest is Test {
         MockERC20(address(token)).approve(address(chamber), amount);
         chamber.deposit(amount, user1);
         chamber.delegate(tokenId, 1);
-        chamber.submitTransaction(1, target, value, data);
         vm.stopPrank();
 
         vm.startPrank(user2);
         MockERC20(address(token)).approve(address(chamber), amount);
         chamber.deposit(amount, user2);
         chamber.delegate(tokenId + 1, 1);
-        chamber.confirmTransaction(2, 0);
         vm.stopPrank();
 
         vm.startPrank(user3);
         MockERC20(address(token)).approve(address(chamber), amount);
         chamber.deposit(amount, user3);
         chamber.delegate(tokenId + 2, 1);
-        chamber.confirmTransaction(3, 0);
         vm.stopPrank();
+        vm.roll(block.number + 1);
+
+        vm.prank(user1);
+        chamber.submitTransaction(1, target, value, data);
+
+        vm.prank(user2);
+        chamber.confirmTransaction(2, 0);
+
+        vm.prank(user3);
+        chamber.confirmTransaction(3, 0);
 
         vm.startPrank(user1);
         chamber.executeTransaction(1, 0, data);
@@ -307,6 +318,7 @@ contract ChamberTest is Test {
         MockERC20(address(token)).approve(address(chamber), amount);
         chamber.deposit(amount, user1);
         chamber.delegate(tokenId, 1);
+        vm.roll(block.number + 1);
 
         chamber.submitTransaction(1, target, value, data);
         vm.stopPrank();
@@ -792,6 +804,7 @@ contract ChamberTest is Test {
         chamber.deposit(amount, user3);
         chamber.delegate(3, 1);
         vm.stopPrank();
+        vm.roll(block.number + 1);
     }
 
     function test_Chamber_GetTotalHolderDelegations() public {
@@ -1705,6 +1718,7 @@ contract ChamberTest is Test {
         token.approve(address(chamber), 1 ether);
         chamber.deposit(1 ether, address(this));
         chamber.delegate(tokenId, 1 ether);
+        vm.roll(block.number + 1);
 
         // authorized address submits a transaction using the contract's tokenId
         // _isDirector: owner=wallet (contract), msg.sender=authorized ≠ wallet
@@ -1777,6 +1791,7 @@ contract ChamberTest is Test {
 
         // Delegate tokens to Chamber A's tokenId
         chamberB.delegate(tokenId, delegationAmount);
+        vm.roll(block.number + 1);
 
         // 3. Verify Chamber A is now a director of Chamber B
         // Chamber A should be in top 3 positions (seats = 3)
@@ -1806,6 +1821,7 @@ contract ChamberTest is Test {
 
         // Delegate to tokenId2
         chamberB.delegate(tokenId2, 500e18);
+        vm.roll(block.number + 1);
 
         // testUser2 confirms the transaction
         vm.prank(testUser2);
@@ -1853,6 +1869,7 @@ contract ChamberTest is Test {
 
         // Delegate tokens to Chamber A's tokenId
         chamberB.delegate(tokenId, delegationAmount);
+        vm.roll(block.number + 1);
 
         // 3. Verify Chamber A is now a director of Chamber B
         address[] memory directors = chamberB.getDirectors();
@@ -1887,6 +1904,7 @@ contract ChamberTest is Test {
 
         // Delegate to tokenId2
         chamberB.delegate(tokenId2, 500e18);
+        vm.roll(block.number + 1);
 
         // director2 confirms the transaction
         vm.prank(director2);
@@ -1899,6 +1917,7 @@ contract ChamberTest is Test {
 
         // Delegate to tokenId3
         chamberB.delegate(tokenId3, 400e18);
+        vm.roll(block.number + 1);
 
         // director3 confirms the transaction
         vm.prank(director3);

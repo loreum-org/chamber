@@ -55,10 +55,17 @@ abstract contract Board {
         uint256 tail;
         uint32 size; // packed with seats (shares one slot)
         uint32 seats; // packed with size (shares one slot)
+        /// @notice Block number when `tokenId` last entered the top-`seats` set. Zero if not seated.
+        mapping(uint256 tokenId => uint256 seatedAtBlock) seatedAt;
     }
 
     /// @notice Maximum number of nodes allowed in the linked list
     uint256 internal constant MAX_NODES = 50;
+
+    /// @notice Blocks a newly seated tokenId must wait before exercising director rights.
+    /// @dev One block is the smallest delay that closes same-transaction board capture of
+    ///      confirm / execute / upgrade. Existing seated directors keep their original block.
+    uint256 internal constant SEATING_DELAY = 1;
 
     /**
      * @dev Transient storage slot used for the circuit-breaker reentrancy lock.
@@ -138,6 +145,7 @@ abstract contract Board {
         } else {
             _insert(tokenId, amount);
         }
+        _refreshSeating();
         emit IBoard.Delegate(msg.sender, tokenId, amount);
     }
 
@@ -161,6 +169,7 @@ abstract contract Board {
         } else {
             _reposition(tokenId);
         }
+        _refreshSeating();
         emit IBoard.Undelegate(msg.sender, tokenId, amount);
     }
 
@@ -356,6 +365,9 @@ abstract contract Board {
         }
 
         delete $.nodes[tokenId];
+        if ($.seatedAt[tokenId] != 0) {
+            delete $.seatedAt[tokenId];
+        }
 
         if ($.size > 0) {
             unchecked {
@@ -509,6 +521,52 @@ abstract contract Board {
         uint256 newSeats = proposal.proposedSeats;
         $.seats = uint32(newSeats);
         delete $.seatUpdate;
+        _refreshSeating();
         emit IBoard.ExecuteSetSeats(tokenId, newSeats);
+    }
+
+    /**
+     * @notice Syncs seating checkpoints after a board mutation.
+     * @dev TokenIds newly entering the top-`seats` set record `block.number`. TokenIds that
+     *      remain seated keep their original block. TokenIds that leave the top set are cleared.
+     */
+    function _refreshSeating() internal {
+        BoardStorage storage $ = _getBoardStorage();
+        uint256 current = $.head;
+        uint256 remaining = $.seats;
+        uint256 seatedBlock = block.number;
+
+        while (current != 0) {
+            if (remaining != 0) {
+                if ($.seatedAt[current] == 0) {
+                    $.seatedAt[current] = seatedBlock;
+                }
+                unchecked {
+                    --remaining;
+                }
+            } else if ($.seatedAt[current] != 0) {
+                delete $.seatedAt[current];
+            }
+            current = uint256($.nodes[current].next);
+        }
+    }
+
+    /**
+     * @notice Returns the block a tokenId last entered the top-`seats` set.
+     * @param tokenId The membership token ID
+     * @return seatedAtBlock Seating block, or zero if the token is not seated
+     */
+    function _getSeatedAt(uint256 tokenId) internal view returns (uint256 seatedAtBlock) {
+        return _getBoardStorage().seatedAt[tokenId];
+    }
+
+    /**
+     * @notice Whether a top-seat tokenId has completed the seating delay.
+     * @param tokenId The membership token ID
+     * @return True if `seatedAt` is set and `SEATING_DELAY` blocks have elapsed
+     */
+    function _isSeatingMature(uint256 tokenId) internal view returns (bool) {
+        uint256 seatedAt = _getBoardStorage().seatedAt[tokenId];
+        return seatedAt != 0 && block.number >= seatedAt + SEATING_DELAY;
     }
 }

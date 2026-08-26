@@ -58,6 +58,7 @@ contract LifecycleTest is Test {
             chamber.delegate(directorTokenIds[i], 2000e18);
         }
         vm.stopPrank();
+        vm.roll(block.number + 1);
 
         address[] memory board = chamber.getDirectors();
         assertEq(board.length, 5);

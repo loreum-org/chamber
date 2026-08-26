@@ -64,6 +64,7 @@ contract WalletReentrancyTest is Test {
         _setupDirector(user1, 1, 100e18);
         _setupDirector(user2, 2, 100e18);
         _setupDirector(user3, 3, 100e18);
+        vm.roll(block.number + 1);
     }
 
     /**
