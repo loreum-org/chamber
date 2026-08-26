@@ -264,6 +264,60 @@ contract BoardTest is Test {
         board.setSeats(2, 8);
     }
 
+    function test_Board_SetSeats_ExpiredNonProposerCanCancel() public {
+        board.setSeats(1, 7);
+        board.setSeats(2, 7);
+
+        vm.warp(block.timestamp + 14 days);
+
+        board.setSeats(2, 8);
+
+        (uint256 proposedSeats, uint256 timestamp,,) = board.getSeatUpdate();
+        assertEq(proposedSeats, 0);
+        assertEq(timestamp, 0);
+    }
+
+    function test_Board_CancelSeatUpdate_ExpiredNonProposerClears() public {
+        board.setSeats(1, 7);
+
+        vm.warp(block.timestamp + 14 days);
+
+        board.cancelSeatUpdate(2);
+
+        (, uint256 timestamp,,) = board.getSeatUpdate();
+        assertEq(timestamp, 0);
+    }
+
+    function test_Board_CancelSeatUpdate_UnexpiredNonProposerReverts() public {
+        board.setSeats(1, 7);
+
+        vm.expectRevert(IBoard.OnlyProposerCanCancel.selector);
+        board.cancelSeatUpdate(2);
+    }
+
+    function test_Board_CancelSeatUpdate_NoProposal_Reverts() public {
+        vm.expectRevert(IBoard.InvalidProposal.selector);
+        board.cancelSeatUpdate(1);
+    }
+
+    function test_Board_ExecuteSeatsUpdate_StillRequiresTimelockAfterPartialExpiryWindow() public {
+        board.insert(1, 100);
+        board.insert(2, 100);
+        board.insert(3, 100);
+
+        board.setSeats(1, 7);
+        board.setSeats(2, 7);
+        board.setSeats(3, 7);
+
+        // 8 days: execute window is open, 14-day cancel expiry is not
+        vm.warp(block.timestamp + 8 days);
+        vm.expectRevert(IBoard.OnlyProposerCanCancel.selector);
+        board.cancelSeatUpdate(2);
+
+        board.executeSeatsUpdate(1);
+        assertEq(board.getSeats(), 7);
+    }
+
     function test_Board_SetSeats_AlreadyVoted_Reverts() public {
         board.setSeats(1, 7);
 

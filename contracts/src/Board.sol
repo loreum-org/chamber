@@ -74,6 +74,15 @@ abstract contract Board is ReentrancyGuardTransientUpgradeable {
     ///      is treated as mature so a live in-place upgrade cannot lock existing directors.
     uint256 internal constant SEATING_DELAY = 1;
 
+    /// @notice Delay after a seat-update proposal is created before it may be executed
+    uint256 internal constant SEAT_UPDATE_TIMELOCK = 7 days;
+
+    /// @notice Age after which any current director may delete a seat-update proposal.
+    /// @dev Longer than {SEAT_UPDATE_TIMELOCK} so a quorum-ready proposal has an execute window
+    ///      before a minority can clear the single slot (Finding 14). Unblocks the slot when the
+    ///      original proposer has left and cannot cancel (H-03).
+    uint256 internal constant SEAT_UPDATE_EXPIRY = 14 days;
+
     /// @dev keccak256(abi.encode(uint256(keccak256("erc7201:loreum.Board")) - 1)) & ~bytes32(uint256(0xff))
     bytes32 private constant _BOARD_STORAGE_SLOT = 0xae916af301d5dc481b59b170e7db23e36b830da7017e456f99549768499c8800;
 
@@ -399,7 +408,9 @@ abstract contract Board is ReentrancyGuardTransientUpgradeable {
 
     /**
      * @notice Sets or proposes a new number of board seats
-     * @dev Initial call sets seats directly; subsequent calls create/update proposals
+     * @dev Initial call sets seats directly; subsequent calls create/update proposals.
+     *      A different `numOfSeats` cancels the active proposal: the original proposer may
+     *      cancel at any time, and after {SEAT_UPDATE_EXPIRY} any director may cancel (H-03).
      * @param tokenId The token ID proposing the change (0 for initial setup)
      * @param numOfSeats The proposed number of seats
      */
@@ -422,10 +433,7 @@ abstract contract Board is ReentrancyGuardTransientUpgradeable {
             proposal.requiredQuorum = _getQuorum();
         } else {
             if (proposal.proposedSeats != numOfSeats) {
-                // Only proposer can cancel (Fix Finding 14 — prevents minority griefing)
-                if (proposal.supporters.length == 0 || proposal.supporters[0] != tokenId) {
-                    revert IBoard.OnlyProposerCanCancel();
-                }
+                _authorizeSeatUpdateCancel(proposal, tokenId);
                 delete $.seatUpdate;
                 emit IBoard.SeatUpdateCancelled(tokenId);
                 return;
@@ -460,7 +468,7 @@ abstract contract Board is ReentrancyGuardTransientUpgradeable {
         SeatUpdate storage proposal = $.seatUpdate;
 
         if (proposal.timestamp == 0) revert IBoard.InvalidProposal();
-        if (block.timestamp < proposal.timestamp + 7 days) revert IBoard.TimelockNotExpired();
+        if (block.timestamp < proposal.timestamp + SEAT_UPDATE_TIMELOCK) revert IBoard.TimelockNotExpired();
 
         // Build the top-seat set with a single O(seats) list walk
         uint256 s = $.seats;
@@ -596,5 +604,36 @@ abstract contract Board is ReentrancyGuardTransientUpgradeable {
         uint256 seatedAt = _getBoardStorage().seatedAt[tokenId];
         if (seatedAt == 0) return true;
         return block.number >= seatedAt;
+    }
+
+    /**
+     * @notice Deletes a pending seat-update proposal.
+     * @dev The original proposer may cancel at any time. After {SEAT_UPDATE_EXPIRY}, any caller
+     *      (Chamber gates this to a current director) may clear the single slot so a departed
+     *      proposer cannot permanently block later seat changes.
+     * @param tokenId The token ID requesting cancellation
+     */
+    function _cancelSeatUpdate(uint256 tokenId) internal {
+        BoardStorage storage $ = _getBoardStorage();
+        SeatUpdate storage proposal = $.seatUpdate;
+        if (proposal.timestamp == 0) revert IBoard.InvalidProposal();
+
+        _authorizeSeatUpdateCancel(proposal, tokenId);
+        delete $.seatUpdate;
+        emit IBoard.SeatUpdateCancelled(tokenId);
+    }
+
+    /**
+     * @notice Reverts unless `tokenId` may cancel the active seat-update proposal.
+     * @dev Proposer (`supporters[0]`) may always cancel. After expiry, any director may cancel.
+     */
+    function _authorizeSeatUpdateCancel(SeatUpdate storage proposal, uint256 tokenId) internal view {
+        if (proposal.supporters.length > 0 && proposal.supporters[0] == tokenId) {
+            return;
+        }
+        if (proposal.timestamp != 0 && block.timestamp >= proposal.timestamp + SEAT_UPDATE_EXPIRY) {
+            return;
+        }
+        revert IBoard.OnlyProposerCanCancel();
     }
 }
