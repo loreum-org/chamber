@@ -8,8 +8,9 @@ import {IWallet} from "./interfaces/IWallet.sol";
  * @author xhad, Loreum DAO LLC
  * @notice Abstract contract implementing multisig transaction management
  * @dev Provides core functionality for submitting, confirming, and executing transactions
- *      with configurable quorum requirements. Submitted transactions expire after a
+ *      with configurable quorum requirements. Newly submitted transactions expire after a
  *      deadline (default 30 days) and cannot be confirmed, revoked, or executed once expired.
+ *      A stored deadline of `0` means unset (pre-upgrade pending nonce) and is not expired.
  *
  * Gas optimization — hash-only calldata storage for ordinary calls:
  *   Transaction.data (formerly dynamic `bytes`) is replaced with `bytes32 dataHash`.
@@ -67,7 +68,7 @@ abstract contract Wallet {
         mapping(uint256 nonce => bytes storedCalldata) transactionCalldata;
         /// @dev Quorum at submit time (M-04). Appended mapping is upgrade-safe; does not resize Transaction[].
         mapping(uint256 nonce => uint256 requiredQuorum) transactionRequiredQuorum;
-        /// @dev unix timestamp after which the nonce is treated as expired (non-executable)
+        /// @dev exclusive-after unix timestamp; `0` is unset (no expiry, pre-upgrade pending)
         mapping(uint256 nonce => uint256 deadline) transactionDeadline;
     }
 
@@ -119,7 +120,9 @@ abstract contract Wallet {
     }
 
     function _notExpired(uint256 nonce) internal view {
-        if (block.timestamp > _getWalletStorage().transactionDeadline[nonce]) revert IWallet.TransactionExpired();
+        uint256 deadline = _getWalletStorage().transactionDeadline[nonce];
+        // `0` is unset (legacy pending nonce) and must remain executable after upgrade.
+        if (deadline != 0 && block.timestamp > deadline) revert IWallet.TransactionExpired();
     }
 
     /**
@@ -453,7 +456,7 @@ abstract contract Wallet {
     /**
      * @notice Returns the exclusive-after unix timestamp after which `nonce` cannot be executed
      * @param nonce The index of the transaction to retrieve
-     * @return deadline The stored deadline (`block.timestamp + DEFAULT_TRANSACTION_MAX_AGE` when submit used `0`)
+     * @return deadline Stored deadline; `0` means unset / no expiry (pre-upgrade pending)
      */
     function getTransactionDeadline(uint256 nonce) public view virtual txExists(nonce) returns (uint256 deadline) {
         return _getWalletStorage().transactionDeadline[nonce];
@@ -462,10 +465,11 @@ abstract contract Wallet {
     /**
      * @notice Returns whether a transaction has passed its deadline
      * @param nonce The index of the transaction to check
-     * @return True if `block.timestamp` is strictly greater than the stored deadline
+     * @return True if a non-zero deadline is stored and `block.timestamp` is strictly greater
      */
     function isTransactionExpired(uint256 nonce) public view virtual txExists(nonce) returns (bool) {
-        return block.timestamp > _getWalletStorage().transactionDeadline[nonce];
+        uint256 deadline = _getWalletStorage().transactionDeadline[nonce];
+        return deadline != 0 && block.timestamp > deadline;
     }
 
     /**

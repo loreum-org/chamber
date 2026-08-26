@@ -13,7 +13,8 @@ pragma solidity ^0.8.30;
  *      can submit, self-confirm, and execute (a single-actor treasury). Confirmations are not
  *      capped per owner.
  *      Submit records a deadline (default 30 days, or an explicit future timestamp up to that max).
- *      After the deadline, confirm/revoke/execute revert with `TransactionExpired`.
+ *      After a non-zero deadline, confirm/revoke/execute revert with `TransactionExpired`.
+ *      Stored deadline `0` is unset (pre-upgrade pending) and is not expired.
  */
 interface IWallet {
     /**
@@ -191,14 +192,14 @@ interface IWallet {
     /**
      * @notice Returns the exclusive-after unix timestamp after which the transaction cannot be executed
      * @param nonce The index of the transaction to retrieve
-     * @return deadline Stored deadline timestamp
+     * @return deadline Stored deadline timestamp; `0` means unset / no expiry
      */
     function getTransactionDeadline(uint256 nonce) external view returns (uint256 deadline);
 
     /**
      * @notice Returns whether a transaction has passed its deadline
      * @param nonce The index of the transaction to check
-     * @return True if the transaction is expired
+     * @return True if a non-zero deadline is stored and has passed; `false` when deadline is `0`
      */
     function isTransactionExpired(uint256 nonce) external view returns (bool);
 
@@ -280,7 +281,7 @@ interface IWallet {
     /**
      * @notice Emitted when a transaction deadline is recorded at submit time
      * @param nonce The identifier of the transaction
-     * @param deadline Exclusive-after unix timestamp after which execute/confirm/revoke revert
+     * @param deadline Exclusive-after unix timestamp after which execute/confirm/revoke revert (never `0`)
      */
     event TransactionDeadlineSet(uint256 indexed nonce, uint256 deadline);
 

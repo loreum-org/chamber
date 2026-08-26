@@ -328,6 +328,46 @@ contract WalletTest is Test {
         vm.expectRevert(IWallet.TransactionExpired.selector);
         wallet.confirmTransaction(2, 0);
     }
+
+    function test_Wallet_LegacyUnsetDeadline_ConfirmAndExecute_Succeeds() public {
+        address target = address(0x3);
+        bytes memory data = "";
+        deal(address(wallet), 1 ether);
+
+        wallet.submitTransaction(1, target, 1 ether, data);
+        wallet.forceTransactionDeadline(0, 0);
+
+        assertEq(wallet.getTransactionDeadline(0), 0);
+        assertFalse(wallet.isTransactionExpired(0));
+
+        vm.warp(block.timestamp + 365 days);
+        assertFalse(wallet.isTransactionExpired(0));
+
+        wallet.confirmTransaction(2, 0);
+        wallet.executeTransaction(1, 0, data);
+
+        (bool executed,,,,) = wallet.getTransaction(0);
+        assertTrue(executed);
+        assertEq(target.balance, 1 ether);
+    }
+
+    function test_Wallet_FourArgSubmit_ExpiresAfterThirtyDays() public {
+        address target = address(0x3);
+        bytes memory data = "";
+        uint256 submittedAt = block.timestamp;
+        deal(address(wallet), 1 ether);
+
+        wallet.submitTransaction(1, target, 1 ether, data);
+
+        uint256 deadline = wallet.getTransactionDeadline(0);
+        assertEq(deadline, submittedAt + wallet.DEFAULT_TRANSACTION_MAX_AGE());
+        assertFalse(wallet.isTransactionExpired(0));
+
+        vm.warp(deadline + 1);
+        assertTrue(wallet.isTransactionExpired(0));
+        vm.expectRevert(IWallet.TransactionExpired.selector);
+        wallet.executeTransaction(1, 0, data);
+    }
 }
 
 contract RevertingContract {
