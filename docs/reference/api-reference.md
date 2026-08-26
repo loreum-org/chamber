@@ -567,8 +567,6 @@ Transfers tokens from another address.
 ### Chamber Events
 
 - `DelegationUpdated(address indexed agent, uint256 indexed tokenId, uint256 amount)`
-- `DirectorshipChanged(address indexed account, uint256 indexed tokenId, bool isDirector)`
-- `QuorumUpdated(uint256 oldQuorum, uint256 newQuorum)`
 - `TransactionSubmitted(uint256 indexed transactionId, address indexed target, uint256 value)`
 - `TransactionConfirmed(uint256 indexed transactionId, address indexed confirmer)`
 - `TransactionExecuted(uint256 indexed transactionId, address indexed executor)`
@@ -601,25 +599,20 @@ Transfers tokens from another address.
 - `InsufficientDelegatedAmount()`: Insufficient delegated amount
 - `InsufficientChamberBalance()`: Insufficient chamber balance
 - `ExceedsDelegatedAmount()`: Transfer exceeds delegated amount
-- `TransferFailed()`: Transfer failed
 - `TransferToZeroAddress()`: Transfer to zero address
 - `ArrayLengthsMustMatch()`: Array lengths don't match
 - `NotEnoughConfirmations()`: Not enough confirmations
 - `NotDirector()`: Caller is not a director
+- `DirectorNotSeated()`: Director token is in the top seats but the seating delay has not elapsed
 - `ZeroAddress()`: Address is zero
 - `ZeroAmount()`: Amount is zero
 - `ZeroTokenId()`: Token ID is zero
 - `InvalidTokenId()`: Token ID is invalid
-- `ArrayIndexOutOfBounds()`: Array index out of bounds
-- `CannotTransfer()`: Cannot transfer
-- `NotOnLeaderboard(address account)`: Account not on leaderboard
 - `ZeroSeats()`: Number of seats is zero
 - `TooManySeats()`: Too many seats
-- `InvalidDelegation()`: Invalid delegation
-- `InvalidNFTOwner()`: Invalid NFT owner
-- `InvalidQuorum()`: Invalid quorum
 - `InvalidTransaction()`: Invalid transaction
-- `InvalidSignature()`: Invalid signature
+- `NotAuthorized()`: Upgrade caller is not the chamber, or the chamber is not the ProxyAdmin owner
+- `AssetAmountMismatch()`: Vault observed asset delta does not equal the requested deposit/mint amount
 
 ### Board Errors
 
@@ -630,7 +623,6 @@ Transfers tokens from another address.
 - `InvalidProposal()`: Invalid proposal
 - `TimelockNotExpired()`: Timelock not expired
 - `InsufficientVotes()`: Insufficient votes
-- `SupporterNotOnLeaderboard(address supporter)`: Supporter not on leaderboard
 - `MaxNodesReached()`: Maximum nodes reached
 - `CircuitBreakerActive()`: Circuit breaker active
 

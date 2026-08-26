@@ -688,7 +688,7 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
 
     /**
      * @notice Upgrades the Chamber implementation via `ProxyAdmin.upgradeAndCall`
-     * @dev Reverts with `NotDirector` if this contract is not the `ProxyAdmin` owner (naming is historical).
+     * @dev Reverts with `NotAuthorized` if this contract is not the `ProxyAdmin` owner.
      * @param newImplementation The new implementation address
      * @param data Optional initialization data for the new implementation
      */
@@ -701,7 +701,7 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
         ProxyAdmin proxyAdmin = ProxyAdmin(proxyAdminAddress);
 
         if (proxyAdmin.owner() != address(this)) {
-            revert IChamber.NotDirector();
+            revert IChamber.NotAuthorized();
         }
 
         ITransparentUpgradeableProxy proxy = ITransparentUpgradeableProxy(address(this));

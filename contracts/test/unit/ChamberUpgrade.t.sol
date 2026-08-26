@@ -417,12 +417,12 @@ contract ChamberUpgradeTest is Test {
     }
 
     /**
-     * @notice Tests Chamber.upgradeImplementation line 601:
-     *   `if (proxyAdmin.owner() != address(this)) revert NotDirector()`
+     * @notice Tests Chamber.upgradeImplementation:
+     *   `if (proxyAdmin.owner() != address(this)) revert NotAuthorized()`
      *
      * Strategy:
      *   1. Transfer ProxyAdmin ownership to an external address via governance tx.
-     *   2. Attempt an upgrade; upgradeImplementation reverts at line 601.
+     *   2. Attempt an upgrade; upgradeImplementation reverts NotAuthorized.
      *   3. The outer executeTransaction catches the inner revert as TransactionFailed.
      */
     function test_Chamber_UpgradeImplementation_NotProxyAdminOwner_Reverts() public {
@@ -459,7 +459,7 @@ contract ChamberUpgradeTest is Test {
         chamber.confirmTransaction(3, upgradeTxId);
 
         // Step 3: Execute — upgradeImplementation checks proxyAdmin.owner() != address(this)
-        //   → reverts at line 601 (NotDirector) → wrapped as TransactionFailed
+        //   → reverts NotAuthorized → wrapped as TransactionFailed
         vm.prank(user1);
         vm.expectRevert();
         chamber.executeTransaction(1, upgradeTxId, upgradeData);

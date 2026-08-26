@@ -35,6 +35,19 @@ export const registryAbi = [
   },
   {
     "type": "function",
+    "name": "MAX_PAGE_SIZE",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "createChamber",
     "inputs": [
       {
@@ -87,8 +100,45 @@ export const registryAbi = [
   },
   {
     "type": "function",
+    "name": "getAssetCount",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "getAssets",
     "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address[]",
+        "internalType": "address[]"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getAssets",
+    "inputs": [
+      {
+        "name": "limit",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "skip",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
     "outputs": [
       {
         "name": "",
@@ -143,6 +193,102 @@ export const registryAbi = [
         "name": "asset",
         "type": "address",
         "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address[]",
+        "internalType": "address[]"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getChambersByAsset",
+    "inputs": [
+      {
+        "name": "asset",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "limit",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "skip",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address[]",
+        "internalType": "address[]"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getChambersByAssetCount",
+    "inputs": [
+      {
+        "name": "asset",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getChildChamberCount",
+    "inputs": [
+      {
+        "name": "chamber",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getChildChambers",
+    "inputs": [
+      {
+        "name": "chamber",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "limit",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "skip",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "outputs": [
@@ -1160,6 +1306,25 @@ export const chamberAbi = [
   },
   {
     "type": "function",
+    "name": "getSeatedAt",
+    "inputs": [
+      {
+        "name": "tokenId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "seatedAtBlock",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "getSeats",
     "inputs": [],
     "outputs": [
@@ -1262,6 +1427,25 @@ export const chamberAbi = [
         "name": "",
         "type": "bytes32",
         "internalType": "bytes32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getTransactionCalldata",
+    "inputs": [
+      {
+        "name": "nonce",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes",
+        "internalType": "bytes"
       }
     ],
     "stateMutability": "view"
@@ -2024,31 +2208,6 @@ export const chamberAbi = [
   },
   {
     "type": "event",
-    "name": "DirectorshipChanged",
-    "inputs": [
-      {
-        "name": "account",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      },
-      {
-        "name": "tokenId",
-        "type": "uint256",
-        "indexed": true,
-        "internalType": "uint256"
-      },
-      {
-        "name": "isDirector",
-        "type": "bool",
-        "indexed": false,
-        "internalType": "bool"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
     "name": "ExecuteSetSeats",
     "inputs": [
       {
@@ -2113,25 +2272,6 @@ export const chamberAbi = [
         "type": "string",
         "indexed": false,
         "internalType": "string"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "QuorumUpdated",
-    "inputs": [
-      {
-        "name": "oldQuorum",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      },
-      {
-        "name": "newQuorum",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
       }
     ],
     "anonymous": false
@@ -2462,17 +2602,12 @@ export const chamberAbi = [
   },
   {
     "type": "error",
-    "name": "ArrayIndexOutOfBounds",
-    "inputs": []
-  },
-  {
-    "type": "error",
     "name": "ArrayLengthsMustMatch",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "CannotTransfer",
+    "name": "AssetAmountMismatch",
     "inputs": []
   },
   {
@@ -2483,6 +2618,11 @@ export const chamberAbi = [
   {
     "type": "error",
     "name": "DataHashMismatch",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "DirectorNotSeated",
     "inputs": []
   },
   {
@@ -2677,17 +2817,7 @@ export const chamberAbi = [
   },
   {
     "type": "error",
-    "name": "InvalidDelegation",
-    "inputs": []
-  },
-  {
-    "type": "error",
     "name": "InvalidInitialization",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "InvalidNFTOwner",
     "inputs": []
   },
   {
@@ -2698,16 +2828,6 @@ export const chamberAbi = [
   {
     "type": "error",
     "name": "InvalidProposal",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "InvalidQuorum",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "InvalidSignature",
     "inputs": []
   },
   {
@@ -2757,17 +2877,6 @@ export const chamberAbi = [
   },
   {
     "type": "error",
-    "name": "NotOnLeaderboard",
-    "inputs": [
-      {
-        "name": "account",
-        "type": "address",
-        "internalType": "address"
-      }
-    ]
-  },
-  {
-    "type": "error",
     "name": "OnlyProposerCanCancel",
     "inputs": []
   },
@@ -2782,17 +2891,6 @@ export const chamberAbi = [
     "inputs": [
       {
         "name": "token",
-        "type": "address",
-        "internalType": "address"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "SupporterNotOnLeaderboard",
-    "inputs": [
-      {
-        "name": "supporter",
         "type": "address",
         "internalType": "address"
       }
@@ -2852,11 +2950,6 @@ export const chamberAbi = [
   {
     "type": "error",
     "name": "TransactionNotConfirmed",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "TransferFailed",
     "inputs": []
   },
   {

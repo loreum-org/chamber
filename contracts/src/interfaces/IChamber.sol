@@ -110,21 +110,6 @@ interface IChamber is IERC4626, IBoard, IWallet {
     event DelegationUpdated(address indexed holder, uint256 indexed tokenId, uint256 amount);
 
     /**
-     * @notice Reserved event for directorship transitions (not emitted by the current Chamber implementation).
-     * @param account The account whose directorship changed
-     * @param tokenId The membership token ID associated with the directorship
-     * @param isDirector Whether the account is now a director
-     */
-    event DirectorshipChanged(address indexed account, uint256 indexed tokenId, bool isDirector);
-
-    /**
-     * @notice Reserved event for quorum changes (not emitted by the current Chamber implementation).
-     * @param oldQuorum Previous wallet confirmation threshold
-     * @param newQuorum New wallet confirmation threshold
-     */
-    event QuorumUpdated(uint256 oldQuorum, uint256 newQuorum);
-
-    /**
      * @notice Emitted when a transaction is submitted (Chamber-specific event)
      * @param transactionId The ID of the submitted transaction
      * @param target The target address
@@ -178,9 +163,6 @@ interface IChamber is IERC4626, IBoard, IWallet {
     /// @notice Thrown when transfer would exceed delegated amount
     error ExceedsDelegatedAmount();
 
-    /// @notice Thrown when transfer fails
-    error TransferFailed();
-
     /// @notice Thrown when trying to transfer to zero address
     error TransferToZeroAddress();
 
@@ -208,39 +190,18 @@ interface IChamber is IERC4626, IBoard, IWallet {
     /// @notice Thrown when tokenId is invalid
     error InvalidTokenId();
 
-    /// @notice Thrown when array index is out of bounds
-    error ArrayIndexOutOfBounds();
-
-    /// @notice Thrown when transfer cannot be performed
-    error CannotTransfer();
-
-    /// @notice Reserved error (not reverted by current Chamber source); kept for ABI compatibility.
-    /// @param account The account that would not be on the leaderboard
-    error NotOnLeaderboard(address account);
-
     /// @notice Thrown when number of seats is zero
     error ZeroSeats();
 
     /// @notice Thrown when number of seats exceeds maximum
     error TooManySeats();
 
-    /// @notice Thrown when delegation is invalid
-    error InvalidDelegation();
-
-    /// @notice Thrown when NFT owner is invalid
-    error InvalidNFTOwner();
-
-    /// @notice Thrown when quorum is invalid
-    error InvalidQuorum();
-
     /// @notice Thrown when transaction is invalid
     error InvalidTransaction();
 
-    /// @notice Thrown when upgrade is unauthorized
+    /// @notice Thrown when the caller is not authorized for an upgrade, or this
+    ///         chamber is not the `ProxyAdmin` owner.
     error NotAuthorized();
-
-    /// @notice Thrown when signature is invalid
-    error InvalidSignature();
 
     /// @notice Thrown when the vault's observed asset delta does not equal the requested amount
     /// @dev Rejects fee-on-transfer / deflating tokens on deposit and mint
