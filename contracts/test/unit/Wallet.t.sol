@@ -247,6 +247,11 @@ contract WalletTest is Test {
         assertEq(wallet.pings(), 0);
     }
 
+    function test_Wallet_GetTransactionRequiredQuorum_Unset() public {
+        wallet.submitTransaction(1, address(0x3), 0, "");
+        assertEq(wallet.getTransactionRequiredQuorum(0), 0);
+    }
+
     function test_Wallet_ConfirmTransaction_AlreadyExecuted_Reverts() public {
         address target = address(0x3);
         bytes memory data = "";
