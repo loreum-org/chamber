@@ -12,7 +12,6 @@ import {
     ERC4626Upgradeable
 } from "lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {ERC20Upgradeable} from "lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
-import {IERC1271} from "lib/openzeppelin-contracts/contracts/interfaces/IERC1271.sol";
 import {
     ReentrancyGuardUpgradeable
 } from "lib/openzeppelin-contracts-upgradeable/contracts/utils/ReentrancyGuardUpgradeable.sol";
@@ -655,24 +654,12 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
     function _isDirector(uint256 tokenId) internal view {
         if (tokenId == 0) revert IChamber.NotDirector();
 
+        // NFT owners (EOA or contract) are directors only when they submit as themselves.
+        // The previous ERC-1271 path treated `abi.encode(msg.sender)` as a signature and
+        // issued a CALL from this view helper, so a promiscuous 1271 owner could
+        // impersonate the director and reenter ungated functions.
         address owner = _getChamberStorage().nft.ownerOf(tokenId);
-
-        bool isOwner = (owner == msg.sender);
-
-        if (!isOwner && owner.code.length > 0) {
-            bytes32 hash;
-            // forge-lint: disable-next-line(asm-keccak256)
-            hash = keccak256(abi.encodePacked("DirectorAuth", address(this), tokenId, msg.sender));
-            try IERC1271(owner).isValidSignature(hash, abi.encode(msg.sender)) returns (bytes4 magicValue) {
-                if (magicValue == IERC1271.isValidSignature.selector) {
-                    isOwner = true;
-                }
-            } catch {
-                // Ignore failure, remain isOwner = false
-            }
-        }
-
-        if (!isOwner) revert IChamber.NotDirector();
+        if (owner != msg.sender) revert IChamber.NotDirector();
 
         BoardStorage storage $b = _getBoardStorage();
         uint256 current = $b.head;

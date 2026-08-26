@@ -132,8 +132,8 @@ contract OffensiveReviewFindingsTest is Test {
         assertTrue(executed);
     }
 
-    /// Finding 2: permissive ERC-1271 owner contract grants director rights to any caller
-    function test_Finding2_PermissiveERC1271_AnyCallerActsAsDirector() public {
+    /// Finding 2 (M-01): a promiscuous ERC-1271 owner cannot authorize a random caller
+    function test_Finding2_PermissiveERC1271_RandomCallerIsNotDirector() public {
         PermissiveERC1271Wallet wallet = new PermissiveERC1271Wallet();
         uint256 tokenId = 99;
         MockERC721(address(nft)).mintWithTokenId(address(wallet), tokenId);
@@ -149,9 +149,10 @@ contract OffensiveReviewFindingsTest is Test {
 
         address randomCaller = address(0xDEAD);
         vm.prank(randomCaller);
+        vm.expectRevert(IChamber.NotDirector.selector);
         chamber.submitTransaction(tokenId, address(0x9999), 0, "");
 
-        assertEq(chamber.getTransactionCount(), 1, "permissive ERC1271 let non-owner act as director");
+        assertEq(chamber.getTransactionCount(), 0, "promiscuous ERC1271 must not authorize a random caller");
     }
 
     /// Finding 3: anyone can spam chamber creation (griefing / indexing bloat)
