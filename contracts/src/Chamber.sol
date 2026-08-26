@@ -13,6 +13,7 @@ import {
     ERC4626Upgradeable
 } from "lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {ERC20Upgradeable} from "lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
+import {PausableUpgradeable} from "lib/openzeppelin-contracts-upgradeable/contracts/utils/PausableUpgradeable.sol";
 import {ProxyAdmin} from "lib/openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 import {
     ITransparentUpgradeableProxy
@@ -25,7 +26,7 @@ import {EnumerableSet} from "lib/openzeppelin-contracts/contracts/utils/structs/
  * @notice This contract is a smart vault for managing assets with a board of directors
  * @author xhad, Loreum DAO LLC
  */
-contract Chamber is ERC4626Upgradeable, Board, Wallet, IChamber, IERC721Receiver {
+contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, IChamber, IERC721Receiver {
     using EnumerableSet for EnumerableSet.UintSet;
 
     /**
@@ -63,10 +64,14 @@ contract Chamber is ERC4626Upgradeable, Board, Wallet, IChamber, IERC721Receiver
      *      (length word + data word) and incurs an SLOAD on every read. A bytes32 constant is
      *      inlined at compile time: zero runtime gas, zero storage slots.
      */
-    bytes32 public constant VERSION = "1.1.4";
+    bytes32 public constant VERSION = "1.1.5";
 
     /// @notice Function selector for upgradeImplementation(address,bytes)
     bytes4 private constant UPGRADE_SELECTOR = 0xc89311b6;
+    /// @notice Function selector for pause()
+    bytes4 private constant PAUSE_SELECTOR = 0x8456cb59;
+    /// @notice Function selector for unpause()
+    bytes4 private constant UNPAUSE_SELECTOR = 0x3f4ba83a;
 
     constructor() {
         _disableInitializers();
@@ -107,6 +112,7 @@ contract Chamber is ERC4626Upgradeable, Board, Wallet, IChamber, IERC721Receiver
         __ERC4626_init(IERC20(erc20Token));
         __ERC20_init(_name, _symbol);
         __ReentrancyGuardTransient_init();
+        __Pausable_init();
 
         ChamberStorage storage $ = _getChamberStorage();
         $.nft = IERC721(erc721Token);
@@ -582,6 +588,7 @@ contract Chamber is ERC4626Upgradeable, Board, Wallet, IChamber, IERC721Receiver
         if (_countCurrentDirectorFlags($w.isConfirmed, transactionId) < _requiredConfirmations(transactionId)) {
             revert IChamber.NotEnoughConfirmations();
         }
+        _requireWalletExecuteAllowed(transaction.target, transactionId, data);
 
         _executeTransaction(tokenId, transactionId, data);
         emit IChamber.TransactionExecuted(transactionId, msg.sender);
@@ -656,12 +663,7 @@ contract Chamber is ERC4626Upgradeable, Board, Wallet, IChamber, IERC721Receiver
             if (targets[i] == address(0)) revert IChamber.ZeroAddress();
 
             if (targets[i] == address(this)) {
-                if (data[i].length < 4) revert IChamber.InvalidTransaction();
-                // forge-lint: disable-next-line(unsafe-typecast)
-                bytes4 selector = bytes4(data[i]);
-                if (selector != UPGRADE_SELECTOR) {
-                    revert IChamber.InvalidTransaction();
-                }
+                _requireAllowedSelfCall(data[i]);
             }
 
             _submitTransaction(tokenId, targets[i], values[i], data[i]);
@@ -692,17 +694,37 @@ contract Chamber is ERC4626Upgradeable, Board, Wallet, IChamber, IERC721Receiver
         if (target == address(0)) revert IChamber.ZeroAddress();
 
         if (target == address(this)) {
-            if (data.length < 4) revert IChamber.InvalidTransaction();
-            // forge-lint: disable-next-line(unsafe-typecast)
-            bytes4 selector = bytes4(data);
-            if (selector != UPGRADE_SELECTOR) {
-                revert IChamber.InvalidTransaction();
-            }
+            _requireAllowedSelfCall(data);
         }
 
         if (value > 0 && address(this).balance < value) {
             revert IChamber.InsufficientChamberBalance();
         }
+    }
+
+    /// @dev Self-calls are limited to upgrade, pause, and unpause so the board cannot invoke arbitrary internals.
+    function _requireAllowedSelfCall(bytes memory data) internal pure {
+        if (data.length < 4) revert IChamber.InvalidTransaction();
+        // forge-lint: disable-next-line(unsafe-typecast)
+        bytes4 selector = bytes4(data);
+        if (selector != UPGRADE_SELECTOR && selector != PAUSE_SELECTOR && selector != UNPAUSE_SELECTOR) {
+            revert IChamber.InvalidTransaction();
+        }
+    }
+
+    /// @dev While paused, only a quorum self-call to unpause may execute. This avoids a permanent lock.
+    ///      Empty `data` uses L-04 stored self-call bytes (same as execute).
+    function _requireWalletExecuteAllowed(address target, uint256 transactionId, bytes calldata data) internal view {
+        if (!paused()) return;
+        bytes memory payload = data;
+        if (payload.length == 0) {
+            payload = _getWalletStorage().transactionCalldata[transactionId];
+        }
+        if (target == address(this) && payload.length >= 4) {
+            // forge-lint: disable-next-line(unsafe-typecast)
+            if (bytes4(payload) == UNPAUSE_SELECTOR) return;
+        }
+        _requireNotPaused();
     }
 
     /**
@@ -766,6 +788,7 @@ contract Chamber is ERC4626Upgradeable, Board, Wallet, IChamber, IERC721Receiver
             if (_countCurrentDirectorFlags($w.isConfirmed, transactionId) < _requiredConfirmations(transactionId)) {
                 revert IChamber.NotEnoughConfirmations();
             }
+            _requireWalletExecuteAllowed(transaction.target, transactionId, data[i]);
 
             _executeTransaction(tokenId, transactionId, data[i]);
             emit IChamber.TransactionExecuted(transactionId, msg.sender);
@@ -899,6 +922,29 @@ contract Chamber is ERC4626Upgradeable, Board, Wallet, IChamber, IERC721Receiver
     }
 
     /**
+     * @notice Pauses vault operations and wallet execution after board quorum.
+     * @dev `msg.sender` must be this chamber (self-call via `executeTransaction`).
+     */
+    function pause() external override {
+        if (msg.sender != address(this)) revert IChamber.NotAuthorized();
+        _pause();
+    }
+
+    /**
+     * @notice Unpauses vault operations and wallet execution after board quorum.
+     * @dev `msg.sender` must be this chamber (self-call via `executeTransaction`).
+     */
+    function unpause() external override {
+        if (msg.sender != address(this)) revert IChamber.NotAuthorized();
+        _unpause();
+    }
+
+    /// @notice Returns true if vault operations and wallet execution are paused
+    function paused() public view override(PausableUpgradeable, IChamber) returns (bool) {
+        return PausableUpgradeable.paused();
+    }
+
+    /**
      * @notice Upgrades the Chamber implementation via `ProxyAdmin.upgradeAndCall`
      * @dev Reverts with `NotAuthorized` if this contract is not the `ProxyAdmin` owner.
      *      Must not take `nonReentrant`: the only legitimate caller is this contract via
@@ -994,13 +1040,42 @@ contract Chamber is ERC4626Upgradeable, Board, Wallet, IChamber, IERC721Receiver
         return 3;
     }
 
+    /// @notice ERC-4626 deposits are disabled while paused
+    function maxDeposit(address receiver) public view override(ERC4626Upgradeable, IERC4626) returns (uint256) {
+        if (paused()) return 0;
+        return super.maxDeposit(receiver);
+    }
+
+    /// @notice ERC-4626 mints are disabled while paused
+    function maxMint(address receiver) public view override(ERC4626Upgradeable, IERC4626) returns (uint256) {
+        if (paused()) return 0;
+        return super.maxMint(receiver);
+    }
+
+    /// @notice ERC-4626 withdrawals are disabled while paused
+    function maxWithdraw(address owner) public view override(ERC4626Upgradeable, IERC4626) returns (uint256) {
+        if (paused()) return 0;
+        return super.maxWithdraw(owner);
+    }
+
+    /// @notice ERC-4626 redemptions are disabled while paused
+    function maxRedeem(address owner) public view override(ERC4626Upgradeable, IERC4626) returns (uint256) {
+        if (paused()) return 0;
+        return super.maxRedeem(owner);
+    }
+
     /**
      * @notice Deposit/mint workflow that requires the vault to receive exactly `assets`
      * @dev Hardens M-07: OpenZeppelin ERC-4626 mints shares from the requested amount, not the
      *      observed `balanceOf` delta. Fee-on-transfer tokens would otherwise credit shares for
      *      value the vault never received. Rebasing tokens remain unsupported.
+     *      Blocked while paused (L-02).
      */
-    function _deposit(address caller, address receiver, uint256 assets, uint256 shares) internal override {
+    function _deposit(address caller, address receiver, uint256 assets, uint256 shares)
+        internal
+        override
+        whenNotPaused
+    {
         IERC20 vaultAsset = IERC20(asset());
         uint256 balanceBefore = vaultAsset.balanceOf(address(this));
         super._deposit(caller, receiver, assets, shares);
@@ -1008,6 +1083,14 @@ contract Chamber is ERC4626Upgradeable, Board, Wallet, IChamber, IERC721Receiver
         if (balanceAfter < balanceBefore || balanceAfter - balanceBefore != assets) {
             revert IChamber.AssetAmountMismatch();
         }
+    }
+
+    function _withdraw(address caller, address receiver, address owner, uint256 assets, uint256 shares)
+        internal
+        override
+        whenNotPaused
+    {
+        super._withdraw(caller, receiver, owner, assets, shares);
     }
 
     /**
