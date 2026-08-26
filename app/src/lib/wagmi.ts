@@ -175,7 +175,10 @@ export const CONTRACT_ADDRESSES = {
   // Localhost - auto-populated from deployments.json via `make deploy-anvil-all`
   localhost: {
     registry: addressFromEnv(localDeployments.registry, import.meta.env.VITE_LOCALHOST_REGISTRY),
-    factory: addressFromEnv(localDeployments.factory, import.meta.env.VITE_LOCALHOST_FACTORY),
+    factory: addressFromEnv(
+      (localDeployments as { factory?: string }).factory,
+      import.meta.env.VITE_LOCALHOST_FACTORY,
+    ),
     chamberImplementation: addressFromEnv(localDeployments.chamberImplementation),
     mockERC20: addressFromEnv(localDeployments.mockERC20),
     mockERC721: addressFromEnv(localDeployments.mockERC721),

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAccount, useChainId, usePublicClient } from 'wagmi'
 import { useQuery } from '@tanstack/react-query'
 import { multicall } from 'viem/actions'
-import { parseAbiItem, type Address, type PublicClient } from 'viem'
+import { parseAbiItem, type AbiEvent, type Address, type PublicClient } from 'viem'
 import { chamberAbi, factoryAbi, registryAbi } from '@/contracts/abis'
 import { addRecentChamber, getRecentChambers } from '@/lib/recentChambers'
 import { isNonZeroAddress } from '@/lib/wagmi'
@@ -36,16 +36,17 @@ export function useRecentChambers() {
   return { recents, remember }
 }
 
-async function getLogsChunked(
+async function getCreatedLogs<TEvent extends AbiEvent>(
   client: PublicClient,
-  params: Parameters<PublicClient['getLogs']>[0],
-): Promise<Awaited<ReturnType<PublicClient['getLogs']>>> {
+  address: `0x${string}`,
+  event: TEvent,
+) {
   try {
-    return await client.getLogs({ ...params, fromBlock: 0n, toBlock: 'latest' })
+    return await client.getLogs({ address, event, fromBlock: 0n, toBlock: 'latest' })
   } catch {
     const latest = await client.getBlockNumber()
     const from = latest > LOG_LOOKBACK_BLOCKS ? latest - LOG_LOOKBACK_BLOCKS : 0n
-    return client.getLogs({ ...params, fromBlock: from, toBlock: 'latest' })
+    return client.getLogs({ address, event, fromBlock: from, toBlock: 'latest' })
   }
 }
 
@@ -72,10 +73,7 @@ async function fetchCreatedChambers(
 
   if (isNonZeroAddress(factoryAddress)) {
     try {
-      const logs = await getLogsChunked(client, {
-        address: factoryAddress,
-        event: factoryCreatedEvent,
-      })
+      const logs = await getCreatedLogs(client, factoryAddress, factoryCreatedEvent)
       for (const log of logs) {
         push(log.args.chamber, log.args.creator)
       }
@@ -86,10 +84,7 @@ async function fetchCreatedChambers(
 
   if (isNonZeroAddress(registryAddress)) {
     try {
-      const logs = await getLogsChunked(client, {
-        address: registryAddress,
-        event: registryCreatedEvent,
-      })
+      const logs = await getCreatedLogs(client, registryAddress, registryCreatedEvent)
       for (const log of logs) {
         push(log.args.chamber)
       }
