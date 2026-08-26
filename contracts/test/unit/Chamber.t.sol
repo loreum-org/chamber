@@ -32,13 +32,6 @@ contract MockERC1271Wallet {
     }
 }
 
-/// @dev A contract that always reverts on isValidSignature
-contract RevertingERC1271 {
-    function isValidSignature(bytes32, bytes memory) external pure returns (bytes4) {
-        revert("always reverts");
-    }
-}
-
 /// @dev A minimal Chamber contract that implements IERC1271 for testing
 contract MockChamberERC1271 {
     address public authorizedAddress;
@@ -1702,38 +1695,45 @@ contract ChamberTest is Test {
         chamber.submitBatchTransactions(1, targets, values, data);
     }
 
-    // ─── _isDirector: ERC-1271 contract-owner authorisation ───────────
+    // ─── _isDirector: only the NFT owner (msg.sender == owner) ───────────
 
-    function test_Chamber_IsDirector_ERC1271_Valid() public {
-        // user1 owns the ERC1271 wallet; user1 can act as director via ERC-1271
-        address authorized = address(0xABCD);
-        MockERC1271Wallet wallet = new MockERC1271Wallet(authorized);
+    function test_Chamber_IsDirector_EOAOwner_Works() public {
+        uint256 tokenId = 1;
+        uint256 amount = 1 ether;
+        MockERC721(address(nft)).mintWithTokenId(user1, tokenId);
+        MockERC20(address(token)).mint(user1, amount);
 
-        // Mint NFT to the wallet (contract)
+        vm.startPrank(user1);
+        token.approve(address(chamber), amount);
+        chamber.deposit(amount, user1);
+        chamber.delegate(tokenId, 1);
+        vm.roll(block.number + 1);
+        chamber.submitTransaction(tokenId, address(0x3), 0, "");
+        vm.stopPrank();
+
+        assertEq(chamber.getTransactionCount(), 1);
+    }
+
+    function test_Chamber_IsDirector_ContractOwnerCallingAsItself_Works() public {
+        MockERC1271Wallet wallet = new MockERC1271Wallet(address(0xABCD));
         uint256 tokenId = 10;
         MockERC721(address(nft)).mintWithTokenId(address(wallet), tokenId);
 
-        // Mint tokens and deposit so the tokenId enters the board
         MockERC20(address(token)).mint(address(this), 1 ether);
         token.approve(address(chamber), 1 ether);
         chamber.deposit(1 ether, address(this));
         chamber.delegate(tokenId, 1 ether);
         vm.roll(block.number + 1);
 
-        // authorized address submits a transaction using the contract's tokenId
-        // _isDirector: owner=wallet (contract), msg.sender=authorized ≠ wallet
-        //              → ERC1271 check → magic value → isOwner=true
-        vm.prank(authorized);
+        vm.prank(address(wallet));
         chamber.submitTransaction(tokenId, address(0x9999), 0, "");
 
         assertEq(chamber.getTransactionCount(), 1);
     }
 
-    function test_Chamber_IsDirector_ERC1271_Reverts_Unauthorized() public {
-        address authorized = address(0xABCD);
-        address unauthorized = address(0xDEAD);
-        MockERC1271Wallet wallet = new MockERC1271Wallet(authorized);
-
+    function test_Chamber_IsDirector_Promiscuous1271_CannotAuthorizeRandomCaller() public {
+        // Wallet would accept any encoded caller as a 1271 "signature"; Chamber must not consult it.
+        MockERC1271Wallet wallet = new MockERC1271Wallet(address(0xDEAD));
         uint256 tokenId = 11;
         MockERC721(address(nft)).mintWithTokenId(address(wallet), tokenId);
 
@@ -1742,27 +1742,11 @@ contract ChamberTest is Test {
         chamber.deposit(1 ether, address(this));
         chamber.delegate(tokenId, 1 ether);
 
-        // unauthorized address → ERC1271 returns 0xffffffff → NotDirector
-        vm.prank(unauthorized);
+        vm.prank(address(0xDEAD));
         vm.expectRevert(IChamber.NotDirector.selector);
         chamber.submitTransaction(tokenId, address(0x9999), 0, "");
-    }
 
-    function test_Chamber_IsDirector_ERC1271_CatchesRevert() public {
-        // When isValidSignature reverts, the catch block is hit → isOwner stays false
-        RevertingERC1271 revertingWallet = new RevertingERC1271();
-
-        uint256 tokenId = 12;
-        MockERC721(address(nft)).mintWithTokenId(address(revertingWallet), tokenId);
-
-        MockERC20(address(token)).mint(address(this), 1 ether);
-        token.approve(address(chamber), 1 ether);
-        chamber.deposit(1 ether, address(this));
-        chamber.delegate(tokenId, 1 ether);
-
-        vm.prank(address(0xCAFE));
-        vm.expectRevert(IChamber.NotDirector.selector);
-        chamber.submitTransaction(tokenId, address(0x9999), 0, "");
+        assertEq(chamber.getTransactionCount(), 0);
     }
 
     function test_ChamberAsDirector_ExecutesTransactionToAnotherChamber() public {
@@ -1814,9 +1798,9 @@ contract ChamberTest is Test {
         chamberB.delegate(tokenId2, 500e18);
         vm.roll(block.number + 1);
 
-        // 4. Chamber A (via authorizedAddress) submits a transaction on Chamber B
-        // This simulates Chamber A acting as director
+        // 4. Chamber A submits a transaction on Chamber B by calling as itself
         bytes memory testData = abi.encodeWithSignature("testFunction()");
+        vm.prank(address(chamberA));
         chamberB.submitTransaction(tokenId, address(0x1234), 0, testData);
 
         // Verify transaction was submitted
@@ -1827,6 +1811,7 @@ contract ChamberTest is Test {
         chamberB.confirmTransaction(tokenId2, 0);
 
         // 6. Chamber A executes the transaction
+        vm.prank(address(chamberA));
         chamberB.executeTransaction(tokenId, 0, testData);
 
         // Verify transaction executed
@@ -1902,11 +1887,11 @@ contract ChamberTest is Test {
         chamberB.delegate(tokenId3, 400e18);
         vm.roll(block.number + 1);
 
-        // 5. Chamber A (via authorizedAddress) submits a transaction on Chamber B
+        // 5. Chamber A submits a transaction on Chamber B by calling as itself
         // This transaction will transfer tokens from Chamber B to Chamber C
         bytes memory transferData = abi.encodeWithSelector(IERC20.transfer.selector, address(chamberC), transferAmount);
 
-        // Submit transaction to transfer tokens from Chamber B to Chamber C
+        vm.prank(address(chamberA));
         chamberB.submitTransaction(tokenId, address(token), 0, transferData);
 
         // Verify transaction was submitted
@@ -1925,6 +1910,7 @@ contract ChamberTest is Test {
         uint256 chamberCBalanceBefore = token.balanceOf(address(chamberC));
 
         // 8. Chamber A executes the transaction (transfer from Chamber B to Chamber C)
+        vm.prank(address(chamberA));
         chamberB.executeTransaction(tokenId, 0, transferData);
 
         // 9. Verify balances after execution
