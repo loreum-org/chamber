@@ -2,10 +2,10 @@
 pragma solidity ^0.8.30;
 
 import {Test} from "lib/forge-std/src/Test.sol";
+import {Board} from "src/Board.sol";
+import {Wallet} from "src/Wallet.sol";
 import {BoardTypes} from "src/types/BoardTypes.sol";
 import {WalletTypes} from "src/types/WalletTypes.sol";
-import {MockBoard} from "test/mock/MockBoard.sol";
-import {MockWallet} from "test/mock/MockWallet.sol";
 
 /// @dev Stores a `BoardTypes.Node` so tests can inspect packed slot layout.
 contract BoardTypesStorageProbe {
@@ -33,13 +33,13 @@ contract WalletTypesStorageProbe {
 
 /**
  * @notice Compile + layout checks that helper types match on-chain Board/Wallet storage.
- * @dev Assigning helper fields into `MockBoard.Node` / `MockWallet.Transaction` fails to
- *      compile if `next`/`prev` are still `uint256` or if `data` is still dynamic `bytes`.
+ * @dev Assigning helper fields into `Board.Node` / `Wallet.Transaction` fails to compile
+ *      if `next`/`prev` are still `uint256` or if `data` is still dynamic `bytes`.
  */
 contract TypesLayoutTest is Test {
     function test_BoardTypesNodeAssignableToOnchainNode() public pure {
         BoardTypes.Node memory helper = BoardTypes.Node({tokenId: 1, amount: 2, next: uint128(3), prev: uint128(4)});
-        MockBoard.Node memory onchain = _copyBoardNodeToOnchain(helper);
+        Board.Node memory onchain = _copyBoardNodeToOnchain(helper);
         assertEq(onchain.tokenId, 1);
         assertEq(onchain.amount, 2);
         assertEq(onchain.next, 3);
@@ -51,7 +51,7 @@ contract TypesLayoutTest is Test {
         supporters[0] = 7;
         BoardTypes.SeatUpdate memory helper =
             BoardTypes.SeatUpdate({proposedSeats: 5, timestamp: 11, requiredQuorum: 3, supporters: supporters});
-        MockBoard.SeatUpdate memory onchain = _copySeatUpdateToOnchain(helper);
+        Board.SeatUpdate memory onchain = _copySeatUpdateToOnchain(helper);
         assertEq(onchain.proposedSeats, 5);
         assertEq(onchain.timestamp, 11);
         assertEq(onchain.requiredQuorum, 3);
@@ -68,7 +68,7 @@ contract TypesLayoutTest is Test {
             value: 99,
             dataHash: dataHash
         });
-        MockWallet.Transaction memory onchain = _copyWalletTransactionToOnchain(helper);
+        Wallet.Transaction memory onchain = _copyWalletTransactionToOnchain(helper);
         assertTrue(onchain.executed);
         assertEq(onchain.confirmations, 2);
         assertEq(onchain.target, address(0xBEEF));
@@ -84,6 +84,8 @@ contract TypesLayoutTest is Test {
         assertEq(uint256(vm.load(address(probe), bytes32(uint256(1)))), 2);
 
         uint256 packed = uint256(vm.load(address(probe), bytes32(uint256(2))));
+        // Low 128 bits are `next`; the downcast discards only `prev`.
+        // forge-lint: disable-next-line(unsafe-typecast)
         assertEq(uint256(uint128(packed)), 3);
         assertEq(packed >> 128, 4);
     }
@@ -97,6 +99,8 @@ contract TypesLayoutTest is Test {
         uint256 slot0 = uint256(vm.load(address(probe), bytes32(uint256(0))));
         assertEq(slot0 & 0xff, 1);
         assertEq((slot0 >> 8) & 0xff, 2);
+        // Target occupies the high 160 bits of the packed header slot.
+        // forge-lint: disable-next-line(unsafe-typecast)
         assertEq(address(uint160(slot0 >> 16)), target);
 
         assertEq(uint256(vm.load(address(probe), bytes32(uint256(1)))), 99);
@@ -104,16 +108,16 @@ contract TypesLayoutTest is Test {
     }
 
     /// @dev uint256 helper.next/prev would not implicitly assign into packed uint128 on-chain fields.
-    function _copyBoardNodeToOnchain(BoardTypes.Node memory helper) private pure returns (MockBoard.Node memory onchain) {
-        onchain = MockBoard.Node({tokenId: helper.tokenId, amount: helper.amount, next: helper.next, prev: helper.prev});
+    function _copyBoardNodeToOnchain(BoardTypes.Node memory helper) private pure returns (Board.Node memory onchain) {
+        onchain = Board.Node({tokenId: helper.tokenId, amount: helper.amount, next: helper.next, prev: helper.prev});
     }
 
     function _copySeatUpdateToOnchain(BoardTypes.SeatUpdate memory helper)
         private
         pure
-        returns (MockBoard.SeatUpdate memory onchain)
+        returns (Board.SeatUpdate memory onchain)
     {
-        onchain = MockBoard.SeatUpdate({
+        onchain = Board.SeatUpdate({
             proposedSeats: helper.proposedSeats,
             timestamp: helper.timestamp,
             requiredQuorum: helper.requiredQuorum,
@@ -125,9 +129,9 @@ contract TypesLayoutTest is Test {
     function _copyWalletTransactionToOnchain(WalletTypes.Transaction memory helper)
         private
         pure
-        returns (MockWallet.Transaction memory onchain)
+        returns (Wallet.Transaction memory onchain)
     {
-        onchain = MockWallet.Transaction({
+        onchain = Wallet.Transaction({
             executed: helper.executed,
             confirmations: helper.confirmations,
             target: helper.target,
