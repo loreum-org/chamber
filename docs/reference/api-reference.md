@@ -22,7 +22,7 @@ Initializes the Registry contract.
 Deploys a new Chamber instance using minimal proxy pattern.
 
 **Parameters**:
-- `erc20Token`: ERC20 token address for assets
+- `erc20Token`: Standard ERC-20 vault asset (no factory allowlist; fee-on-transfer and rebasing tokens are unsupported)
 - `erc721Token`: ERC721 token address for membership
 - `seats`: Initial number of board seats (1-20)
 - `name`: Name of chamber's ERC20 token
@@ -464,6 +464,9 @@ Deposits assets and mints shares.
 
 **Returns**: Shares minted
 
+**Reverts**:
+- `AssetAmountMismatch`: If the vault's observed `balanceOf` delta is not equal to `assets` (fee-on-transfer)
+
 **Events**: `Deposit`, `Transfer`
 
 ---
@@ -493,6 +496,9 @@ Mints shares for assets.
 - `receiver`: Address to receive shares
 
 **Returns**: Assets deposited
+
+**Reverts**:
+- `AssetAmountMismatch`: If the vault's observed `balanceOf` delta is not equal to the pulled asset amount (fee-on-transfer)
 
 **Events**: `Deposit`, `Transfer`
 

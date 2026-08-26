@@ -4,9 +4,18 @@ Chamber instances function as fully compliant **ERC4626 Tokenized Vaults**. This
 
 ## Asset Management
 
-Every Chamber is paired with an underlying **ERC20 asset**.
+Every Chamber is paired with an underlying **standard ERC-20** asset.
 - **Deposits**: Users deposit the underlying asset and receive "Chamber Shares".
 - **Withdrawals**: Users burn shares to retrieve the underlying asset.
+
+### Supported assets
+
+`Registry.createChamber` does not maintain an asset allowlist. The vault asset **must** be a standard ERC-20:
+
+- `transfer` / `transferFrom` move **exactly** the requested amount (no fee-on-transfer or deflation).
+- `balanceOf` must not change except via transfers (no rebasing or elastic supply).
+
+On `deposit` and `mint`, Chamber measures `asset.balanceOf(vault)` before and after the pull. If the observed delta is not equal to the requested amount, the call reverts with `AssetAmountMismatch`. That prevents minting shares for value the vault did not receive. Rebasing tokens remain unsupported: a later rebase is not detectable at deposit time.
 
 ## Shares and Voting Power
 
