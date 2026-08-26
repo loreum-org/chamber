@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import {AccessControl} from "lib/openzeppelin-contracts/contracts/access/AccessControl.sol";
-import {Initializable} from "lib/openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
+import {
+    AccessControlUpgradeable
+} from "lib/openzeppelin-contracts-upgradeable/contracts/access/AccessControlUpgradeable.sol";
 import {
     TransparentUpgradeableProxy
 } from "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
@@ -14,9 +15,26 @@ import {IRegistry} from "./interfaces/IRegistry.sol";
  * @title Registry
  * @author xhad, Loreum DAO LLC
  * @notice Central registry for deploying and managing Chamber instances
- * @dev Uses OpenZeppelin `TransparentUpgradeableProxy`; registry is proxy admin until `ProxyAdmin` ownership is transferred to each chamber.
+ * @dev Uses OpenZeppelin `TransparentUpgradeableProxy`; registry is proxy admin until
+ *      `ProxyAdmin` ownership is transferred to each chamber.
+ *
+ *      Roles use OpenZeppelin 5.1.0 `AccessControlUpgradeable` (ERC-7201 namespace
+ *      `openzeppelin.storage.AccessControl`). Registry application state is separately
+ *      namespaced at `erc7201:loreum.ChamberRegistry`.
+ *
+ *      Upgrade constraint: a live Registry proxy initialized against non-upgradeable
+ *      `AccessControl` stores `_roles` at sequential slot 0. This implementation reads
+ *      roles from the ERC-7201 namespace, so those proxies must not be upgraded in-place
+ *      without an explicit role migration. Prefer a new Registry proxy (fresh
+ *      `initialize`) over copying slot-0 mappings. Chamber instances stay isolated:
+ *      each owns its own `ProxyAdmin` after `createChamber`.
+ *
+ *      `AccessControlDefaultAdminRules` was not adopted: it changes
+ *      `grantRole`/`revokeRole` for `DEFAULT_ADMIN_ROLE`, needs a product delay, and
+ *      does not change TransparentUpgradeableProxy admin (still a separate EOA-owned
+ *      `ProxyAdmin`).
  */
-contract Registry is AccessControl, Initializable, IRegistry {
+contract Registry is AccessControlUpgradeable, IRegistry {
     /// @notice Role for managing the registry configuration
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
@@ -104,6 +122,7 @@ contract Registry is AccessControl, Initializable, IRegistry {
         if (admin == address(0) || _implementation == address(0)) {
             revert ZeroAddress();
         }
+        __AccessControl_init();
         RegistryStorage storage $ = _getRegistryStorage();
         $.implementation = _implementation;
         $.proxyAdmin = admin;
