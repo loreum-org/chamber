@@ -113,6 +113,8 @@ one- and two-seat chambers require 100% of seats. For example:
 - 5 seats → quorum = 1 + (5 * 51) / 100 = 3
 - 7 seats → quorum = 1 + (7 * 51) / 100 = 4
 
+Quorum is **token-weighted**, not 1-address-1-vote. `isDirector` and confirmations are per membership `tokenId`. An address that holds `quorum` distinct top-seat membership NFTs can submit, self-confirm, and execute — a **single-actor treasury**. Confirmations are not capped per owner.
+
 ### Transactions
 
 Transactions require:

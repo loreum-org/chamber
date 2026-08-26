@@ -9,6 +9,9 @@ pragma solidity ^0.8.30;
  *      Self-calls (`target == address(this)`, Chamber: `upgradeImplementation`) also persist the
  *      original bytes onchain so a confirmed upgrade remains executable if logs are unavailable.
  *      Confirmation and execution require a quorum of distinct director token IDs as enforced by `Chamber`.
+ *      That quorum is token-weighted: one address that holds `quorum` top-seat membership NFTs
+ *      can submit, self-confirm, and execute (a single-actor treasury). Confirmations are not
+ *      capped per owner.
  */
 interface IWallet {
     /**

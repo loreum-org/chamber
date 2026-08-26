@@ -12,6 +12,7 @@ Any current Director can submit a transaction.
 ### 2. Confirmation
 Other Directors must confirm the transaction.
 - Only current Directors (those in the top seats) can confirm.
+- Confirmations are per membership `tokenId` (token-weighted), not per address. One owner of `quorum` top-seat NFTs can self-confirm to threshold — a single-actor treasury.
 - Confirmations can be revoked as long as the transaction hasn't been executed.
 
 ### 3. Execution

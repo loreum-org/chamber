@@ -32,6 +32,8 @@ Calls where `target == Chamber` are limited to **`upgradeImplementation`** selec
 
 `getQuorum() = 1 + (getSeats() * 51) / 100` — integer math in Solidity. One- and two-seat chambers require all seats.
 
+That count is **token-weighted** (distinct director `tokenId`s). One address holding `quorum` top-seat membership NFTs can satisfy quorum alone — a single-actor treasury. Confirmations are not capped per owner.
+
 ## Seat update timelock
 
 `executeSeatsUpdate` requires **7 days** and enough supporters who are **still directors** at execution time.

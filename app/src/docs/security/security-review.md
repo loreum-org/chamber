@@ -23,6 +23,7 @@ Chamber’s **trust surface** is the Solidity in **`contracts/src/`** (`Chamber`
 |--------|----------------|
 | Delegation vs share transfers | Prevent double-use of voting weight |
 | Quorum on execute | Confirmations must match live director policy |
+| Token-weighted quorum (I-03) | `isDirector` and confirmations are per `tokenId`. One address holding `quorum` top-seat NFTs is a single-actor treasury — intended, not 1-address-1-vote. |
 | Calldata hashing | Execution must not accept mismatched payloads |
 | Seat updates | Timelock + still-director supporters |
 | Upgrade self-calls | Only sanctioned upgrade selector to Chamber |

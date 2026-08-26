@@ -25,7 +25,8 @@ The Chamber represents a novel smart account architecture that fundamentally rei
 
 ### Wallet System
 - Multi-signature transaction management
-- Quorum-based approval system
+- Quorum-based approval system (token-weighted: confirmations are per membership NFT, not per address)
+- One address holding `quorum` top-seat membership NFTs is a single-actor treasury
 - Batch transaction support
 - Revocable transaction confirmations
 

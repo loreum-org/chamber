@@ -36,3 +36,5 @@ Quorum is the integer formula `1 + (seats * 51) / 100` (Solidity truncating divi
 This is not a simple majority and is not "51% of seats + 1" as a real-number percentage.
 For many seat counts the result is about 55–67% of seats. One- and two-seat chambers
 require 100% of seats (quorum equals seats).
+
+That threshold is a count of distinct director **token IDs**, not unique addresses. `isDirector` and confirmations are per membership NFT. One address holding `quorum` top-seat membership NFTs can submit, self-confirm, and execute — a **single-actor treasury**. This is intended (token-weighted quorum); confirmations are not capped per owner.

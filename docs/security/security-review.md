@@ -109,6 +109,7 @@ For each contract, systematically check:
 - [ ] Delegation edge cases
 - [ ] Quorum/threshold bypasses
 - [ ] Flash loan governance attacks
+- [ ] Token-weighted quorum assumption (I-03): `isDirector` and confirmations are per `tokenId`, not per address — one owner of `quorum` top-seat NFTs is a single-actor treasury. See [I-03](./i-03-token-weighted-quorum.md).
 
 ---
 

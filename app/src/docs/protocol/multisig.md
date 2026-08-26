@@ -21,7 +21,7 @@ sequenceDiagram
 ```
 
 1. **Submit** — a director proposes: send ETH to an address, or call another contract with calldata.  
-2. **Confirm** — other directors add confirmations until **quorum** is met.  
+2. **Confirm** — directors add confirmations until **quorum** is met. Confirmations are per membership NFT, so one address holding `quorum` top-seat NFTs is a **single-actor treasury**.  
 3. **Execute** — someone submits the **exact calldata** again; the contract verifies it matches the stored **hash**, then runs the call.
 
 If calldata does not match, execution **reverts** (`DataHashMismatch`).
