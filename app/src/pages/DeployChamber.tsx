@@ -62,7 +62,9 @@ export default function DeployChamber() {
               try {
                 const str = JSON.stringify(query.queryKey).toLowerCase()
                 return str.includes(registryAddrLower) &&
-                  (str.includes('getallchambers') || str.includes('getchambercount'))
+                  (str.includes('getallchambers') ||
+                    str.includes('getchambercount') ||
+                    str.includes('registry-chambers'))
               } catch { return false }
             },
           })
@@ -332,6 +334,9 @@ export default function DeployChamber() {
                       {!erc20Valid && !formData.erc20Token && (
                         <span className="text-slate-500 text-xs">The ERC20 token managed by this chamber</span>
                       )}
+                      <p className="text-amber-400/90 text-xs mt-2">
+                        Fee-on-transfer and rebasing tokens revert on deposit (`AssetAmountMismatch`). Use a standard ERC-20.
+                      </p>
                     </div>
                   </div>
 
@@ -464,7 +469,9 @@ export default function DeployChamber() {
                             <p className="text-red-400/80 text-sm">
                               {error?.message?.includes('User rejected') || error?.message?.includes('user rejected')
                                 ? 'Transaction rejected in wallet.'
-                                : 'Deployment failed. Check your wallet and network, then try again.'}
+                                : error?.message?.includes('AssetAmountMismatch')
+                                  ? 'Fee-on-transfer or rebasing tokens revert on chamber creation/deposit.'
+                                  : 'Deployment failed. Check your wallet and network, then try again.'}
                             </p>
                           </>
                         )}

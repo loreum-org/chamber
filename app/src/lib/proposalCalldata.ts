@@ -1,10 +1,12 @@
 /**
- * Offchain calldata archive for Chamber proposals.
- * Onchain storage is keccak256(calldata) only; full bytes come from localStorage
- * (same browser that submitted) or SubmitTransaction logs.
+ * Calldata archive for Chamber proposals.
+ * Ordinary txs store keccak256(calldata) only; L-04 also persists full bytes
+ * for self-calls (`getTransactionCalldata`). Fallbacks: localStorage,
+ * metadata URI, SubmitTransaction logs.
  */
 
-import { keccak256, parseAbiItem, type Hex } from 'viem'
+import { keccak256, parseAbiItem, type Hex, type PublicClient } from 'viem'
+import { chamberAbi } from '@/contracts/abis'
 
 const STORAGE_PREFIX = 'chamber-proposal-calldata'
 
@@ -45,7 +47,7 @@ export function proposalCalldataMatchesHash(
   return keccak256(calldata).toLowerCase() === dataHash.toLowerCase()
 }
 
-export type ProposalCalldataSource = 'local' | 'event' | 'metadata'
+export type ProposalCalldataSource = 'local' | 'onchain' | 'event' | 'metadata'
 
 export type ResolvedProposalCalldata = {
   calldata: `0x${string}`
@@ -109,12 +111,34 @@ export function resolveCalldataFromMetadataField(
   return { calldata, source: 'metadata' }
 }
 
+export async function fetchProposalCalldataOnchain(
+  publicClient: Pick<PublicClient, 'readContract'>,
+  chamberAddress: `0x${string}`,
+  txId: number,
+  dataHash: `0x${string}`,
+): Promise<ResolvedProposalCalldata | null> {
+  try {
+    const stored = await publicClient.readContract({
+      address: chamberAddress,
+      abi: chamberAbi,
+      functionName: 'getTransactionCalldata',
+      args: [BigInt(txId)],
+    })
+    const calldata = stored as `0x${string}`
+    if (!calldata || calldata === '0x') return null
+    if (!proposalCalldataMatchesHash(calldata, dataHash)) return null
+    return { calldata, source: 'onchain' }
+  } catch {
+    return null
+  }
+}
+
 /**
- * Resolve calldata: localStorage, onchain metadata field, then SubmitTransaction logs.
+ * Resolve calldata: localStorage, on-chain self-call store (L-04), metadata, then logs.
  * Persists successful hits to localStorage.
  */
 export async function resolveProposalCalldata(
-  publicClient: Parameters<typeof fetchProposalCalldataFromEvents>[0],
+  publicClient: Parameters<typeof fetchProposalCalldataFromEvents>[0] & Pick<PublicClient, 'readContract'>,
   chamberAddress: `0x${string}`,
   txId: number,
   dataHash: `0x${string}`,
@@ -123,6 +147,12 @@ export async function resolveProposalCalldata(
   const stored = getStoredProposalCalldata(chamberAddress, txId)
   if (stored && proposalCalldataMatchesHash(stored, dataHash)) {
     return { calldata: stored, source: 'local' }
+  }
+
+  const fromOnchain = await fetchProposalCalldataOnchain(publicClient, chamberAddress, txId, dataHash)
+  if (fromOnchain) {
+    setStoredProposalCalldata(chamberAddress, txId, fromOnchain.calldata)
+    return fromOnchain
   }
 
   const fromMeta = resolveCalldataFromMetadataField(metadataCalldata, dataHash)

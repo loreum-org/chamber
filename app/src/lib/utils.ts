@@ -167,6 +167,9 @@ export function parseDataField(data: string): { method?: string; decoded?: strin
     '0x2e17de78': 'claim(uint256)',
     '0x3d18b912': 'withdraw(uint256,uint256)',
     '0xe2bbb158': 'deposit(uint256,uint256)',
+    '0x8456cb59': 'pause()',
+    '0x3f4ba83a': 'unpause()',
+    '0xc89311b6': 'upgradeImplementation(address,bytes)',
   }
 
   const methodId = data.slice(0, 10).toLowerCase()

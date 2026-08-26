@@ -185,7 +185,7 @@ export default function Dashboard() {
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2 sm:justify-end sm:shrink-0 text-sm border-t border-slate-700/35 pt-3 sm:border-0 sm:pt-0">
             <div className="flex items-baseline gap-1.5">
               <span className="text-lg font-heading font-bold gradient-text tabular-nums">
-                {countLoading ? '…' : validChambers.length}
+                {countLoading ? '…' : chamberCount || validChambers.length}
               </span>
               <span className="text-slate-500 text-xs">active</span>
             </div>
@@ -202,7 +202,7 @@ export default function Dashboard() {
                 title="Chamber Solidity VERSION constant (implementation)"
                 className="text-slate-200 text-sm font-mono font-semibold tabular-nums"
               >
-                v1.1.4
+                v1.1.5
               </span>
             </div>
           </div>
