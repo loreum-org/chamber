@@ -68,8 +68,8 @@ contract OffensiveReviewFindingsTest is Test {
         return false;
     }
 
-    /// Finding 1: confirmations from former directors still enable execution
-    function test_Finding1_StaleConfirmations_ExecuteAfterDirectorTurnover() public {
+    /// H-01: confirmations from former directors must not satisfy execute quorum
+    function test_H01_StaleConfirmations_DoNotCountAtExecute() public {
         _setupInitialDirectors();
 
         assertTrue(_isDirectorToken(1));
@@ -93,7 +93,136 @@ contract OffensiveReviewFindingsTest is Test {
         assertFalse(executed);
         assertEq(confirmations, 3);
 
-        // New holders out-delegate and take all top seats, evicting 1/2/3
+        _evictInitialDirectors();
+
+        assertFalse(_isDirectorToken(1), "token 1 should no longer be in top seats");
+        assertFalse(_isDirectorToken(2), "token 2 should no longer be in top seats");
+        assertFalse(_isDirectorToken(3), "token 3 should no longer be in top seats");
+        assertTrue(_isDirectorToken(4), "token 4 should be current director");
+
+        uint256 attackerBefore = attacker.balance;
+
+        // Current director cannot execute on approvals from evicted tokenIds
+        vm.prank(address(0x4));
+        vm.expectRevert(IChamber.NotEnoughConfirmations.selector);
+        chamber.executeTransaction(4, 0, "");
+
+        assertEq(attacker.balance, attackerBefore, "stale confirmations must not move funds");
+        (executed,,,,) = chamber.getTransaction(0);
+        assertFalse(executed);
+    }
+
+    /// H-01: current directors can still reach quorum and execute
+    function test_H01_CurrentDirectorsCanExecute() public {
+        _setupInitialDirectors();
+        deal(address(chamber), 1 ether);
+
+        address user4 = address(0x4);
+        address user5 = address(0x5);
+        address user6 = address(0x6);
+
+        vm.prank(user1);
+        chamber.submitTransaction(1, attacker, 1 ether, "");
+
+        _evictInitialDirectors();
+
+        uint256 attackerBefore = attacker.balance;
+
+        vm.prank(user4);
+        vm.expectRevert(IChamber.NotEnoughConfirmations.selector);
+        chamber.executeTransaction(4, 0, "");
+
+        vm.prank(user4);
+        chamber.confirmTransaction(4, 0);
+        vm.prank(user5);
+        chamber.confirmTransaction(5, 0);
+        vm.prank(user6);
+        chamber.confirmTransaction(6, 0);
+
+        vm.prank(user4);
+        chamber.executeTransaction(4, 0, "");
+
+        assertEq(attacker.balance, attackerBefore + 1 ether, "current director quorum must execute");
+        (bool executed,,,,) = chamber.getTransaction(0);
+        assertTrue(executed);
+    }
+
+    /// H-01: former director may revoke their own leftover confirmation
+    function test_H01_FormerDirectorCanRevoke() public {
+        _setupInitialDirectors();
+
+        vm.prank(user1);
+        chamber.submitTransaction(1, attacker, 0, "");
+        vm.prank(user2);
+        chamber.confirmTransaction(2, 0);
+
+        _evictInitialDirectors();
+
+        assertTrue(chamber.getConfirmation(1, 0));
+        vm.prank(user1);
+        chamber.revokeConfirmation(1, 0);
+        assertFalse(chamber.getConfirmation(1, 0));
+
+        // Non-owner still cannot revoke another tokenId's confirmation
+        vm.prank(user1);
+        vm.expectRevert(IChamber.NotDirector.selector);
+        chamber.revokeConfirmation(2, 0);
+    }
+
+    /// H-01: cancel quorum also ignores votes from evicted tokenIds
+    function test_H01_StaleCancelVotes_DoNotCancel() public {
+        _setupInitialDirectors();
+
+        vm.prank(user1);
+        chamber.submitTransaction(1, attacker, 0, "");
+
+        vm.prank(user1);
+        chamber.cancelTransaction(1, 0);
+        vm.prank(user2);
+        chamber.cancelTransaction(2, 0);
+        assertFalse(chamber.getCancelled(0));
+
+        _evictInitialDirectors();
+
+        vm.prank(address(0x4));
+        chamber.cancelTransaction(4, 0);
+        assertFalse(chamber.getCancelled(0), "stale cancel votes must not satisfy quorum");
+
+        vm.prank(address(0x5));
+        chamber.cancelTransaction(5, 0);
+        vm.prank(address(0x6));
+        chamber.cancelTransaction(6, 0);
+        assertTrue(chamber.getCancelled(0), "current director cancel quorum must still cancel");
+    }
+
+    /// H-01: batch execute uses the same live-director confirmation count
+    function test_H01_ExecuteBatch_StaleConfirmations_Reverts() public {
+        _setupInitialDirectors();
+        deal(address(chamber), 1 ether);
+
+        vm.prank(user1);
+        chamber.submitTransaction(1, attacker, 1 ether, "");
+        vm.prank(user2);
+        chamber.confirmTransaction(2, 0);
+        vm.prank(user3);
+        chamber.confirmTransaction(3, 0);
+
+        _evictInitialDirectors();
+
+        uint256[] memory ids = new uint256[](1);
+        ids[0] = 0;
+        bytes[] memory data = new bytes[](1);
+        data[0] = "";
+
+        vm.prank(address(0x4));
+        vm.expectRevert(IChamber.NotEnoughConfirmations.selector);
+        chamber.executeBatchTransactions(4, ids, data);
+
+        (bool executed,,,,) = chamber.getTransaction(0);
+        assertFalse(executed);
+    }
+
+    function _evictInitialDirectors() internal {
         address user4 = address(0x4);
         address user5 = address(0x5);
         address user6 = address(0x6);
@@ -115,21 +244,6 @@ contract OffensiveReviewFindingsTest is Test {
         // Second roll in this test: `block.number` is the test-tx start, so +2 reaches
         // the block after the new directors' seating checkpoint.
         vm.roll(block.number + 2);
-
-        assertFalse(_isDirectorToken(1), "token 1 should no longer be in top seats");
-        assertFalse(_isDirectorToken(2), "token 2 should no longer be in top seats");
-        assertFalse(_isDirectorToken(3), "token 3 should no longer be in top seats");
-        assertTrue(_isDirectorToken(4), "token 4 should be current director");
-
-        uint256 attackerBefore = attacker.balance;
-
-        // Current director executes; confirmers (1,2,3) are no longer directors
-        vm.prank(user4);
-        chamber.executeTransaction(4, 0, "");
-
-        assertEq(attacker.balance, attackerBefore + 1 ether, "stale confirmations allowed fund drain");
-        (executed,,,,) = chamber.getTransaction(0);
-        assertTrue(executed);
     }
 
     /// Finding 2 (M-01): a promiscuous ERC-1271 owner cannot authorize a random caller

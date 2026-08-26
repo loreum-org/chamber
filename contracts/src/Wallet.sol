@@ -292,12 +292,13 @@ abstract contract Wallet {
     }
 
     /**
-     * @notice Records a director's vote to cancel a transaction. When quorum directors have voted, the transaction is cancelled.
+     * @notice Records a director's vote to cancel a transaction.
+     * @dev Does not apply cancellation. Caller must invoke {_cancelTransaction} after counting
+     *      votes that are still from current directors (same live-set check as execute).
      * @param tokenId The token ID voting to cancel
      * @param nonce The transaction index to cancel
-     * @param quorum The number of cancel votes required to cancel
      */
-    function _recordCancelVote(uint256 tokenId, uint256 nonce, uint256 quorum)
+    function _recordCancelVote(uint256 tokenId, uint256 nonce)
         internal
         txExists(nonce)
         notExecuted(nonce)
@@ -310,11 +311,15 @@ abstract contract Wallet {
         $.cancelConfirmations[nonce] += 1;
 
         emit IWallet.CancelTransaction(tokenId, nonce);
+    }
 
-        if ($.cancelConfirmations[nonce] >= quorum) {
-            $.cancelled[nonce] = true;
-            emit IWallet.TransactionCancelled(nonce);
-        }
+    /**
+     * @notice Marks a transaction cancelled after live director quorum is met
+     * @param nonce The transaction index to cancel
+     */
+    function _cancelTransaction(uint256 nonce) internal {
+        _getWalletStorage().cancelled[nonce] = true;
+        emit IWallet.TransactionCancelled(nonce);
     }
 
     /**

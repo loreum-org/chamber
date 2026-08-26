@@ -447,10 +447,12 @@ contract Chamber is ERC4626Upgradeable, Board, Wallet, IChamber, IERC721Receiver
     }
 
     /**
-     * @notice Executes a transaction if it has enough confirmations
+     * @notice Executes a transaction if current directors still meet the required quorum
      * @dev Caller must re-supply the original calldata unless this nonce stored it (self-call /
      *      `upgradeImplementation`). Empty `data` uses the stored bytes. Payload is always
      *      verified against the stored keccak256 hash.
+     *      Counts live top-seat flags (H-01) against `max(submitQuorum, liveQuorum)` (M-04).
+     *      Deadline `0` is unset and is not expired (M-06).
      * @param tokenId The tokenId executing the transaction
      * @param transactionId The ID of the transaction to execute
      * @param data The original calldata, or empty to use stored self-call bytes
@@ -467,7 +469,7 @@ contract Chamber is ERC4626Upgradeable, Board, Wallet, IChamber, IERC721Receiver
         if (transaction.executed) revert IWallet.TransactionAlreadyExecuted();
         if ($w.cancelled[transactionId]) revert IWallet.TransactionAlreadyCancelled();
         _notExpired(transactionId);
-        if (transaction.confirmations < _requiredConfirmations(transactionId)) {
+        if (_countCurrentDirectorFlags($w.isConfirmed, transactionId) < _requiredConfirmations(transactionId)) {
             revert IChamber.NotEnoughConfirmations();
         }
 
@@ -477,20 +479,18 @@ contract Chamber is ERC4626Upgradeable, Board, Wallet, IChamber, IERC721Receiver
 
     /**
      * @notice Revokes a confirmation for a transaction
+     * @dev Token owner may revoke after leaving the top-seat set, so outgoing approvals can be
+     *      withdrawn. Authorization is owner-only (M-01). Execute already ignores those flags.
      * @param tokenId The tokenId revoking the confirmation
      * @param transactionId The ID of the transaction to revoke confirmation for
      */
-    function revokeConfirmation(uint256 tokenId, uint256 transactionId)
-        public
-        override
-        nonReentrant
-        isDirector(tokenId)
-    {
+    function revokeConfirmation(uint256 tokenId, uint256 transactionId) public override nonReentrant {
+        _requireTokenAuthorized(tokenId);
         _revokeConfirmation(tokenId, transactionId);
     }
 
     /**
-     * @notice Records a director's vote to cancel a transaction. Requires quorum of directors to cancel.
+     * @notice Records a director's vote to cancel a transaction. Requires quorum of current directors.
      * @param tokenId The tokenId voting to cancel
      * @param transactionId The ID of the transaction to cancel
      */
@@ -505,8 +505,12 @@ contract Chamber is ERC4626Upgradeable, Board, Wallet, IChamber, IERC721Receiver
         Transaction storage transaction = $w.transactions[transactionId];
         if (transaction.executed) revert IWallet.TransactionAlreadyExecuted();
 
-        _recordCancelVote(tokenId, transactionId, getQuorum());
+        _recordCancelVote(tokenId, transactionId);
         emit IChamber.TransactionCancelVoted(transactionId, msg.sender);
+
+        if (_countCurrentDirectorFlags($w.isCancelConfirmed, transactionId) >= getQuorum()) {
+            _cancelTransaction(transactionId);
+        }
     }
 
     /**
@@ -622,11 +626,12 @@ contract Chamber is ERC4626Upgradeable, Board, Wallet, IChamber, IERC721Receiver
     }
 
     /**
-     * @notice Executes multiple transactions in a single call if they have enough confirmations
-     * @dev Each nonce must meet `max(submitQuorum, liveQuorum)` (M-04). Caller must re-supply
-     *      original calldata for each hash-only transaction in the same order as transactionIds.
-     *      Self-call / upgrade entries may be empty and use the onchain store (L-04). Each
-     *      payload is verified against its stored keccak256 hash.
+     * @notice Executes multiple transactions in a single call if they have enough current-director confirmations
+     * @dev Each nonce must meet live top-seat flags >= `max(submitQuorum, liveQuorum)` (H-01, M-04)
+     *      and must not be expired (deadline `0` is unset). Caller must re-supply original calldata
+     *      for each hash-only transaction in the same order as transactionIds. Self-call / upgrade
+     *      entries may be empty and use the onchain store (L-04). Each payload is verified against
+     *      its stored keccak256 hash.
      * @param tokenId The tokenId executing the transactions
      * @param transactionIds The array of transaction IDs to execute
      * @param data The array of original calldata for each transaction (same order as transactionIds)
@@ -647,7 +652,8 @@ contract Chamber is ERC4626Upgradeable, Board, Wallet, IChamber, IERC721Receiver
             Transaction storage transaction = $w.transactions[transactionId];
 
             if (transaction.executed) revert IWallet.TransactionAlreadyExecuted();
-            if (transaction.confirmations < _requiredConfirmations(transactionId)) {
+            _notExpired(transactionId);
+            if (_countCurrentDirectorFlags($w.isConfirmed, transactionId) < _requiredConfirmations(transactionId)) {
                 revert IChamber.NotEnoughConfirmations();
             }
 
@@ -700,28 +706,58 @@ contract Chamber is ERC4626Upgradeable, Board, Wallet, IChamber, IERC721Receiver
     /// @dev Authorization is per token, not per address. See {isDirector} for the token-weighted
     ///      quorum assumption (one owner of `quorum` top-seat NFTs is a single-actor treasury).
     function _isDirector(uint256 tokenId) internal view {
+        _requireTokenAuthorized(tokenId);
+        if (!_isInTopSeats(tokenId)) revert IChamber.NotDirector();
+        if (!_isSeatingMature(tokenId)) revert IChamber.DirectorNotSeated();
+    }
+
+    /// @dev NFT owner of `tokenId` (directorship not required). Owner-only; no ERC-1271 (M-01).
+    function _requireTokenAuthorized(uint256 tokenId) internal view {
         if (tokenId == 0) revert IChamber.NotDirector();
 
-        // NFT owners (EOA or contract) are directors only when they submit as themselves.
-        // The previous ERC-1271 path treated `abi.encode(msg.sender)` as a signature and
-        // issued a CALL from this view helper, so a promiscuous 1271 owner could
-        // impersonate the director and reenter ungated functions.
+        // NFT owners (EOA or contract) act only as themselves. The previous ERC-1271 path
+        // treated `abi.encode(msg.sender)` as a signature and issued a CALL from this view
+        // helper, so a promiscuous 1271 owner could impersonate the director.
         address owner = _getChamberStorage().nft.ownerOf(tokenId);
         if (owner != msg.sender) revert IChamber.NotDirector();
+    }
 
+    /// @dev True when `tokenId` is among the current top `_getSeats()` nodes.
+    function _isInTopSeats(uint256 tokenId) internal view returns (bool) {
         BoardStorage storage $b = _getBoardStorage();
         uint256 current = $b.head;
         uint256 remaining = _getSeats();
 
         while (current != 0 && remaining > 0) {
             if (current == tokenId) {
-                if (!_isSeatingMature(tokenId)) revert IChamber.DirectorNotSeated();
-                return;
+                return true;
             }
             current = $b.nodes[current].next;
             remaining--;
         }
-        revert IChamber.NotDirector();
+        return false;
+    }
+
+    /**
+     * @notice Counts flags set by tokenIds that are still in the top-seat set.
+     * @dev Mirrors {_executeSeatsUpdate}: one O(seats) walk; evicted tokenIds are ignored.
+     */
+    function _countCurrentDirectorFlags(
+        mapping(uint256 nonce => mapping(uint256 tokenId => bool)) storage flags,
+        uint256 nonce
+    ) internal view returns (uint256 count) {
+        BoardStorage storage $b = _getBoardStorage();
+        uint256 current = $b.head;
+        uint256 remaining = _getSeats();
+        unchecked {
+            while (current != 0 && remaining > 0) {
+                if (flags[nonce][current]) {
+                    ++count;
+                }
+                current = uint256($b.nodes[current].next);
+                --remaining;
+            }
+        }
     }
 
     /**

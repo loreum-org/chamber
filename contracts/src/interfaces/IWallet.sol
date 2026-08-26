@@ -78,10 +78,12 @@ interface IWallet {
     function confirmTransaction(uint256 tokenId, uint256 transactionId) external;
 
     /**
-     * @notice Executes a transaction if it has enough confirmations
+     * @notice Executes a transaction if current directors still meet the required quorum
      * @dev Caller must supply the original calldata unless it was stored onchain for a self-call
      *      (Chamber: `upgradeImplementation`). Empty `data` then uses the stored bytes.
      *      The contract always verifies keccak256(payload) == stored hash.
+     *      Chamber counts only tokenIds still in the top-seat set, against
+     *      `max(submitQuorum, liveQuorum)`. Deadline `0` is unset and is not expired.
      * @param tokenId The tokenId executing the transaction
      * @param transactionId The ID of the transaction to execute
      * @param data The original calldata, or empty to use stored self-call bytes
@@ -90,6 +92,7 @@ interface IWallet {
 
     /**
      * @notice Revokes a confirmation for a transaction
+     * @dev Chamber allows the token owner to revoke after leaving the board (owner-only, no ERC-1271).
      * @param tokenId The tokenId revoking the confirmation
      * @param transactionId The ID of the transaction to revoke confirmation for
      */
@@ -124,9 +127,10 @@ interface IWallet {
     function confirmBatchTransactions(uint256 tokenId, uint256[] memory transactionIds) external;
 
     /**
-     * @notice Executes multiple transactions in a single call if they have enough confirmations
+     * @notice Executes multiple transactions in a single call if they have enough current-director confirmations
      * @dev Caller must supply the original calldata for each hash-only transaction, in the same
      *      order as transactionIds. Self-call entries may be empty and use the onchain store.
+     *      Each nonce recounts live top-seat flags against `max(submitQuorum, liveQuorum)`.
      * @param tokenId The tokenId executing the transactions
      * @param transactionIds The array of transaction IDs to execute
      * @param data The array of original calldata for each transaction (empty allowed for stored self-calls)
