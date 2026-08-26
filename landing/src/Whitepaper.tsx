@@ -713,6 +713,11 @@ Node: 4 × uint256 = 4 storage slots (optimal for linked list operations)`}
           <p className="text-gray-500 text-sm">
             © 2026 LOREUM DAO LLC. ALL RIGHTS RESERVED.
           </p>
+          <p className="mt-4">
+            <Link to="/team" className="text-gray-500 hover:text-white transition-colors text-sm tracking-wide">
+              Team
+            </Link>
+          </p>
         </div>
       </footer>
     </div>
