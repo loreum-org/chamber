@@ -140,6 +140,55 @@ contract ChamberUpgradeTest is Test {
         assertNotEq(newImpl, currentImpl);
     }
 
+    function test_Chamber_UpgradeViaTransaction_ForgottenCalldata_UsesStored() public {
+        bytes32 implSlot = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
+        address currentImpl = address(uint160(uint256(vm.load(chamberAddress, implSlot))));
+
+        bytes memory upgradeData =
+            abi.encodeWithSelector(IChamber.upgradeImplementation.selector, address(newImplementation), "");
+
+        vm.prank(user1);
+        chamber.submitTransaction(1, chamberAddress, 0, upgradeData);
+
+        uint256 txId = chamber.getTransactionCount() - 1;
+        assertEq(chamber.getTransactionCalldata(txId), upgradeData);
+
+        vm.prank(user2);
+        chamber.confirmTransaction(2, txId);
+        vm.prank(user3);
+        chamber.confirmTransaction(3, txId);
+
+        // Execute without re-supplying the original bytes (logs / archives unavailable).
+        vm.prank(user1);
+        chamber.executeTransaction(1, txId, "");
+
+        address newImpl = address(uint160(uint256(vm.load(chamberAddress, implSlot))));
+        assertEq(newImpl, address(newImplementation));
+        assertNotEq(newImpl, currentImpl);
+    }
+
+    function test_Chamber_UpgradeViaTransaction_WrongCalldata_Reverts() public {
+        bytes memory upgradeData =
+            abi.encodeWithSelector(IChamber.upgradeImplementation.selector, address(newImplementation), "");
+
+        vm.prank(user1);
+        chamber.submitTransaction(1, chamberAddress, 0, upgradeData);
+
+        uint256 txId = chamber.getTransactionCount() - 1;
+
+        vm.prank(user2);
+        chamber.confirmTransaction(2, txId);
+        vm.prank(user3);
+        chamber.confirmTransaction(3, txId);
+
+        bytes memory wrongData =
+            abi.encodeWithSelector(IChamber.upgradeImplementation.selector, address(implementation), "");
+
+        vm.prank(user1);
+        vm.expectRevert(IWallet.DataHashMismatch.selector);
+        chamber.executeTransaction(1, txId, wrongData);
+    }
+
     function test_Chamber_UpgradeViaTransaction_WithInitialization() public {
         // Create a new implementation with a different version
         Chamber v2Implementation = new Chamber();

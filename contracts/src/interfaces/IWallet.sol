@@ -5,7 +5,9 @@ pragma solidity ^0.8.30;
  * @title IWallet
  * @author xhad, Loreum DAO LLC
  * @notice Director-gated multisig: submit, confirm, execute, revoke, and cancel transaction flows.
- * @dev Only `keccak256(calldata)` is stored onchain; callers must retain full calldata to execute.
+ * @dev Ordinary calls store only `keccak256(calldata)`; callers must retain full calldata to execute.
+ *      Self-calls (`target == address(this)`, Chamber: `upgradeImplementation`) also persist the
+ *      original bytes onchain so a confirmed upgrade remains executable if logs are unavailable.
  *      Confirmation and execution require a quorum of distinct director token IDs as enforced by `Chamber`.
  */
 interface IWallet {
@@ -14,7 +16,7 @@ interface IWallet {
      * @param tokenId The tokenId submitting the transaction
      * @param target The address to send the transaction to
      * @param value The amount of Ether to send
-     * @param data The calldata (stored onchain as keccak256 hash only)
+     * @param data The calldata (hash stored always; full bytes stored when `target` is this wallet)
      */
     function submitTransaction(uint256 tokenId, address target, uint256 value, bytes memory data) external;
 
@@ -23,7 +25,7 @@ interface IWallet {
      * @param tokenId The tokenId submitting the transaction
      * @param target The address to send the transaction to
      * @param value The amount of Ether to send
-     * @param data The calldata (stored onchain as keccak256 hash only)
+     * @param data The calldata (hash stored always; full bytes stored when `target` is this wallet)
      * @param metadataURI URI or content hash describing the proposal rationale and risk context
      */
     function submitTransactionWithMetadata(
@@ -42,10 +44,12 @@ interface IWallet {
 
     /**
      * @notice Executes a transaction if it has enough confirmations
-     * @dev Caller must supply the original calldata; the contract verifies keccak256(data) == stored hash.
+     * @dev Caller must supply the original calldata unless it was stored onchain for a self-call
+     *      (Chamber: `upgradeImplementation`). Empty `data` then uses the stored bytes.
+     *      The contract always verifies keccak256(payload) == stored hash.
      * @param tokenId The tokenId executing the transaction
      * @param transactionId The ID of the transaction to execute
-     * @param data The original calldata supplied at submission time
+     * @param data The original calldata, or empty to use stored self-call bytes
      */
     function executeTransaction(uint256 tokenId, uint256 transactionId, bytes calldata data) external;
 
@@ -68,7 +72,7 @@ interface IWallet {
      * @param tokenId The tokenId submitting the transactions
      * @param targets The array of addresses to send the transactions to
      * @param values The array of amounts of Ether to send
-     * @param data The array of calldata (each stored as keccak256 hash only)
+     * @param data The array of calldata (hash stored always; full bytes stored for self-calls)
      */
     function submitBatchTransactions(
         uint256 tokenId,
@@ -86,10 +90,11 @@ interface IWallet {
 
     /**
      * @notice Executes multiple transactions in a single call if they have enough confirmations
-     * @dev Caller must supply the original calldata for each transaction in the same order as transactionIds.
+     * @dev Caller must supply the original calldata for each hash-only transaction, in the same
+     *      order as transactionIds. Self-call entries may be empty and use the onchain store.
      * @param tokenId The tokenId executing the transactions
      * @param transactionIds The array of transaction IDs to execute
-     * @param data The array of original calldata for each transaction
+     * @param data The array of original calldata for each transaction (empty allowed for stored self-calls)
      */
     function executeBatchTransactions(uint256 tokenId, uint256[] memory transactionIds, bytes[] calldata data) external;
 
@@ -106,7 +111,7 @@ interface IWallet {
      * @return confirmations Number of confirmations
      * @return target The target address
      * @return value The ETH value
-     * @return dataHash keccak256 of the original calldata (re-supply at execution time)
+     * @return dataHash keccak256 of the original calldata (re-supply at execution unless stored)
      */
     function getTransaction(uint256 nonce)
         external
@@ -119,6 +124,13 @@ interface IWallet {
      * @return metadataURI URI or content hash supplied at proposal creation
      */
     function getTransactionMetadata(uint256 nonce) external view returns (string memory metadataURI);
+
+    /**
+     * @notice Returns onchain-stored calldata for a self-call / upgrade, or empty bytes for hash-only txs
+     * @param nonce The index of the transaction to retrieve stored calldata for
+     * @return storedCalldata Original bytes if this nonce targeted the wallet itself; otherwise empty
+     */
+    function getTransactionCalldata(uint256 nonce) external view returns (bytes memory storedCalldata);
 
     /**
      * @notice Checks if a transaction is confirmed by a specific director
@@ -163,7 +175,7 @@ interface IWallet {
      * @param nonce The unique identifier for the transaction
      * @param to The target address for the transaction
      * @param value The amount of ETH to send
-     * @param data The original calldata (emitted for offchain persistence; only hash stored onchain)
+     * @param data The original calldata (emitted for offchain persistence; also stored onchain for self-calls)
      */
     event SubmitTransaction(
         uint256 indexed tokenId, uint256 indexed nonce, address indexed to, uint256 value, bytes data

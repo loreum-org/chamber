@@ -398,10 +398,12 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
 
     /**
      * @notice Executes a transaction if it has enough confirmations
-     * @dev Caller must re-supply the original calldata; it is verified against the stored keccak256 hash.
+     * @dev Caller must re-supply the original calldata unless this nonce stored it (self-call /
+     *      `upgradeImplementation`). Empty `data` uses the stored bytes. Payload is always
+     *      verified against the stored keccak256 hash.
      * @param tokenId The tokenId executing the transaction
      * @param transactionId The ID of the transaction to execute
-     * @param data The original calldata supplied at submission time
+     * @param data The original calldata, or empty to use stored self-call bytes
      */
     function executeTransaction(uint256 tokenId, uint256 transactionId, bytes calldata data)
         public
@@ -554,8 +556,9 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
      * @notice Executes multiple transactions in a single call if they have enough confirmations
      * @dev _getQuorum() is cached once before the loop, saving one SLOAD per extra transaction
      *      in the batch (Optimization 7).
-     *      Caller must re-supply original calldata for each transaction in the same order as
-     *      transactionIds; each entry is verified against its stored keccak256 hash.
+     *      Caller must re-supply original calldata for each hash-only transaction in the same
+     *      order as transactionIds. Self-call / upgrade entries may be empty and use the
+     *      onchain store. Each payload is verified against its stored keccak256 hash.
      * @param tokenId The tokenId executing the transactions
      * @param transactionIds The array of transaction IDs to execute
      * @param data The array of original calldata for each transaction (same order as transactionIds)
@@ -842,6 +845,11 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
     /// @inheritdoc IWallet
     function getTransactionMetadata(uint256 nonce) public view override(IWallet, Wallet) returns (string memory) {
         return super.getTransactionMetadata(nonce);
+    }
+
+    /// @inheritdoc IWallet
+    function getTransactionCalldata(uint256 nonce) public view override(IWallet, Wallet) returns (bytes memory) {
+        return super.getTransactionCalldata(nonce);
     }
 
     /**

@@ -204,6 +204,49 @@ contract WalletTest is Test {
         assertEq(wallet.getNextTransactionId(), 2);
     }
 
+    function test_Wallet_ExecuteTransaction_DataHashMismatch_Reverts() public {
+        bytes memory data = hex"deadbeef";
+        wallet.submitTransaction(1, address(0x3), 0, data);
+
+        vm.expectRevert(IWallet.DataHashMismatch.selector);
+        wallet.executeTransaction(1, 0, hex"cafebabe");
+    }
+
+    function test_Wallet_ExecuteTransaction_ForgottenCalldata_HashOnly_Reverts() public {
+        bytes memory data = hex"deadbeef";
+        wallet.submitTransaction(1, address(0x3), 0, data);
+
+        assertEq(wallet.getTransactionCalldata(0).length, 0);
+
+        vm.expectRevert(IWallet.DataHashMismatch.selector);
+        wallet.executeTransaction(1, 0, "");
+    }
+
+    function test_Wallet_SelfCall_StoresCalldata_AndExecutesWithoutResupply() public {
+        bytes memory data = abi.encodeWithSignature("ping()");
+
+        wallet.submitTransaction(1, address(wallet), 0, data);
+
+        assertEq(wallet.getTransactionCalldata(0), data);
+        (,,,, bytes32 dataHash) = wallet.getTransaction(0);
+        assertEq(dataHash, keccak256(data));
+
+        wallet.executeTransaction(1, 0, "");
+
+        (bool executed,,,,) = wallet.getTransaction(0);
+        assertTrue(executed);
+        assertEq(wallet.pings(), 1);
+    }
+
+    function test_Wallet_SelfCall_WrongCalldata_Reverts() public {
+        bytes memory data = abi.encodeWithSignature("ping()");
+        wallet.submitTransaction(1, address(wallet), 0, data);
+
+        vm.expectRevert(IWallet.DataHashMismatch.selector);
+        wallet.executeTransaction(1, 0, hex"cafebabe");
+        assertEq(wallet.pings(), 0);
+    }
+
     function test_Wallet_ConfirmTransaction_AlreadyExecuted_Reverts() public {
         address target = address(0x3);
         bytes memory data = "";

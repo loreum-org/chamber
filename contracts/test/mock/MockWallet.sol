@@ -4,6 +4,13 @@ pragma solidity ^0.8.30;
 import {Wallet} from "src/Wallet.sol";
 
 contract MockWallet is Wallet {
+    uint256 public pings;
+
+    /// @notice Target for Wallet self-call liveness tests (L-04)
+    function ping() external {
+        pings += 1;
+    }
+
     function submitTransaction(uint256 tokenId, address to, uint256 value, bytes memory data) public {
         _submitTransaction(tokenId, to, value, data);
     }

@@ -84,11 +84,11 @@ All director-gated with **`isDirector(tokenId)`** and **`nonReentrant`** where m
 
 | Function | Role |
 |---------|------|
-| **`submitTransaction(tokenId, target, value, data)`** | Validates target/value (see below); stores **`keccak256(data)`**; auto-confirms submitter. |
+| **`submitTransaction(tokenId, target, value, data)`** | Validates target/value (see below); stores **`keccak256(data)`**; also stores full bytes for self-calls (`upgradeImplementation`); auto-confirms submitter. |
 | **`submitTransactionWithMetadata(..., string metadataURI)`** | Same + optional durable URI / hash string. |
 | **`confirmTransaction(tokenId, transactionId)`** | Increments confirmations if not cancelled / executed / duplicate. |
 | **`revokeConfirmation(tokenId, transactionId)`** | Removes this director’s confirmation when allowed. |
-| **`executeTransaction(tokenId, transactionId, bytes calldata data)`** | Requires quorum; verifies hash; external call. |
+| **`executeTransaction(tokenId, transactionId, bytes calldata data)`** | Requires quorum; verifies hash; empty `data` uses stored self-call bytes. |
 | **`cancelTransaction(tokenId, transactionId)`** | Cancels after quorum cancel votes. |
 | **`submitBatchTransactions(tokenId, targets[], values[], data[])`** | Same constraints per row; **`Σ values ≤ address(this).balance`** check for ETH. |
 | **`confirmBatchTransactions(tokenId, transactionIds[])`** | Batched confirms. |
@@ -96,7 +96,7 @@ All director-gated with **`isDirector(tokenId)`** and **`nonReentrant`** where m
 
 Transaction validation (single and batch): **`target != address(0)`**. If **`target == address(this)`**, calldata selector must be **`upgradeImplementation(address,bytes)`**. **`value`** cannot exceed native balance.
 
-Read helpers: **`getTransactionCount`**, **`getNextTransactionId`**, **`getTransaction(nonce)`** → **`(..., dataHash)`**, **`getTransactionMetadata`**, **`getConfirmation`**, **`getCancelled`**, **`getCancelConfirmation`**, **`getCancelConfirmations`**.
+Read helpers: **`getTransactionCount`**, **`getNextTransactionId`**, **`getTransaction(nonce)`** → **`(..., dataHash)`**, **`getTransactionMetadata`**, **`getTransactionCalldata`**, **`getConfirmation`**, **`getCancelled`**, **`getCancelConfirmation`**, **`getCancelConfirmations`**.
 
 ### Proxy upgrades
 

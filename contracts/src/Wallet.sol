@@ -10,16 +10,22 @@ import {IWallet} from "./interfaces/IWallet.sol";
  * @dev Provides core functionality for submitting, confirming, and executing transactions
  *      with configurable quorum requirements.
  *
- * Gas optimization — hash-only calldata storage:
+ * Gas optimization — hash-only calldata storage for ordinary calls:
  *   Transaction.data (formerly dynamic `bytes`) is replaced with `bytes32 dataHash`.
  *   At submission the keccak256 of the calldata is stored (fixed 1 slot vs. 20k per 32 bytes
  *   of raw calldata). At execution the caller re-supplies the original bytes; the contract
  *   verifies keccak256(data) == dataHash before forwarding to the target.
  *   This matches the pattern used by Gnosis Safe.
  *
- * BREAKING: executeTransaction and executeBatchTransactions now require a `data` / `data[]`
- *           parameter at call time. Callers must persist the original calldata (e.g. via the
- *           SubmitTransaction event or offchain storage) and re-supply it at execution.
+ * L-04 liveness exception — self-calls store full calldata onchain:
+ *   Calls whose `target == address(this)` (Chamber: `upgradeImplementation` only) persist
+ *   the original bytes in `transactionCalldata`. Execution may pass empty `data` and the
+ *   stored payload is used, so a confirmed upgrade remains executable if event logs or
+ *   `metadataURI` archives are unavailable. Ordinary treasury calls stay hash-only.
+ *
+ * BREAKING: executeTransaction and executeBatchTransactions require a `data` / `data[]`
+ *           parameter at call time. For non-self-calls, callers must persist the original
+ *           calldata (e.g. via the SubmitTransaction event) and re-supply it at execution.
  */
 abstract contract Wallet {
     /**
@@ -53,6 +59,8 @@ abstract contract Wallet {
         mapping(uint256 nonce => bool) cancelled;
         mapping(uint256 nonce => uint8) cancelConfirmations;
         mapping(uint256 nonce => mapping(uint256 tokenId => bool)) isCancelConfirmed;
+        /// @dev Full calldata for self-calls only (L-04). Empty for ordinary hash-only txs.
+        mapping(uint256 nonce => bytes storedCalldata) transactionCalldata;
     }
 
     /// @dev keccak256(abi.encode(uint256(keccak256("erc7201:loreum.Wallet")) - 1)) & ~bytes32(uint256(0xff))
@@ -111,7 +119,7 @@ abstract contract Wallet {
      * @param tokenId The token ID submitting the transaction
      * @param target The destination address for the transaction
      * @param value The amount of ETH to send
-     * @param data The calldata to execute (stored as keccak256 hash only)
+     * @param data The calldata to execute (hash stored always; full bytes stored for self-calls)
      */
     function _submitTransaction(uint256 tokenId, address target, uint256 value, bytes memory data) internal {
         _submitTransactionWithMetadata(tokenId, target, value, data, "");
@@ -122,7 +130,7 @@ abstract contract Wallet {
      * @param tokenId The token ID submitting the transaction
      * @param target The destination address for the transaction
      * @param value The amount of ETH to send
-     * @param data The calldata to execute (stored as keccak256 hash only)
+     * @param data The calldata to execute (hash stored always; full bytes stored for self-calls)
      * @param metadataURI URI or content hash describing the proposal rationale and risk context
      */
     function _submitTransactionWithMetadata(
@@ -138,6 +146,10 @@ abstract contract Wallet {
         bytes32 dataHash = keccak256(data);
         $.transactions
             .push(Transaction({target: target, value: value, dataHash: dataHash, executed: false, confirmations: 0}));
+        // L-04: persist upgrade/self-call bytes so execution does not depend on logs.
+        if (target == address(this)) {
+            $.transactionCalldata[nonce] = data;
+        }
         if (bytes(metadataURI).length != 0) {
             $.transactionMetadataURI[nonce] = metadataURI;
             emit IWallet.ProposalMetadataSet(nonce, metadataURI);
@@ -223,10 +235,11 @@ abstract contract Wallet {
     /**
      * @notice Executes a confirmed transaction
      * @dev Uses CEI pattern — state updated before external call.
-     *      Verifies keccak256(data) == stored dataHash before forwarding.
+     *      Verifies keccak256(payload) == stored dataHash before forwarding.
+     *      Self-calls use onchain-stored calldata when the caller passes empty `data`.
      * @param tokenId The token ID executing the transaction
      * @param nonce The transaction index to execute
-     * @param data The original calldata (must match the stored keccak256 hash)
+     * @param data The original calldata, or empty to use stored self-call bytes
      */
     function _executeTransaction(uint256 tokenId, uint256 nonce, bytes calldata data)
         internal
@@ -238,7 +251,8 @@ abstract contract Wallet {
         Transaction storage transaction = $.transactions[nonce];
 
         if (transaction.target == address(0)) revert IWallet.InvalidTarget();
-        if (keccak256(data) != transaction.dataHash) revert IWallet.DataHashMismatch();
+
+        bytes memory payload = _resolveExecutionCalldata(nonce, transaction, data);
 
         address target = transaction.target;
         uint256 value = transaction.value;
@@ -246,13 +260,33 @@ abstract contract Wallet {
         // CEI pattern: Update state BEFORE external call to prevent reentrancy
         transaction.executed = true;
 
-        (bool success, bytes memory returnData) = target.call{value: value}(data);
+        (bool success, bytes memory returnData) = target.call{value: value}(payload);
         if (!success) {
             transaction.executed = false;
             revert IWallet.TransactionFailed(returnData);
         }
 
         emit IWallet.ExecuteTransaction(tokenId, nonce);
+    }
+
+    /**
+     * @notice Resolves calldata for execution: stored self-call bytes, else caller-supplied.
+     * @dev If this nonce stored calldata (self-call / upgrade), empty `data` uses the store.
+     *      Any non-empty caller `data` must still match `dataHash`.
+     */
+    function _resolveExecutionCalldata(uint256 nonce, Transaction storage transaction, bytes calldata data)
+        private
+        view
+        returns (bytes memory payload)
+    {
+        bytes memory stored = _getWalletStorage().transactionCalldata[nonce];
+        if (stored.length != 0 || transaction.target == address(this)) {
+            payload = stored;
+            if (data.length != 0 && keccak256(data) != transaction.dataHash) revert IWallet.DataHashMismatch();
+        } else {
+            payload = data;
+        }
+        if (keccak256(payload) != transaction.dataHash) revert IWallet.DataHashMismatch();
     }
 
     /**
@@ -295,6 +329,14 @@ abstract contract Wallet {
      */
     function getTransactionMetadata(uint256 nonce) public view virtual txExists(nonce) returns (string memory) {
         return _getWalletStorage().transactionMetadataURI[nonce];
+    }
+
+    /**
+     * @notice Returns onchain-stored calldata for a self-call, or empty bytes for hash-only txs
+     * @param nonce The index of the transaction to retrieve stored calldata for
+     */
+    function getTransactionCalldata(uint256 nonce) public view virtual txExists(nonce) returns (bytes memory) {
+        return _getWalletStorage().transactionCalldata[nonce];
     }
 
     /**

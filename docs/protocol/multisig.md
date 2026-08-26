@@ -18,6 +18,8 @@ Other Directors must confirm the transaction.
 Once the number of confirmations reaches the **Quorum**, any Director can execute the transaction.
 - The Chamber uses the **Checks-Effects-Interactions (CEI)** pattern to prevent reentrancy during execution.
 - If a Director who confirmed a transaction is unseated before execution, their confirmation still counts (as the action was authorized while they were a Director).
+- Ordinary calls store only `keccak256(calldata)`; the executor must re-supply the original bytes (typically recovered from the `SubmitTransaction` event).
+- Self-calls (`target == Chamber`, restricted to `upgradeImplementation`) also persist the original bytes onchain. Execution may pass empty `data` and the stored payload is used, so a confirmed upgrade remains executable if logs are unavailable.
 
 ## Batch Operations
 
