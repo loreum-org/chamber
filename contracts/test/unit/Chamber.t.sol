@@ -1707,6 +1707,7 @@ contract ChamberTest is Test {
         token.approve(address(chamber), amount);
         chamber.deposit(amount, user1);
         chamber.delegate(tokenId, 1);
+        vm.roll(block.number + 1);
         chamber.submitTransaction(tokenId, address(0x3), 0, "");
         vm.stopPrank();
 
