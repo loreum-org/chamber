@@ -28,8 +28,11 @@ The contract blocks transfers that would leave you with **fewer free shares than
 
 ## ETH and NFTs sent to the Chamber
 
-- **ETH** sent to the Chamber address is accepted (useful for gas or donations).  
-- **ERC‑721 membership NFTs** can be received via `safeTransferFrom`; that is **not** a vault deposit — it does not mint shares.
+These paths are **not** vault deposits — they do not mint shares or change board seats.
+
+- **ETH** sent to the Chamber address is accepted (`receive` / payable `fallback`) for donations or gas.
+- **Any ERC‑721** can be received via `safeTransferFrom`. `onERC721Received` does **not** whitelist the membership collection. Chamber is meant to **custody arbitrary ERC‑721s** the same way a Safe holds NFTs. Directors move them out through the **proposal queue** (wallet `executeTransaction`).
+- **ERC‑1155 is not accepted.** There is no `onERC1155Received` / `onERC1155BatchReceived`. An ERC‑1155 `safeTransferFrom` to the Chamber **reverts**.
 
 ## Safety note (first depositor attacks)
 

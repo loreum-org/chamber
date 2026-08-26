@@ -40,6 +40,13 @@ Calls where `target == Chamber` are limited to **`upgradeImplementation`** selec
 
 `_update` enforces that share transfers cannot strand delegated weight (see **[Vault](./vaults.md)**).
 
+## NFT intake
+
+- `onERC721Received` accepts **any** ERC-721 collection. This is intentional treasury custody, not a membership gate. Receiving an NFT does not mint shares or affect delegation.
+- Directors transfer received ERC-721s out via the wallet (`executeTransaction` targeting the collection).
+- Chamber does **not** implement `IERC1155Receiver`. ERC-1155 `safeTransferFrom` / `safeBatchTransferFrom` to the Chamber revert.
+- `test_Chamber_ReceiveERC721` sends a **non-membership** collection to the Chamber to lock this intent.
+
 ## Further reading
 
 - **[API reference](../reference/api-reference.md)**  

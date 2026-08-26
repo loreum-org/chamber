@@ -26,6 +26,10 @@ To improve efficiency and gas costs, the Wallet supports batch operations:
 - `confirmBatchTransactions`: Confirm multiple pending transactions.
 - `executeBatchTransactions`: Execute a series of authorized transactions.
 
+## Assets the queue can move
+
+The Chamber can hold **ETH**, the vault ERC-20, and **any ERC-721** received via `safeTransferFrom`. Directors move those assets by targeting the token contract (or an ETH recipient) in a queued call. **ERC-1155 cannot be received** via `safeTransferFrom` (no `onERC1155Received`). See **[Vaults](./vaults.md)**.
+
 ## Security Features
 - **Non-Reentrant**: All execution functions are protected by a reentrancy guard.
 - **Access Control**: Only Directors can interact with the wallet functions.

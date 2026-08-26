@@ -58,6 +58,10 @@ A proposal may target **the Chamber itself** only for **`upgradeImplementation`*
 
 Directors can submit, confirm, or execute **many proposals in one transaction** to save gas. If any step in a batch fails, the **whole batch** reverts.
 
+## Assets the queue can move
+
+The Chamber can hold **ETH**, the **vault ERC-20**, and **any ERC-721** received via `safeTransferFrom`. Directors move those assets by targeting the token contract (or an ETH recipient) in a queued call. **ERC-1155 cannot be received** via `safeTransferFrom` (no receiver hook). See **[Vault](./vaults.md)**.
+
 ## Safety
 
 External entrypoints use **reentrancy guards**. Execution follows **checks-effects-interactions**: mark executed, then call out; revert and roll back if the call fails.

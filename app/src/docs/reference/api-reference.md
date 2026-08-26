@@ -54,6 +54,8 @@ Standard **`deposit` / `mint` / `withdraw` / `redeem`** with OpenZeppelin ERC‑
 
 Public ETH / NFT receive: **`receive`**, **`fallback`**, **`onERC721Received`**.
 
+`onERC721Received` accepts **any** ERC-721 collection (treasury custody; not a membership whitelist). Receipt does not mint shares. There is **no** `onERC1155Received` — ERC-1155 `safeTransferFrom` to Chamber reverts. Directors transfer received ERC-721s out via the wallet queue.
+
 ### Delegation
 
 | Function | Role |

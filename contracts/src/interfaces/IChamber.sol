@@ -161,10 +161,12 @@ interface IChamber is IERC4626, IBoard, IWallet {
     event Received(address indexed sender, uint256 amount);
 
     /**
-     * @notice Emitted when the contract receives an ERC721 token via safeTransferFrom
-     * @param token The ERC721 contract address
-     * @param from The address that sent the token
+     * @notice Emitted when the contract receives an ERC-721 via `safeTransferFrom`.
+     * @param token The ERC-721 collection (`msg.sender`); any collection is accepted
+     * @param from The previous owner
      * @param tokenId The token ID received
+     * @dev Receipt is treasury custody, not a membership or vault deposit. ERC-1155
+     *      intake is not implemented.
      */
     event ReceivedERC721(address indexed token, address indexed from, uint256 indexed tokenId);
 

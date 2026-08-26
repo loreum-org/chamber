@@ -1264,7 +1264,7 @@ contract ChamberTest is Test {
     }
 
     function test_Chamber_ReceiveERC721() public {
-        // Use a separate ERC721 (not the governance NFT) to send to Chamber
+        // Intended: Chamber custodies arbitrary ERC-721s, not only the membership collection.
         MockERC721 otherNft = new MockERC721("Other NFT", "ONFT");
         uint256 tokenId = otherNft.mint(user1);
 

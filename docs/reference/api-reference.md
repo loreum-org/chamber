@@ -453,6 +453,25 @@ Returns next transaction ID.
 
 ---
 
+### Receive functions
+
+#### `receive()`
+Accepts native ETH with empty calldata. Emits `Received`.
+
+#### `fallback()`
+Accepts native ETH sent with calldata. Emits `Received` when `msg.value > 0`. Unknown selectors do not dispatch privileged logic.
+
+#### `onERC721Received(address operator, address from, uint256 tokenId, bytes data) → bytes4`
+ERC-721 receiver hook. Accepts **any** collection (`msg.sender` is not checked against `nft()`). Receipt is treasury custody: it does not mint shares or change board seats. Directors transfer received ERC-721s out via the wallet.
+
+**Returns**: `IERC721Receiver.onERC721Received.selector`
+
+**Events**: `ReceivedERC721(token, from, tokenId)` where `token` is the collection (`msg.sender`)
+
+**Not implemented**: `onERC1155Received` / `onERC1155BatchReceived`. ERC-1155 `safeTransferFrom` to Chamber reverts.
+
+---
+
 ### ERC4626 Functions
 
 #### `deposit(uint256 assets, address receiver) → uint256`
@@ -567,6 +586,7 @@ Transfers tokens from another address.
 - `TransactionConfirmed(uint256 indexed transactionId, address indexed confirmer)`
 - `TransactionExecuted(uint256 indexed transactionId, address indexed executor)`
 - `Received(address indexed sender, uint256 amount)`
+- `ReceivedERC721(address indexed token, address indexed from, uint256 indexed tokenId)` — any ERC-721 collection; not limited to the membership NFT
 
 ### Board Events
 

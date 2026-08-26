@@ -597,8 +597,11 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
         }
     }
 
-    /// @notice Accepts ERC721 tokens via safeTransferFrom
-    /// @dev Returns the magic value required by IERC721Receiver
+    /// @notice Accepts any ERC-721 via `safeTransferFrom` for treasury custody.
+    /// @dev Not limited to the membership collection (`nft()`). Receipt does not mint
+    ///      shares or change board seats. Directors can transfer received tokens out
+    ///      through the wallet. There is no `onERC1155Received`; ERC-1155
+    ///      `safeTransferFrom` to this contract reverts.
     function onERC721Received(address, address from, uint256 tokenId, bytes calldata)
         external
         override
