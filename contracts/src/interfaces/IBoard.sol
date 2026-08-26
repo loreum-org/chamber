@@ -137,10 +137,6 @@ interface IBoard {
     /// @notice Thrown if updateSeats execution call hasn't got enough votes
     error InsufficientVotes();
 
-    /// @notice Reserved error (not reverted by current Board source); kept for ABI compatibility.
-    /// @param supporter Address placeholder for a supporter not on the leaderboard
-    error SupporterNotOnLeaderboard(address supporter);
-
     /// @notice Thrown when the linked list has reached its maximum size
     error MaxNodesReached();
 

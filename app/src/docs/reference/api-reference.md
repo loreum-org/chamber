@@ -120,8 +120,6 @@ From **`IChamber`** / **`IBoard`** / **`IWallet`** / **`IRegistry`** (non-exhaus
 - **Treasury receive:** `Received`, `ReceivedERC721`  
 - **Registry:** `ChamberCreated`, `ChamberImplementationUpdated`  
 
-Reserved but **not emitted** by current Chamber: **`DirectorshipChanged`**, **`QuorumUpdated`** (`IChamber`).
-
 ---
 
 ## Representative errors
