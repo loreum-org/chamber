@@ -18,6 +18,7 @@ import {
     ITransparentUpgradeableProxy
 } from "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {StorageSlot} from "lib/openzeppelin-contracts/contracts/utils/StorageSlot.sol";
+import {EnumerableSet} from "lib/openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
 
 /**
  * @title Chamber Contract
@@ -25,16 +26,21 @@ import {StorageSlot} from "lib/openzeppelin-contracts/contracts/utils/StorageSlo
  * @author xhad, Loreum DAO LLC
  */
 contract Chamber is ERC4626Upgradeable, Board, Wallet, IChamber, IERC721Receiver {
+    using EnumerableSet for EnumerableSet.UintSet;
+
     /**
      * @notice ERC-7201 namespaced storage layout for Chamber
      * @dev Packing: `nft` (address, 20 bytes) sits alone in its slot; remaining fields are
      *      dynamic types or mappings which each occupy a full slot.
+     *      `holderDelegatedTokenIds` is appended so existing ERC-7201 slots stay stable.
      * @custom:storage-location erc7201:loreum.Chamber
      */
     struct ChamberStorage {
         IERC721 nft;
         mapping(address => mapping(uint256 => uint256)) holderDelegation;
         mapping(address => uint256) totalHolderDelegations;
+        /// @dev Per-holder set of tokenIds with a positive delegation, including board-evicted ids.
+        mapping(address => EnumerableSet.UintSet) holderDelegatedTokenIds;
     }
 
     /// @dev keccak256(abi.encode(uint256(keccak256("erc7201:loreum.Chamber")) - 1)) & ~bytes32(uint256(0xff))
@@ -130,6 +136,7 @@ contract Chamber is ERC4626Upgradeable, Board, Wallet, IChamber, IERC721Receiver
 
         $.holderDelegation[msg.sender][tokenId] += amount;
         $.totalHolderDelegations[msg.sender] += amount;
+        $.holderDelegatedTokenIds[msg.sender].add(tokenId);
 
         // Validate the balance constraint one final time after updates to reduce SLOADs
         if (senderBalance < $.totalHolderDelegations[msg.sender]) {
@@ -157,6 +164,9 @@ contract Chamber is ERC4626Upgradeable, Board, Wallet, IChamber, IERC721Receiver
         uint256 newDelegation = currentDelegation - amount;
         $.holderDelegation[msg.sender][tokenId] = newDelegation;
         $.totalHolderDelegations[msg.sender] -= amount;
+        if (newDelegation == 0) {
+            $.holderDelegatedTokenIds[msg.sender].remove(tokenId);
+        }
 
         // Only update board if node still exists (handles evicted nodes — Fix Finding 11)
         BoardStorage storage $b = _getBoardStorage();
@@ -242,6 +252,7 @@ contract Chamber is ERC4626Upgradeable, Board, Wallet, IChamber, IERC721Receiver
 
     /**
      * @notice Returns the list of tokenIds to which the holder has delegated tokens and the corresponding amounts
+     * @dev Reads the per-holder enumerable set so board-evicted tokenIds remain discoverable.
      * @param holder The address holding Chamber shares that delegated voting weight
      * @return tokenIds The list of tokenIds
      * @return amounts The list of amounts delegated to each tokenId
@@ -254,32 +265,12 @@ contract Chamber is ERC4626Upgradeable, Board, Wallet, IChamber, IERC721Receiver
     {
         if (holder == address(0)) revert IChamber.ZeroAddress();
 
-        BoardStorage storage $b = _getBoardStorage();
         ChamberStorage storage $c = _getChamberStorage();
-
-        uint256 count = 0;
-        uint256 tokenId = $b.head;
-        uint256[] memory tempTokenIds = new uint256[]($b.size);
-        uint256[] memory tempAmounts = new uint256[]($b.size);
-
-        while (tokenId != 0) {
-            uint256 amount = $c.holderDelegation[holder][tokenId];
-            if (amount > 0) {
-                tempTokenIds[count] = tokenId;
-                tempAmounts[count] = amount;
-                unchecked {
-                    ++count;
-                }
-            }
-            tokenId = $b.nodes[tokenId].next;
-        }
-
-        tokenIds = new uint256[](count);
+        tokenIds = $c.holderDelegatedTokenIds[holder].values();
+        uint256 count = tokenIds.length;
         amounts = new uint256[](count);
-        // Use unchecked loop for better gas efficiency on the final copy
         for (uint256 i = 0; i < count;) {
-            tokenIds[i] = tempTokenIds[i];
-            amounts[i] = tempAmounts[i];
+            amounts[i] = $c.holderDelegation[holder][tokenIds[i]];
             unchecked {
                 ++i;
             }

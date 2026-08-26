@@ -560,19 +560,14 @@ contract ChamberTest is Test {
         chamber.delegate(tokenId3, amount3);
         vm.stopPrank();
 
-        // Get user delegations
+        // Get user delegations (order is set insertion order, not board rank)
         (uint256[] memory tokenIds, uint256[] memory amounts) = chamber.getDelegations(user1);
 
-        // Check user delegations
         assertEq(tokenIds.length, 3);
         assertEq(amounts.length, 3);
-
-        assertEq(tokenIds[0], tokenId3);
-        assertEq(amounts[0], amount3);
-        assertEq(tokenIds[1], tokenId2);
-        assertEq(amounts[1], amount2);
-        assertEq(tokenIds[2], tokenId1);
-        assertEq(amounts[2], amount1 + 1);
+        assertEq(_delegationAmount(tokenIds, amounts, tokenId1), amount1 + 1);
+        assertEq(_delegationAmount(tokenIds, amounts, tokenId2), amount2);
+        assertEq(_delegationAmount(tokenIds, amounts, tokenId3), amount3);
     }
 
     function test_Chamber_ExecuteTransaction_MockERC20() public {
@@ -763,6 +758,17 @@ contract ChamberTest is Test {
         vm.expectRevert(IChamber.ExceedsDelegatedAmount.selector);
         // forge-lint: disable-next-line(erc20-unchecked-transfer)
         chamber.transferFrom(user1, bob, amount);
+    }
+
+    function _delegationAmount(uint256[] memory tokenIds, uint256[] memory amounts, uint256 tokenId)
+        internal
+        pure
+        returns (uint256)
+    {
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            if (tokenIds[i] == tokenId) return amounts[i];
+        }
+        return 0;
     }
 
     function addDirectors() internal {

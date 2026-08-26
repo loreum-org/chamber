@@ -45,6 +45,7 @@ interface IChamber is IERC4626, IBoard, IWallet {
 
     /**
      * @notice Returns the list of tokenIds to which the holder has delegated tokens and the corresponding amounts
+     * @dev Includes tokenIds evicted from the board leaderboard while the holder still has a positive amount.
      * @param holder The address holding Chamber shares that delegated voting weight
      * @return tokenIds The list of tokenIds
      * @return amounts The list of amounts delegated to each tokenId
