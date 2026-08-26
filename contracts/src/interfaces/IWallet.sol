@@ -12,6 +12,8 @@ pragma solidity ^0.8.30;
  *      That quorum is token-weighted: one address that holds `quorum` top-seat membership NFTs
  *      can submit, self-confirm, and execute (a single-actor treasury). Confirmations are not
  *      capped per owner.
+ *      Submit records a deadline (default 30 days, or an explicit future timestamp up to that max).
+ *      After the deadline, confirm/revoke/execute revert with `TransactionExpired`.
  */
 interface IWallet {
     /**
@@ -22,6 +24,17 @@ interface IWallet {
      * @param data The calldata (hash stored always; full bytes stored when `target` is this wallet)
      */
     function submitTransaction(uint256 tokenId, address target, uint256 value, bytes memory data) external;
+
+    /**
+     * @notice Submits a new transaction for approval with an explicit execution deadline
+     * @param tokenId The tokenId submitting the transaction
+     * @param target The address to send the transaction to
+     * @param value The amount of Ether to send
+     * @param data The calldata (stored onchain as keccak256 hash only)
+     * @param deadline Exclusive-after unix timestamp; `0` applies the 30-day default max age
+     */
+    function submitTransaction(uint256 tokenId, address target, uint256 value, bytes memory data, uint256 deadline)
+        external;
 
     /**
      * @notice Submits a new transaction for approval with durable proposal metadata
@@ -37,6 +50,24 @@ interface IWallet {
         uint256 value,
         bytes memory data,
         string memory metadataURI
+    ) external;
+
+    /**
+     * @notice Submits a new transaction with durable proposal metadata and an explicit deadline
+     * @param tokenId The tokenId submitting the transaction
+     * @param target The address to send the transaction to
+     * @param value The amount of Ether to send
+     * @param data The calldata (stored onchain as keccak256 hash only)
+     * @param metadataURI URI or content hash describing the proposal rationale and risk context
+     * @param deadline Exclusive-after unix timestamp; `0` applies the 30-day default max age
+     */
+    function submitTransactionWithMetadata(
+        uint256 tokenId,
+        address target,
+        uint256 value,
+        bytes memory data,
+        string memory metadataURI,
+        uint256 deadline
     ) external;
 
     /**
@@ -158,6 +189,20 @@ interface IWallet {
     function getCancelled(uint256 nonce) external view returns (bool);
 
     /**
+     * @notice Returns the exclusive-after unix timestamp after which the transaction cannot be executed
+     * @param nonce The index of the transaction to retrieve
+     * @return deadline Stored deadline timestamp
+     */
+    function getTransactionDeadline(uint256 nonce) external view returns (uint256 deadline);
+
+    /**
+     * @notice Returns whether a transaction has passed its deadline
+     * @param nonce The index of the transaction to check
+     * @return True if the transaction is expired
+     */
+    function isTransactionExpired(uint256 nonce) external view returns (bool);
+
+    /**
      * @notice Checks if a director has voted to cancel a transaction
      * @param tokenId The tokenId of the director to check
      * @param nonce The index of the transaction to check
@@ -232,6 +277,13 @@ interface IWallet {
      */
     event TransactionCancelled(uint256 indexed nonce);
 
+    /**
+     * @notice Emitted when a transaction deadline is recorded at submit time
+     * @param nonce The identifier of the transaction
+     * @param deadline Exclusive-after unix timestamp after which execute/confirm/revoke revert
+     */
+    event TransactionDeadlineSet(uint256 indexed nonce, uint256 deadline);
+
     /// Errors
     /// @notice Thrown when a transaction does not exist
     error TransactionDoesNotExist();
@@ -247,6 +299,12 @@ interface IWallet {
 
     /// @notice Thrown when a transaction has already been cancelled
     error TransactionAlreadyCancelled();
+
+    /// @notice Thrown when a transaction's deadline has passed
+    error TransactionExpired();
+
+    /// @notice Thrown when a submit deadline is not in the future or exceeds the 30-day max age
+    error InvalidDeadline();
 
     /// @notice Thrown when a director has already voted to cancel
     error TransactionCancelAlreadyConfirmed();

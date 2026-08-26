@@ -263,6 +263,71 @@ contract WalletTest is Test {
         vm.expectRevert(IWallet.TransactionAlreadyExecuted.selector);
         wallet.confirmTransaction(2, 0);
     }
+
+    function test_Wallet_SubmitTransaction_DefaultDeadline() public {
+        uint256 submittedAt = block.timestamp;
+        wallet.submitTransaction(1, address(0x3), 0, "");
+
+        assertEq(wallet.getTransactionDeadline(0), submittedAt + wallet.DEFAULT_TRANSACTION_MAX_AGE());
+        assertFalse(wallet.isTransactionExpired(0));
+    }
+
+    function test_Wallet_SubmitTransaction_ExplicitDeadline() public {
+        uint256 deadline = block.timestamp + 1 days;
+        wallet.submitTransaction(1, address(0x3), 0, "", deadline);
+
+        assertEq(wallet.getTransactionDeadline(0), deadline);
+        assertFalse(wallet.isTransactionExpired(0));
+    }
+
+    function test_Wallet_SubmitTransaction_PastDeadline_Reverts() public {
+        vm.expectRevert(IWallet.InvalidDeadline.selector);
+        wallet.submitTransaction(1, address(0x3), 0, "", block.timestamp);
+    }
+
+    function test_Wallet_SubmitTransaction_ExceedsMaxAge_Reverts() public {
+        uint256 tooFar = block.timestamp + wallet.DEFAULT_TRANSACTION_MAX_AGE() + 1;
+        vm.expectRevert(IWallet.InvalidDeadline.selector);
+        wallet.submitTransaction(1, address(0x3), 0, "", tooFar);
+    }
+
+    function test_Wallet_ExecuteTransaction_BeforeDeadline_Succeeds() public {
+        address target = address(0x3);
+        bytes memory data = "";
+        uint256 deadline = block.timestamp + 2 days;
+        deal(address(wallet), 1 ether);
+
+        wallet.submitTransaction(1, target, 1 ether, data, deadline);
+        vm.warp(deadline);
+        wallet.executeTransaction(1, 0, data);
+
+        (bool executed,,,,) = wallet.getTransaction(0);
+        assertTrue(executed);
+        assertEq(target.balance, 1 ether);
+    }
+
+    function test_Wallet_ExecuteTransaction_AfterDeadline_Reverts() public {
+        address target = address(0x3);
+        bytes memory data = "";
+        uint256 deadline = block.timestamp + 1 days;
+        deal(address(wallet), 1 ether);
+
+        wallet.submitTransaction(1, target, 1 ether, data, deadline);
+        vm.warp(deadline + 1);
+
+        assertTrue(wallet.isTransactionExpired(0));
+        vm.expectRevert(IWallet.TransactionExpired.selector);
+        wallet.executeTransaction(1, 0, data);
+    }
+
+    function test_Wallet_ConfirmTransaction_AfterDeadline_Reverts() public {
+        uint256 deadline = block.timestamp + 1 days;
+        wallet.submitTransaction(1, address(0x3), 0, "", deadline);
+        vm.warp(deadline + 1);
+
+        vm.expectRevert(IWallet.TransactionExpired.selector);
+        wallet.confirmTransaction(2, 0);
+    }
 }
 
 contract RevertingContract {

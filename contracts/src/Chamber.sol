@@ -360,6 +360,25 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
     }
 
     /**
+     * @notice Submits a new transaction for approval with an explicit execution deadline
+     * @param tokenId The tokenId submitting the transaction
+     * @param target The address to send the transaction to
+     * @param value The amount of Ether to send
+     * @param data The data to include in the transaction
+     * @param deadline Exclusive-after unix timestamp; `0` applies the 30-day default max age
+     */
+    function submitTransaction(uint256 tokenId, address target, uint256 value, bytes memory data, uint256 deadline)
+        public
+        override
+        nonReentrant
+        isDirector(tokenId)
+    {
+        _validateTransaction(target, value, data);
+        _submitTransaction(tokenId, target, value, data, deadline);
+        emit IChamber.TransactionSubmitted(getNextTransactionId() - 1, target, value);
+    }
+
+    /**
      * @notice Submits a new transaction with durable proposal metadata for approval
      * @param tokenId The tokenId submitting the transaction
      * @param target The address to send the transaction to
@@ -376,6 +395,28 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
     ) public override nonReentrant isDirector(tokenId) {
         _validateTransaction(target, value, data);
         _submitTransactionWithMetadata(tokenId, target, value, data, metadataURI);
+        emit IChamber.TransactionSubmitted(getNextTransactionId() - 1, target, value);
+    }
+
+    /**
+     * @notice Submits a new transaction with durable proposal metadata and an explicit deadline
+     * @param tokenId The tokenId submitting the transaction
+     * @param target The address to send the transaction to
+     * @param value The amount of Ether to send
+     * @param data The data to include in the transaction
+     * @param metadataURI URI or content hash describing the proposal rationale and risk context
+     * @param deadline Exclusive-after unix timestamp; `0` applies the 30-day default max age
+     */
+    function submitTransactionWithMetadata(
+        uint256 tokenId,
+        address target,
+        uint256 value,
+        bytes memory data,
+        string memory metadataURI,
+        uint256 deadline
+    ) public override nonReentrant isDirector(tokenId) {
+        _validateTransaction(target, value, data);
+        _submitTransactionWithMetadata(tokenId, target, value, data, metadataURI, deadline);
         emit IChamber.TransactionSubmitted(getNextTransactionId() - 1, target, value);
     }
 
@@ -420,6 +461,7 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
         Transaction storage transaction = $w.transactions[transactionId];
         if (transaction.executed) revert IWallet.TransactionAlreadyExecuted();
         if ($w.cancelled[transactionId]) revert IWallet.TransactionAlreadyCancelled();
+        _notExpired(transactionId);
         if (transaction.confirmations < _requiredConfirmations(transactionId)) {
             revert IChamber.NotEnoughConfirmations();
         }

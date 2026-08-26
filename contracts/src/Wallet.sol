@@ -8,7 +8,8 @@ import {IWallet} from "./interfaces/IWallet.sol";
  * @author xhad, Loreum DAO LLC
  * @notice Abstract contract implementing multisig transaction management
  * @dev Provides core functionality for submitting, confirming, and executing transactions
- *      with configurable quorum requirements.
+ *      with configurable quorum requirements. Submitted transactions expire after a
+ *      deadline (default 30 days) and cannot be confirmed, revoked, or executed once expired.
  *
  * Gas optimization — hash-only calldata storage for ordinary calls:
  *   Transaction.data (formerly dynamic `bytes`) is replaced with `bytes32 dataHash`.
@@ -48,6 +49,9 @@ abstract contract Wallet {
         bytes32 dataHash;
     }
 
+    /// @notice Default lifetime for a submitted transaction when no deadline is provided
+    uint256 public constant DEFAULT_TRANSACTION_MAX_AGE = 30 days;
+
     /**
      * @notice ERC-7201 namespaced storage layout for Wallet
      * @custom:storage-location erc7201:loreum.Wallet
@@ -63,6 +67,8 @@ abstract contract Wallet {
         mapping(uint256 nonce => bytes storedCalldata) transactionCalldata;
         /// @dev Quorum at submit time (M-04). Appended mapping is upgrade-safe; does not resize Transaction[].
         mapping(uint256 nonce => uint256 requiredQuorum) transactionRequiredQuorum;
+        /// @dev unix timestamp after which the nonce is treated as expired (non-executable)
+        mapping(uint256 nonce => uint256 deadline) transactionDeadline;
     }
 
     /// @dev keccak256(abi.encode(uint256(keccak256("erc7201:loreum.Wallet")) - 1)) & ~bytes32(uint256(0xff))
@@ -106,6 +112,31 @@ abstract contract Wallet {
         if (_getWalletStorage().cancelled[nonce]) revert IWallet.TransactionAlreadyCancelled();
     }
 
+    /// @notice Modifier to check if a transaction has not passed its deadline
+    modifier notExpired(uint256 nonce) {
+        _notExpired(nonce);
+        _;
+    }
+
+    function _notExpired(uint256 nonce) internal view {
+        if (block.timestamp > _getWalletStorage().transactionDeadline[nonce]) revert IWallet.TransactionExpired();
+    }
+
+    /**
+     * @notice Resolves a submit-time deadline. Zero means the default max age.
+     * @dev Rejects timestamps that are not in the future or that exceed the 30-day max age.
+     */
+    function _resolveDeadline(uint256 deadline) internal view returns (uint256 resolved) {
+        uint256 maxDeadline = block.timestamp + DEFAULT_TRANSACTION_MAX_AGE;
+        if (deadline == 0) {
+            return maxDeadline;
+        }
+        if (deadline <= block.timestamp || deadline > maxDeadline) {
+            revert IWallet.InvalidDeadline();
+        }
+        return deadline;
+    }
+
     /// @notice Modifier to check if a transaction has not been confirmed by a specific tokenId
     modifier notConfirmed(uint256 tokenId, uint256 nonce) {
         _notConfirmed(tokenId, nonce);
@@ -124,7 +155,21 @@ abstract contract Wallet {
      * @param data The calldata to execute (hash stored always; full bytes stored for self-calls)
      */
     function _submitTransaction(uint256 tokenId, address target, uint256 value, bytes memory data) internal {
-        _submitTransactionWithMetadata(tokenId, target, value, data, "");
+        _submitTransaction(tokenId, target, value, data, 0);
+    }
+
+    /**
+     * @notice Submits a new transaction with an explicit deadline and auto-confirms for the submitter
+     * @param tokenId The token ID submitting the transaction
+     * @param target The destination address for the transaction
+     * @param value The amount of ETH to send
+     * @param data The calldata to execute (stored as keccak256 hash only)
+     * @param deadline Exclusive-after unix timestamp; `0` applies {DEFAULT_TRANSACTION_MAX_AGE}
+     */
+    function _submitTransaction(uint256 tokenId, address target, uint256 value, bytes memory data, uint256 deadline)
+        internal
+    {
+        _submitTransactionWithMetadata(tokenId, target, value, data, "", deadline);
     }
 
     /**
@@ -142,8 +187,29 @@ abstract contract Wallet {
         bytes memory data,
         string memory metadataURI
     ) internal {
+        _submitTransactionWithMetadata(tokenId, target, value, data, metadataURI, 0);
+    }
+
+    /**
+     * @notice Submits a new transaction with metadata and an explicit deadline
+     * @param tokenId The token ID submitting the transaction
+     * @param target The destination address for the transaction
+     * @param value The amount of ETH to send
+     * @param data The calldata to execute (stored as keccak256 hash only)
+     * @param metadataURI URI or content hash describing the proposal rationale and risk context
+     * @param deadline Exclusive-after unix timestamp; `0` applies {DEFAULT_TRANSACTION_MAX_AGE}
+     */
+    function _submitTransactionWithMetadata(
+        uint256 tokenId,
+        address target,
+        uint256 value,
+        bytes memory data,
+        string memory metadataURI,
+        uint256 deadline
+    ) internal {
         WalletStorage storage $ = _getWalletStorage();
         uint256 nonce = $.transactions.length;
+        uint256 resolvedDeadline = _resolveDeadline(deadline);
 
         bytes32 dataHash = keccak256(data);
         $.transactions
@@ -153,6 +219,8 @@ abstract contract Wallet {
             $.transactionCalldata[nonce] = data;
         }
         $.transactionRequiredQuorum[nonce] = _submitQuorum();
+        $.transactionDeadline[nonce] = resolvedDeadline;
+        emit IWallet.TransactionDeadlineSet(nonce, resolvedDeadline);
         if (bytes(metadataURI).length != 0) {
             $.transactionMetadataURI[nonce] = metadataURI;
             emit IWallet.ProposalMetadataSet(nonce, metadataURI);
@@ -181,6 +249,7 @@ abstract contract Wallet {
         txExists(nonce)
         notExecuted(nonce)
         notCancelled(nonce)
+        notExpired(nonce)
         notConfirmed(tokenId, nonce)
     {
         WalletStorage storage $ = _getWalletStorage();
@@ -202,6 +271,7 @@ abstract contract Wallet {
         txExists(nonce)
         notExecuted(nonce)
         notCancelled(nonce)
+        notExpired(nonce)
     {
         WalletStorage storage $ = _getWalletStorage();
         if (!$.isConfirmed[nonce][tokenId]) revert IWallet.TransactionNotConfirmed();
@@ -258,6 +328,7 @@ abstract contract Wallet {
         txExists(nonce)
         notExecuted(nonce)
         notCancelled(nonce)
+        notExpired(nonce)
     {
         WalletStorage storage $ = _getWalletStorage();
         Transaction storage transaction = $.transactions[nonce];
@@ -377,6 +448,24 @@ abstract contract Wallet {
      */
     function getCancelled(uint256 nonce) public view virtual returns (bool) {
         return _getWalletStorage().cancelled[nonce];
+    }
+
+    /**
+     * @notice Returns the exclusive-after unix timestamp after which `nonce` cannot be executed
+     * @param nonce The index of the transaction to retrieve
+     * @return deadline The stored deadline (`block.timestamp + DEFAULT_TRANSACTION_MAX_AGE` when submit used `0`)
+     */
+    function getTransactionDeadline(uint256 nonce) public view virtual txExists(nonce) returns (uint256 deadline) {
+        return _getWalletStorage().transactionDeadline[nonce];
+    }
+
+    /**
+     * @notice Returns whether a transaction has passed its deadline
+     * @param nonce The index of the transaction to check
+     * @return True if `block.timestamp` is strictly greater than the stored deadline
+     */
+    function isTransactionExpired(uint256 nonce) public view virtual txExists(nonce) returns (bool) {
+        return block.timestamp > _getWalletStorage().transactionDeadline[nonce];
     }
 
     /**
