@@ -654,7 +654,7 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
     /**
      * @notice First block at which `tokenId` may exercise director rights.
      * @param tokenId The membership token ID
-     * @return seatedAtBlock Activation block, or zero if not seated
+     * @return seatedAtBlock Activation block, or zero if no checkpoint is stored
      */
     function getSeatedAt(uint256 tokenId) public view override returns (uint256 seatedAtBlock) {
         return _getSeatedAt(tokenId);

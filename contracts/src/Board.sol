@@ -55,7 +55,8 @@ abstract contract Board {
         uint256 tail;
         uint32 size; // packed with seats (shares one slot)
         uint32 seats; // packed with size (shares one slot)
-        /// @notice First block at which `tokenId` may exercise director rights. Zero if not seated.
+        /// @notice First block at which `tokenId` may exercise director rights.
+        /// @dev Zero means no checkpoint: a pre-upgrade incumbent, or a token not in the top set.
         mapping(uint256 tokenId => uint256 seatedAtBlock) seatedAt;
     }
 
@@ -64,7 +65,8 @@ abstract contract Board {
 
     /// @notice Blocks a newly seated tokenId must wait before exercising director rights.
     /// @dev One block is the smallest delay that closes same-transaction board capture of
-    ///      confirm / execute / upgrade. Existing seated directors keep their original block.
+    ///      confirm / execute / upgrade. Incumbents keep their checkpoint; `seatedAt == 0`
+    ///      is treated as mature so a live in-place upgrade cannot lock existing directors.
     uint256 internal constant SEATING_DELAY = 1;
 
     /**
@@ -137,6 +139,7 @@ abstract contract Board {
      * @param amount The amount of tokens to delegate
      */
     function _delegate(uint256 tokenId, uint256 amount) internal circuitBreaker {
+        uint256[] memory prevTop = _topTokenIds();
         BoardStorage storage $ = _getBoardStorage();
         Node storage node = $.nodes[tokenId];
         if (node.tokenId == tokenId) {
@@ -145,7 +148,7 @@ abstract contract Board {
         } else {
             _insert(tokenId, amount);
         }
-        _refreshSeating();
+        _refreshSeating(prevTop);
         emit IBoard.Delegate(msg.sender, tokenId, amount);
     }
 
@@ -157,6 +160,7 @@ abstract contract Board {
      * @param amount The amount of tokens to undelegate
      */
     function _undelegate(uint256 tokenId, uint256 amount) internal circuitBreaker {
+        uint256[] memory prevTop = _topTokenIds();
         BoardStorage storage $ = _getBoardStorage();
         Node storage node = $.nodes[tokenId];
         if (node.tokenId != tokenId) revert IBoard.NodeDoesNotExist();
@@ -169,7 +173,7 @@ abstract contract Board {
         } else {
             _reposition(tokenId);
         }
-        _refreshSeating();
+        _refreshSeating(prevTop);
         emit IBoard.Undelegate(msg.sender, tokenId, amount);
     }
 
@@ -480,6 +484,7 @@ abstract contract Board {
      * @param tokenId The token ID executing the update
      */
     function _executeSeatsUpdate(uint256 tokenId) internal {
+        uint256[] memory prevTop = _topTokenIds();
         BoardStorage storage $ = _getBoardStorage();
         SeatUpdate storage proposal = $.seatUpdate;
 
@@ -521,17 +526,64 @@ abstract contract Board {
         uint256 newSeats = proposal.proposedSeats;
         $.seats = uint32(newSeats);
         delete $.seatUpdate;
-        _refreshSeating();
+        _refreshSeating(prevTop);
         emit IBoard.ExecuteSetSeats(tokenId, newSeats);
     }
 
     /**
-     * @notice Syncs seating checkpoints after a board mutation.
-     * @dev TokenIds newly entering the top-`seats` set record `block.number + SEATING_DELAY`
-     *      (the first block they may act). TokenIds that remain seated keep their original
-     *      activation block. TokenIds that leave the top set are cleared.
+     * @notice Current top-`seats` tokenIds, in rank order (empty slots omitted).
      */
-    function _refreshSeating() internal {
+    function _topTokenIds() internal view returns (uint256[] memory ids) {
+        BoardStorage storage $ = _getBoardStorage();
+        uint256 n = $.seats;
+        if (n == 0 || $.head == 0) {
+            return new uint256[](0);
+        }
+
+        ids = new uint256[](n);
+        uint256 current = $.head;
+        uint256 filled;
+        unchecked {
+            while (current != 0 && filled < n) {
+                ids[filled] = current;
+                current = uint256($.nodes[current].next);
+                ++filled;
+            }
+        }
+        if (filled == n) {
+            return ids;
+        }
+
+        uint256[] memory trimmed = new uint256[](filled);
+        for (uint256 i; i < filled;) {
+            trimmed[i] = ids[i];
+            unchecked {
+                ++i;
+            }
+        }
+        return trimmed;
+    }
+
+    function _wasInTop(uint256 tokenId, uint256[] memory prevTop) private pure returns (bool) {
+        uint256 len = prevTop.length;
+        for (uint256 i; i < len;) {
+            if (prevTop[i] == tokenId) return true;
+            unchecked {
+                ++i;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * @notice Syncs seating checkpoints after a board mutation.
+     * @dev Only tokenIds that newly enter the top-`seats` set (absent from `prevTop`)
+     *      receive `block.number + SEATING_DELAY`. Incumbents — including post-upgrade
+     *      directors whose `seatedAt` is still zero — keep their checkpoint. TokenIds
+     *      that leave the top set are cleared so a later re-entry waits again.
+     * @param prevTop Top-seat tokenIds captured before the mutation
+     */
+    function _refreshSeating(uint256[] memory prevTop) internal {
         BoardStorage storage $ = _getBoardStorage();
         uint256 current = $.head;
         uint256 remaining = $.seats;
@@ -539,7 +591,7 @@ abstract contract Board {
 
         while (current != 0) {
             if (remaining != 0) {
-                if ($.seatedAt[current] == 0) {
+                if ($.seatedAt[current] == 0 && !_wasInTop(current, prevTop)) {
                     $.seatedAt[current] = activationBlock;
                 }
                 unchecked {
@@ -555,19 +607,23 @@ abstract contract Board {
     /**
      * @notice Returns the first block a tokenId may exercise director rights.
      * @param tokenId The membership token ID
-     * @return seatedAtBlock Activation block, or zero if the token is not seated
+     * @return seatedAtBlock Activation block, or zero if no checkpoint is stored
      */
     function _getSeatedAt(uint256 tokenId) internal view returns (uint256 seatedAtBlock) {
         return _getBoardStorage().seatedAt[tokenId];
     }
 
     /**
-     * @notice Whether a top-seat tokenId has completed the seating delay.
-     * @param tokenId The membership token ID
-     * @return True if `seatedAt` is set and the current block has reached that activation block
+     * @notice Whether a live top-seat tokenId may exercise director rights.
+     * @dev `seatedAt == 0` is mature: live in-place upgrades leave this mapping unset,
+     *      so incumbents already on the board must keep confirm/execute/submit.
+     *      Newly entering tokenIds always receive a non-zero activation block.
+     * @param tokenId The membership token ID (caller has already verified top-seat membership)
+     * @return True if the seating delay has elapsed, or no checkpoint is stored
      */
     function _isSeatingMature(uint256 tokenId) internal view returns (bool) {
         uint256 seatedAt = _getBoardStorage().seatedAt[tokenId];
-        return seatedAt != 0 && block.number >= seatedAt;
+        if (seatedAt == 0) return true;
+        return block.number >= seatedAt;
     }
 }
