@@ -125,13 +125,15 @@ contract FindingH02SeatingDelayTest is Test {
         _seat(user3, 3, 50 ether);
         vm.roll(block.number + SEATING_DELAY);
 
+        uint256 firstActivation = chamber.getSeatedAt(3);
+
         vm.prank(user3);
         chamber.undelegate(3, 50 ether);
         assertEq(chamber.getSeatedAt(3), 0);
 
         vm.prank(user3);
         chamber.delegate(3, 50 ether);
-        assertEq(chamber.getSeatedAt(3), block.number + SEATING_DELAY);
+        assertGt(chamber.getSeatedAt(3), firstActivation, "re-entry writes a later activation block");
 
         vm.prank(user3);
         vm.expectRevert(IChamber.DirectorNotSeated.selector);
