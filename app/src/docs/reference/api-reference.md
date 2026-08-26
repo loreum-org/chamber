@@ -14,7 +14,7 @@ Upgradeable registry behind a **`TransparentUpgradeableProxy`** in the productio
 |---------|--------|
 | **`initialize(address _implementation, address admin)`** | One-time; stores implementation address and `admin`; reverts `ZeroAddress`. |
 | **`setChamberImplementation(address newImplementation)`** | **`ADMIN_ROLE` only**; updates pointer for **future** `createChamber` only. |
-| **`createChamber(address erc20Token, address erc721Token, uint256 seats, string name, string symbol) → address payable chamber`** | Deploys **Chamber `TransparentUpgradeableProxy`**, runs **`Chamber.initialize`**, registers listing, transfers **ProxyAdmin ownership to `chamber`**. Reverts on zero addresses, `implementation == 0`, or invalid **seats** (must be **1–20**). If `isChamber(erc20Token)`, sets **parent** / **child** links. |
+| **`createChamber(address erc20Token, address erc721Token, uint256 seats, string name, string symbol) → address payable chamber`** | Deploys **Chamber `TransparentUpgradeableProxy`**, runs **`Chamber.initialize`**, registers listing, transfers **ProxyAdmin ownership to `chamber`**. Reverts on zero addresses, `implementation == 0`, or invalid **seats** (must be **1–20**). If `isChamber(erc20Token)`, sets **parent** / **child** links. `erc20Token` must be a **standard ERC-20** (no factory allowlist; fee-on-transfer / rebasing unsupported). |
 
 ### Read
 
@@ -50,7 +50,7 @@ Single proxy instance per organization. **`VERSION`** is a public **`bytes32`** 
 
 ### ERC‑4626 / ERC‑20 (high level)
 
-Standard **`deposit` / `mint` / `withdraw` / `redeem`** with OpenZeppelin ERC‑4626 behavior. Transfers and withdrawals enforce **non-underflow vs `totalHolderDelegations`** (**`ExceedsDelegatedAmount`**). ERC‑20 **`transfer`/`transferFrom`** disallow zero amount and zero **to** (**`ZeroAmount`**, **`TransferToZeroAddress`**).
+Standard **`deposit` / `mint` / `withdraw` / `redeem`** with OpenZeppelin ERC‑4626 behavior. Vault assets must be **standard ERC‑20**; `deposit`/`mint` revert **`AssetAmountMismatch`** if the observed `balanceOf` delta is not the requested amount (fee-on-transfer). Transfers and withdrawals enforce **non-underflow vs `totalHolderDelegations`** (**`ExceedsDelegatedAmount`**). ERC‑20 **`transfer`/`transferFrom`** disallow zero amount and zero **to** (**`ZeroAmount`**, **`TransferToZeroAddress`**).
 
 Public ETH / NFT receive: **`receive`**, **`fallback`**, **`onERC721Received`**.
 
@@ -127,7 +127,7 @@ Reserved but **not emitted** by current Chamber: **`DirectorshipChanged`**, **`Q
 | Area | Examples |
 |------|-----------|
 | Registry | `ZeroAddress`, `InvalidSeats` |
-| Chamber / IChamber | `InsufficientChamberBalance`, `ExceedsDelegatedAmount`, `NotDirector`, `NotEnoughConfirmations`, `InvalidTransaction`, `NotAuthorized`, seat / token errors |
+| Chamber / IChamber | `InsufficientChamberBalance`, `ExceedsDelegatedAmount`, `AssetAmountMismatch`, `NotDirector`, `NotEnoughConfirmations`, `InvalidTransaction`, `NotAuthorized`, seat / token errors |
 | Board | `CircuitBreakerActive`, `TokenIdTooLarge`, `MaxNodesReached`, seat proposal / timelock errors |
 | Wallet / IWallet | `TransactionDoesNotExist`, `TransactionAlreadyExecuted`, `TransactionAlreadyConfirmed`, `TransactionNotConfirmed`, `TransactionAlreadyCancelled`, `DataHashMismatch`, `TransactionFailed`, `InvalidTarget` |
 

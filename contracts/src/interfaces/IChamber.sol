@@ -15,7 +15,7 @@ import {IWallet} from "./IWallet.sol";
 interface IChamber is IERC4626, IBoard, IWallet {
     /**
      * @notice Initializes the proxy; callable once by the proxy during deployment.
-     * @param erc20Token Underlying ERC-20 asset for the ERC-4626 vault
+     * @param erc20Token Standard ERC-20 vault asset (no fee-on-transfer or rebasing; see Chamber natspec)
      * @param erc721Token Membership ERC-721 whose holders may be directors when in top seats
      * @param seats Initial board seat count (must be 1..20 inclusive)
      * @param name ERC-20 name for chamber share tokens
@@ -238,4 +238,8 @@ interface IChamber is IERC4626, IBoard, IWallet {
 
     /// @notice Thrown when signature is invalid
     error InvalidSignature();
+
+    /// @notice Thrown when the vault's observed asset delta does not equal the requested amount
+    /// @dev Rejects fee-on-transfer / deflating tokens on deposit and mint
+    error AssetAmountMismatch();
 }

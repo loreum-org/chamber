@@ -125,7 +125,11 @@ contract Registry is AccessControl, Initializable, IRegistry {
 
     /**
      * @notice Deploys a new Chamber instance using TransparentUpgradeableProxy
-     * @param erc20Token The ERC20 token to be used for assets
+     * @dev `erc20Token` must be a standard ERC-20. There is no factory allowlist; Chamber
+     *      deposit/mint revert with `AssetAmountMismatch` if the vault receives less (or more)
+     *      than the requested amount (fee-on-transfer). Rebasing/elastic tokens are unsupported
+     *      and are not fully detectable at deposit time.
+     * @param erc20Token Standard ERC-20 vault asset (not fee-on-transfer or rebasing)
      * @param erc721Token The ERC721 token to be used for membership
      * @param seats The initial number of board seats
      * @param name The name of the chamber's ERC20 token

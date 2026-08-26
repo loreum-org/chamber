@@ -8,7 +8,7 @@ If you only know multisigs: a Safe **holds** tokens but does not issue **shares*
 
 | Action | What happens |
 |--------|----------------|
-| **Deposit** | You send the Chamber’s **underlying ERC‑20** (for example USDC) into the contract. You receive **Chamber share tokens**. |
+| **Deposit** | You send the Chamber’s **underlying standard ERC‑20** (for example USDC) into the contract. You receive **Chamber share tokens**. |
 | **Withdraw / Redeem** | You burn shares and receive underlying back (subject to vault liquidity). |
 
 Share price follows ERC‑4626 math: as the vault earns or holds more underlying per share, each share represents a larger claim.
@@ -30,6 +30,10 @@ The contract blocks transfers that would leave you with **fewer free shares than
 
 - **ETH** sent to the Chamber address is accepted (useful for gas or donations).  
 - **ERC‑721 membership NFTs** can be received via `safeTransferFrom`; that is **not** a vault deposit — it does not mint shares.
+
+## Supported assets
+
+Use a **standard ERC‑20** as the vault asset (USDC-style tokens that transfer the exact amount). Fee-on-transfer and rebasing tokens are **not** supported. Deposits revert if the Chamber does not receive the full requested amount, so those tokens cannot mint shares for value the vault never got.
 
 ## Safety note (first depositor attacks)
 

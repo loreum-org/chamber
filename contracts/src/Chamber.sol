@@ -79,7 +79,10 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
     /**
      * @notice Initializes the Chamber contract with the given ERC20 and ERC721 tokens and sets the number of seats
      * @dev `seats` must be between 1 and `MAX_SEATS` (20) inclusive; aligns with `Registry` validation.
-     * @param erc20Token The address of the ERC20 token
+     *      `erc20Token` must be a standard ERC-20: `transfer`/`transferFrom` move exactly the requested
+     *      amount, and `balanceOf` must not rebase independently of transfers. Fee-on-transfer deposits
+     *      revert via `_deposit`. Rebasing/elastic tokens remain unsupported.
+     * @param erc20Token The address of the standard ERC-20 vault asset
      * @param erc721Token The address of the ERC721 token
      * @param seats The initial number of seats
      * @param _name The name of the chamber's ERC20 token
@@ -717,6 +720,22 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
      */
     function _decimalsOffset() internal pure override returns (uint8) {
         return 3;
+    }
+
+    /**
+     * @notice Deposit/mint workflow that requires the vault to receive exactly `assets`
+     * @dev Hardens M-07: OpenZeppelin ERC-4626 mints shares from the requested amount, not the
+     *      observed `balanceOf` delta. Fee-on-transfer tokens would otherwise credit shares for
+     *      value the vault never received. Rebasing tokens remain unsupported.
+     */
+    function _deposit(address caller, address receiver, uint256 assets, uint256 shares) internal override {
+        IERC20 vaultAsset = IERC20(asset());
+        uint256 balanceBefore = vaultAsset.balanceOf(address(this));
+        super._deposit(caller, receiver, assets, shares);
+        uint256 balanceAfter = vaultAsset.balanceOf(address(this));
+        if (balanceAfter < balanceBefore || balanceAfter - balanceBefore != assets) {
+            revert IChamber.AssetAmountMismatch();
+        }
     }
 
     /**

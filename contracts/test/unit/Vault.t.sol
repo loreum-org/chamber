@@ -3,10 +3,12 @@ pragma solidity ^0.8.30;
 
 import {Test} from "lib/forge-std/src/Test.sol";
 import {Chamber} from "src/Chamber.sol";
+import {IChamber} from "src/interfaces/IChamber.sol";
 import {IERC20} from "lib/openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import {IERC721} from "lib/openzeppelin-contracts/contracts/interfaces/IERC721.sol";
 import {MockERC20} from "test/mock/MockERC20.sol";
 import {MockERC721} from "test/mock/MockERC721.sol";
+import {MockFeeOnTransferERC20} from "test/mock/MockFeeOnTransferERC20.sol";
 import {DeployChamber} from "test/utils/DeployChamber.sol";
 
 /**
@@ -230,5 +232,63 @@ contract ChamberVaultTest is Test {
         assertEq(chamber.totalAssets(), 0);
         assertEq(token.balanceOf(address(chamber)), 0);
         assertEq(token.balanceOf(user1), depositAmount);
+    }
+
+    /// @dev M-07: standard ERC-20 deposit still credits shares for the full received amount.
+    function test_Vault_StandardERC20DepositCreditsObservedAssets() public {
+        uint256 depositAmount = 100e18;
+        deal(address(token), user1, depositAmount);
+
+        vm.startPrank(user1);
+        token.approve(address(chamber), depositAmount);
+        uint256 sharesReceived = chamber.deposit(depositAmount, user1);
+        vm.stopPrank();
+
+        assertEq(sharesReceived, depositAmount * SHARE_MULTIPLIER);
+        assertEq(chamber.balanceOf(user1), depositAmount * SHARE_MULTIPLIER);
+        assertEq(token.balanceOf(address(chamber)), depositAmount);
+        assertEq(chamber.totalAssets(), depositAmount);
+    }
+
+    /// @dev M-07: fee-on-transfer cannot mint shares for value the vault did not receive.
+    function test_Vault_FeeOnTransferDepositDoesNotMintUnreceivedValue() public {
+        MockFeeOnTransferERC20 feeToken = new MockFeeOnTransferERC20("Fee Token", "FEE", 0, 1_000);
+        Chamber feeChamber = DeployChamber.deploy(address(feeToken), address(nft), seats, "vFEE", "vFEE", address(0x9));
+
+        uint256 depositAmount = 100e18;
+        feeToken.mint(user1, depositAmount);
+
+        uint256 vaultBefore = feeToken.balanceOf(address(feeChamber));
+        uint256 userSharesBefore = feeChamber.balanceOf(user1);
+
+        vm.startPrank(user1);
+        feeToken.approve(address(feeChamber), depositAmount);
+        vm.expectRevert(IChamber.AssetAmountMismatch.selector);
+        feeChamber.deposit(depositAmount, user1);
+        vm.stopPrank();
+
+        assertEq(feeChamber.balanceOf(user1), userSharesBefore);
+        assertEq(feeToken.balanceOf(address(feeChamber)), vaultBefore);
+        assertEq(feeToken.balanceOf(user1), depositAmount);
+    }
+
+    /// @dev M-07: mint() uses the same pull path and must reject fee-on-transfer assets.
+    function test_Vault_FeeOnTransferMintDoesNotMintUnreceivedValue() public {
+        MockFeeOnTransferERC20 feeToken = new MockFeeOnTransferERC20("Fee Token", "FEE", 0, 1_000);
+        Chamber feeChamber = DeployChamber.deploy(address(feeToken), address(nft), seats, "vFEE", "vFEE", address(0x9));
+
+        uint256 mintShares = 100e18 * SHARE_MULTIPLIER;
+        uint256 expectedAssets = 100e18;
+        feeToken.mint(user1, expectedAssets);
+
+        vm.startPrank(user1);
+        feeToken.approve(address(feeChamber), expectedAssets);
+        vm.expectRevert(IChamber.AssetAmountMismatch.selector);
+        feeChamber.mint(mintShares, user1);
+        vm.stopPrank();
+
+        assertEq(feeChamber.balanceOf(user1), 0);
+        assertEq(feeToken.balanceOf(address(feeChamber)), 0);
+        assertEq(feeToken.balanceOf(user1), expectedAssets);
     }
 }
