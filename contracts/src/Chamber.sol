@@ -420,7 +420,9 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
         Transaction storage transaction = $w.transactions[transactionId];
         if (transaction.executed) revert IWallet.TransactionAlreadyExecuted();
         if ($w.cancelled[transactionId]) revert IWallet.TransactionAlreadyCancelled();
-        if (transaction.confirmations < getQuorum()) revert IChamber.NotEnoughConfirmations();
+        if (transaction.confirmations < _requiredConfirmations(transactionId)) {
+            revert IChamber.NotEnoughConfirmations();
+        }
 
         _executeTransaction(tokenId, transactionId, data);
         emit IChamber.TransactionExecuted(transactionId, msg.sender);
@@ -509,6 +511,22 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
         }
     }
 
+    /// @dev Snapshot live quorum onto each newly submitted wallet transaction (M-04).
+    function _submitQuorum() internal view override returns (uint256) {
+        return _getQuorum();
+    }
+
+    /**
+     * @notice Confirmations required to execute a submitted transaction
+     * @dev `max(submitQuorum, liveQuorum)` so a later seat decrease cannot revive an
+     *      under-quorum nonce, and a later seat increase cannot weaken the live bar.
+     */
+    function _requiredConfirmations(uint256 nonce) internal view returns (uint256) {
+        uint256 submitQuorum = _getWalletStorage().transactionRequiredQuorum[nonce];
+        uint256 liveQuorum = _getQuorum();
+        return submitQuorum > liveQuorum ? submitQuorum : liveQuorum;
+    }
+
     function _validateTransaction(address target, uint256 value, bytes memory data) internal view {
         if (target == address(0)) revert IChamber.ZeroAddress();
 
@@ -558,11 +576,10 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
 
     /**
      * @notice Executes multiple transactions in a single call if they have enough confirmations
-     * @dev _getQuorum() is cached once before the loop, saving one SLOAD per extra transaction
-     *      in the batch (Optimization 7).
-     *      Caller must re-supply original calldata for each hash-only transaction in the same
-     *      order as transactionIds. Self-call / upgrade entries may be empty and use the
-     *      onchain store. Each payload is verified against its stored keccak256 hash.
+     * @dev Each nonce must meet `max(submitQuorum, liveQuorum)` (M-04). Caller must re-supply
+     *      original calldata for each hash-only transaction in the same order as transactionIds.
+     *      Self-call / upgrade entries may be empty and use the onchain store (L-04). Each
+     *      payload is verified against its stored keccak256 hash.
      * @param tokenId The tokenId executing the transactions
      * @param transactionIds The array of transaction IDs to execute
      * @param data The array of original calldata for each transaction (same order as transactionIds)
@@ -576,8 +593,6 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
         if (transactionIds.length == 0) revert IChamber.ZeroAmount();
         if (transactionIds.length != data.length) revert IChamber.ArrayLengthsMustMatch();
 
-        uint256 quorum = _getQuorum();
-
         WalletStorage storage $w = _getWalletStorage();
         for (uint256 i = 0; i < transactionIds.length;) {
             uint256 transactionId = transactionIds[i];
@@ -585,7 +600,9 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
             Transaction storage transaction = $w.transactions[transactionId];
 
             if (transaction.executed) revert IWallet.TransactionAlreadyExecuted();
-            if (transaction.confirmations < quorum) revert IChamber.NotEnoughConfirmations();
+            if (transaction.confirmations < _requiredConfirmations(transactionId)) {
+                revert IChamber.NotEnoughConfirmations();
+            }
 
             _executeTransaction(tokenId, transactionId, data[i]);
             emit IChamber.TransactionExecuted(transactionId, msg.sender);
@@ -865,6 +882,11 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
     /// @inheritdoc IWallet
     function getTransactionCalldata(uint256 nonce) public view override(IWallet, Wallet) returns (bytes memory) {
         return super.getTransactionCalldata(nonce);
+    }
+
+    /// @inheritdoc IWallet
+    function getTransactionRequiredQuorum(uint256 nonce) public view override(IWallet, Wallet) returns (uint256) {
+        return super.getTransactionRequiredQuorum(nonce);
     }
 
     /**

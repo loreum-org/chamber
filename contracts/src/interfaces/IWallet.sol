@@ -136,6 +136,13 @@ interface IWallet {
     function getTransactionCalldata(uint256 nonce) external view returns (bytes memory storedCalldata);
 
     /**
+     * @notice Returns the quorum snapshotted when the transaction was submitted
+     * @param nonce The index of the transaction to retrieve
+     * @return requiredQuorum Quorum recorded at submit time (0 if unset / legacy)
+     */
+    function getTransactionRequiredQuorum(uint256 nonce) external view returns (uint256 requiredQuorum);
+
+    /**
      * @notice Checks if a transaction is confirmed by a specific director
      * @param tokenId The tokenId of the director to check confirmation for
      * @param nonce The index of the transaction to check

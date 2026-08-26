@@ -61,6 +61,8 @@ abstract contract Wallet {
         mapping(uint256 nonce => mapping(uint256 tokenId => bool)) isCancelConfirmed;
         /// @dev Full calldata for self-calls only (L-04). Empty for ordinary hash-only txs.
         mapping(uint256 nonce => bytes storedCalldata) transactionCalldata;
+        /// @dev Quorum at submit time (M-04). Appended mapping is upgrade-safe; does not resize Transaction[].
+        mapping(uint256 nonce => uint256 requiredQuorum) transactionRequiredQuorum;
     }
 
     /// @dev keccak256(abi.encode(uint256(keccak256("erc7201:loreum.Wallet")) - 1)) & ~bytes32(uint256(0xff))
@@ -150,12 +152,22 @@ abstract contract Wallet {
         if (target == address(this)) {
             $.transactionCalldata[nonce] = data;
         }
+        $.transactionRequiredQuorum[nonce] = _submitQuorum();
         if (bytes(metadataURI).length != 0) {
             $.transactionMetadataURI[nonce] = metadataURI;
             emit IWallet.ProposalMetadataSet(nonce, metadataURI);
         }
         _confirmTransaction(tokenId, nonce);
         emit IWallet.SubmitTransaction(tokenId, nonce, target, value, data);
+    }
+
+    /**
+     * @notice Quorum snapshotted onto a newly submitted transaction
+     * @dev Chamber overrides this to return live `getQuorum()`. Default 0 leaves
+     *      execution thresholds to the caller (e.g. MockWallet unit tests).
+     */
+    function _submitQuorum() internal view virtual returns (uint256) {
+        return 0;
     }
 
     /**
@@ -337,6 +349,15 @@ abstract contract Wallet {
      */
     function getTransactionCalldata(uint256 nonce) public view virtual txExists(nonce) returns (bytes memory) {
         return _getWalletStorage().transactionCalldata[nonce];
+    }
+
+    /**
+     * @notice Returns the quorum snapshotted when the transaction was submitted
+     * @param nonce The index of the transaction
+     * @return The required quorum recorded at submit time (0 if unset / legacy)
+     */
+    function getTransactionRequiredQuorum(uint256 nonce) public view virtual txExists(nonce) returns (uint256) {
+        return _getWalletStorage().transactionRequiredQuorum[nonce];
     }
 
     /**
