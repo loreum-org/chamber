@@ -889,6 +889,16 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
     }
 
     /// @inheritdoc IWallet
+    function getTransactionDeadline(uint256 nonce) public view override(IWallet, Wallet) returns (uint256) {
+        return super.getTransactionDeadline(nonce);
+    }
+
+    /// @inheritdoc IWallet
+    function isTransactionExpired(uint256 nonce) public view override(IWallet, Wallet) returns (bool) {
+        return super.isTransactionExpired(nonce);
+    }
+
+    /// @inheritdoc IWallet
     function getCancelConfirmation(uint256 tokenId, uint256 nonce)
         public
         view
