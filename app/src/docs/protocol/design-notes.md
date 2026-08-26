@@ -30,7 +30,7 @@ Calls where `target == Chamber` are limited to **`upgradeImplementation`** selec
 
 ## Quorum formula
 
-`getQuorum() = 1 + (getSeats() * 51) / 100` — integer math in Solidity.
+`getQuorum() = 1 + (getSeats() * 51) / 100` — integer math in Solidity. One- and two-seat chambers require all seats.
 
 ## Seat update timelock
 

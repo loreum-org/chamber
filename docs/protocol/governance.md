@@ -32,5 +32,7 @@ The number of seats on the Board can be updated through a governance proposal.
 
 ## Quorum Calculation
 
-Quorum is dynamically calculated based on the current number of seats:
-`Quorum = 1 + (seats * 51) / 100` (representing a simple majority).
+Quorum is the integer formula `1 + (seats * 51) / 100` (Solidity truncating division).
+This is not a simple majority and is not "51% of seats + 1" as a real-number percentage.
+For many seat counts the result is about 55–67% of seats. One- and two-seat chambers
+require 100% of seats (quorum equals seats).

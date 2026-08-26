@@ -268,7 +268,8 @@ function Whitepaper() {
                   quorum = 1 + (seats × 51) / 100
                 </code>
                 <p className="text-gray-400 text-sm mt-2">
-                  This ensures a simple majority (51%+) of directors must approve transactions.
+                  Exact integer formula (`/` truncates). This is not a simple majority:
+                  one- and two-seat chambers require 100% of seats.
                 </p>
               </div>
 

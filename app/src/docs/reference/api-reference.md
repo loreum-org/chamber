@@ -71,7 +71,7 @@ Public ETH / NFT receive: **`receive`**, **`fallback`**, **`onERC721Received`**.
 | **`getMember(tokenId)`** | Node tuple (`tokenId`, `amount`, `next`, `prev`). |
 | **`getTop(uint256 count)`** | Token IDs + amounts, descending. |
 | **`getSize()`** | Linked-list node count. |
-| **`getQuorum()`** | `1 + (seats * 51) / 100`. |
+| **`getQuorum()`** | `1 + (seats * 51) / 100`. One- and two-seat chambers require all seats. |
 | **`getSeats()`** | Seat count. |
 | **`getDirectors()`** | **`ownerOf`** for each top **`getSeats()`** token ID; `address(0)` on failure. |
 | **`updateSeats(uint256 tokenId, uint256 numOfSeats)`** | Director-only seat proposal / support. |
