@@ -201,8 +201,11 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
     }
 
     /**
-     * @notice Retrieves the current quorum
+     * @notice Retrieves the current quorum (minimum distinct director-token confirmations to execute)
      * @dev Integer formula `1 + (seats * 51) / 100`. One- and two-seat chambers require all seats.
+     *      Quorum is token-weighted: it counts distinct top-seat `tokenId`s, not unique addresses.
+     *      One owner of `quorum` membership NFTs in the top seats can submit, self-confirm, and
+     *      execute — a single-actor treasury. Confirmations are not capped per owner.
      * @return The current quorum value
      */
     function getQuorum() public view override returns (uint256) {
@@ -615,12 +618,20 @@ contract Chamber is ERC4626Upgradeable, ReentrancyGuardUpgradeable, Board, Walle
         return IERC721Receiver.onERC721Received.selector;
     }
 
-    /// @notice Modifier to restrict access to only directors
+    /// @notice Restricts the call to a director acting with a specific membership `tokenId`.
+    /// @dev Directorship and confirmations are token-weighted (per `tokenId`), not 1-address-1-vote.
+    ///      `msg.sender` must control `tokenId` and `tokenId` must be in the current top seats.
+    ///      Each top-seat token may confirm once per proposal. An address that holds `quorum`
+    ///      distinct top-seat membership NFTs can submit, self-confirm, and execute — a
+    ///      single-actor treasury. This is intended; confirmations are not capped per owner.
     modifier isDirector(uint256 tokenId) {
         _isDirector(tokenId);
         _;
     }
 
+    /// @notice Verifies `msg.sender` controls `tokenId` and that `tokenId` is a current director seat.
+    /// @dev Authorization is per token, not per address. See {isDirector} for the token-weighted
+    ///      quorum assumption (one owner of `quorum` top-seat NFTs is a single-actor treasury).
     function _isDirector(uint256 tokenId) internal view {
         if (tokenId == 0) revert IChamber.NotDirector();
 

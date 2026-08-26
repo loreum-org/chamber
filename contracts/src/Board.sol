@@ -414,7 +414,10 @@ abstract contract Board {
      * @dev Exact integer formula: `1 + (seats * 51) / 100` (Solidity truncating division).
      *      This is not a real-number "51% of seats + 1". For many seat counts the result
      *      is about 55–67% of seats. One- and two-seat chambers require 100% of seats
-     *      (`quorum == seats`).
+     *      (`quorum == seats`). Quorum is token-weighted: it counts distinct director
+     *      `tokenId` confirmations, not unique addresses. One address holding `quorum`
+     *      top-seat membership NFTs can satisfy quorum alone (a single-actor treasury).
+     *      Confirmations are not capped per owner.
      * @return The number of confirmations required for quorum
      */
     function _getQuorum() internal view returns (uint256) {

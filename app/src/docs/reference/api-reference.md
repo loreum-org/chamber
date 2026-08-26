@@ -71,7 +71,7 @@ Public ETH / NFT receive: **`receive`**, **`fallback`**, **`onERC721Received`**.
 | **`getMember(tokenId)`** | Node tuple (`tokenId`, `amount`, `next`, `prev`). |
 | **`getTop(uint256 count)`** | Token IDs + amounts, descending. |
 | **`getSize()`** | Linked-list node count. |
-| **`getQuorum()`** | `1 + (seats * 51) / 100`. One- and two-seat chambers require all seats. |
+| **`getQuorum()`** | `1 + (seats * 51) / 100` distinct director `tokenId`s (token-weighted, not 1-address-1-vote). One- and two-seat chambers require all seats. |
 | **`getSeats()`** | Seat count. |
 | **`getDirectors()`** | **`ownerOf`** for each top **`getSeats()`** token ID; `address(0)` on failure. |
 | **`updateSeats(uint256 tokenId, uint256 numOfSeats)`** | Director-only seat proposal / support. |
@@ -80,7 +80,7 @@ Public ETH / NFT receive: **`receive`**, **`fallback`**, **`onERC721Received`**.
 
 ### Wallet multisig
 
-All director-gated with **`isDirector(tokenId)`** and **`nonReentrant`** where marked on `Chamber`.
+All director-gated with **`isDirector(tokenId)`** and **`nonReentrant`** where marked on `Chamber`. Directorship and confirmations are **per membership token**, so one address holding **`quorum`** top-seat NFTs is a **single-actor treasury**.
 
 | Function | Role |
 |---------|------|

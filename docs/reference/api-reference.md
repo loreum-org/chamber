@@ -207,6 +207,8 @@ Returns current quorum requirement.
 
 **Returns**: Quorum value (`1 + (seats * 51) / 100`). One- and two-seat chambers require all seats.
 
+**Note**: Quorum is token-weighted. It counts distinct director `tokenId` confirmations, not unique addresses. One owner of `quorum` top-seat membership NFTs is a single-actor treasury.
+
 ---
 
 #### `getSeats() → uint256`

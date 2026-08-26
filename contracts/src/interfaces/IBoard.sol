@@ -36,8 +36,10 @@ interface IBoard {
     function getSize() external view returns (uint256 size);
 
     /**
-     * @notice Wallet multisig confirmation threshold: `1 + (seats * 51) / 100`.
+     * @notice Wallet confirmation threshold: `1 + (seats * 51) / 100` distinct director tokens.
      * @dev Integer (truncating) division. One- and two-seat chambers require all seats.
+     *      Quorum is token-weighted (per membership `tokenId`), not 1-address-1-vote.
+     *      One address holding `quorum` top-seat NFTs is a single-actor treasury.
      * @return quorum Minimum confirmations required to execute a transaction
      */
     function getQuorum() external view returns (uint256 quorum);

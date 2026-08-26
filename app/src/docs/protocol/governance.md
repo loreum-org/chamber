@@ -58,6 +58,8 @@ Examples:
 
 Each director **token ID** may confirm **once** per proposal. The **submitter** auto-confirms their own vote when they submit.
 
+Quorum is **token-weighted**, not 1-address-1-vote. `isDirector` and confirmations are per membership NFT. One address that holds `quorum` distinct top-seat membership NFTs can submit, self-confirm, and execute — a **single-actor treasury**. Confirmations are not capped per owner.
+
 ## Changing the number of seats
 
 After launch, directors can propose a new **seat count** (still capped at **20**):

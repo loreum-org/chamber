@@ -74,7 +74,7 @@ struct SeatUpdate {
 - **Sorted Linked List**: Maintains nodes sorted by delegation amount (descending)
 - **Circuit Breaker**: Prevents reentrancy during repositioning
 - **Seat Management**: Dynamic seat updates with timelock and quorum
-- **Quorum Calculation**: `1 + (seats * 51) / 100` (integer division; one- and two-seat chambers require all seats)
+- **Quorum Calculation**: `1 + (seats * 51) / 100` distinct director `tokenId`s (integer division; one- and two-seat chambers require all seats; token-weighted — one owner of `quorum` top-seat NFTs is a single-actor treasury)
 
 **Operations**:
 - `_delegate()`: Add/update delegation, maintain sorted order
