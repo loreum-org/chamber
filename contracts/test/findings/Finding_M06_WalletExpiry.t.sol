@@ -35,6 +35,7 @@ contract FindingM06WalletExpiryTest is Test {
         _setupDirector(user1, 1, 1 ether);
         _setupDirector(user2, 2, 1 ether);
         _setupDirector(user3, 3, 1 ether);
+        vm.roll(block.number + 1);
     }
 
     function test_M06_ExecuteAfterDeadline_Reverts() public {

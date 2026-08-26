@@ -35,6 +35,7 @@ contract FindingL04UpgradeCalldataLivenessTest is Test {
         chamber = IChamber(chamberAddress);
 
         _setupDirectors();
+        vm.roll(block.number + 1);
     }
 
     function _setupDirectors() internal {
