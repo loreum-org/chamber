@@ -6,6 +6,7 @@ import {Wallet} from "src/Wallet.sol";
 import {IChamber} from "src/interfaces/IChamber.sol";
 import {IWallet} from "src/interfaces/IWallet.sol";
 import {IERC20} from "lib/openzeppelin-contracts/contracts/interfaces/IERC20.sol";
+import {IERC4626} from "lib/openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 import {IERC721} from "lib/openzeppelin-contracts/contracts/interfaces/IERC721.sol";
 import {IERC721Receiver} from "lib/openzeppelin-contracts/contracts/token/ERC721/IERC721Receiver.sol";
 import {
@@ -730,19 +731,29 @@ contract Chamber is ERC4626Upgradeable, Board, Wallet, IChamber, IERC721Receiver
     /// ERC-4626 OVERRIDES ///
 
     /// @inheritdoc ERC4626Upgradeable
-    function deposit(uint256 assets, address receiver) public override nonReentrant returns (uint256) {
+    function deposit(uint256 assets, address receiver)
+        public
+        override(ERC4626Upgradeable, IERC4626)
+        nonReentrant
+        returns (uint256)
+    {
         return super.deposit(assets, receiver);
     }
 
     /// @inheritdoc ERC4626Upgradeable
-    function mint(uint256 shares, address receiver) public override nonReentrant returns (uint256) {
+    function mint(uint256 shares, address receiver)
+        public
+        override(ERC4626Upgradeable, IERC4626)
+        nonReentrant
+        returns (uint256)
+    {
         return super.mint(shares, receiver);
     }
 
     /// @inheritdoc ERC4626Upgradeable
     function withdraw(uint256 assets, address receiver, address owner)
         public
-        override
+        override(ERC4626Upgradeable, IERC4626)
         nonReentrant
         returns (uint256)
     {
@@ -750,7 +761,12 @@ contract Chamber is ERC4626Upgradeable, Board, Wallet, IChamber, IERC721Receiver
     }
 
     /// @inheritdoc ERC4626Upgradeable
-    function redeem(uint256 shares, address receiver, address owner) public override nonReentrant returns (uint256) {
+    function redeem(uint256 shares, address receiver, address owner)
+        public
+        override(ERC4626Upgradeable, IERC4626)
+        nonReentrant
+        returns (uint256)
+    {
         return super.redeem(shares, receiver, owner);
     }
 
