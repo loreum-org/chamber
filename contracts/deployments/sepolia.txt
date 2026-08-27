@@ -21,3 +21,14 @@
   BoardLib                  0xC3E0Fe4e89e01ca69e384bd61DA78a5a6379762D
   WalletLib                 0x0320284b176657bb5048CF586DEef530F4B2499a
 
+  Etherscan verify
+  ====================================================================
+  Factory                   https://sepolia.etherscan.io/address/0x43aA92c8A26392f21F63cdA88B6BaB5031C40550#code
+  Chamber implementation    https://sepolia.etherscan.io/address/0xd441f1FDad2d3a447d2621DE4DE8b5738e02d39c#code
+  BoardLib                  https://sepolia.etherscan.io/address/0xC3E0Fe4e89e01ca69e384bd61DA78a5a6379762D#code
+  WalletLib                 https://sepolia.etherscan.io/address/0x0320284b176657bb5048CF586DEef530F4B2499a#code
+
+  Re-run (from contracts/): make verify-sepolia-factory
+  Requires ETHERSCAN_API_KEY and SEPOLIA_RPC_URL (see foundry.toml).
+  Print commands only: PRINT_ONLY=1 make verify-sepolia-factory
+

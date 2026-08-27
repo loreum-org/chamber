@@ -232,6 +232,13 @@ verify :; forge verify-contract \
 	${address} \
 	src/${contract}.sol:${contract}
 
+# Sepolia Factory path (26 Aug 2026): BoardLib, WalletLib, Chamber impl, Factory.
+# Addresses + verify URLs: deployments/sepolia.txt
+# Requires ETHERSCAN_API_KEY (foundry.toml [etherscan].sepolia) and SEPOLIA_RPC_URL.
+# Usage: make verify-sepolia-factory
+# Print only: PRINT_ONLY=1 make verify-sepolia-factory
+verify-sepolia-factory :; bash script/etherscan-verify-sepolia-factory.sh
+
 
 call :; cast call ${address} ${method} ${args} \
 	--chain-id ${chain} \
