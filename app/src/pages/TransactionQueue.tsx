@@ -254,7 +254,8 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
   
   const chamberInfo = useChamberInfo(chamberAddress)
   const implSync = useChamberRegistryImplementationSync(chamberAddress)
-  const { members } = useBoardMembers(chamberAddress, chamberInfo.seats || 5)
+  const { members, isFetched: boardFetched } = useBoardMembers(chamberAddress, chamberInfo.seats || 5)
+  const boardEmpty = boardFetched && members.length === 0
   const { seatUpdate, refetch: refetchSeatUpdate } = useSeatUpdate(chamberAddress)
   const { tokenIds: ownedTokenIds } = useUserNFTs(chamberInfo.nftToken, userAddress)
   const directorGate = useDirectorActionGate(
@@ -617,6 +618,20 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
             You hold a live board seat, but director actions unlock at block {directorGate.seatedAt?.toString() ?? '…'}.
           </div>
         )}
+        {boardEmpty && (
+          <div className="mt-4 rounded-xl border border-accent-500/30 bg-accent-500/5 px-4 py-3 text-sm text-slate-200">
+            <p className="font-medium">No directors seated</p>
+            <p className="text-slate-400 mt-1">
+              Submit, confirm, and execute stay locked until you seat the board. Hold a membership NFT and delegate shares to it.
+            </p>
+            <Link
+              to={`/chamber/${chamberAddress}/delegation`}
+              className="text-accent-400 text-sm hover:underline mt-2 inline-block"
+            >
+              Seat the board →
+            </Link>
+          </div>
+        )}
 
         {/* Stats */}
         <div className="grid grid-cols-6 gap-4 mt-6 pt-6 border-t border-slate-700/30">
@@ -812,19 +827,38 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
             {pendingTransactions.length === 0 && readyTransactions.length === 0 && expiredTransactions.length === 0 && cancelledTransactions.length === 0 && !hasSeatProposal && (
               <div className="panel p-12 text-center">
                 <FiShield className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-                <h3 className="font-heading text-xl font-semibold text-slate-300 mb-2">
-                  No Pending Proposals
-                </h3>
-                <p className="text-slate-500 mb-6 max-w-sm mx-auto">
-                  Create a proposal with a title and description. Directors can confirm and execute once quorum is reached.
-                </p>
-                <button
-                  onClick={() => setActiveTab('new')}
-                  className="btn btn-primary inline-flex"
-                >
-                  <FiPlus className="w-4 h-4" />
-                  New Proposal
-                </button>
+                {boardEmpty ? (
+                  <>
+                    <h3 className="font-heading text-xl font-semibold text-slate-300 mb-2">
+                      Seat the board first
+                    </h3>
+                    <p className="text-slate-500 mb-6 max-w-sm mx-auto">
+                      There are no directors, so the queue cannot submit, confirm, or execute. Hold a membership NFT and delegate shares to it.
+                    </p>
+                    <Link
+                      to={`/chamber/${chamberAddress}/delegation`}
+                      className="btn btn-primary inline-flex"
+                    >
+                      Seat the board
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <h3 className="font-heading text-xl font-semibold text-slate-300 mb-2">
+                      No Pending Proposals
+                    </h3>
+                    <p className="text-slate-500 mb-6 max-w-sm mx-auto">
+                      Create a proposal with a title and description. Directors can confirm and execute once quorum is reached.
+                    </p>
+                    <button
+                      onClick={() => setActiveTab('new')}
+                      className="btn btn-primary inline-flex"
+                    >
+                      <FiPlus className="w-4 h-4" />
+                      New Proposal
+                    </button>
+                  </>
+                )}
               </div>
             )}
 

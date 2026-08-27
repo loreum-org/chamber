@@ -41,6 +41,7 @@ import {
 import BoardVisualization from '@/components/BoardVisualization'
 import TreasuryOverview from '@/components/TreasuryOverview'
 import DelegationManager from '@/components/DelegationManager'
+import SeatTheBoard from '@/components/SeatTheBoard'
 import ChamberAssetsAlchemy from '@/components/ChamberAssetsAlchemy'
 import { NftRetryableImage } from '@/components/NftRetryableImage'
 import { addRecentChamber } from '@/lib/recentChambers'
@@ -213,6 +214,8 @@ function ChamberDetailContent({ chamberAddress }: { chamberAddress: `0x${string}
     { id: 'staking', label: 'Staking', icon: FiLayers },
     { id: 'delegation', label: 'Delegation', icon: FiSend },
   ] as const
+
+  const boardEmpty = boardMembersFetched && !boardMembersPending && members.length === 0
 
   const chamberImplVersion =
     chamberInfo.version ?? implSync.chamberVersionLabel ?? undefined
@@ -453,6 +456,7 @@ function ChamberDetailContent({ chamberAddress }: { chamberAddress: `0x${string}
             members={members}
             totalDelegated={totalDelegated}
             userBalance={userBalance}
+            boardEmpty={boardEmpty}
             setActiveTab={setActiveTab}
           />
         )}
@@ -659,10 +663,11 @@ interface OverviewTabProps {
   members: ReturnType<typeof useBoardMembers>['members']
   totalDelegated: bigint
   userBalance: bigint | undefined
+  boardEmpty: boolean
   setActiveTab: (tab: Tab) => void
 }
 
-function OverviewTab({ chamberAddress, chamberInfo, members, totalDelegated, userBalance, setActiveTab }: OverviewTabProps) {
+function OverviewTab({ chamberAddress, chamberInfo, members, totalDelegated, userBalance, boardEmpty, setActiveTab }: OverviewTabProps) {
   const chainId = useChainId()
   const { chambers: relatedChambers } = useChambersByAsset(chamberInfo.assetToken as `0x${string}`)
   const { parentChamber, isLoading: isLoadingParent } = useParentChamber(chamberAddress)
@@ -709,12 +714,23 @@ function OverviewTab({ chamberAddress, chamberInfo, members, totalDelegated, use
 
   return (
     <div className="space-y-6">
-      <TransactionActivityPanel
-        chamberAddress={chamberAddress}
-        currentSeats={chamberInfo.seats ?? 0}
-        transactionCount={chamberInfo.transactionCount || 0}
-        quorum={chamberInfo.quorum || 1}
-      />
+      {boardEmpty ? (
+        <SeatTheBoard
+          chamberAddress={chamberAddress}
+          nftToken={
+            chamberInfo.nftToken && chamberInfo.nftToken !== zeroAddress
+              ? (chamberInfo.nftToken as `0x${string}`)
+              : undefined
+          }
+        />
+      ) : (
+        <TransactionActivityPanel
+          chamberAddress={chamberAddress}
+          currentSeats={chamberInfo.seats ?? 0}
+          transactionCount={chamberInfo.transactionCount || 0}
+          quorum={chamberInfo.quorum || 1}
+        />
+      )}
 
       <ChamberAssetsAlchemy
         chamberAddress={chamberAddress}
@@ -793,8 +809,18 @@ function OverviewTab({ chamberAddress, chamberInfo, members, totalDelegated, use
               </Link>
             ))
           ) : (
-            <div className="p-8 text-center text-slate-500">
-              No directors yet — delegate to a member to fill a seat
+            <div className="p-8 text-center space-y-3">
+              <p className="text-slate-300 text-sm font-medium">No directors seated</p>
+              <p className="text-slate-500 text-xs max-w-sm mx-auto leading-relaxed">
+                Hold a membership NFT, deposit shares, and delegate to that token. Director actions unlock after one block.
+              </p>
+              <button
+                type="button"
+                onClick={() => setActiveTab('delegation')}
+                className="btn btn-primary inline-flex"
+              >
+                Seat the board
+              </button>
             </div>
           )}
         </div>
@@ -810,34 +836,59 @@ function OverviewTab({ chamberAddress, chamberInfo, members, totalDelegated, use
               <p className="text-slate-500 text-xs mt-0.5">Common operations</p>
             </div>
             <div className="p-4 space-y-3">
-              <Link
-                to={`/chamber/${chamberAddress}/transactions`}
-                className="btn btn-secondary w-full justify-start"
-              >
-                <FiShield className="w-4 h-4" />
-                View Transaction Queue
-                <FiArrowLeft className="w-4 h-4 rotate-180 ml-auto" />
-              </Link>
+              {boardEmpty ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('delegation')}
+                    className="btn btn-primary w-full justify-start"
+                  >
+                    <FiSend className="w-4 h-4" />
+                    Seat the board
+                    <FiArrowLeft className="w-4 h-4 rotate-180 ml-auto" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('staking')}
+                    className="btn btn-secondary w-full justify-start"
+                  >
+                    <FiPlus className="w-4 h-4" />
+                    Deposit Assets
+                    <FiArrowLeft className="w-4 h-4 rotate-180 ml-auto" />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    to={`/chamber/${chamberAddress}/transactions`}
+                    className="btn btn-secondary w-full justify-start"
+                  >
+                    <FiShield className="w-4 h-4" />
+                    View Transaction Queue
+                    <FiArrowLeft className="w-4 h-4 rotate-180 ml-auto" />
+                  </Link>
 
-              <button
-                type="button"
-                onClick={() => setActiveTab('staking')}
-                className="btn btn-secondary w-full justify-start"
-              >
-                <FiPlus className="w-4 h-4" />
-                Deposit Assets
-                <FiArrowLeft className="w-4 h-4 rotate-180 ml-auto" />
-              </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('staking')}
+                    className="btn btn-secondary w-full justify-start"
+                  >
+                    <FiPlus className="w-4 h-4" />
+                    Deposit Assets
+                    <FiArrowLeft className="w-4 h-4 rotate-180 ml-auto" />
+                  </button>
 
-              <button
-                type="button"
-                onClick={() => setActiveTab('delegation')}
-                className="btn btn-secondary w-full justify-start"
-              >
-                <FiSend className="w-4 h-4" />
-                Delegate Votes
-                <FiArrowLeft className="w-4 h-4 rotate-180 ml-auto" />
-              </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('delegation')}
+                    className="btn btn-secondary w-full justify-start"
+                  >
+                    <FiSend className="w-4 h-4" />
+                    Delegate Votes
+                    <FiArrowLeft className="w-4 h-4 rotate-180 ml-auto" />
+                  </button>
+                </>
+              )}
             </div>
 
             {userBalance !== undefined && (

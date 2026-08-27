@@ -10,6 +10,8 @@ export const PAUSE_SELECTOR = '0x8456cb59' as const
 /** `unpause()` — L-02 / OZ Pausable */
 export const UNPAUSE_SELECTOR = '0x3f4ba83a' as const
 
+/** H-02 `SEATING_DELAY` (internal, 1 block). Do not change without the on-chain constant. */
+export const SEATING_DELAY_BLOCKS = 1n
 /** H-03 `SEAT_UPDATE_TIMELOCK` (internal, 7 days) */
 export const SEAT_UPDATE_TIMELOCK_SEC = 7n * 24n * 60n * 60n
 /** H-03 `SEAT_UPDATE_EXPIRY` (internal, 14 days) */
