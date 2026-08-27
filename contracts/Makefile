@@ -263,3 +263,16 @@ call :; cast call ${address} ${method} ${args} \
 	--rpc-url ${rpc} \
 	--private-key ${private}
 
+# Typed operator CLI (same Chamber ABI as the app). See packages/operator.
+# Example: make operator-board CHAMBER=0x...
+OPERATOR_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST)))/../packages/operator)
+OPERATOR_RPC ?= $(ANVIL_RPC)
+OPERATOR_KEY ?= 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+
+operator-board :
+	@test -n "$(CHAMBER)" || (echo 'Set CHAMBER=0x...'; exit 1)
+	cd $(OPERATOR_DIR) && npx --yes tsx src/cli.ts board --rpc $(OPERATOR_RPC) --chamber $(CHAMBER)
+
+operator-e2e :
+	cd $(OPERATOR_DIR) && npm run example:anvil
+

@@ -87,6 +87,21 @@ For detailed documentation, visit [docs.loreum.org](https://docs.loreum.org)
 - Twitter: [@loreumdao](https://twitter.com/loreumdao)
 - GitHub: [loreum-org](https://github.com/loreum-org)
 
+## Operator SDK / CLI
+
+The React app is the human operator surface. Agents cannot click `TransactionQueue`. Use [`packages/operator`](./packages/operator) — same Chamber ABI as `contracts/generated-abis.ts`, no second contract API. See [#146](https://github.com/loreum-org/chamber/issues/146).
+
+```bash
+# Anvil end-to-end (Foundry: anvil + forge)
+cd packages/operator
+npm install
+npm run example:anvil
+```
+
+That run reads board + quorum, delegates, then `submitTransaction` / `confirm` / `execute`. Reverts for seating delay, pause, expired nonce, and not-a-director print the same copy as the app (`Your seat is not mature yet`, `This chamber is paused`, `This transaction has expired`, `You are not a director`).
+
+Library / CLI details: [`packages/operator/README.md`](./packages/operator/README.md).
+
 ## License
 
 MIT License
