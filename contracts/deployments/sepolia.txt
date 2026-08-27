@@ -37,11 +37,11 @@
   DeploySepoliaMocks
   ====================================================================
   Deployer                  0x0C6F86b338417B3b7FCB9B344DECC51d072919c9
-  MockERC20 (demo)          0x486d69bcaf1e07e4f90edda9fa7e09de50cd01a2
+  MockERC20 (demo)          0x486D69BcAF1E07e4F90edDA9fA7e09De50CD01a2
     name/symbol             Loreum / LORE
     mint                    mint(address,uint256) — permissionless faucet
     tx                      0x074ab130c86cc668d6a69748a187e12a956fc78ac3a5b6ebf2351a3b27db70c1
-  MockERC721 (membership)   0x03cbb0bb72aeb043b0dc8b299facfe77f9159688
+  MockERC721 (membership)   0x03CBb0Bb72aeB043b0dc8B299FaCFe77f9159688
     name/symbol             Loreum / EXPLORERS
     mint                    mint(address) — permissionless faucet
     tx                      0xcf89667cc168e26528c4eac61122450bdc0653851b44ba00c9561035ca4de241
