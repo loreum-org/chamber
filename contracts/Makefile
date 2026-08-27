@@ -233,6 +233,13 @@ deploy-erc721 :; forge script script/MockERC721.s.sol:DeployMockERC721 \
 	--broadcast \
 	--verify
 
+# Demo ERC-20 + membership ERC-721 (Sepolia or any rpc). Copy printed addresses into deployments/sepolia.txt.
+# Example: make deploy-sepolia-mocks rpc=$SEPOLIA_RPC_URL account=deployer
+deploy-sepolia-mocks :; forge script script/DeploySepoliaMocks.s.sol:DeploySepoliaMocks \
+	--rpc-url ${rpc} \
+	--account ${account} \
+	--broadcast
+
 verify :; forge verify-contract \
 	--chain-id ${chain} \
 	--num-of-optimizations ${runs} \

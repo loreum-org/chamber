@@ -68,6 +68,10 @@ The Chamber represents a novel smart account architecture that fundamentally rei
 - BoardLib: `0xC3E0Fe4e89e01ca69e384bd61DA78a5a6379762D`
 - WalletLib: `0x0320284b176657bb5048CF586DEef530F4B2499a`
 - Team Multisig: `0x5d45a213b2b6259f0b3c116a8907b56ab5e22095`
+- Demo ERC-20 (`MockERC20`, Deploy form default): `0x486d69bcaf1e07e4f90edda9fa7e09de50cd01a2`
+- Demo membership ERC-721 (`MockERC721`, Deploy form default): `0x03cbb0bb72aeb043b0dc8b299facfe77f9159688`
+
+These demo tokens are recorded in `contracts/deployments/sepolia.txt` and are what `getContractAddresses(11155111)` returns with no env. They have permissionless `mint` so a connected wallet can hold the membership NFT and demo ERC-20 via **Mint Test NFT** / **Mint Test ERC20** in the app header. Redeploy with `make deploy-sepolia-mocks` in `contracts/` and update `sepolia.txt` — do not invent addresses.
 
 ## Ethereum
 - Governance Token: `0x7756d245527f5f8925a537be509bf54feb2fdc99`

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAccount, useReadContract } from 'wagmi'
+import { sepolia } from 'wagmi/chains'
 import { isAddress, parseEventLogs, zeroAddress } from 'viem'
 import { useQueryClient } from '@tanstack/react-query'
 import { FiAlertCircle, FiCheck, FiLoader, FiArrowRight, FiArrowLeft, FiCopy } from 'react-icons/fi'
@@ -373,6 +374,13 @@ export default function DeployChamber() {
                       )}
                       {!erc721Valid && !formData.erc721Token && (
                         <span className="text-slate-500 text-xs">Contract holders can become board members via delegation</span>
+                      )}
+                      {chainId === sepolia.id && erc20Valid && erc721Valid && (
+                        <p className="text-slate-500 text-xs mt-2">
+                          Sepolia demo tokens are pre-filled. Use <span className="text-accent-400">Mint Test NFT</span> and{' '}
+                          <span className="text-accent-400">Mint Test ERC20</span> in the header so your wallet holds the
+                          membership NFT and demo asset.
+                        </p>
                       )}
                     </div>
                   </div>
