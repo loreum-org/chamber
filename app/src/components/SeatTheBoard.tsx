@@ -136,7 +136,7 @@ export default function SeatTheBoard({
       </div>
 
       <ol className="space-y-2 text-sm">
-        <Step done={holdsNft} loading={nftsLoading && !holdsNft} label="Hold a membership NFT" />
+        <Step done={holdsNft} loading={!!userAddress && nftsLoading && !holdsNft} label="Hold a membership NFT" />
         <Step done={hasShares} label="Deposit shares" />
         <Step done={false} label={`Delegate, then wait ${SEATING_DELAY_BLOCKS.toString()} block`} />
       </ol>
