@@ -254,6 +254,33 @@ export const chamberAbi = [
   },
   {
     type: 'function',
+    name: 'setDirectorOperator',
+    inputs: [
+      { name: 'tokenId', type: 'uint256' },
+      { name: 'operator', type: 'address' },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'getDirectorOperator',
+    inputs: [{ name: 'tokenId', type: 'uint256' }],
+    outputs: [{ name: 'operator', type: 'address' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'isTokenAuthorized',
+    inputs: [
+      { name: 'tokenId', type: 'uint256' },
+      { name: 'account', type: 'address' },
+    ],
+    outputs: [{ name: '', type: 'bool' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
     name: 'pause',
     inputs: [],
     outputs: [],
@@ -547,6 +574,15 @@ export const chamberAbi = [
     type: 'event',
     name: 'SeatUpdateCancelled',
     inputs: [{ name: 'tokenId', type: 'uint256', indexed: true }],
+  },
+  {
+    type: 'event',
+    name: 'DirectorOperatorSet',
+    inputs: [
+      { name: 'tokenId', type: 'uint256', indexed: true },
+      { name: 'owner', type: 'address', indexed: true },
+      { name: 'operator', type: 'address', indexed: true },
+    ],
   },
   {
     type: 'event',

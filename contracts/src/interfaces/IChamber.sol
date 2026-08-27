@@ -70,6 +70,27 @@ interface IChamber is IERC4626, IBoard, IWallet {
     function getTotalHolderDelegations(address holder) external view returns (uint256);
 
     /**
+     * @notice Registers or clears the session key for a contract-owned membership NFT.
+     * @dev Only `ownerOf(tokenId)` may call, and only when that owner is a contract.
+     *      Chamber never consults ERC-1271. See docs/protocol/director-authorization.md.
+     * @param tokenId Membership token the caller owns
+     * @param operator Session key that may act for `tokenId`, or `address(0)` to clear
+     */
+    function setDirectorOperator(uint256 tokenId, address operator) external;
+
+    /**
+     * @notice Live session key for `tokenId`, or `address(0)` if none or stale.
+     * @dev Stale after NFT transfer or while the current owner is an EOA.
+     */
+    function getDirectorOperator(uint256 tokenId) external view returns (address operator);
+
+    /**
+     * @notice Whether `account` may act for `tokenId` (owner or live session key).
+     * @dev Does not check board seats or seating delay. Burned tokens return false.
+     */
+    function isTokenAuthorized(uint256 tokenId, address account) external view returns (bool);
+
+    /**
      * @notice Updates the number of seats
      * @param tokenId The tokenId proposing the update
      * @param numOfSeats The new number of seats
@@ -183,6 +204,14 @@ interface IChamber is IERC4626, IBoard, IWallet {
      *      intake is not implemented.
      */
     event ReceivedERC721(address indexed token, address indexed from, uint256 indexed tokenId);
+
+    /**
+     * @notice Emitted when a contract NFT owner sets or clears a session key.
+     * @param tokenId Membership token
+     * @param owner Owner that registered the key (`ownerOf` at the time of the call)
+     * @param operator Session key, or `address(0)` when cleared
+     */
+    event DirectorOperatorSet(uint256 indexed tokenId, address indexed owner, address indexed operator);
 
     /// Errors
     /// @notice Thrown when there is insufficient delegated amount

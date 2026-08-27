@@ -913,9 +913,12 @@ export function useSeatedAt(chamberAddress: `0x${string}` | undefined, tokenId: 
   return { seatedAt: data as bigint | undefined, refetch }
 }
 
+export type DirectorCallerRole = 'owner' | 'operator'
+
 /**
- * Combined director action gate (H-02): connected address owns a current
- * top-seat tokenId AND seating is mature (`block.number >= seatedAt`).
+ * Combined director action gate (H-02): connected address is the NFT owner
+ * of a current top-seat tokenId, or the Chamber-registered session key for
+ * that token, AND seating is mature (`block.number >= seatedAt`).
  * If `getSeatedAt` is not deployed yet, treat the seat as mature.
  */
 export function useDirectorActionGate(
@@ -924,12 +927,61 @@ export function useDirectorActionGate(
   directors: `0x${string}`[] | undefined,
   members: { tokenId: bigint }[],
 ) {
-  const directorIndex =
+  const ownerIndex =
     userAddress && directors
       ? directors.findIndex((d) => d.toLowerCase() === userAddress.toLowerCase())
       : -1
-  const tokenId =
-    directorIndex >= 0 && directorIndex < members.length ? members[directorIndex].tokenId : undefined
+  const ownerTokenId =
+    ownerIndex >= 0 && ownerIndex < members.length ? members[ownerIndex].tokenId : undefined
+  const ownerAddress =
+    ownerIndex >= 0 && directors ? directors[ownerIndex] : undefined
+
+  const directorCount = directors?.length ?? 0
+  const seatedMembers = useMemo(
+    () => members.slice(0, directorCount),
+    [members, directorCount],
+  )
+  const memberTokenKey = seatedMembers.map((m) => m.tokenId.toString()).join(',')
+  const memberTokenIds = useMemo(
+    () => (memberTokenKey ? memberTokenKey.split(',').map((id) => BigInt(id)) : []),
+    [memberTokenKey],
+  )
+
+  const { data: operatorResults } = useReadContracts({
+    contracts: memberTokenIds.map((tokenId) => ({
+      address: chamberAddress,
+      abi: chamberAbi,
+      functionName: 'getDirectorOperator' as const,
+      args: [tokenId] as const,
+    })),
+    query: {
+      enabled:
+        !!chamberAddress &&
+        !!userAddress &&
+        ownerTokenId === undefined &&
+        memberTokenIds.length > 0,
+      retry: false,
+    },
+  })
+
+  let operatorTokenId: bigint | undefined
+  let operatorOwner: `0x${string}` | undefined
+  if (ownerTokenId === undefined && userAddress && operatorResults && directors) {
+    for (let i = 0; i < operatorResults.length; i++) {
+      const result = operatorResults[i]
+      if (result.status !== 'success' || typeof result.result !== 'string') continue
+      if (result.result.toLowerCase() === userAddress.toLowerCase()) {
+        operatorTokenId = memberTokenIds[i]
+        operatorOwner = directors[i]
+        break
+      }
+    }
+  }
+
+  const tokenId = ownerTokenId ?? operatorTokenId
+  const role: DirectorCallerRole | null =
+    ownerTokenId !== undefined ? 'owner' : operatorTokenId !== undefined ? 'operator' : null
+  const nftOwner = ownerAddress ?? operatorOwner
 
   const { seatedAt } = useSeatedAt(chamberAddress, tokenId)
   const { data: blockNumber } = useBlockNumber({
@@ -949,5 +1001,7 @@ export function useDirectorActionGate(
     blockNumber,
     canAct: tokenId !== undefined && seated,
     seatingPending,
+    role,
+    nftOwner,
   }
 }

@@ -94,7 +94,7 @@ IChamber(chamber).initialize(
 
 ### Directors
 
-Directors are determined by the top N token IDs (where N = number of seats) ranked by total delegation amount. Only directors can:
+Directors are determined by the top N token IDs (where N = number of seats) ranked by total delegation amount. Who may call as a given token is the NFT owner or one Chamber-registered session key — see [Director authorization](./protocol/director-authorization.md). Only directors can:
 - Submit transactions
 - Confirm transactions
 - Execute transactions

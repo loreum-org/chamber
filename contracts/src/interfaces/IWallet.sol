@@ -92,7 +92,8 @@ interface IWallet {
 
     /**
      * @notice Revokes a confirmation for a transaction
-     * @dev Chamber allows the token owner to revoke after leaving the board (owner-only, no ERC-1271).
+     * @dev Chamber allows the token owner or its live session key to revoke after leaving
+     *      the board (no ERC-1271; see director-authorization.md).
      * @param tokenId The tokenId revoking the confirmation
      * @param transactionId The ID of the transaction to revoke confirmation for
      */

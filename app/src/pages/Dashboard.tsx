@@ -174,7 +174,7 @@ export default function Dashboard() {
                 title="Chamber Solidity VERSION constant (implementation)"
                 className="text-slate-200 text-sm font-mono font-semibold tabular-nums"
               >
-                v1.1.5
+                v1.1.6
               </span>
             </div>
           </div>

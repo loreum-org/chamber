@@ -31,11 +31,18 @@ import {EnumerableSet} from "lib/openzeppelin-contracts/contracts/utils/structs/
 contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, IChamber, IERC721Receiver {
     using EnumerableSet for EnumerableSet.UintSet;
 
+    /// @dev Bound to the approving contract owner so an NFT transfer drops the key.
+    struct DirectorSession {
+        address owner;
+        address operator;
+    }
+
     /**
      * @notice ERC-7201 namespaced storage layout for Chamber
      * @dev Packing: `nft` (address, 20 bytes) sits alone in its slot; remaining fields are
      *      dynamic types or mappings which each occupy a full slot.
-     *      `holderDelegatedTokenIds` is appended so existing ERC-7201 slots stay stable.
+     *      `holderDelegatedTokenIds` and `directorSession` are appended so existing ERC-7201
+     *      slots stay stable.
      * @custom:storage-location erc7201:loreum.Chamber
      */
     struct ChamberStorage {
@@ -44,6 +51,8 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
         mapping(address => uint256) totalHolderDelegations;
         /// @dev Per-holder set of tokenIds with a positive delegation, including board-evicted ids.
         mapping(address => EnumerableSet.UintSet) holderDelegatedTokenIds;
+        /// @dev Session key for a contract-owned membership NFT. Stale if `owner` != current `ownerOf`.
+        mapping(uint256 tokenId => DirectorSession) directorSession;
     }
 
     /// @dev keccak256(abi.encode(uint256(keccak256("erc7201:loreum.Chamber")) - 1)) & ~bytes32(uint256(0xff))
@@ -66,7 +75,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
      *      (length word + data word) and incurs an SLOAD on every read. A bytes32 constant is
      *      inlined at compile time: zero runtime gas, zero storage slots.
      */
-    bytes32 public constant VERSION = "1.1.5";
+    bytes32 public constant VERSION = "1.1.6";
 
     /// @notice Function selector for upgradeImplementation(address,bytes)
     bytes4 private constant UPGRADE_SELECTOR = 0xc89311b6;
@@ -424,6 +433,40 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
     }
 
     /**
+     * @notice Registers or clears the session key for a contract-owned membership NFT.
+     * @dev Only the current contract owner may call. Never consults ERC-1271 (M-01).
+     */
+    function setDirectorOperator(uint256 tokenId, address operator) external override nonReentrant {
+        if (tokenId == 0) revert IChamber.NotDirector();
+        address owner = _getChamberStorage().nft.ownerOf(tokenId);
+        if (owner != msg.sender) revert IChamber.NotDirector();
+        if (owner.code.length == 0) revert IChamber.NotDirector();
+
+        ChamberStorage storage $ = _getChamberStorage();
+        if (operator == address(0)) {
+            delete $.directorSession[tokenId];
+        } else {
+            $.directorSession[tokenId] = DirectorSession({owner: owner, operator: operator});
+        }
+        emit IChamber.DirectorOperatorSet(tokenId, owner, operator);
+    }
+
+    /**
+     * @notice Live session key for `tokenId`, or zero if unset, stale, or EOA-owned.
+     */
+    function getDirectorOperator(uint256 tokenId) public view override returns (address) {
+        (bool authorized, address operator) = _liveSessionKey(tokenId);
+        return authorized ? operator : address(0);
+    }
+
+    /**
+     * @notice Whether `account` is the NFT owner or the live session key for `tokenId`.
+     */
+    function isTokenAuthorized(uint256 tokenId, address account) public view override returns (bool) {
+        return _isTokenAuthorized(tokenId, account);
+    }
+
+    /**
      * @notice Returns the current seat update proposal
      * @return uint256 proposedSeats
      * @return uint256 timestamp
@@ -598,8 +641,8 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
 
     /**
      * @notice Revokes a confirmation for a transaction
-     * @dev Token owner may revoke after leaving the top-seat set, so outgoing approvals can be
-     *      withdrawn. Authorization is owner-only (M-01). Execute already ignores those flags.
+     * @dev Token owner or its live session key may revoke after leaving the top-seat set, so
+     *      outgoing approvals can be withdrawn. No ERC-1271 (M-01). Execute already ignores those flags.
      * @param tokenId The tokenId revoking the confirmation
      * @param transactionId The ID of the transaction to revoke confirmation for
      */
@@ -828,10 +871,10 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
 
     /// @notice Restricts the call to a director acting with a specific membership `tokenId`.
     /// @dev Directorship and confirmations are token-weighted (per `tokenId`), not 1-address-1-vote.
-    ///      `msg.sender` must control `tokenId` and `tokenId` must be in the current top seats.
-    ///      Each top-seat token may confirm once per proposal. An address that holds `quorum`
-    ///      distinct top-seat membership NFTs can submit, self-confirm, and execute — a
-    ///      single-actor treasury. This is intended; confirmations are not capped per owner.
+    ///      `msg.sender` must control `tokenId` (owner or live session key) and `tokenId` must be
+    ///      in the current top seats. Each top-seat token may confirm once per proposal. An address
+    ///      that holds `quorum` distinct top-seat membership NFTs can submit, self-confirm, and
+    ///      execute — a single-actor treasury. This is intended; confirmations are not capped per owner.
     modifier isDirector(uint256 tokenId) {
         _isDirector(tokenId);
         _;
@@ -846,15 +889,45 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
         if (!_isSeatingMature(tokenId)) revert IChamber.DirectorNotSeated();
     }
 
-    /// @dev NFT owner of `tokenId` (directorship not required). Owner-only; no ERC-1271 (M-01).
+    /// @dev NFT owner of `tokenId`, or the live session key on a contract-owned NFT.
+    ///      Never consults ERC-1271 (M-01). `ownerOf` reverts if the token is burned.
     function _requireTokenAuthorized(uint256 tokenId) internal view {
         if (tokenId == 0) revert IChamber.NotDirector();
-
-        // NFT owners (EOA or contract) act only as themselves. The previous ERC-1271 path
-        // treated `abi.encode(msg.sender)` as a signature and issued a CALL from this view
-        // helper, so a promiscuous 1271 owner could impersonate the director.
         address owner = _getChamberStorage().nft.ownerOf(tokenId);
-        if (owner != msg.sender) revert IChamber.NotDirector();
+        if (owner == msg.sender) return;
+        if (_isLiveSessionKey(tokenId, owner, msg.sender)) return;
+        revert IChamber.NotDirector();
+    }
+
+    /// @dev View-safe: burned or tokenId 0 is unauthorized rather than reverting.
+    function _isTokenAuthorized(uint256 tokenId, address account) internal view returns (bool) {
+        if (tokenId == 0 || account == address(0)) return false;
+        try _getChamberStorage().nft.ownerOf(tokenId) returns (address owner) {
+            if (account == owner) return true;
+            return _isLiveSessionKey(tokenId, owner, account);
+        } catch {
+            return false;
+        }
+    }
+
+    /// @dev Session key is live only for the current contract owner that registered it.
+    function _isLiveSessionKey(uint256 tokenId, address owner, address account) internal view returns (bool) {
+        if (account == address(0) || owner.code.length == 0) return false;
+        DirectorSession storage session = _getChamberStorage().directorSession[tokenId];
+        return session.owner == owner && session.operator == account;
+    }
+
+    /// @dev `(true, operator)` when a live session exists; otherwise `(false, 0)`.
+    function _liveSessionKey(uint256 tokenId) internal view returns (bool, address) {
+        if (tokenId == 0) return (false, address(0));
+        try _getChamberStorage().nft.ownerOf(tokenId) returns (address owner) {
+            if (owner.code.length == 0) return (false, address(0));
+            DirectorSession storage session = _getChamberStorage().directorSession[tokenId];
+            if (session.owner != owner || session.operator == address(0)) return (false, address(0));
+            return (true, session.operator);
+        } catch {
+            return (false, address(0));
+        }
     }
 
     /// @dev True when `tokenId` is among the current top `_getSeats()` nodes.
