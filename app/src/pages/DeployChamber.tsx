@@ -81,7 +81,7 @@ export default function DeployChamber() {
           setDeployedChamber(chamber)
         }
       } catch {
-        // receipt may omit decoded logs; dashboard getLogs / recents still pick it up
+        // receipt may omit decoded logs; dashboard indexer / getLogs / recents still pick it up
       }
       setDeployedTxHash(hash)
       setStep('success')
