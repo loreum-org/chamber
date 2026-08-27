@@ -3,11 +3,12 @@ import { fallback, http } from 'wagmi'
 import { mainnet, sepolia, base, arbitrum, Chain } from 'wagmi/chains'
 import localDeployments from '@/contracts/deployments.json'
 import { alchemySupportsChain, getAlchemyApiKeyFromEnv, getAlchemyV2RpcUrl } from '@/lib/alchemy'
+import { ZERO_ADDRESS, isNonZeroAddress } from '@/lib/address'
 import { sepoliaDeploymentAddresses } from '@/lib/sepoliaDeployments'
 
-const productionApp = import.meta.env.PROD
+export { isNonZeroAddress, ZERO_ADDRESS }
 
-const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as `0x${string}`
+const productionApp = import.meta.env.PROD
 
 function envAddress(raw: string | undefined): string {
   return raw?.trim() ?? ''
@@ -231,10 +232,6 @@ export function getContractAddresses(chainId: number) {
     default:
       return null
   }
-}
-
-export function isNonZeroAddress(addr: string | undefined): addr is `0x${string}` {
-  return !!addr && addr !== ZERO_ADDRESS && addr.startsWith('0x') && addr.length === 42
 }
 
 // Helper to check if we have valid addresses configured (factory or registry)

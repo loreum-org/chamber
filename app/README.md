@@ -4,7 +4,7 @@ A decentralized treasury governance application for Loreum Chambers. This applic
 
 ## Features
 
-- **Deploy Chambers**: Create new treasury governance instances via the Registry
+- **Deploy Chambers**: Create new treasury governance instances via the Factory (Registry fallback)
 - **Board Visualization**: Beautiful graphical representation of board members and their voting power
 - **Transaction Queue**: Submit, confirm, and execute multi-signature transactions
 - **Treasury Management**: Deposit/withdraw assets using ERC4626 vault mechanics
@@ -49,14 +49,21 @@ npm install
    ```bash
    VITE_ALCHEMY_API_KEY=your_key
    ```
-   Enable Ethereum, Sepolia, Base, and Arbitrum apps in the Alchemy dashboard. The same key powers **wagmi RPC** (read/write on those chains) and the **Chamber assets** panel.
+   Enable Ethereum, Sepolia, Base, and Arbitrum apps in the Alchemy dashboard. The same key powers **wagmi RPC** (read/write on those chains) and the **Chamber assets** panel. Production `eth_getLogs` pagination for **My chambers** also uses this RPC (not a single getLogs-from-0).
 
-2. Update the WalletConnect Project ID in `src/lib/wagmi.ts`:
+2. Optional — **Ponder indexer** ([loreum-org/chamber-indexer](https://github.com/loreum-org/chamber-indexer)) for **My chambers** that survive public-RPC log truncation and a new browser (no `localStorage` recents). Dual discovery: Factory `ChamberCreated` (when `PONDER_FACTORY_ADDRESS` is set on the indexer) plus leftover Registry creates. GraphQL `chambers` / `chamberHolders` = creator OR current share balance.
+   ```bash
+   VITE_INDEXER_URL=https://your-ponder-host.example
+   # VITE_INDEXER_CHAIN_ID=11155111
+   ```
+   The app POSTs to `{VITE_INDEXER_URL}/graphql` (`MyChambers`). If the host is unset or down, discovery falls back to chunked Factory/Registry `getLogs` from the configured start block (Sepolia default `7453704`, same as the indexer). A live Ponder host is not required. See `app/.env.template`.
+
+3. Update the WalletConnect Project ID in `src/lib/wagmi.ts`:
    ```typescript
    projectId: 'YOUR_WALLETCONNECT_PROJECT_ID'
    ```
 
-3. Sepolia Factory / Registry / demo ERC-20 / membership ERC-721 come from
+4. Sepolia Factory / Registry / demo ERC-20 / membership ERC-721 come from
    `contracts/deployments/sepolia.txt` (parsed by `getContractAddresses(11155111)`).
    Env vars (`VITE_SEPOLIA_*`) still override. Other networks: set `VITE_*` in `.env`.
 
@@ -111,7 +118,7 @@ app/
 ## Key Functionality
 
 ### Chamber Management
-- View all deployed chambers
+- **My chambers** via Ponder (`VITE_INDEXER_URL`) or chunked Factory/Registry `ChamberCreated` logs, plus recents and open-by-address
 - Deploy new chambers with custom parameters
 - View chamber details (assets, board, transactions)
 
@@ -143,7 +150,8 @@ app/
 
 The app integrates with the following contracts:
 
-- **Registry**: Factory for deploying new Chambers
+- **Factory**: Permissionless create path; `ChamberCreated` is the discovery event (no world list)
+- **Registry**: Deprecated index + leftover create path; still scanned for legacy chambers
 - **Chamber**: Main contract combining:
   - ERC4626 vault for asset management
   - Board governance for director elections

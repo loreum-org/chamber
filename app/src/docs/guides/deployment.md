@@ -2,7 +2,7 @@
 
 > **Audience:** developers and operators running Foundry scripts. End users normally create Chambers through the app’s **Deploy** page — see **[Getting started](../introduction/getting-started.md)**.
 
-Contracts live in **`contracts/`**. Production-shaped deploys use the **Registry**, which pins a Chamber **implementation** and exposes **`createChamber`**.
+Contracts live in **`contracts/`**. New deploys go through the **Factory**. The **Registry** remains as a deprecated index + leftover create path.
 
 ## Prerequisites
 
@@ -84,6 +84,8 @@ Sepolia Factory, Registry, Chamber implementation, and demo ERC-20 / membership 
 are read from **`contracts/deployments/sepolia.txt`**. Optional env overrides:
 `VITE_SEPOLIA_REGISTRY`, `VITE_SEPOLIA_FACTORY`, `VITE_SEPOLIA_CHAMBER_IMPL`,
 `VITE_SEPOLIA_MOCK_ERC20`, `VITE_SEPOLIA_MOCK_ERC721`.
+
+Optional **My chambers** indexer: `VITE_INDEXER_URL` → [loreum-org/chamber-indexer](https://github.com/loreum-org/chamber-indexer) GraphQL. Unset → chunked Factory/Registry `getLogs`.
 
 See **`app/README.md`** and repo deployment docs under **`docs/guides/deployment.md`**.
 

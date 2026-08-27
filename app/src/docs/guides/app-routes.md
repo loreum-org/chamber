@@ -6,7 +6,7 @@ This is a **map of screens** in the Chamber web app. Pair it with **[Getting sta
 
 | Path | What you do here |
 |------|------------------|
-| **`/`** | **Dashboard** — list Chambers from the Registry |
+| **`/`** | **Dashboard** — **My chambers** (indexer and/or Factory/Registry `ChamberCreated` logs + recents + open-by-address) |
 | **`/deploy`** | **Create** a new Chamber |
 | **`/chamber/:address`** | **Overview** — summary, tabs, balances |
 | **`/chamber/:address/staking`** | **Deposit / withdraw** underlying tokens |
