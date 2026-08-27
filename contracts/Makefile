@@ -89,13 +89,21 @@ deploy-erc721-anvil :; forge script script/MockERC721.s.sol:DeployMockERC721 \
 	--verbosity -vvv
 
 
-# Deploy Registry, MockERC20, and MockERC721 to anvil
-# This also writes deployment addresses to contracts/deployments.json
-deploy-all-anvil :; forge script script/DeployAllAnvil.s.sol:DeployAllAnvil \
-	--rpc-url http://localhost:8545 \
-	--private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 \
-	--broadcast \
-	--verbosity -vvv
+# Deploy Registry, Factory, MockERC20, and MockERC721 to anvil
+# Writes factory + other addresses to contracts/deployments.json; copies to the app so it reads factory
+deploy-all-anvil :
+	forge script script/DeployAllAnvil.s.sol:DeployAllAnvil \
+		--rpc-url http://localhost:8545 \
+		--private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 \
+		--broadcast \
+		--verbosity -vvv
+	@if [ -f deployments.json ] && [ -d ../app/contracts ]; then \
+		cp deployments.json ../app/contracts/deployments.json; \
+		echo "Copied deployments.json (including factory) to app/contracts/deployments.json"; \
+	fi
+
+# Alias used by the app (`make deploy-anvil-all`)
+deploy-anvil-all : deploy-all-anvil
 
 # Sync ABIs from compiled contracts to the app
 sync-abis :; node script/sync-abis.js

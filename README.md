@@ -62,9 +62,11 @@ The Chamber represents a novel smart account architecture that fundamentally rei
 ```
 ## Contract Addresses
 
-### Sepolia Testnet
-- Chamber: `0xB99DEdbDe082B8Be86f06449f2fC7b9FED044E15`
-- Governance Token: `0x7756d245527f5f8925a537be509bf54feb2fdc99`
+### Sepolia Testnet (26 Aug 2026)
+- Factory: `0x43aA92c8A26392f21F63cdA88B6BaB5031C40550`
+- Chamber implementation: `0xd441f1FDad2d3a447d2621DE4DE8b5738e02d39c`
+- BoardLib: `0xC3E0Fe4e89e01ca69e384bd61DA78a5a6379762D`
+- WalletLib: `0x0320284b176657bb5048CF586DEef530F4B2499a`
 - Team Multisig: `0x5d45a213b2b6259f0b3c116a8907b56ab5e22095`
 
 ## Ethereum
