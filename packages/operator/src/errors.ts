@@ -1,3 +1,6 @@
+import { decodeErrorResult, isHex } from 'viem'
+import { chamberAbi } from './abi.ts'
+
 /**
  * Human-readable Chamber revert copy.
  *
@@ -30,6 +33,18 @@ export const DIRECTOR_SEATING_NOT_MATURE = 'Director seating is not mature yet'
 
 const CUSTOM_ERROR_RE = /reverted with custom error '([^']+)'/
 const REASON_STRING_RE = /reverted with reason string '([^']+)'/
+const SOLIDITY_ERROR_CALL_RE = /\b([A-Z][A-Za-z0-9_]+)\(\)/
+const GENERIC_ERROR_NAMES = new Set([
+  'Error',
+  'TypeError',
+  'BaseError',
+  'CallExecutionError',
+  'ContractFunctionExecutionError',
+  'ContractFunctionRevertedError',
+  'RpcRequestError',
+  'TransactionExecutionError',
+  'UnknownRpcError',
+])
 
 function collectErrorText(error: unknown): string {
   const parts: string[] = []
@@ -47,6 +62,8 @@ function collectErrorText(error: unknown): string {
       message?: unknown
       shortMessage?: unknown
       details?: unknown
+      metaMessages?: unknown
+      data?: unknown
       walk?: (fn?: (err: unknown) => unknown) => unknown
       cause?: unknown
     }
@@ -60,14 +77,43 @@ function collectErrorText(error: unknown): string {
         // ignore walk failures; fall through to fields
       }
     }
-    if (typeof o.name === 'string') parts.push(o.name)
+    if (typeof o.name === 'string' && !GENERIC_ERROR_NAMES.has(o.name)) parts.push(o.name)
     if (typeof o.shortMessage === 'string') parts.push(o.shortMessage)
     if (typeof o.message === 'string') parts.push(o.message)
     if (typeof o.details === 'string') parts.push(o.details)
+    if (Array.isArray(o.metaMessages)) {
+      for (const line of o.metaMessages) {
+        if (typeof line === 'string') parts.push(line)
+      }
+    }
+    if (typeof o.data === 'string') parts.push(o.data)
     walk(o.cause)
   }
   walk(error)
   return parts.join('\n')
+}
+
+function decodeRevertData(error: unknown): string | undefined {
+  const seen = new Set<unknown>()
+  const walk = (value: unknown): string | undefined => {
+    if (value == null || seen.has(value)) return undefined
+    seen.add(value)
+    if (typeof value === 'string' && isHex(value) && value.length >= 10) {
+      try {
+        return decodeErrorResult({ abi: chamberAbi, data: value }).errorName
+      } catch {
+        return undefined
+      }
+    }
+    if (typeof value !== 'object') return undefined
+    const o = value as { data?: unknown; cause?: unknown }
+    if (typeof o.data === 'string') {
+      const named = walk(o.data)
+      if (named) return named
+    }
+    return walk(o.cause)
+  }
+  return walk(error)
 }
 
 function errorNameFromUnknown(error: unknown): string | undefined {
@@ -104,7 +150,7 @@ function errorNameFromUnknown(error: unknown): string | undefined {
 }
 
 export function formatChamberError(error: unknown, fallback = 'Transaction failed'): string {
-  const named = errorNameFromUnknown(error)
+  const named = errorNameFromUnknown(error) ?? decodeRevertData(error)
   if (named && named in CHAMBER_ERROR_MESSAGES) {
     return CHAMBER_ERROR_MESSAGES[named as ChamberErrorName]
   }
@@ -114,6 +160,11 @@ export function formatChamberError(error: unknown, fallback = 'Transaction faile
 
   for (const [errorName, friendly] of Object.entries(CHAMBER_ERROR_MESSAGES)) {
     if (message.includes(errorName)) return friendly
+  }
+
+  const solidityCall = message.match(SOLIDITY_ERROR_CALL_RE)
+  if (solidityCall && solidityCall[1] in CHAMBER_ERROR_MESSAGES) {
+    return CHAMBER_ERROR_MESSAGES[solidityCall[1] as ChamberErrorName]
   }
 
   const revertMatch = message.match(REASON_STRING_RE)
@@ -133,7 +184,11 @@ export function formatChamberError(error: unknown, fallback = 'Transaction faile
   if (message.includes('exceeds balance')) return 'Amount exceeds balance'
   if (message.includes('not owner')) return 'You do not own this member token'
 
-  const firstLine = message.split('\n').find((line) => line.trim().length > 0) ?? fallback
+  const firstLine =
+    message
+      .split('\n')
+      .map((line) => line.trim())
+      .find((line) => line.length > 0 && !GENERIC_ERROR_NAMES.has(line)) ?? fallback
   return firstLine.length > 100 ? `${firstLine.slice(0, 100)}...` : firstLine
 }
 
