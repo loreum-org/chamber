@@ -36,6 +36,17 @@ test('maps expired nonce the same way TransactionQueue does', () => {
   assert.equal(formatChamberError(error), 'This transaction has expired')
 })
 
+test('maps viem DirectorNotSeated() short messages', () => {
+  const error = new Error('The contract function "submitTransaction" reverted.\n\nError: DirectorNotSeated()')
+  assert.equal(formatChamberError(error), 'Your seat is not mature yet')
+})
+
+test('decodes raw revert data via the Chamber ABI', () => {
+  const data = encoded('EnforcedPause')
+  const error = { message: 'execution reverted', data }
+  assert.equal(formatChamberError(error), 'This chamber is paused')
+})
+
 test('reads viem-style errorName on the cause', () => {
   const cause = { errorName: 'DirectorNotSeated', message: 'execution reverted' }
   const error = new Error('Internal JSON-RPC error')

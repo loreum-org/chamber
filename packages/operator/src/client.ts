@@ -128,6 +128,7 @@ export class ChamberOperator {
     const publicClient = createPublicClient({
       chain,
       transport: http(options.rpcUrl),
+      cacheTime: 0,
     })
 
     let account: Account | undefined

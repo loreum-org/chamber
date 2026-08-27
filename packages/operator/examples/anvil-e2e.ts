@@ -118,6 +118,26 @@ async function readDeployments(): Promise<Deployments> {
   }
 }
 
+async function rpc(method: string, params: unknown[] = []): Promise<unknown> {
+  const res = await fetch(RPC, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
+  })
+  const json = (await res.json()) as { result?: unknown; error?: { message?: string } }
+  if (json.error?.message) throw new Error(`${method}: ${json.error.message}`)
+  return json.result
+}
+
+async function mine(blocks = 1): Promise<void> {
+  await rpc('anvil_mine', [`0x${blocks.toString(16)}`])
+}
+
+async function increaseTime(seconds: number): Promise<void> {
+  await rpc('evm_increaseTime', [seconds])
+  await mine(1)
+}
+
 async function expectMessage(label: string, expected: string, fn: () => Promise<unknown>): Promise<void> {
   try {
     await fn()
@@ -267,21 +287,29 @@ async function main(): Promise<void> {
     log('board', pendingBoard)
     log('quorum', { quorum: (await opA.getQuorum()).toString() })
 
+    const pending = pendingBoard.members.find((m) => !m.seatingMature)
+    if (!pending) {
+      throw new Error('expected at least one director to still be inside the seating delay')
+    }
+    const pendingOp = pending.tokenId === 2n ? opB : opA
     await expectMessage('seating delay on submit', CHAMBER_ERROR_MESSAGES.DirectorNotSeated, () =>
-      opA.submitTransaction({
-        tokenId: 1n,
+      pendingOp.submitTransaction({
+        tokenId: pending.tokenId,
         target: outsider.address,
         value: 0n,
         data: '0x',
       }),
     )
 
-    log('mine one block (SEATING_DELAY = 1)')
-    await publicClient.request({ method: 'evm_mine' as never, params: [] as never })
-
+    log('mine until seating is mature (SEATING_DELAY = 1)')
+    for (let i = 0; i < 4; i++) {
+      const board = await opA.getBoard()
+      if (board.members.every((m) => m.seatingMature)) break
+      await mine(1)
+    }
     const readyBoard = await opA.getBoard()
     if (!readyBoard.members.every((m) => m.seatingMature)) {
-      throw new Error('expected seating to be mature after evm_mine')
+      throw new Error('expected seating to be mature after mining')
     }
     log('board after seating', readyBoard)
 
@@ -312,11 +340,7 @@ async function main(): Promise<void> {
       deadline: now + 2n,
     })
     log('submit with short deadline', { nonce: expiring.nonce.toString(), deadline: (now + 2n).toString() })
-    await publicClient.request({
-      method: 'evm_increaseTime' as never,
-      params: [5] as never,
-    })
-    await publicClient.request({ method: 'evm_mine' as never, params: [] as never })
+    await increaseTime(5)
     await expectMessage('expired nonce on confirm', CHAMBER_ERROR_MESSAGES.TransactionExpired, () =>
       opB.confirm(2n, expiring.nonce),
     )
