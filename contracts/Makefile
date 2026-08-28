@@ -30,12 +30,12 @@ LOREUM_WALLET_GOV_HODLER ?= $(LOREUM_LOCAL_GOV_HODLER)
 ci-test :; forge test
 
 # Symbolic verification with Halmos (requires: pip install -r fv-requirements.txt)
-# Chamber/Registry/Vault setUp deploys TransparentUpgradeableProxy, which calls
-# vm.deployCode — unsupported by Halmos. BoardSym + WalletSym still run.
-HALMOS_EXCLUDE := ChamberSymTest|RegistrySymTest|VaultSymTest
-halmos :; halmos --match-test '^symbolic' --no-match-contract '$(HALMOS_EXCLUDE)' -vv
+# Halmos 0.3.3 has --match-contract, not --no-match-contract. Chamber/Registry/Vault
+# setUp deploys TransparentUpgradeableProxy (vm.deployCode), which Halmos cannot run.
+HALMOS_INCLUDE := ^(BoardSymTest|WalletSymTest)$
+halmos :; halmos --match-test '^symbolic' --match-contract '$(HALMOS_INCLUDE)' -vv
 
-ci-halmos :; halmos --match-test '^symbolic' --no-match-contract '$(HALMOS_EXCLUDE)' -vv
+ci-halmos :; halmos --match-test '^symbolic' --match-contract '$(HALMOS_INCLUDE)' -vv
 
 dev-test :; forge test --verbosity -vvv --watch
 
