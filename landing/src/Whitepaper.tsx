@@ -85,7 +85,9 @@ function Whitepaper() {
                 first-class directors.
               </p>
               <p className="text-gray-300 leading-relaxed">
-                Technical contributions include: (1) NFT-based directorship with EIP-1271 validation for contract agents,
+                Technical contributions include: (1) NFT-based directorship (live auth is the
+                membership NFT owner as <code className="text-space-accent">msg.sender</code>;
+                EIP-1271 contract-agent directors remain a design path, not shipped),
                 (2) liquid delegation without governance lockups, subject to solvency checks on delegated balances, 
                 (3) circuit-safe linked list repositioning for the governance leaderboard, and (4) self-sovereign
                 upgrade paths executed only through quorum-approved transactions. We provide specifications, security
@@ -132,11 +134,12 @@ function Whitepaper() {
               <p className="text-gray-300 leading-relaxed mb-4">
                 Mapping from requirement to mechanism (non-exhaustive): <strong className="text-space-accent font-normal">
                 Transparent &amp; programmatic operation</strong> (cf. § 104(c)(2)(D)) — every material action flows through
-                Chamber&apos;s audited solidity; <strong className="text-space-accent font-normal">dispersed authority</strong>{" "}
+                Chamber&apos;s published solidity; <strong className="text-space-accent font-normal">dispersed authority</strong>{" "}
                 (cf. § 104(c)(2)(E–G)) — liquid delegation to a ranked board plus majority quorum on execution resists
                 single-actor capture when parameters and seat counts are tuned to policy; <strong className="text-space-accent font-normal">
-                agent parity</strong> — EIP-1271 allows smart contract directors to participate under the same validation
-                rules as EOAs, supporting autonomous but rule-bound participants rather than offchain AI promises.
+                agent parity</strong> — a designed EIP-1271 path would let smart-contract directors participate under the
+                same validation rules as EOAs. That path is not shipped; live director auth requires
+                {" "}<code className="text-space-accent">msg.sender</code> to be the membership NFT owner.
               </p>
 
               <h3 className="text-2xl font-display mb-4 mt-10 text-white">1.2 Chamber as protocol response</h3>
@@ -308,11 +311,18 @@ function Whitepaper() {
           <FadeIn delay={0.5}>
             <section className="mb-16">
               <h2 className="text-3xl font-display mb-6 text-space-accent">4. Agent Integration</h2>
+              <p className="text-gray-400 leading-relaxed mb-4 text-sm md:text-base">
+                This section is a design specification for contract-agent directors, not the live
+                authorization path. Shipped Chamber requires{" "}
+                <code className="text-space-accent">msg.sender</code> to be the membership NFT
+                owner. EIP-1271 agent directors are research; they are not a Chamber capability
+                until that path ships.
+              </p>
               
               <h3 className="text-2xl font-display mb-4 mt-8 text-white">4.1 EIP-1271 Signature Validation</h3>
               <p className="text-gray-300 leading-relaxed mb-4">
-                The Chamber Protocol enables smart contract agents to act as directors through EIP-1271 signature 
-                validation. When a director function is called, the contract checks:
+                The design would enable smart contract agents to act as directors through EIP-1271
+                signature validation. When a director function is called, the specified check is:
               </p>
               
               <ol className="list-decimal list-inside text-gray-300 space-y-2 mb-4 ml-4">
@@ -596,7 +606,7 @@ Node: 4 × uint256 = 4 storage slots (optimal for linked list operations)`}
 
               <h3 className="text-2xl font-display mb-4 mt-8 text-white">8.3 Hierarchical Organizations</h3>
               <p className="text-gray-300 leading-relaxed mb-4">
-                Chambers can be nested through Sub-Chamber patterns:
+                A contemplated pattern — not the live architecture — would nest Chambers:
               </p>
               <ul className="list-disc list-inside text-gray-300 space-y-2 mb-4 ml-4">
                 <li>A root Chamber manages global policies and main treasury</li>
@@ -644,10 +654,10 @@ Node: 4 × uint256 = 4 storage slots (optimal for linked list operations)`}
                 while keeping control legible and diffuse — not dependent on informal social layers for enforcement.
               </p>
               <p className="text-gray-300 leading-relaxed mb-4">
-                Key innovations include the sorted linked list delegation mechanism, EIP-1271 agent integration,
-                liquid delegation patterns, and self-sovereign upgradeability gated by the same transaction flow as
-                other chamber actions. The modular design supports Sub-Chamber topologies that further distribute
-                authority across specialized bodies.
+                Key innovations include the sorted linked list delegation mechanism, liquid
+                delegation patterns, and self-sovereign upgradeability gated by the same transaction
+                flow as other chamber actions. EIP-1271 agent directors and Sub-Chamber topologies
+                remain design work — not the live Factory, vault, ranked board, and quorum wallet.
               </p>
               <p className="text-gray-300 leading-relaxed">
                 Future work will explore multi-asset support, advanced governance strategies, and cross-chain
