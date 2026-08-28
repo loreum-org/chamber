@@ -132,6 +132,12 @@ export const config = productionApp
         },
       })
 
+// Sepolia Factory path — 26 Aug 2026 (`contracts/deployments/sepolia.txt`).
+// Env still wins when set (`VITE_SEPOLIA_FACTORY`, `VITE_SEPOLIA_CHAMBER_IMPL`).
+export const SEPOLIA_FACTORY = '0x43aA92c8A26392f21F63cdA88B6BaB5031C40550' as `0x${string}`
+export const SEPOLIA_CHAMBER_IMPLEMENTATION =
+  '0xd441f1FDad2d3a447d2621DE4DE8b5738e02d39c' as `0x${string}`
+
 // Contract addresses - localhost uses auto-generated deployments.json from `make deploy-anvil-all`
 // Testnet/mainnet addresses can be overridden with environment variables
 function addressFromEnv(...candidates: (string | undefined)[]): `0x${string}` {
@@ -146,8 +152,11 @@ export const CONTRACT_ADDRESSES = {
   // Sepolia testnet addresses
   sepolia: {
     registry: addressFromEnv(import.meta.env.VITE_SEPOLIA_REGISTRY),
-    factory: addressFromEnv(import.meta.env.VITE_SEPOLIA_FACTORY),
-    chamberImplementation: addressFromEnv(import.meta.env.VITE_SEPOLIA_CHAMBER_IMPL),
+    factory: addressFromEnv(import.meta.env.VITE_SEPOLIA_FACTORY, SEPOLIA_FACTORY),
+    chamberImplementation: addressFromEnv(
+      import.meta.env.VITE_SEPOLIA_CHAMBER_IMPL,
+      SEPOLIA_CHAMBER_IMPLEMENTATION,
+    ),
     mockERC20: addressFromEnv(import.meta.env.VITE_SEPOLIA_MOCK_ERC20),
     mockERC721: addressFromEnv(import.meta.env.VITE_SEPOLIA_MOCK_ERC721),
   },
