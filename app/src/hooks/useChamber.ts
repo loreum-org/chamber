@@ -184,7 +184,7 @@ export function useChamberInfo(chamberAddress: `0x${string}` | undefined) {
     },
   })
 
-  const { data: transactionCount } = useReadContract({
+  const { data: transactionCount, refetch: refetchTransactionCount } = useReadContract({
     address: isValidAddress ? chamberAddress : undefined,
     abi: chamberAbi,
     functionName: 'getTransactionCount',
@@ -247,6 +247,7 @@ export function useChamberInfo(chamberAddress: `0x${string}` | undefined) {
     quorum: quorum ? Number(quorum) : undefined,
     directors: directors as `0x${string}`[] | undefined,
     transactionCount: transactionCount ? Number(transactionCount) : undefined,
+    refetchTransactionCount,
     assetToken: assetToken as `0x${string}` | undefined,
     nftToken: nftToken as `0x${string}` | undefined,
     version: chamberVersionBytes32ToLabel(versionBytes32 as `0x${string}` | undefined),

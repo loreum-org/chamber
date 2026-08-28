@@ -1,7 +1,28 @@
 import { useWatchContractEvent, usePublicClient } from 'wagmi'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { isAddress } from 'viem'
 import { chamberAbi } from '@/contracts/abis'
+
+/** Invalidate every cached read that mentions this chamber. Used by event watches (fast path) and receipt refresh (source of truth). */
+export function invalidateChamberQueries(
+  queryClient: QueryClient,
+  chamberAddress: `0x${string}` | undefined,
+) {
+  if (!chamberAddress) return
+
+  const chamberAddrLower = chamberAddress.toLowerCase()
+
+  queryClient.invalidateQueries({
+    predicate: (query) => {
+      try {
+        const keyStr = JSON.stringify(query.queryKey).toLowerCase()
+        return keyStr.includes(chamberAddrLower)
+      } catch {
+        return false
+      }
+    },
+  })
+}
 
 type RefetchCallback = () => void
 
@@ -20,8 +41,9 @@ interface UseChamberEventsOptions {
 
 /**
  * Hook that watches for Chamber contract events and triggers refetches.
- * This ensures the UI updates when transactions are mined.
- * 
+ * Event subscriptions are a fast path only — public RPCs often drop `eth_subscribe`.
+ * Receipt + `invalidateChamberQueries` is the source of truth after a wallet write.
+ *
  * Usage:
  * ```tsx
  * useChamberEvents(chamberAddress, {
@@ -51,6 +73,10 @@ export function useChamberEvents(
   const queryClient = useQueryClient()
   const publicClient = usePublicClient()
 
+  function invalidate() {
+    invalidateChamberQueries(queryClient, chamberAddress)
+  }
+
   const isValidAddress = chamberAddress &&
     chamberAddress !== '0x0000000000000000000000000000000000000000' &&
     isAddress(chamberAddress)
@@ -64,7 +90,7 @@ export function useChamberEvents(
     eventName: 'Deposit' as any, // ERC4626 Deposit event
     onLogs: (logs) => {
       if (import.meta.env.DEV) console.log('Chamber Deposit event:', logs)
-      invalidateChamberQueries()
+      invalidate()
       onVaultEvent?.()
     },
     enabled: watchEnabled,
@@ -77,7 +103,7 @@ export function useChamberEvents(
     eventName: 'Withdraw' as any, // ERC4626 Withdraw event
     onLogs: (logs) => {
       if (import.meta.env.DEV) console.log('Chamber Withdraw event:', logs)
-      invalidateChamberQueries()
+      invalidate()
       onVaultEvent?.()
     },
     enabled: watchEnabled,
@@ -90,7 +116,7 @@ export function useChamberEvents(
     eventName: 'Transfer' as any,
     onLogs: (logs) => {
       if (import.meta.env.DEV) console.log('Chamber Transfer event:', logs)
-      invalidateChamberQueries()
+      invalidate()
       onVaultEvent?.()
     },
     enabled: watchEnabled,
@@ -103,7 +129,7 @@ export function useChamberEvents(
     eventName: 'DelegationUpdated',
     onLogs: (logs) => {
       if (import.meta.env.DEV) console.log('Chamber DelegationUpdated event:', logs)
-      invalidateChamberQueries()
+      invalidate()
       onDelegationEvent?.()
       onBoardEvent?.() // Delegations affect board
     },
@@ -117,7 +143,7 @@ export function useChamberEvents(
     eventName: 'TransactionSubmitted',
     onLogs: (logs) => {
       if (import.meta.env.DEV) console.log('Chamber TransactionSubmitted event:', logs)
-      invalidateChamberQueries()
+      invalidate()
       onTransactionEvent?.()
     },
     enabled: watchEnabled,
@@ -130,7 +156,7 @@ export function useChamberEvents(
     eventName: 'TransactionConfirmed',
     onLogs: (logs) => {
       if (import.meta.env.DEV) console.log('Chamber TransactionConfirmed event:', logs)
-      invalidateChamberQueries()
+      invalidate()
       onTransactionEvent?.()
     },
     enabled: watchEnabled,
@@ -143,7 +169,7 @@ export function useChamberEvents(
     eventName: 'TransactionExecuted',
     onLogs: (logs) => {
       if (import.meta.env.DEV) console.log('Chamber TransactionExecuted event:', logs)
-      invalidateChamberQueries()
+      invalidate()
       onTransactionEvent?.()
     },
     enabled: watchEnabled,
@@ -156,7 +182,7 @@ export function useChamberEvents(
     eventName: 'CancelTransaction',
     onLogs: (logs) => {
       if (import.meta.env.DEV) console.log('Chamber CancelTransaction event:', logs)
-      invalidateChamberQueries()
+      invalidate()
       onTransactionEvent?.()
     },
     enabled: watchEnabled,
@@ -168,7 +194,7 @@ export function useChamberEvents(
     eventName: 'TransactionCancelled',
     onLogs: (logs) => {
       if (import.meta.env.DEV) console.log('Chamber TransactionCancelled event:', logs)
-      invalidateChamberQueries()
+      invalidate()
       onTransactionEvent?.()
     },
     enabled: watchEnabled,
@@ -181,7 +207,7 @@ export function useChamberEvents(
     eventName: 'TransactionDeadlineSet',
     onLogs: (logs) => {
       if (import.meta.env.DEV) console.log('Chamber TransactionDeadlineSet event:', logs)
-      invalidateChamberQueries()
+      invalidate()
       onTransactionEvent?.()
     },
     enabled: watchEnabled,
@@ -193,7 +219,7 @@ export function useChamberEvents(
     eventName: 'Paused',
     onLogs: (logs) => {
       if (import.meta.env.DEV) console.log('Chamber Paused event:', logs)
-      invalidateChamberQueries()
+      invalidate()
       onVaultEvent?.()
     },
     enabled: watchEnabled,
@@ -205,7 +231,7 @@ export function useChamberEvents(
     eventName: 'Unpaused',
     onLogs: (logs) => {
       if (import.meta.env.DEV) console.log('Chamber Unpaused event:', logs)
-      invalidateChamberQueries()
+      invalidate()
       onVaultEvent?.()
     },
     enabled: watchEnabled,
@@ -217,7 +243,7 @@ export function useChamberEvents(
     eventName: 'SeatUpdateCancelled',
     onLogs: (logs) => {
       if (import.meta.env.DEV) console.log('Chamber SeatUpdateCancelled event:', logs)
-      invalidateChamberQueries()
+      invalidate()
       onBoardEvent?.()
     },
     enabled: watchEnabled,
@@ -229,7 +255,7 @@ export function useChamberEvents(
     eventName: 'SetSeats',
     onLogs: (logs) => {
       if (import.meta.env.DEV) console.log('Chamber SetSeats event:', logs)
-      invalidateChamberQueries()
+      invalidate()
       onBoardEvent?.()
     },
     enabled: watchEnabled,
@@ -242,32 +268,13 @@ export function useChamberEvents(
     eventName: 'Received',
     onLogs: (logs) => {
       if (import.meta.env.DEV) console.log('Chamber Received event:', logs)
-      invalidateChamberQueries()
+      invalidate()
       onVaultEvent?.()
     },
     enabled: watchEnabled,
   })
 
-  // Helper to invalidate all queries related to this chamber
-  function invalidateChamberQueries() {
-    if (!chamberAddress) return
-
-    const chamberAddrLower = chamberAddress.toLowerCase()
-
-    // Invalidate all queries that include this chamber address
-    queryClient.invalidateQueries({
-      predicate: (query) => {
-        try {
-          const keyStr = JSON.stringify(query.queryKey).toLowerCase()
-          return keyStr.includes(chamberAddrLower)
-        } catch {
-          return false
-        }
-      },
-    })
-  }
-
-  return { invalidateChamberQueries }
+  return { invalidateChamberQueries: invalidate }
 }
 
 /**
