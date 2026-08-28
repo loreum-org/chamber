@@ -366,9 +366,9 @@ if (IERC1271(owner).isValidSignature(hash, abi.encode(msg.sender))
                 <div className="bg-space-800/40 border border-white/10 rounded-lg p-4">
                   <h4 className="text-lg font-display mb-2 text-space-accent">Pattern 2: Delegated Authority</h4>
                   <p className="text-gray-300 text-sm">
-                    An agent contract holds an NFT but authorizes another contract (via EIP-1271) to act as director. 
-                    This enables separation of concerns: the NFT holder manages identity, while the authorized contract 
-                    executes governance actions.
+                    Design only: an agent contract would hold an NFT and authorize another contract
+                    (via EIP-1271) to act as director. This would separate identity from the
+                    authorized caller. It is not the live path.
                   </p>
                 </div>
                 
