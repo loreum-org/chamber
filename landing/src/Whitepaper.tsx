@@ -36,13 +36,18 @@ function Whitepaper() {
           <img src="/logo.svg" alt="Loreum Logo" className="w-8 h-8" />
           <span className="text-2xl font-display tracking-wider">LOREUM</span>
         </Link>
-        <Link 
-          to="/"
-          className="flex items-center gap-2 border border-white/20 px-6 py-2 rounded-full hover:bg-white/10 transition-all text-sm tracking-wide"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          BACK TO HOME
-        </Link>
+        <div className="flex items-center gap-6">
+          <Link to="/blog" className="text-sm tracking-wide hover:text-space-accent transition-colors">
+            BLOG
+          </Link>
+          <Link 
+            to="/"
+            className="flex items-center gap-2 border border-white/20 px-6 py-2 rounded-full hover:bg-white/10 transition-all text-sm tracking-wide"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            BACK TO HOME
+          </Link>
+        </div>
       </nav>
 
       {/* Whitepaper Content */}
@@ -714,9 +719,12 @@ Node: 4 × uint256 = 4 storage slots (optimal for linked list operations)`}
           <p className="text-gray-500 text-sm">
             © 2026 LOREUM DAO LLC. ALL RIGHTS RESERVED.
           </p>
-          <p className="mt-4">
+          <p className="mt-4 flex items-center justify-center gap-6">
             <Link to="/team" className="text-gray-500 hover:text-white transition-colors text-sm tracking-wide">
               Team
+            </Link>
+            <Link to="/blog" className="text-gray-500 hover:text-white transition-colors text-sm tracking-wide">
+              Blog
             </Link>
           </p>
         </div>
