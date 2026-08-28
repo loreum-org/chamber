@@ -48,10 +48,12 @@ Set **`ADMIN`** in the environment if the admin should not be `msg.sender`.
 
 ## App configuration
 
-Point the frontend at your Registry and mocks:
+Sepolia Factory, Registry, Chamber implementation, and demo ERC-20 / membership ERC-721
+are read from **`contracts/deployments/sepolia.txt`**. Optional env overrides:
+`VITE_SEPOLIA_REGISTRY`, `VITE_SEPOLIA_FACTORY`, `VITE_SEPOLIA_CHAMBER_IMPL`,
+`VITE_SEPOLIA_MOCK_ERC20`, `VITE_SEPOLIA_MOCK_ERC721`.
 
-- `VITE_SEPOLIA_REGISTRY`, `VITE_SEPOLIA_CHAMBER_IMPL`, mock token addresses, etc.  
-- See **`app/README.md`** and repo deployment docs under **`docs/guides/deployment.md`** if present at monorepo root.
+See **`app/README.md`** and repo deployment docs under **`docs/guides/deployment.md`**.
 
 ## Read next
 

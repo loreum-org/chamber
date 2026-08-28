@@ -56,16 +56,9 @@ npm install
    projectId: 'YOUR_WALLETCONNECT_PROJECT_ID'
    ```
 
-3. Update contract addresses for your deployment in `src/lib/wagmi.ts`:
-   ```typescript
-   export const CONTRACT_ADDRESSES = {
-     sepolia: {
-       registry: '0x...',
-       chamberImplementation: '0x...',
-     },
-     // ...
-   }
-   ```
+3. Sepolia Factory / Registry / demo ERC-20 / membership ERC-721 come from
+   `contracts/deployments/sepolia.txt` (parsed by `getContractAddresses(11155111)`).
+   Env vars (`VITE_SEPOLIA_*`) still override. Other networks: set `VITE_*` in `.env`.
 
 ### Development
 

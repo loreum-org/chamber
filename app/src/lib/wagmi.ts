@@ -3,6 +3,7 @@ import { fallback, http } from 'wagmi'
 import { mainnet, sepolia, base, arbitrum, Chain } from 'wagmi/chains'
 import localDeployments from '@/contracts/deployments.json'
 import { alchemySupportsChain, getAlchemyApiKeyFromEnv, getAlchemyV2RpcUrl } from '@/lib/alchemy'
+import { sepoliaDeploymentAddresses } from '@/lib/sepoliaDeployments'
 
 const productionApp = import.meta.env.PROD
 
@@ -139,7 +140,7 @@ export const SEPOLIA_CHAMBER_IMPLEMENTATION =
   '0xd441f1FDad2d3a447d2621DE4DE8b5738e02d39c' as `0x${string}`
 
 // Contract addresses - localhost uses auto-generated deployments.json from `make deploy-anvil-all`
-// Testnet/mainnet addresses can be overridden with environment variables
+// Sepolia reads committed `contracts/deployments/sepolia.txt`; env vars override.
 function addressFromEnv(...candidates: (string | undefined)[]): `0x${string}` {
   for (const raw of candidates) {
     const value = envAddress(raw)
@@ -149,16 +150,21 @@ function addressFromEnv(...candidates: (string | undefined)[]): `0x${string}` {
 }
 
 export const CONTRACT_ADDRESSES = {
-  // Sepolia testnet addresses
+  // Sepolia testnet — committed defaults from sepolia.txt, env overrides
   sepolia: {
-    registry: addressFromEnv(import.meta.env.VITE_SEPOLIA_REGISTRY),
-    factory: addressFromEnv(import.meta.env.VITE_SEPOLIA_FACTORY, SEPOLIA_FACTORY),
+    registry: addressFromEnv(import.meta.env.VITE_SEPOLIA_REGISTRY, sepoliaDeploymentAddresses.registry),
+    factory: addressFromEnv(
+      import.meta.env.VITE_SEPOLIA_FACTORY,
+      sepoliaDeploymentAddresses.factory,
+      SEPOLIA_FACTORY,
+    ),
     chamberImplementation: addressFromEnv(
       import.meta.env.VITE_SEPOLIA_CHAMBER_IMPL,
+      sepoliaDeploymentAddresses.chamberImplementation,
       SEPOLIA_CHAMBER_IMPLEMENTATION,
     ),
-    mockERC20: addressFromEnv(import.meta.env.VITE_SEPOLIA_MOCK_ERC20),
-    mockERC721: addressFromEnv(import.meta.env.VITE_SEPOLIA_MOCK_ERC721),
+    mockERC20: addressFromEnv(import.meta.env.VITE_SEPOLIA_MOCK_ERC20, sepoliaDeploymentAddresses.mockERC20),
+    mockERC721: addressFromEnv(import.meta.env.VITE_SEPOLIA_MOCK_ERC721, sepoliaDeploymentAddresses.mockERC721),
   },
   mainnet: {
     registry: addressFromEnv(import.meta.env.VITE_MAINNET_REGISTRY),

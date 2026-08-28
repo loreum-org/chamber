@@ -49,7 +49,7 @@ export default function Layout() {
       if (!mintNftAddr || mintNftAddr === zeroAddress) {
         toast.error(
           onSepolia
-            ? 'Sepolia test NFT contract not configured. Set VITE_SEPOLIA_MOCK_ERC721 to your MockERC721 (mint(address) to caller).'
+            ? 'Sepolia demo NFT is missing from deployments/sepolia.txt (MockERC721).'
             : 'Mock ERC-721 address is missing. With Anvil running, run make setup-local in contracts/',
         )
       }
@@ -82,7 +82,7 @@ export default function Layout() {
       if (!mintErc20Addr || mintErc20Addr === zeroAddress) {
         toast.error(
           onSepolia
-            ? 'Sepolia test ERC-20 not configured. Set VITE_SEPOLIA_MOCK_ERC20 to your MockERC20 (mint(address,uint256)).'
+            ? 'Sepolia demo ERC-20 is missing from deployments/sepolia.txt (MockERC20).'
             : 'Mock ERC-20 address is missing. With Anvil running, run make setup-local in contracts/',
         )
       }

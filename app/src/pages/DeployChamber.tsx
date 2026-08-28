@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAccount, useReadContract } from 'wagmi'
+import { sepolia } from 'wagmi/chains'
 import { isAddress, parseEventLogs, zeroAddress } from 'viem'
 import { useQueryClient } from '@tanstack/react-query'
 import { FiAlertCircle, FiCheck, FiLoader, FiArrowRight, FiArrowLeft, FiCopy } from 'react-icons/fi'
 import { useCreateChamberTarget, useCreateChamberWithStatus } from '@/hooks'
-import { getContractAddresses } from '@/lib/wagmi'
+import { getContractAddresses, isNonZeroAddress } from '@/lib/wagmi'
 import { addRecentChamber } from '@/lib/recentChambers'
 import { factoryAbi, registryAbi } from '@/contracts/abis'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
@@ -23,9 +24,16 @@ function isValidAddress(s: string): boolean {
   return isAddress(s)
 }
 
+function shortenAddress(addr: `0x${string}`) {
+  return `${addr.slice(0, 6)}…${addr.slice(-4)}`
+}
+
 export default function DeployChamber() {
   const { isConnected, chainId } = useAccount()
   const { address: createAddress, abi: createAbi, source: createSource } = useCreateChamberTarget()
+  const sepoliaAddrs = getContractAddresses(sepolia.id)
+  const sepoliaDemoReady =
+    isNonZeroAddress(sepoliaAddrs?.mockERC20) && isNonZeroAddress(sepoliaAddrs?.mockERC721)
   const queryClient = useQueryClient()
 
   const [step, setStep] = useState<Step>('form')
@@ -267,6 +275,13 @@ export default function DeployChamber() {
               <div className="flex justify-center">
                 <ConnectButton accountStatus="address" chainStatus="icon" showBalance={false} />
               </div>
+              {sepoliaDemoReady && (
+                <p className="text-slate-500 text-xs mt-6 max-w-md mx-auto leading-relaxed">
+                  On Sepolia the form pre-fills demo ERC-20 {shortenAddress(sepoliaAddrs.mockERC20)} and membership
+                  ERC-721 {shortenAddress(sepoliaAddrs.mockERC721)}. After connecting, mint from the header so your
+                  wallet holds the membership NFT.
+                </p>
+              )}
             </div>
           ) : (
             <AnimatePresence mode="wait">
@@ -373,6 +388,13 @@ export default function DeployChamber() {
                       )}
                       {!erc721Valid && !formData.erc721Token && (
                         <span className="text-slate-500 text-xs">Contract holders can become board members via delegation</span>
+                      )}
+                      {chainId === sepolia.id && erc20Valid && erc721Valid && (
+                        <p className="text-slate-500 text-xs mt-2">
+                          Sepolia demo tokens are pre-filled. Use <span className="text-accent-400">Mint Test NFT</span> and{' '}
+                          <span className="text-accent-400">Mint Test ERC20</span> in the header so your wallet holds the
+                          membership NFT and demo asset.
+                        </p>
                       )}
                     </div>
                   </div>
