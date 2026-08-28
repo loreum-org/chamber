@@ -12,6 +12,7 @@ import { addRecentChamber } from '@/lib/recentChambers'
 import { factoryAbi, registryAbi } from '@/contracts/abis'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { erc20Abi, erc721Abi } from '@/contracts'
+import SeatTheBoard from '@/components/SeatTheBoard'
 import toast from 'react-hot-toast'
 
 type Step = 'form' | 'review' | 'deploying' | 'success'
@@ -205,7 +206,9 @@ export default function DeployChamber() {
           </div>
           <div>
             <h2 className="font-heading text-2xl font-bold text-slate-100 mb-2">Chamber Deployed</h2>
-            <p className="text-slate-400">Your new chamber is live onchain and ready to use.</p>
+            <p className="text-slate-400">
+              Your chamber is live. The board is empty until you hold a membership NFT and delegate to it.
+            </p>
           </div>
           {(deployedTxHash || hash) && (
             <div className="stat-card flex items-center justify-between gap-3">
@@ -226,8 +229,24 @@ export default function DeployChamber() {
               </div>
             </div>
           )}
+          {deployedChamber && (
+            <div className="text-left">
+              <SeatTheBoard
+                chamberAddress={deployedChamber}
+                nftToken={
+                  isValidAddress(formData.erc721Token)
+                    ? (formData.erc721Token as `0x${string}`)
+                    : undefined
+                }
+                assumeEmpty
+              />
+            </div>
+          )}
           <div className="flex gap-3 justify-center">
-            <Link to={deployedChamber ? `/chamber/${deployedChamber}` : '/'} className="btn btn-primary">
+            <Link
+              to={deployedChamber ? `/chamber/${deployedChamber}/delegation` : '/'}
+              className="btn btn-secondary"
+            >
               {deployedChamber ? 'Open Chamber' : 'Go to Dashboard'}
               <FiArrowRight className="w-4 h-4" />
             </Link>

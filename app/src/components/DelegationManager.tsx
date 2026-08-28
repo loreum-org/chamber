@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAccount } from 'wagmi'
 import { formatUnits, parseUnits, zeroAddress } from 'viem'
@@ -48,12 +49,26 @@ export default function DelegationManager({
   seats = 5,
 }: DelegationManagerProps) {
   const queryClient = useQueryClient()
+  const [searchParams] = useSearchParams()
   const { address: userAddress, isConnected } = useAccount()
   const { tokenIds: userNFTTokenIds } = useUserNFTs(nftToken, userAddress)
   const [delegateTokenId, setDelegateTokenId] = useState('')
   const [delegateAmount, setDelegateAmount] = useState('')
   const [undelegateTokenId, setUndelegateTokenId] = useState('')
   const [undelegateAmount, setUndelegateAmount] = useState('')
+  const boardEmpty = members.length === 0
+
+  useEffect(() => {
+    if (delegateTokenId) return
+    const preset = searchParams.get('tokenId')
+    if (preset && /^\d+$/.test(preset)) {
+      setDelegateTokenId(preset)
+      return
+    }
+    if (boardEmpty && userNFTTokenIds.length > 0) {
+      setDelegateTokenId(userNFTTokenIds[0].toString())
+    }
+  }, [delegateTokenId, searchParams, boardEmpty, userNFTTokenIds])
 
   const { delegate, isPending: isDelegating, isConfirming: isDelegateConfirming } = useDelegate(chamberAddress)
   const { undelegate, isPending: isUndelegating, isConfirming: isUndelegateConfirming } = useUndelegate(chamberAddress)
@@ -240,6 +255,14 @@ export default function DelegationManager({
 
   return (
     <div className="space-y-6">
+      {boardEmpty && (
+        <div className="panel p-4 border-accent-500/25 bg-accent-500/5">
+          <p className="text-slate-200 text-sm font-medium">Seat the board</p>
+          <p className="text-slate-400 text-xs mt-1 leading-relaxed">
+            The board is empty. Delegate shares to a membership NFT you hold. Director rights unlock one block later.
+          </p>
+        </div>
+      )}
       {/* Balance Overview */}
       <div className="grid md:grid-cols-3 gap-4">
         <motion.div

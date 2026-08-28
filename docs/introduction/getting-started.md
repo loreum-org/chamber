@@ -23,10 +23,11 @@ You can deploy a Chamber through the `Registry` contract. A Chamber requires:
 - A **Number of Seats** (1-20) for the Board of Directors.
 
 ### 4. Basic Workflow
-1. **Deposit**: Users deposit ERC20 tokens into the Chamber to receive shares (ERC4626).
-2. **Delegate**: Users delegate their voting power to specific NFT IDs.
-3. **Govern**: The top N NFT holders (by delegation) become Directors.
-4. **Execute**: Directors submit and confirm transactions to manage the treasury.
+1. **Seat the board**: Factory create leaves the board empty. The creator must hold a membership NFT, deposit shares, and delegate. Director rights unlock after `SEATING_DELAY` (1 block). See the app guide: `app/src/docs/introduction/getting-started.md`.
+2. **Deposit**: Users deposit ERC20 tokens into the Chamber to receive shares (ERC4626).
+3. **Delegate**: Users delegate their voting power to specific NFT IDs.
+4. **Govern**: The top N NFT holders (by delegation) become Directors.
+5. **Execute**: Directors submit and confirm transactions to manage the treasury.
 
 ## 🎯 Next Steps
 
