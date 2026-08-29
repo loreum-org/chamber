@@ -315,7 +315,9 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
   const { members, isFetched: boardFetched } = useBoardMembers(chamberAddress, chamberInfo.seats || 5)
   const boardEmpty = boardFetched && members.length === 0
   const { seatUpdate, refetch: refetchSeatUpdate } = useSeatUpdate(chamberAddress)
-  const { tokenIds: ownedTokenIds } = useUserNFTs(chamberInfo.nftToken, userAddress)
+  const { tokenIds: ownedTokenIds } = useUserNFTs(chamberInfo.nftToken, userAddress, {
+    chamberAddress,
+  })
   const directorGate = useDirectorActionGate(
     chamberAddress,
     userAddress,

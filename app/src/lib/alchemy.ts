@@ -197,6 +197,56 @@ async function fetchAllNftsForOwner(nftBase: string, owner: Address): Promise<Ch
   return out
 }
 
+function parseAlchemyTokenId(raw: string | undefined): bigint | null {
+  if (!raw) return null
+  try {
+    return BigInt(raw)
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Token IDs of `contract` held by `owner` via Alchemy NFT API (works for non-enumerable 721s).
+ * Returns `null` when the chain is unsupported so callers can fall through.
+ */
+export async function fetchOwnedNftTokenIdsForContract(opts: {
+  apiKey: string
+  chainId: number
+  owner: Address
+  contract: Address
+}): Promise<bigint[] | null> {
+  const nftBase = getAlchemyNftV3BaseUrl(opts.chainId, opts.apiKey)
+  if (!nftBase) return null
+
+  const ids: bigint[] = []
+  const seen = new Set<string>()
+  const owner = encodeURIComponent(opts.owner)
+  const contract = encodeURIComponent(opts.contract)
+  let url: string | null =
+    `${nftBase}/getNFTsForOwner?owner=${owner}&contractAddresses[]=${contract}&withMetadata=false&pageSize=100`
+
+  for (let guard = 0; guard < 50 && url; guard++) {
+    const res = await fetch(url)
+    if (!res.ok) throw new Error(`Alchemy NFT API HTTP ${res.status}`)
+    const data = (await res.json()) as NftV3OwnerResponse
+    for (const row of data.ownedNfts ?? []) {
+      const id = parseAlchemyTokenId(row.tokenId)
+      if (id === null) continue
+      const key = id.toString()
+      if (seen.has(key)) continue
+      seen.add(key)
+      ids.push(id)
+    }
+    const pageKey = data.pageKey
+    url = pageKey
+      ? `${nftBase}/getNFTsForOwner?owner=${owner}&contractAddresses[]=${contract}&withMetadata=false&pageSize=100&pageKey=${encodeURIComponent(pageKey)}`
+      : null
+  }
+
+  return ids
+}
+
 export type FetchChamberPortfolioOptions = {
   apiKey: string
   /** Extra ERC-20 contracts to ensure are queried (merged into balance scan) */

@@ -42,7 +42,11 @@ export default function SeatTheBoard({
   const [minting, setMinting] = useState(false)
 
   const { members, isPending, isFetched, refetch: refetchBoard } = useBoardMembers(chamberAddress, 1)
-  const { tokenIds, balance: nftBalance, isLoading: nftsLoading } = useUserNFTs(nftToken, userAddress)
+  const { tokenIds, balance: nftBalance, isLoading: nftsLoading, refetch: refetchNfts } = useUserNFTs(
+    nftToken,
+    userAddress,
+    { chamberAddress },
+  )
   const { balance: shareBalance, refetch: refetchShares } = useChamberBalance(chamberAddress, userAddress)
 
   const boardKnownEmpty = isFetched && !isPending && members.length === 0
@@ -81,6 +85,7 @@ export default function SeatTheBoard({
       })
       await writeContractAsync(request)
       toast.success('Founder membership NFT minted. Deposit shares, then delegate to seat the board.')
+      void refetchNfts()
       void refetchBoard()
       void refetchShares()
     } catch (e: unknown) {
