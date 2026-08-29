@@ -51,7 +51,13 @@ export default function DelegationManager({
   const queryClient = useQueryClient()
   const [searchParams] = useSearchParams()
   const { address: userAddress, isConnected } = useAccount()
-  const { tokenIds: userNFTTokenIds } = useUserNFTs(nftToken, userAddress)
+  const {
+    tokenIds: userNFTTokenIds,
+    balance: nftBalance,
+    isLoading: nftsLoading,
+  } = useUserNFTs(nftToken, userAddress, { chamberAddress })
+  const ownsMembershipNft =
+    userNFTTokenIds.length > 0 || (nftBalance > 0n && nftsLoading)
   const [delegateTokenId, setDelegateTokenId] = useState('')
   const [delegateAmount, setDelegateAmount] = useState('')
   const [undelegateTokenId, setUndelegateTokenId] = useState('')
@@ -330,13 +336,18 @@ export default function DelegationManager({
               <label className="block text-slate-300 text-sm font-medium mb-2">
                 Member ID
               </label>
-              {userNFTTokenIds.length > 0 ? (
+              {ownsMembershipNft ? (
                 <select
                   className="input"
                   value={delegateTokenId}
                   onChange={(e) => setDelegateTokenId(e.target.value)}
+                  disabled={nftsLoading && userNFTTokenIds.length === 0}
                 >
-                  <option value="">Select your member token...</option>
+                  <option value="">
+                    {nftsLoading && userNFTTokenIds.length === 0
+                      ? 'Loading your member tokens...'
+                      : 'Select your member token...'}
+                  </option>
                   {userNFTTokenIds.map((id) => (
                     <option key={id.toString()} value={id.toString()}>
                       #{id.toString()} {members.find(m => m.tokenId === id) ? `(Rank #${members.find(m => m.tokenId === id)?.rank})` : ''}
@@ -353,7 +364,7 @@ export default function DelegationManager({
                   min="1"
                 />
               )}
-              {userNFTTokenIds.length > 0 && (
+              {ownsMembershipNft && (
                 <p className="text-slate-500 text-xs mt-1">
                   Select a member token you own to delegate voting power to it
                 </p>
