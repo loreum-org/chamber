@@ -71,6 +71,7 @@ function Team() {
           <a href="/#technology" className="hover:text-space-accent transition-colors">TECHNOLOGY</a>
           <a href="/#governance" className="hover:text-space-accent transition-colors">GOVERNANCE</a>
           <Link to="/team" className="text-space-accent transition-colors">TEAM</Link>
+          <Link to="/blog" className="hover:text-space-accent transition-colors">BLOG</Link>
         </div>
         <a
           href={chamberAppUrl}
@@ -153,6 +154,7 @@ function Team() {
             <h4 className="font-bold tracking-widest text-sm mb-6">PLATFORM</h4>
             <ul className="space-y-4 text-sm text-gray-400 font-light">
               <li><Link to="/team" className="hover:text-white transition-colors">Team</Link></li>
+              <li><Link to="/blog" className="hover:text-white transition-colors">Blog</Link></li>
               <li><a href="#" className="hover:text-white transition-colors">Agents</a></li>
               <li><a href="#" className="hover:text-white transition-colors">Chambers</a></li>
               <li><a href="#" className="hover:text-white transition-colors">Security</a></li>

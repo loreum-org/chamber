@@ -3,10 +3,12 @@ import { fallback, http } from 'wagmi'
 import { mainnet, sepolia, base, arbitrum, Chain } from 'wagmi/chains'
 import localDeployments from '@/contracts/deployments.json'
 import { alchemySupportsChain, getAlchemyApiKeyFromEnv, getAlchemyV2RpcUrl } from '@/lib/alchemy'
+import { ZERO_ADDRESS, isNonZeroAddress } from '@/lib/address'
+import { sepoliaDeploymentAddresses } from '@/lib/sepoliaDeployments'
+
+export { isNonZeroAddress, ZERO_ADDRESS }
 
 const productionApp = import.meta.env.PROD
-
-const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as `0x${string}`
 
 function envAddress(raw: string | undefined): string {
   return raw?.trim() ?? ''
@@ -132,8 +134,14 @@ export const config = productionApp
         },
       })
 
+// Sepolia Factory path — 26 Aug 2026 (`contracts/deployments/sepolia.txt`).
+// Env still wins when set (`VITE_SEPOLIA_FACTORY`, `VITE_SEPOLIA_CHAMBER_IMPL`).
+export const SEPOLIA_FACTORY = '0x43aA92c8A26392f21F63cdA88B6BaB5031C40550' as `0x${string}`
+export const SEPOLIA_CHAMBER_IMPLEMENTATION =
+  '0xd441f1FDad2d3a447d2621DE4DE8b5738e02d39c' as `0x${string}`
+
 // Contract addresses - localhost uses auto-generated deployments.json from `make deploy-anvil-all`
-// Testnet/mainnet addresses can be overridden with environment variables
+// Sepolia reads committed `contracts/deployments/sepolia.txt`; env vars override.
 function addressFromEnv(...candidates: (string | undefined)[]): `0x${string}` {
   for (const raw of candidates) {
     const value = envAddress(raw)
@@ -143,13 +151,21 @@ function addressFromEnv(...candidates: (string | undefined)[]): `0x${string}` {
 }
 
 export const CONTRACT_ADDRESSES = {
-  // Sepolia testnet addresses
+  // Sepolia testnet — committed defaults from sepolia.txt, env overrides
   sepolia: {
-    registry: addressFromEnv(import.meta.env.VITE_SEPOLIA_REGISTRY),
-    factory: addressFromEnv(import.meta.env.VITE_SEPOLIA_FACTORY),
-    chamberImplementation: addressFromEnv(import.meta.env.VITE_SEPOLIA_CHAMBER_IMPL),
-    mockERC20: addressFromEnv(import.meta.env.VITE_SEPOLIA_MOCK_ERC20),
-    mockERC721: addressFromEnv(import.meta.env.VITE_SEPOLIA_MOCK_ERC721),
+    registry: addressFromEnv(import.meta.env.VITE_SEPOLIA_REGISTRY, sepoliaDeploymentAddresses.registry),
+    factory: addressFromEnv(
+      import.meta.env.VITE_SEPOLIA_FACTORY,
+      sepoliaDeploymentAddresses.factory,
+      SEPOLIA_FACTORY,
+    ),
+    chamberImplementation: addressFromEnv(
+      import.meta.env.VITE_SEPOLIA_CHAMBER_IMPL,
+      sepoliaDeploymentAddresses.chamberImplementation,
+      SEPOLIA_CHAMBER_IMPLEMENTATION,
+    ),
+    mockERC20: addressFromEnv(import.meta.env.VITE_SEPOLIA_MOCK_ERC20, sepoliaDeploymentAddresses.mockERC20),
+    mockERC721: addressFromEnv(import.meta.env.VITE_SEPOLIA_MOCK_ERC721, sepoliaDeploymentAddresses.mockERC721),
   },
   mainnet: {
     registry: addressFromEnv(import.meta.env.VITE_MAINNET_REGISTRY),
@@ -216,10 +232,6 @@ export function getContractAddresses(chainId: number) {
     default:
       return null
   }
-}
-
-export function isNonZeroAddress(addr: string | undefined): addr is `0x${string}` {
-  return !!addr && addr !== ZERO_ADDRESS && addr.startsWith('0x') && addr.length === 42
 }
 
 // Helper to check if we have valid addresses configured (factory or registry)

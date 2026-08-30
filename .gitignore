@@ -9,6 +9,7 @@ contracts/.anvil/
 .env
 .env*
 !.env.template
+!app/.env.template
 coverage
 coverage.json
 .DS_Store

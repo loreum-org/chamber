@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAccount } from 'wagmi'
 import { formatUnits, parseUnits, zeroAddress } from 'viem'
@@ -48,12 +49,32 @@ export default function DelegationManager({
   seats = 5,
 }: DelegationManagerProps) {
   const queryClient = useQueryClient()
+  const [searchParams] = useSearchParams()
   const { address: userAddress, isConnected } = useAccount()
-  const { tokenIds: userNFTTokenIds } = useUserNFTs(nftToken, userAddress)
+  const {
+    tokenIds: userNFTTokenIds,
+    balance: nftBalance,
+    isLoading: nftsLoading,
+  } = useUserNFTs(nftToken, userAddress, { chamberAddress })
+  const ownsMembershipNft =
+    userNFTTokenIds.length > 0 || (nftBalance > 0n && nftsLoading)
   const [delegateTokenId, setDelegateTokenId] = useState('')
   const [delegateAmount, setDelegateAmount] = useState('')
   const [undelegateTokenId, setUndelegateTokenId] = useState('')
   const [undelegateAmount, setUndelegateAmount] = useState('')
+  const boardEmpty = members.length === 0
+
+  useEffect(() => {
+    if (delegateTokenId) return
+    const preset = searchParams.get('tokenId')
+    if (preset && /^\d+$/.test(preset)) {
+      setDelegateTokenId(preset)
+      return
+    }
+    if (boardEmpty && userNFTTokenIds.length > 0) {
+      setDelegateTokenId(userNFTTokenIds[0].toString())
+    }
+  }, [delegateTokenId, searchParams, boardEmpty, userNFTTokenIds])
 
   const { delegate, isPending: isDelegating, isConfirming: isDelegateConfirming } = useDelegate(chamberAddress)
   const { undelegate, isPending: isUndelegating, isConfirming: isUndelegateConfirming } = useUndelegate(chamberAddress)
@@ -240,6 +261,14 @@ export default function DelegationManager({
 
   return (
     <div className="space-y-6">
+      {boardEmpty && (
+        <div className="panel p-4 border-accent-500/25 bg-accent-500/5">
+          <p className="text-slate-200 text-sm font-medium">Seat the board</p>
+          <p className="text-slate-400 text-xs mt-1 leading-relaxed">
+            The board is empty. Delegate shares to a membership NFT you hold. Director rights unlock one block later.
+          </p>
+        </div>
+      )}
       {/* Balance Overview */}
       <div className="grid md:grid-cols-3 gap-4">
         <motion.div
@@ -307,13 +336,18 @@ export default function DelegationManager({
               <label className="block text-slate-300 text-sm font-medium mb-2">
                 Member ID
               </label>
-              {userNFTTokenIds.length > 0 ? (
+              {ownsMembershipNft ? (
                 <select
                   className="input"
                   value={delegateTokenId}
                   onChange={(e) => setDelegateTokenId(e.target.value)}
+                  disabled={nftsLoading && userNFTTokenIds.length === 0}
                 >
-                  <option value="">Select your member token...</option>
+                  <option value="">
+                    {nftsLoading && userNFTTokenIds.length === 0
+                      ? 'Loading your member tokens...'
+                      : 'Select your member token...'}
+                  </option>
                   {userNFTTokenIds.map((id) => (
                     <option key={id.toString()} value={id.toString()}>
                       #{id.toString()} {members.find(m => m.tokenId === id) ? `(Rank #${members.find(m => m.tokenId === id)?.rank})` : ''}
@@ -330,7 +364,7 @@ export default function DelegationManager({
                   min="1"
                 />
               )}
-              {userNFTTokenIds.length > 0 && (
+              {ownsMembershipNft && (
                 <p className="text-slate-500 text-xs mt-1">
                   Select a member token you own to delegate voting power to it
                 </p>

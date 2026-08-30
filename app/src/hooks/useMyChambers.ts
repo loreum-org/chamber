@@ -2,21 +2,12 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAccount, useChainId, usePublicClient } from 'wagmi'
 import { useQuery } from '@tanstack/react-query'
 import { multicall } from 'viem/actions'
-import { parseAbiItem, type AbiEvent, type Address, type PublicClient } from 'viem'
 import { chamberAbi, factoryAbi, registryAbi } from '@/contracts/abis'
+import { discoverChambers } from '@/lib/chamberDiscovery'
+import { getIndexerUrl, indexerAppliesToChain } from '@/lib/indexer'
 import { addRecentChamber, getRecentChambers } from '@/lib/recentChambers'
 import { isNonZeroAddress } from '@/lib/wagmi'
 import { useFactoryAddress, useRegistryAddress } from './useRegistry'
-
-const factoryCreatedEvent = parseAbiItem(
-  'event ChamberCreated(address indexed chamber, address indexed asset, address indexed nft, uint256 seats, string name, string symbol, address creator)',
-)
-
-const registryCreatedEvent = parseAbiItem(
-  'event ChamberCreated(address indexed chamber, uint256 seats, string name, string symbol, address erc20Token, address erc721Token)',
-)
-
-const LOG_LOOKBACK_BLOCKS = 100_000n
 
 export function useRecentChambers() {
   const chainId = useChainId()
@@ -36,66 +27,6 @@ export function useRecentChambers() {
   return { recents, remember }
 }
 
-async function getCreatedLogs<TEvent extends AbiEvent>(
-  client: PublicClient,
-  address: `0x${string}`,
-  event: TEvent,
-) {
-  try {
-    return await client.getLogs({ address, event, fromBlock: 0n, toBlock: 'latest' })
-  } catch {
-    const latest = await client.getBlockNumber()
-    const from = latest > LOG_LOOKBACK_BLOCKS ? latest - LOG_LOOKBACK_BLOCKS : 0n
-    return client.getLogs({ address, event, fromBlock: from, toBlock: 'latest' })
-  }
-}
-
-async function fetchCreatedChambers(
-  client: PublicClient,
-  factoryAddress: `0x${string}` | undefined,
-  registryAddress: `0x${string}` | undefined,
-): Promise<{ addresses: `0x${string}`[]; creators: Map<string, `0x${string}`> }> {
-  const creators = new Map<string, `0x${string}`>()
-  const addresses: `0x${string}`[] = []
-  const seen = new Set<string>()
-
-  const push = (chamber: Address | undefined, creator?: Address) => {
-    if (!chamber || !isNonZeroAddress(chamber)) return
-    const key = chamber.toLowerCase() as `0x${string}`
-    if (!seen.has(key)) {
-      seen.add(key)
-      addresses.push(key)
-    }
-    if (creator && isNonZeroAddress(creator) && !creators.has(key)) {
-      creators.set(key, creator.toLowerCase() as `0x${string}`)
-    }
-  }
-
-  if (isNonZeroAddress(factoryAddress)) {
-    try {
-      const logs = await getCreatedLogs(client, factoryAddress, factoryCreatedEvent)
-      for (const log of logs) {
-        push(log.args.chamber, log.args.creator)
-      }
-    } catch {
-      // RPC getLogs limits — recents / open-address still work
-    }
-  }
-
-  if (isNonZeroAddress(registryAddress)) {
-    try {
-      const logs = await getCreatedLogs(client, registryAddress, registryCreatedEvent)
-      for (const log of logs) {
-        push(log.args.chamber)
-      }
-    } catch {
-      // leftover Registry index is best-effort
-    }
-  }
-
-  return { addresses, creators }
-}
-
 export type MyChamberEntry = {
   address: `0x${string}`
   isDirector: boolean
@@ -104,8 +35,9 @@ export type MyChamberEntry = {
 }
 
 /**
- * Chambers the connected user participates in: Factory/Registry `ChamberCreated`
- * logs plus local recents, kept when the user is creator, a director, or holds shares.
+ * Chambers the connected user participates in: Ponder indexer (optional) +
+ * Factory/Registry `ChamberCreated` logs plus local recents, kept when the user
+ * is creator, a director, or holds shares.
  */
 export function useMyChambers() {
   const { address: userAddress } = useAccount()
@@ -117,6 +49,7 @@ export function useMyChambers() {
 
   const factoryOk = isNonZeroAddress(factoryAddress)
   const registryOk = isNonZeroAddress(registryAddress)
+  const indexerUrl = indexerAppliesToChain(chainId) ? getIndexerUrl() ?? '' : ''
 
   const query = useQuery({
     queryKey: [
@@ -125,22 +58,28 @@ export function useMyChambers() {
       userAddress,
       factoryOk ? factoryAddress : '0x0',
       registryOk ? registryAddress : '0x0',
+      indexerUrl,
       recents.join(),
     ],
-    enabled: !!publicClient && !!userAddress && (factoryOk || registryOk || recents.length > 0),
+    enabled:
+      !!publicClient &&
+      !!userAddress &&
+      (factoryOk || registryOk || recents.length > 0 || !!indexerUrl),
     staleTime: 15_000,
     queryFn: async () => {
       if (!publicClient || !userAddress) return [] as MyChamberEntry[]
 
-      const { addresses: fromLogs, creators } = await fetchCreatedChambers(
-        publicClient,
-        factoryOk ? factoryAddress : undefined,
-        registryOk ? registryAddress : undefined,
-      )
+      const { addresses: discovered, creators } = await discoverChambers({
+        client: publicClient,
+        chainId,
+        userAddress,
+        factoryAddress: factoryOk ? factoryAddress : undefined,
+        registryAddress: registryOk ? registryAddress : undefined,
+      })
 
       const candidates: `0x${string}`[] = []
       const seen = new Set<string>()
-      for (const addr of [...fromLogs, ...recents]) {
+      for (const addr of [...discovered, ...recents]) {
         const key = addr.toLowerCase()
         if (seen.has(key)) continue
         seen.add(key)

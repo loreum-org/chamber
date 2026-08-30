@@ -21,7 +21,7 @@ Skim **[What is a Chamber?](./overview.md)** first if the ideas are new.
 
 **Go to:** **Deploy** (`/deploy`)
 
-You are launching a new treasury + governance ruleset through the **Registry**.
+You are launching a new treasury + governance ruleset through the **Factory** (Registry if Factory is unset).
 
 | Field | What it means |
 |--------|----------------|
@@ -30,11 +30,25 @@ You are launching a new treasury + governance ruleset through the **Registry**.
 | **Seats** | How many **top-ranked NFTs** count as directors (**1–20**). More seats → more people in leadership, higher quorum for spends. |
 | **Name / Symbol** | Labels for the Chamber **share token** (what depositors receive). |
 
-Flow: fill the form → **Review & Deploy** → confirm in your wallet → wait for confirmation → open the new Chamber from the **Dashboard**.
+Flow: fill the form → **Review & Deploy** → confirm in your wallet → wait for confirmation.
+
+**Deploy does not seat anyone.** Factory create lists the chamber under **Mine** with an empty board. Submit, confirm, and execute stay locked until a director is seated. The success screen shows **Seat the board** when the board is empty.
 
 ---
 
-## Step 2 — Open your Chamber
+## Step 2 — Seat the board (required)
+
+Happy path on **Sepolia** or **Anvil**:
+
+1. **Deploy succeeds** — the chamber is live; `getDirectors()` is empty.
+2. **Hold a membership NFT** — the creator must own at least one token from the ERC‑721 you pasted.
+   - **Anvil / Sepolia mock collection:** use **Mint Test NFT** (header) or **Seat the board → Mint founder NFT**.
+   - **Your own collection:** receive or already hold a token. Chamber does not mint third-party NFTs and does not auto-seat strangers.
+3. **Deposit shares** — **Staking** tab. Delegation needs Chamber shares.
+4. **Delegate** to a token ID you hold — **Delegation** tab (the CTA prefills a token you own when it can).
+5. **Wait `SEATING_DELAY`** — **1 block**. Then the creator is a seated director and the queue can run.
+
+Quorum stays `1 + (seats * 51) / 100` (I-02). Seating delay stays 1 block (H-02).
 
 **Go to:** **Dashboard** (`/`) → click your Chamber → **Overview** (`/chamber/:address`)
 
@@ -42,13 +56,13 @@ The header shows vault size, seats, quorum, and your balance. Main areas:
 
 | Tab / link | Purpose |
 |------------|---------|
-| **Overview** | Summary and quick actions |
+| **Overview** | Summary and next action (empty-board bootstrap, or the proposal queue once seated) |
 | **Board** | Leaderboard — who has the most delegated weight |
 | **Staking** | Deposit or withdraw underlying tokens |
 | **Delegation** | Point your shares at NFT token IDs |
 | **Transactions** | Proposal queue (directors) |
 
-If **no one has delegated yet**, the board is empty and there are **no directors** — that is normal on day one.
+If **no one has delegated yet**, Overview explains how to seat the board instead of showing a dead transaction queue.
 
 ---
 

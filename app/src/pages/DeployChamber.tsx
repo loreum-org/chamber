@@ -2,15 +2,17 @@ import { useState, useEffect } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAccount, useReadContract } from 'wagmi'
+import { sepolia } from 'wagmi/chains'
 import { isAddress, parseEventLogs, zeroAddress } from 'viem'
 import { useQueryClient } from '@tanstack/react-query'
 import { FiAlertCircle, FiCheck, FiLoader, FiArrowRight, FiArrowLeft, FiCopy } from 'react-icons/fi'
 import { useCreateChamberTarget, useCreateChamberWithStatus } from '@/hooks'
-import { getContractAddresses } from '@/lib/wagmi'
+import { getContractAddresses, isNonZeroAddress } from '@/lib/wagmi'
 import { addRecentChamber } from '@/lib/recentChambers'
 import { factoryAbi, registryAbi } from '@/contracts/abis'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { erc20Abi, erc721Abi } from '@/contracts'
+import SeatTheBoard from '@/components/SeatTheBoard'
 import toast from 'react-hot-toast'
 
 type Step = 'form' | 'review' | 'deploying' | 'success'
@@ -23,9 +25,16 @@ function isValidAddress(s: string): boolean {
   return isAddress(s)
 }
 
+function shortenAddress(addr: `0x${string}`) {
+  return `${addr.slice(0, 6)}…${addr.slice(-4)}`
+}
+
 export default function DeployChamber() {
   const { isConnected, chainId } = useAccount()
   const { address: createAddress, abi: createAbi, source: createSource } = useCreateChamberTarget()
+  const sepoliaAddrs = getContractAddresses(sepolia.id)
+  const sepoliaDemoReady =
+    isNonZeroAddress(sepoliaAddrs?.mockERC20) && isNonZeroAddress(sepoliaAddrs?.mockERC721)
   const queryClient = useQueryClient()
 
   const [step, setStep] = useState<Step>('form')
@@ -72,7 +81,7 @@ export default function DeployChamber() {
           setDeployedChamber(chamber)
         }
       } catch {
-        // receipt may omit decoded logs; dashboard getLogs / recents still pick it up
+        // receipt may omit decoded logs; dashboard indexer / getLogs / recents still pick it up
       }
       setDeployedTxHash(hash)
       setStep('success')
@@ -197,7 +206,9 @@ export default function DeployChamber() {
           </div>
           <div>
             <h2 className="font-heading text-2xl font-bold text-slate-100 mb-2">Chamber Deployed</h2>
-            <p className="text-slate-400">Your new chamber is live onchain and ready to use.</p>
+            <p className="text-slate-400">
+              Your chamber is live. The board is empty until you hold a membership NFT and delegate to it.
+            </p>
           </div>
           {(deployedTxHash || hash) && (
             <div className="stat-card flex items-center justify-between gap-3">
@@ -218,8 +229,24 @@ export default function DeployChamber() {
               </div>
             </div>
           )}
+          {deployedChamber && (
+            <div className="text-left">
+              <SeatTheBoard
+                chamberAddress={deployedChamber}
+                nftToken={
+                  isValidAddress(formData.erc721Token)
+                    ? (formData.erc721Token as `0x${string}`)
+                    : undefined
+                }
+                assumeEmpty
+              />
+            </div>
+          )}
           <div className="flex gap-3 justify-center">
-            <Link to={deployedChamber ? `/chamber/${deployedChamber}` : '/'} className="btn btn-primary">
+            <Link
+              to={deployedChamber ? `/chamber/${deployedChamber}/delegation` : '/'}
+              className="btn btn-secondary"
+            >
               {deployedChamber ? 'Open Chamber' : 'Go to Dashboard'}
               <FiArrowRight className="w-4 h-4" />
             </Link>
@@ -267,6 +294,13 @@ export default function DeployChamber() {
               <div className="flex justify-center">
                 <ConnectButton accountStatus="address" chainStatus="icon" showBalance={false} />
               </div>
+              {sepoliaDemoReady && (
+                <p className="text-slate-500 text-xs mt-6 max-w-md mx-auto leading-relaxed">
+                  On Sepolia the form pre-fills demo ERC-20 {shortenAddress(sepoliaAddrs.mockERC20)} and membership
+                  ERC-721 {shortenAddress(sepoliaAddrs.mockERC721)}. After connecting, mint from the header so your
+                  wallet holds the membership NFT.
+                </p>
+              )}
             </div>
           ) : (
             <AnimatePresence mode="wait">
@@ -373,6 +407,13 @@ export default function DeployChamber() {
                       )}
                       {!erc721Valid && !formData.erc721Token && (
                         <span className="text-slate-500 text-xs">Contract holders can become board members via delegation</span>
+                      )}
+                      {chainId === sepolia.id && erc20Valid && erc721Valid && (
+                        <p className="text-slate-500 text-xs mt-2">
+                          Sepolia demo tokens are pre-filled. Use <span className="text-accent-400">Mint Test NFT</span> and{' '}
+                          <span className="text-accent-400">Mint Test ERC20</span> in the header so your wallet holds the
+                          membership NFT and demo asset.
+                        </p>
                       )}
                     </div>
                   </div>

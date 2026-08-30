@@ -1,9 +1,12 @@
 import { useMemo } from 'react'
-import { useReadContract, useReadContracts, useWriteContract, useWaitForTransactionReceipt, useSimulateContract, useAccount, useBlockNumber } from 'wagmi'
+import { useQuery } from '@tanstack/react-query'
+import { useReadContract, useReadContracts, useWriteContract, useWaitForTransactionReceipt, useSimulateContract, useAccount, useBlockNumber, usePublicClient, useChainId } from 'wagmi'
 import { isAddress } from 'viem'
 import { chamberAbi, erc20Abi, erc721Abi } from '@/contracts/abis'
 import { chamberVersionBytes32ToLabel } from '@/lib/utils'
 import { isSeatingMature } from '@/lib/chamberGovernance'
+import { getAlchemyApiKeyFromEnv } from '@/lib/alchemy'
+import { listOwnedErc721TokenIds } from '@/lib/ownedErc721'
 import type { Transaction, BoardMember, SeatUpdate } from '@/types'
 
 /** Public RPC / long block times: retry eth_call simulation and refresh state after txs. */
@@ -184,7 +187,7 @@ export function useChamberInfo(chamberAddress: `0x${string}` | undefined) {
     },
   })
 
-  const { data: transactionCount } = useReadContract({
+  const { data: transactionCount, refetch: refetchTransactionCount } = useReadContract({
     address: isValidAddress ? chamberAddress : undefined,
     abi: chamberAbi,
     functionName: 'getTransactionCount',
@@ -247,6 +250,7 @@ export function useChamberInfo(chamberAddress: `0x${string}` | undefined) {
     quorum: quorum ? Number(quorum) : undefined,
     directors: directors as `0x${string}`[] | undefined,
     transactionCount: transactionCount ? Number(transactionCount) : undefined,
+    refetchTransactionCount,
     assetToken: assetToken as `0x${string}` | undefined,
     nftToken: nftToken as `0x${string}` | undefined,
     version: chamberVersionBytes32ToLabel(versionBytes32 as `0x${string}` | undefined),
@@ -388,43 +392,78 @@ export function useSeatUpdate(chamberAddress: `0x${string}` | undefined) {
 }
 
 /**
- * Fetches token IDs of NFTs owned by a user from an ERC721 contract.
- * Uses tokenOfOwnerByIndex (ERC721Enumerable). Falls back to empty array if not supported.
+ * Token IDs of membership NFTs held by `ownerAddress`.
+ * Enumerable is the fast path; non-enumerable 721s (Sepolia EXPLORERS) use
+ * `ownerOf` / Alchemy / Transfer logs — see `listOwnedErc721TokenIds`.
  */
-export function useUserNFTs(nftAddress: `0x${string}` | undefined, ownerAddress: `0x${string}` | undefined) {
-  const { data: balance } = useReadContract({
+export function useUserNFTs(
+  nftAddress: `0x${string}` | undefined,
+  ownerAddress: `0x${string}` | undefined,
+  opts?: { chamberAddress?: `0x${string}` }
+) {
+  const publicClient = usePublicClient()
+  const chainId = useChainId()
+  const alchemyApiKey = getAlchemyApiKeyFromEnv()
+  const chamberScope = (opts?.chamberAddress ?? '').toLowerCase()
+
+  const { data: balance, isPending: balancePending, refetch: refetchBalance } = useReadContract({
     address: nftAddress,
     abi: erc721Abi,
     functionName: 'balanceOf',
     args: ownerAddress ? [ownerAddress] : undefined,
-    query: { enabled: !!nftAddress && !!ownerAddress },
-  })
-
-  const balanceNum = balance ? Number(balance) : 0
-  const indices = Array.from({ length: Math.min(balanceNum, 50) }, (_, i) => i)
-
-  const { data: tokenIdsResults } = useReadContracts({
-    contracts: indices.map((i) => ({
-      address: nftAddress!,
-      abi: erc721Abi,
-      functionName: 'tokenOfOwnerByIndex',
-      args: [ownerAddress!, BigInt(i)],
-    })),
     query: {
-      enabled: !!nftAddress && !!ownerAddress && balanceNum > 0 && balanceNum <= 50,
+      enabled: !!nftAddress && !!ownerAddress,
+      staleTime: 0,
+      refetchOnMount: true,
     },
   })
 
-  const tokenIds: bigint[] = []
-  if (tokenIdsResults) {
-    for (const r of tokenIdsResults) {
-      if (r.status === 'success' && r.result !== undefined) {
-        tokenIds.push(BigInt(r.result as string | number | bigint))
-      }
-    }
-  }
+  const balanceKnown = balance !== undefined
+  const hasNfts = !!balance && balance > 0n
 
-  return { tokenIds, balance: balance ?? 0n, isLoading: balance === undefined }
+  const listQuery = useQuery({
+    queryKey: [
+      'user-nfts',
+      nftAddress?.toLowerCase() ?? '',
+      ownerAddress?.toLowerCase() ?? '',
+      chamberScope,
+      balance?.toString() ?? '',
+      chainId,
+    ],
+    enabled: !!publicClient && !!nftAddress && !!ownerAddress && hasNfts,
+    staleTime: 15_000,
+    refetchOnMount: 'always',
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1500 * 2 ** attemptIndex, 12_000),
+    queryFn: () =>
+      listOwnedErc721TokenIds({
+        client: publicClient!,
+        nft: nftAddress!,
+        owner: ownerAddress!,
+        expectedBalance: balance,
+        chainId,
+        alchemyApiKey,
+      }),
+  })
+
+  const tokenIds = useMemo(() => {
+    if (!hasNfts) return [] as bigint[]
+    return listQuery.data ?? []
+  }, [hasNfts, listQuery.data])
+
+  const isLoading =
+    (!!nftAddress && !!ownerAddress && (balancePending || !balanceKnown)) ||
+    (hasNfts && (listQuery.isPending || listQuery.isFetching) && tokenIds.length === 0)
+
+  return {
+    tokenIds,
+    balance: balance ?? 0n,
+    isLoading,
+    refetch: async () => {
+      await refetchBalance()
+      return listQuery.refetch()
+    },
+  }
 }
 
 export function useDelegations(chamberAddress: `0x${string}` | undefined, account: `0x${string}` | undefined) {

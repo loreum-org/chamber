@@ -62,10 +62,16 @@ The Chamber represents a novel smart account architecture that fundamentally rei
 ```
 ## Contract Addresses
 
-### Sepolia Testnet
-- Chamber: `0xB99DEdbDe082B8Be86f06449f2fC7b9FED044E15`
-- Governance Token: `0x7756d245527f5f8925a537be509bf54feb2fdc99`
+### Sepolia Testnet (26 Aug 2026)
+- Factory: `0x43aA92c8A26392f21F63cdA88B6BaB5031C40550`
+- Chamber implementation: `0xd441f1FDad2d3a447d2621DE4DE8b5738e02d39c`
+- BoardLib: `0xC3E0Fe4e89e01ca69e384bd61DA78a5a6379762D`
+- WalletLib: `0x0320284b176657bb5048CF586DEef530F4B2499a`
 - Team Multisig: `0x5d45a213b2b6259f0b3c116a8907b56ab5e22095`
+- Demo ERC-20 (`MockERC20`, Deploy form default): `0x486D69BcAF1E07e4F90edDA9fA7e09De50CD01a2`
+- Demo membership ERC-721 (`MockERC721`, Deploy form default): `0x03CBb0Bb72aeB043b0dc8B299FaCFe77f9159688`
+
+These demo tokens are recorded in `contracts/deployments/sepolia.txt` and are what `getContractAddresses(11155111)` returns with no env. They have permissionless `mint` so a connected wallet can hold the membership NFT and demo ERC-20 via **Mint Test NFT** / **Mint Test ERC20** in the app header. Redeploy with `make deploy-sepolia-mocks` in `contracts/` and update `sepolia.txt` — do not invent addresses.
 
 ## Ethereum
 - Governance Token: `0x7756d245527f5f8925a537be509bf54feb2fdc99`
@@ -80,6 +86,21 @@ For detailed documentation, visit [docs.loreum.org](https://docs.loreum.org)
 - Discord: [Join our Discord](https://discord.gg/Pb3d5hRV)
 - Twitter: [@loreumdao](https://twitter.com/loreumdao)
 - GitHub: [loreum-org](https://github.com/loreum-org)
+
+## Operator SDK / CLI
+
+The React app is the human operator surface. Agents cannot click `TransactionQueue`. Use [`packages/operator`](./packages/operator) — same Chamber ABI as `contracts/generated-abis.ts`, no second contract API. See [#146](https://github.com/loreum-org/chamber/issues/146).
+
+```bash
+# Anvil end-to-end (Foundry: anvil + forge)
+cd packages/operator
+npm install
+npm run example:anvil
+```
+
+That run reads board + quorum, delegates, then `submitTransaction` / `confirm` / `execute`. Reverts for seating delay, pause, expired nonce, and not-a-director print the same copy as the app (`Your seat is not mature yet`, `This chamber is paused`, `This transaction has expired`, `You are not a director`).
+
+Library / CLI details: [`packages/operator/README.md`](./packages/operator/README.md).
 
 ## License
 

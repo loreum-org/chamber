@@ -6,7 +6,7 @@ This is a **map of screens** in the Chamber web app. Pair it with **[Getting sta
 
 | Path | What you do here |
 |------|------------------|
-| **`/`** | **Dashboard** — list Chambers from the Registry |
+| **`/`** | **Dashboard** — **My chambers** (indexer and/or Factory/Registry `ChamberCreated` logs + recents + open-by-address) |
 | **`/deploy`** | **Create** a new Chamber |
 | **`/chamber/:address`** | **Overview** — summary, tabs, balances |
 | **`/chamber/:address/staking`** | **Deposit / withdraw** underlying tokens |
@@ -33,13 +33,16 @@ flowchart TD
   Connect --> Hub{What next?}
   Hub --> Deploy[Deploy new Chamber]
   Hub --> Open[Open existing Chamber]
-  Deploy --> Open
-  Open --> Stake[Staking tab]
-  Open --> Del[Delegation tab]
+  Deploy --> Seat[Seat the board]
+  Seat --> HoldNft[Hold membership NFT]
+  HoldNft --> Stake[Staking tab]
+  Stake --> Del[Delegation tab]
+  Del --> Wait[Wait 1 block]
+  Wait --> Open
   Open --> Tx[Transactions tab]
-  Stake --> Del
-  Del --> Tx
 ```
+
+After deploy, **Seat the board** (receive / mint a founder NFT, or delegate to a token you hold) is required before the queue can act. See **[Getting started](../introduction/getting-started.md)**.
 
 ## Read next
 

@@ -30,9 +30,12 @@ LOREUM_WALLET_GOV_HODLER ?= $(LOREUM_LOCAL_GOV_HODLER)
 ci-test :; forge test
 
 # Symbolic verification with Halmos (requires: pip install -r fv-requirements.txt)
-halmos :; halmos --match-test '^symbolic' -vv
+# Halmos 0.3.3 has --match-contract, not --no-match-contract. Chamber/Registry/Vault
+# setUp deploys TransparentUpgradeableProxy (vm.deployCode), which Halmos cannot run.
+HALMOS_INCLUDE := ^(BoardSymTest|WalletSymTest)$
+halmos :; halmos --match-test '^symbolic' --match-contract '$(HALMOS_INCLUDE)' -vv
 
-ci-halmos :; halmos --match-test '^symbolic' -vv
+ci-halmos :; halmos --match-test '^symbolic' --match-contract '$(HALMOS_INCLUDE)' -vv
 
 dev-test :; forge test --verbosity -vvv --watch
 
@@ -89,13 +92,21 @@ deploy-erc721-anvil :; forge script script/MockERC721.s.sol:DeployMockERC721 \
 	--verbosity -vvv
 
 
-# Deploy Registry, MockERC20, and MockERC721 to anvil
-# This also writes deployment addresses to contracts/deployments.json
-deploy-all-anvil :; forge script script/DeployAllAnvil.s.sol:DeployAllAnvil \
-	--rpc-url http://localhost:8545 \
-	--private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 \
-	--broadcast \
-	--verbosity -vvv
+# Deploy Registry, Factory, MockERC20, and MockERC721 to anvil
+# Writes factory + other addresses to contracts/deployments.json; copies to the app so it reads factory
+deploy-all-anvil :
+	forge script script/DeployAllAnvil.s.sol:DeployAllAnvil \
+		--rpc-url http://localhost:8545 \
+		--private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 \
+		--broadcast \
+		--verbosity -vvv
+	@if [ -f deployments.json ] && [ -d ../app/contracts ]; then \
+		cp deployments.json ../app/contracts/deployments.json; \
+		echo "Copied deployments.json (including factory) to app/contracts/deployments.json"; \
+	fi
+
+# Alias used by the app (`make deploy-anvil-all`)
+deploy-anvil-all : deploy-all-anvil
 
 # Sync ABIs from compiled contracts to the app
 sync-abis :; node script/sync-abis.js
@@ -222,6 +233,13 @@ deploy-erc721 :; forge script script/MockERC721.s.sol:DeployMockERC721 \
 	--broadcast \
 	--verify
 
+# Demo ERC-20 + membership ERC-721 (Sepolia or any rpc). Copy printed addresses into deployments/sepolia.txt.
+# Example: make deploy-sepolia-mocks rpc=$SEPOLIA_RPC_URL account=deployer
+deploy-sepolia-mocks :; forge script script/DeploySepoliaMocks.s.sol:DeploySepoliaMocks \
+	--rpc-url ${rpc} \
+	--account ${account} \
+	--broadcast
+
 verify :; forge verify-contract \
 	--chain-id ${chain} \
 	--num-of-optimizations ${runs} \
@@ -232,9 +250,29 @@ verify :; forge verify-contract \
 	${address} \
 	src/${contract}.sol:${contract}
 
+# Sepolia Factory path (26 Aug 2026): BoardLib, WalletLib, Chamber impl, Factory.
+# Addresses + verify URLs: deployments/sepolia.txt
+# Requires ETHERSCAN_API_KEY (foundry.toml [etherscan].sepolia) and SEPOLIA_RPC_URL.
+# Usage: make verify-sepolia-factory
+# Print only: PRINT_ONLY=1 make verify-sepolia-factory
+verify-sepolia-factory :; bash script/etherscan-verify-sepolia-factory.sh
+
 
 call :; cast call ${address} ${method} ${args} \
 	--chain-id ${chain} \
 	--rpc-url ${rpc} \
 	--private-key ${private}
+
+# Typed operator CLI (same Chamber ABI as the app). See packages/operator.
+# Example: make operator-board CHAMBER=0x...
+OPERATOR_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST)))/../packages/operator)
+OPERATOR_RPC ?= $(ANVIL_RPC)
+OPERATOR_KEY ?= 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+
+operator-board :
+	@test -n "$(CHAMBER)" || (echo 'Set CHAMBER=0x...'; exit 1)
+	cd $(OPERATOR_DIR) && npx --yes tsx src/cli.ts board --rpc $(OPERATOR_RPC) --chamber $(CHAMBER)
+
+operator-e2e :
+	cd $(OPERATOR_DIR) && npm run example:anvil
 

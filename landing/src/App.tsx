@@ -47,9 +47,11 @@ function App() {
           <a href="#technology" className="hover:text-space-accent transition-colors">TECHNOLOGY</a>
           <a href="#governance" className="hover:text-space-accent transition-colors">GOVERNANCE</a>
           <Link to="/team" className="hover:text-space-accent transition-colors">TEAM</Link>
+          <Link to="/blog" className="hover:text-space-accent transition-colors">BLOG</Link>
         </div>
         <div className="flex items-center gap-4">
           <Link to="/team" className="md:hidden text-sm tracking-wide font-light hover:text-space-accent transition-colors">TEAM</Link>
+          <Link to="/blog" className="md:hidden text-sm tracking-wide font-light hover:text-space-accent transition-colors">BLOG</Link>
           <a 
             href={chamberAppUrl}
             className="hidden md:flex items-center gap-2 border border-white/20 px-6 py-2 rounded-full hover:bg-white/10 transition-all text-sm tracking-wide"
@@ -88,10 +90,11 @@ function App() {
             transition={{ duration: 0.8, delay: 0.4 }}
             className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-12 font-light leading-relaxed break-words"
           >
-            Loreum Chamber is protocol infrastructure for real DAOs: delegated voting,
-            a ranked board of directors, quorum, and treasury flows enforced by
-            <span className="text-space-accent"> audited smart contracts</span> — verifiable
-            by your community, compatible with humans, multisigs, and agents.
+            Loreum Chamber is protocol infrastructure for real DAOs: a
+            factory-deployed ERC-4626 vault, a liquid-delegated ranked board of
+            membership NFTs, and a
+            <span className="text-space-accent"> quorum wallet</span> — onchain
+            and verifiable by your community.
           </motion.p>
 
           <motion.div 
@@ -180,21 +183,21 @@ function App() {
                 icon: <Eye className="w-7 h-7 text-amber-300" />,
                 tag: "§ 104(c)(2)(D)",
                 title: "Transparent & Programmatic",
-                desc: "The Act requires a system that operates and enforces decisions solely from pre-established, transparent rules encoded in source code. Chamber executes every governance action — proposal, vote, and treasury transfer — through audited onchain logic.",
+                desc: "The Act requires a system that operates and enforces decisions solely from pre-established, transparent rules encoded in source code. Chamber executes proposal, vote, and treasury transfer through published onchain contracts — not Discord polls or hidden admin keys.",
                 glow: "bg-amber-400/10"
               },
               {
                 icon: <Shield className="w-7 h-7 text-purple-300" />,
                 tag: "§ 104(c)(2)(E)",
                 title: "No Unilateral Control",
-                desc: "No party may direct, alter, or aggregate more than 20% of effective voting power. Chamber's liquid delegation, sorted leaderboard of directors, and quorum-based execution make concentration of authority structurally impossible.",
+                desc: "The Act targets concentrated voting power. Chamber ships liquid delegation to a ranked board of membership NFTs and quorum-gated execution — so treasury and upgrades move through those onchain rules, not admin keys.",
                 glow: "bg-purple-500/10"
               },
               {
                 icon: <Network className="w-7 h-7 text-emerald-300" />,
                 tag: "§ 104(c)(2)(F–G)",
                 title: "Distributed & Impartial",
-                desc: "Authority must be distributed and the system impartial. Chamber's Sub-Chamber architecture splits authority across specialized bodies, while NFT-based directorship and EIP-1271 signatures let humans, multisigs, and AI agents participate as equals.",
+                desc: "Authority must be distributed and the system impartial. Chamber seats directors from liquid delegation to membership NFTs. Director actions require the caller to be that NFT's owner; a quorum of directors then executes.",
                 glow: "bg-emerald-500/10"
               }
             ].map((item, i) => (
@@ -262,30 +265,30 @@ function App() {
           <FadeIn className="mb-20 max-w-2xl">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-display mb-6 break-words text-balance">Autonomous Architecture</h2>
             <p className="text-gray-400 text-lg font-light leading-relaxed break-words">
-              Each Chamber primitive is designed to satisfy a specific clause of CLARITY Act § 104 —
-              not as compliance theater, but as the structural property that makes
-              autonomous, agent-driven governance possible.
+              The shipped Chamber is a factory-deployed ERC-4626 vault with a
+              liquid-delegated ranked board of membership NFTs and a quorum wallet —
+              the onchain object that Create deploys today.
             </p>
           </FadeIn>
 
           <div className="grid md:grid-cols-3 gap-8">
             {[
               {
-                icon: <Cpu className="w-8 h-8 text-blue-400" />,
-                title: "Agent Directors",
-                desc: "Smart contracts that propose, vote, and execute onchain through pre-established rules — humans, multisigs, and AI agents seated as equal directors via NFT-based delegation and EIP-1271 signatures.",
+                icon: <Layers className="w-8 h-8 text-blue-400" />,
+                title: "Factory",
+                desc: "Create deploys each Chamber from a Factory as an upgradeable proxy. On Sepolia the Factory address is an in-repo default — not a leftover Registry crawl, and not gated on a local env var.",
                 glow: "bg-blue-500/20"
               },
               {
                 icon: <Shield className="w-8 h-8 text-purple-400" />,
-                title: "Policy Modules",
-                desc: "Modular guardrails that enforce voting caps, quorum thresholds, and execution limits — preventing any single party from accruing the unilateral or 20% effective control disqualified by the Act.",
+                title: "ERC-4626 Vault",
+                desc: "Each Chamber is a tokenized vault: deposit the Chamber asset, receive shares, and keep treasury flows onchain and redeemable. Shares back liquid delegation to the board.",
                 glow: "bg-purple-500/20"
               },
               {
-                icon: <Layers className="w-8 h-8 text-emerald-400" />,
-                title: "Sub-Chambers",
-                desc: "Fractal organizational units that distribute authority across specialized bodies — Treasury, Ops, R&D — so power, capital, and decision rights are dispersed by design rather than concentrated in a founding team.",
+                icon: <Cpu className="w-8 h-8 text-emerald-400" />,
+                title: "Ranked Board & Quorum Wallet",
+                desc: "Membership NFTs form a liquid-delegated ranked board. Directors submit and confirm; a quorum of seats executes. The caller must be the NFT owner — an EIP-1271 agent-director path is not shipped.",
                 glow: "bg-emerald-500/20"
               }
             ].map((feature, i) => (
@@ -317,10 +320,10 @@ function App() {
           <FadeIn className="text-center mb-20">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-display mb-6 px-2 break-words text-balance">Ecosystem Governance</h2>
             <p className="text-gray-400 max-w-2xl mx-auto px-2 text-lg font-light leading-relaxed break-words">
-              Chambers and Sub-Chambers compose into a verifiable
-              <span className="text-space-accent"> Decentralized Governance System</span> —
-              a transparent, rules-based topology where authority is distributed by structure,
-              not by promise.
+              Each Chamber is a factory-deployed vault, ranked board, and
+              <span className="text-space-accent"> quorum wallet</span> —
+              a transparent, rules-based object where authority is exercised onchain,
+              not by admin keys.
             </p>
           </FadeIn>
 
@@ -330,27 +333,27 @@ function App() {
                 <div className="relative p-6 sm:p-8 border border-white/10 rounded-2xl bg-white/5 backdrop-blur-sm min-h-0 w-full max-w-full min-w-0 flex flex-col items-center justify-center gap-8 md:aspect-[4/3] overflow-hidden">
                    {/* Main Chamber */}
                   <div className="relative z-10 p-6 bg-space-800 border border-space-accent/50 rounded-xl max-w-[12rem] w-full sm:w-48 text-center shadow-[0_0_30px_rgba(208,214,249,0.1)]">
-                      <div className="text-space-accent font-display text-xl mb-1">Root Chamber</div>
-                      <div className="text-xs text-gray-400">Global Consensus</div>
+                      <div className="text-space-accent font-display text-xl mb-1">Chamber</div>
+                      <div className="text-xs text-gray-400">Factory Deploy</div>
                       
                       {/* Connection Lines */}
                       <div className="absolute top-full left-1/2 -translate-x-1/2 h-8 w-px bg-gradient-to-b from-space-accent/50 to-transparent" />
                       <div className="absolute top-full left-1/2 -translate-x-1/2 w-[min(18rem,calc(100vw-8rem))] sm:w-48 h-8 border-x border-t border-space-accent/20 rounded-t-xl translate-y-8" />
                    </div>
 
-                   {/* Sub Chambers — stack on narrow viewports, row + wrap on sm+ */}
+                   {/* Chamber primitives — stack on narrow viewports, row + wrap on sm+ */}
                    <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:gap-4 mt-8 pt-4 w-full max-w-full min-w-0 px-2 sm:px-0 justify-center items-center sm:items-stretch">
                       <div className="p-4 bg-space-800/50 border border-white/10 rounded-lg w-[8.5rem] max-w-full shrink-0 sm:w-28 text-center backdrop-blur-md">
-                         <div className="text-white font-display mb-1">Treasury</div>
-                         <div className="text-[10px] text-gray-500">Asset Mgmt</div>
+                         <div className="text-white font-display mb-1">Vault</div>
+                         <div className="text-[10px] text-gray-500">ERC-4626</div>
                       </div>
                       <div className="p-4 bg-space-800/50 border border-white/10 rounded-lg w-[8.5rem] max-w-full shrink-0 sm:w-28 text-center backdrop-blur-md">
-                         <div className="text-white font-display mb-1">Ops</div>
-                         <div className="text-[10px] text-gray-500">Coordination</div>
+                         <div className="text-white font-display mb-1">Board</div>
+                         <div className="text-[10px] text-gray-500">Ranked NFTs</div>
                       </div>
                       <div className="p-4 bg-space-800/50 border border-white/10 rounded-lg w-[8.5rem] max-w-full shrink-0 sm:w-28 text-center backdrop-blur-md">
-                         <div className="text-white font-display mb-1">R&D</div>
-                         <div className="text-[10px] text-gray-500">Innovation</div>
+                         <div className="text-white font-display mb-1">Wallet</div>
+                         <div className="text-[10px] text-gray-500">Quorum</div>
                       </div>
                    </div>
                 </div>
@@ -358,22 +361,19 @@ function App() {
 
              <FadeIn delay={0.4} className="space-y-12 w-full min-w-0">
                 <div className="group min-w-0">
-                   <h3 className="text-2xl font-display mb-3 text-white group-hover:text-space-accent transition-colors">The Chamber</h3>
+                   <h3 className="text-2xl font-display mb-3 text-white group-hover:text-space-accent transition-colors">Vault & Board</h3>
                    <p className="text-gray-400 leading-relaxed font-light break-words">
-                      The root governing body where global policies are set, the main treasury is
-                      held, and consensus is formed. Authority is exercised exclusively through
-                      onchain rules — never through admin keys or offchain channels — so the
-                      system remains transparent and rules-based as the Act requires.
+                      The Chamber holds the ERC-4626 treasury and seats a ranked board from
+                      liquid delegation to membership NFTs. Authority is exercised through
+                      those onchain rules — never through admin keys or offchain channels.
                    </p>
                 </div>
 
                 <div className="group min-w-0">
-                   <h3 className="text-2xl font-display mb-3 text-white group-hover:text-space-accent transition-colors">Sub-Chambers</h3>
+                   <h3 className="text-2xl font-display mb-3 text-white group-hover:text-space-accent transition-colors">Quorum Wallet</h3>
                    <p className="text-gray-400 leading-relaxed font-light break-words">
-                      Specialized bodies with delegated mandates and independent budgets. By
-                      splitting authority across Treasury, Ops, R&D, and beyond, no single seat or
-                      coalition can unilaterally direct the protocol — closing the
-                      common-control loophole that disqualifies most legacy DAOs.
+                      Directors submit and confirm transactions; execution requires quorum.
+                      The caller must own the membership NFT for that seat.
                    </p>
                 </div>
              </FadeIn>
@@ -581,6 +581,7 @@ function App() {
             <h4 className="font-bold tracking-widest text-sm mb-6">PLATFORM</h4>
             <ul className="space-y-4 text-sm text-gray-400 font-light">
               <li><Link to="/team" className="hover:text-white transition-colors">Team</Link></li>
+              <li><Link to="/blog" className="hover:text-white transition-colors">Blog</Link></li>
               <li><a href="#" className="hover:text-white transition-colors">Agents</a></li>
               <li><a href="#" className="hover:text-white transition-colors">Chambers</a></li>
               <li><a href="#" className="hover:text-white transition-colors">Security</a></li>

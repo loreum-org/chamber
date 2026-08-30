@@ -32,6 +32,7 @@ import {
   useTransactionConfirmation,
   useTransactionCancelConfirmation,
   useChamberEvents,
+  useReceiptRefresh,
   useIsChamber,
   useSeatUpdate,
   useUpdateSeats,
@@ -41,9 +42,19 @@ import {
   useUserNFTs,
   useChamberRegistryImplementationSync,
   useProposalCalldata,
+  queueWriteErrorMessage,
+  queueWritePendingLabel,
+  queueWriteSuccessMessage,
+  type QueueWriteKind,
 } from '@/hooks'
 import { chamberAbi, erc20Abi } from '@/contracts/abis'
-import { getBlockExplorerAddressUrl, hasProposalCalldata, shortenAddress } from '@/lib/utils'
+import {
+  formatWalletSendError,
+  getBlockExplorerAddressUrl,
+  getBlockExplorerTxUrl,
+  hasProposalCalldata,
+  shortenAddress,
+} from '@/lib/utils'
 import { DirectorCallerStatus } from '@/components/DirectorCallerStatus'
 import {
   UPGRADE_SELECTOR,
@@ -75,7 +86,53 @@ type TabType = 'queue' | 'history' | 'new'
 
 type RiskLevel = 'low' | 'medium' | 'high'
 
+type QueueWriteFlight = {
+  kind: QueueWriteKind
+  hash?: `0x${string}`
+}
+
+type QueueWriteReporters = {
+  onWriteStart: (kind: QueueWriteKind) => void
+  onWriteSent: (hash: `0x${string}`, kind: QueueWriteKind) => void
+  onWriteClear: () => void
+}
+
 const MAX_BOARD_SEATS = 20
+
+function PendingTxBanner({
+  kind,
+  hash,
+  chainId,
+}: {
+  kind: QueueWriteKind
+  hash?: `0x${string}`
+  chainId: number
+}) {
+  const phase = hash ? 'chain' : 'wallet'
+  const explorerUrl = hash && chainId !== 31337 ? getBlockExplorerTxUrl(hash, chainId) : undefined
+
+  return (
+    <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-200">
+      <div className="flex items-start gap-2">
+        <FiLoader className="w-4 h-4 mt-0.5 shrink-0 animate-spin text-amber-400" />
+        <div className="min-w-0">
+          <p>{queueWritePendingLabel(kind, phase)}</p>
+          {explorerUrl && (
+            <a
+              href={explorerUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-accent-400 hover:underline inline-flex items-center gap-1 mt-1"
+            >
+              View on explorer
+              <FiExternalLink className="w-3.5 h-3.5" />
+            </a>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
 
 function classifyTransactionRisk(chamberAddress: `0x${string}`, target: `0x${string}`, value: bigint, data: `0x${string}`) {
   const isSelfCall = isChamberSelfCall(chamberAddress, target)
@@ -244,6 +301,7 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
   const [searchParams, setSearchParams] = useSearchParams()
 
   const [activeTab, setActiveTab] = useState<TabType>('queue')
+  const [inFlight, setInFlight] = useState<QueueWriteFlight | null>(null)
   type QueueTx = TransactionQueueItem & {
     cancelled?: boolean
     cancelConfirmations?: number
@@ -255,9 +313,12 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
   
   const chamberInfo = useChamberInfo(chamberAddress)
   const implSync = useChamberRegistryImplementationSync(chamberAddress)
-  const { members } = useBoardMembers(chamberAddress, chamberInfo.seats || 5)
+  const { members, isFetched: boardFetched } = useBoardMembers(chamberAddress, chamberInfo.seats || 5)
+  const boardEmpty = boardFetched && members.length === 0
   const { seatUpdate, refetch: refetchSeatUpdate } = useSeatUpdate(chamberAddress)
-  const { tokenIds: ownedTokenIds } = useUserNFTs(chamberInfo.nftToken, userAddress)
+  const { tokenIds: ownedTokenIds } = useUserNFTs(chamberInfo.nftToken, userAddress, {
+    chamberAddress,
+  })
   const directorGate = useDirectorActionGate(
     chamberAddress,
     userAddress,
@@ -428,13 +489,56 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
     query: { enabled: transactionCount > 0 && ownedTokenIdsStable.length > 0 },
   })
 
-  // Watch for transaction events and auto-refresh when transactions are mined
+  // Event watches are a fast path only. Receipt + refetch below is the source of truth.
   useChamberEvents(chamberAddress, {
     onTransactionEvent: () => {
       refetchTransactions()
     },
     onBoardEvent: () => {
       refetchSeatUpdate()
+    },
+  })
+
+  const startQueueWrite = (kind: QueueWriteKind) => {
+    setInFlight({ kind })
+  }
+  const sentQueueWrite = (hash: `0x${string}`, kind: QueueWriteKind) => {
+    setInFlight({ kind, hash })
+  }
+  const clearQueueWrite = () => {
+    setInFlight(null)
+  }
+  const writeReporters: QueueWriteReporters = {
+    onWriteStart: startQueueWrite,
+    onWriteSent: sentQueueWrite,
+    onWriteClear: clearQueueWrite,
+  }
+
+  useReceiptRefresh({
+    chamberAddress,
+    hash: inFlight?.hash,
+    successMessage: inFlight ? queueWriteSuccessMessage(inFlight.kind) : 'Transaction confirmed',
+    errorMessage: inFlight ? queueWriteErrorMessage(inFlight.kind) : 'Transaction failed',
+    onSuccess: () => {
+      const kind = inFlight?.kind
+      setInFlight(null)
+      if (kind === 'submit' || kind === 'upgrade' || kind === 'seat-propose') {
+        setSearchParams(
+          (prev) => {
+            const next = new URLSearchParams(prev)
+            next.delete('proposal')
+            return next
+          },
+          { replace: true },
+        )
+        setActiveTab('queue')
+      }
+      void chamberInfo.refetchTransactionCount()
+      void refetchTransactions()
+      void refetchSeatUpdate()
+    },
+    onError: () => {
+      setInFlight(null)
     },
   })
 
@@ -623,6 +727,25 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
             You hold a live board seat, but director actions unlock at block {directorGate.seatedAt?.toString() ?? '…'}.
           </div>
         )}
+        {inFlight && (
+          <div className="mt-4">
+            <PendingTxBanner kind={inFlight.kind} hash={inFlight.hash} chainId={chainId} />
+          </div>
+        )}
+        {boardEmpty && (
+          <div className="mt-4 rounded-xl border border-accent-500/30 bg-accent-500/5 px-4 py-3 text-sm text-slate-200">
+            <p className="font-medium">No directors seated</p>
+            <p className="text-slate-400 mt-1">
+              Submit, confirm, and execute stay locked until you seat the board. Hold a membership NFT and delegate shares to it.
+            </p>
+            <Link
+              to={`/chamber/${chamberAddress}/delegation`}
+              className="text-accent-400 text-sm hover:underline mt-2 inline-block"
+            >
+              Seat the board →
+            </Link>
+          </div>
+        )}
 
         {/* Stats */}
         <div className="grid grid-cols-6 gap-4 mt-6 pt-6 border-t border-slate-700/30">
@@ -723,7 +846,7 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
                   userTokenId={actionTokenId}
                   currentSeats={chamberInfo.seats ?? 5}
                   seatUpdate={seatUpdate}
-                  onChanged={refetchSeatUpdate}
+                  {...writeReporters}
                 />
               </div>
             )}
@@ -745,6 +868,7 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
                     leftoverTokenId={tx.leftoverTokenId}
                     paused={chamberInfo.paused}
                     chainId={chainId}
+                    {...writeReporters}
                   />
                 ))}
               </div>
@@ -767,6 +891,7 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
                     leftoverTokenId={tx.leftoverTokenId}
                     paused={chamberInfo.paused}
                     chainId={chainId}
+                    {...writeReporters}
                   />
                 ))}
 
@@ -786,6 +911,7 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
                     leftoverTokenId={tx.leftoverTokenId}
                     paused={chamberInfo.paused}
                     chainId={chainId}
+                    {...writeReporters}
                   />
                 ))}
               </div>
@@ -810,6 +936,7 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
                     leftoverTokenId={tx.leftoverTokenId}
                     paused={chamberInfo.paused}
                     chainId={chainId}
+                    {...writeReporters}
                   />
                 ))}
               </div>
@@ -818,19 +945,38 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
             {pendingTransactions.length === 0 && readyTransactions.length === 0 && expiredTransactions.length === 0 && cancelledTransactions.length === 0 && !hasSeatProposal && (
               <div className="panel p-12 text-center">
                 <FiShield className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-                <h3 className="font-heading text-xl font-semibold text-slate-300 mb-2">
-                  No Pending Proposals
-                </h3>
-                <p className="text-slate-500 mb-6 max-w-sm mx-auto">
-                  Create a proposal with a title and description. Directors can confirm and execute once quorum is reached.
-                </p>
-                <button
-                  onClick={() => setActiveTab('new')}
-                  className="btn btn-primary inline-flex"
-                >
-                  <FiPlus className="w-4 h-4" />
-                  New Proposal
-                </button>
+                {boardEmpty ? (
+                  <>
+                    <h3 className="font-heading text-xl font-semibold text-slate-300 mb-2">
+                      Seat the board first
+                    </h3>
+                    <p className="text-slate-500 mb-6 max-w-sm mx-auto">
+                      There are no directors, so the queue cannot submit, confirm, or execute. Hold a membership NFT and delegate shares to it.
+                    </p>
+                    <Link
+                      to={`/chamber/${chamberAddress}/delegation`}
+                      className="btn btn-primary inline-flex"
+                    >
+                      Seat the board
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <h3 className="font-heading text-xl font-semibold text-slate-300 mb-2">
+                      No Pending Proposals
+                    </h3>
+                    <p className="text-slate-500 mb-6 max-w-sm mx-auto">
+                      Create a proposal with a title and description. Directors can confirm and execute once quorum is reached.
+                    </p>
+                    <button
+                      onClick={() => setActiveTab('new')}
+                      className="btn btn-primary inline-flex"
+                    >
+                      <FiPlus className="w-4 h-4" />
+                      New Proposal
+                    </button>
+                  </>
+                )}
               </div>
             )}
 
@@ -870,6 +1016,7 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
                   leftoverTokenId={tx.leftoverTokenId}
                   paused={chamberInfo.paused}
                   chainId={chainId}
+                  {...writeReporters}
                 />
               ))
             ) : (
@@ -902,18 +1049,7 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
                 currentSeats={chamberInfo.seats ?? 5}
                 hasSeatProposal={hasSeatProposal}
                 registryUpgradeDraft={registryUpgradeDraft}
-                onSeatProposalCreated={refetchSeatUpdate}
-                onSuccess={() => {
-                  setSearchParams(
-                    (prev) => {
-                      const next = new URLSearchParams(prev)
-                      next.delete('proposal')
-                      return next
-                    },
-                    { replace: true },
-                  )
-                  setActiveTab('queue')
-                }}
+                {...writeReporters}
               />
             ) : (
               <div className="space-y-4">
@@ -977,7 +1113,7 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
 }
 
 // Transaction Card Component
-interface TransactionCardProps {
+interface TransactionCardProps extends QueueWriteReporters {
   transaction: TransactionQueueItem & { cancelled?: boolean; cancelConfirmations?: number; metadataURI?: string; leftoverTokenId?: bigint }
   chamberAddress: `0x${string}`
   quorum: number
@@ -987,11 +1123,44 @@ interface TransactionCardProps {
   chainId: number
 }
 
-function TransactionCard({ transaction, chamberAddress, quorum, userTokenId, leftoverTokenId, paused, chainId }: TransactionCardProps) {
-  const { confirm, isPending: isConfirming } = useConfirmTransaction(chamberAddress)
-  const { execute, isPending: isExecuting } = useExecuteTransaction(chamberAddress)
-  const { revoke, isPending: isRevoking } = useRevokeConfirmation(chamberAddress)
-  const { cancel, isPending: isCancelling } = useCancelTransaction(chamberAddress)
+function TransactionCard({
+  transaction,
+  chamberAddress,
+  quorum,
+  userTokenId,
+  leftoverTokenId,
+  paused,
+  chainId,
+  onWriteStart,
+  onWriteSent,
+  onWriteClear,
+}: TransactionCardProps) {
+  const { confirm, isPending: isConfirmPending, isConfirming: isConfirmWaiting, hash: confirmHash } = useConfirmTransaction(chamberAddress)
+  const { execute, isPending: isExecutePending, isConfirming: isExecuteWaiting, hash: executeHash } = useExecuteTransaction(chamberAddress)
+  const { revoke, isPending: isRevokePending, isConfirming: isRevokeWaiting, hash: revokeHash } = useRevokeConfirmation(chamberAddress)
+  const { cancel, isPending: isCancelPending, isConfirming: isCancelWaiting, hash: cancelHash } = useCancelTransaction(chamberAddress)
+  const isConfirming = isConfirmPending || isConfirmWaiting
+  const isExecuting = isExecutePending || isExecuteWaiting
+  const isRevoking = isRevokePending || isRevokeWaiting
+  const isCancelling = isCancelPending || isCancelWaiting
+  const cardWriteKind: QueueWriteKind | undefined = isConfirming
+    ? 'confirm'
+    : isExecuting
+      ? 'execute'
+      : isRevoking
+        ? 'revoke'
+        : isCancelling
+          ? 'cancel'
+          : undefined
+  const cardWriteHash = isConfirming
+    ? confirmHash
+    : isExecuting
+      ? executeHash
+      : isRevoking
+        ? revokeHash
+        : isCancelling
+          ? cancelHash
+          : undefined
   const [executeCalldata, setExecuteCalldata] = useState('0x')
   const [calldataTouched, setCalldataTouched] = useState(false)
   const onchainMeta = parseProposalMetadataURI(transaction.metadataURI)
@@ -1048,12 +1217,15 @@ function TransactionCard({ transaction, chamberAddress, quorum, userTokenId, lef
       toast.error('This transaction has expired')
       return
     }
+    onWriteStart('confirm')
     try {
-      await confirm(userTokenId, BigInt(transaction.id))
-      toast.success('Confirmation submitted!')
+      const hash = await confirm(userTokenId, BigInt(transaction.id))
+      if (hash) onWriteSent(hash, 'confirm')
+      else onWriteClear()
     } catch (err) {
       console.error(err)
-      toast.error('Confirmation failed')
+      onWriteClear()
+      toast.error(formatWalletSendError(err, 'Confirmation failed'))
     }
   }
 
@@ -1089,12 +1261,15 @@ function TransactionCard({ transaction, chamberAddress, quorum, userTokenId, lef
         }
       }
     }
+    onWriteStart('execute')
     try {
-      await execute(userTokenId, BigInt(transaction.id), calldata)
-      toast.success('Execution submitted!')
+      const hash = await execute(userTokenId, BigInt(transaction.id), calldata)
+      if (hash) onWriteSent(hash, 'execute')
+      else onWriteClear()
     } catch (err) {
       console.error(err)
-      toast.error('Execution failed')
+      onWriteClear()
+      toast.error(formatWalletSendError(err, 'Execution failed'))
     }
   }
 
@@ -1109,12 +1284,15 @@ function TransactionCard({ transaction, chamberAddress, quorum, userTokenId, lef
       toast.error('This transaction has expired')
       return
     }
+    onWriteStart('revoke')
     try {
-      await revoke(revokeTokenId, BigInt(transaction.id))
-      toast.success('Confirmation revoked!')
+      const hash = await revoke(revokeTokenId, BigInt(transaction.id))
+      if (hash) onWriteSent(hash, 'revoke')
+      else onWriteClear()
     } catch (err) {
       console.error(err)
-      toast.error('Revoke failed')
+      onWriteClear()
+      toast.error(formatWalletSendError(err, 'Revoke failed'))
     }
   }
 
@@ -1123,12 +1301,15 @@ function TransactionCard({ transaction, chamberAddress, quorum, userTokenId, lef
       toast.error('You must be a director to vote to cancel')
       return
     }
+    onWriteStart('cancel')
     try {
-      await cancel(userTokenId, BigInt(transaction.id))
-      toast.success('Cancel vote submitted!')
+      const hash = await cancel(userTokenId, BigInt(transaction.id))
+      if (hash) onWriteSent(hash, 'cancel')
+      else onWriteClear()
     } catch (err) {
       console.error(err)
-      toast.error('Cancel vote failed')
+      onWriteClear()
+      toast.error(formatWalletSendError(err, 'Cancel vote failed'))
     }
   }
 
@@ -1402,6 +1583,12 @@ function TransactionCard({ transaction, chamberAddress, quorum, userTokenId, lef
         )}
       </div>
 
+      {cardWriteKind && (
+        <div className="mt-4">
+          <PendingTxBanner kind={cardWriteKind} hash={cardWriteHash} chainId={chainId} />
+        </div>
+      )}
+
       {/* Calldata hash / preimage note */}
       {hasData ? (
         <div className="mt-4 pt-4 border-t border-slate-700/30">
@@ -1448,26 +1635,46 @@ function BoardProposalCard({
   userTokenId,
   currentSeats,
   seatUpdate,
-  onChanged,
+  onWriteStart,
+  onWriteSent,
+  onWriteClear,
 }: {
   chamberAddress: `0x${string}`
   userTokenId: bigint | undefined
   currentSeats: number
   seatUpdate: SeatUpdate
-  onChanged: () => void | Promise<unknown>
-}) {
-  const { updateSeats, isPending: isSupportPending, isConfirming: isSupportConfirming } =
+} & QueueWriteReporters) {
+  const chainId = useChainId()
+  const { updateSeats, isPending: isSupportPending, isConfirming: isSupportConfirming, hash: supportHash } =
     useUpdateSeats(chamberAddress)
   const {
     executeSeatsUpdate,
     isPending: isExecPending,
     isConfirming: isExecConfirming,
+    hash: execHash,
   } = useExecuteSeatsUpdate(chamberAddress)
   const {
     cancelSeatUpdate,
     isPending: isCancelPending,
     isConfirming: isCancelConfirming,
+    hash: cancelHash,
   } = useCancelSeatUpdate(chamberAddress)
+  const seatWriteKind: QueueWriteKind | undefined =
+    isSupportPending || isSupportConfirming
+      ? 'seat-support'
+      : isExecPending || isExecConfirming
+        ? 'seat-execute'
+        : isCancelPending || isCancelConfirming
+          ? 'seat-cancel'
+          : undefined
+  const seatWriteHash =
+    isSupportPending || isSupportConfirming
+      ? supportHash
+      : isExecPending || isExecConfirming
+        ? execHash
+        : isCancelPending || isCancelConfirming
+          ? cancelHash
+          : undefined
 
   const supported =
     userTokenId !== undefined &&
@@ -1493,12 +1700,14 @@ function BoardProposalCard({
       toast.error('You must be a director to support board proposals')
       return
     }
+    onWriteStart('seat-support')
     try {
-      await updateSeats(userTokenId, seatUpdate.proposedSeats)
-      await onChanged()
-      toast.success('Supported board proposal')
+      const hash = await updateSeats(userTokenId, seatUpdate.proposedSeats)
+      if (hash) onWriteSent(hash, 'seat-support')
+      else onWriteClear()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Support failed')
+      onWriteClear()
+      toast.error(formatWalletSendError(err, 'Support failed'))
     }
   }
 
@@ -1507,12 +1716,14 @@ function BoardProposalCard({
       toast.error('You must be a director to execute board proposals')
       return
     }
+    onWriteStart('seat-execute')
     try {
-      await executeSeatsUpdate(userTokenId)
-      await onChanged()
-      toast.success('Board proposal executed')
+      const hash = await executeSeatsUpdate(userTokenId)
+      if (hash) onWriteSent(hash, 'seat-execute')
+      else onWriteClear()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Execute failed')
+      onWriteClear()
+      toast.error(formatWalletSendError(err, 'Execute failed'))
     }
   }
 
@@ -1521,12 +1732,14 @@ function BoardProposalCard({
       toast.error('You must be a director to cancel board proposals')
       return
     }
+    onWriteStart('seat-cancel')
     try {
-      await cancelSeatUpdate(userTokenId)
-      await onChanged()
-      toast.success('Board proposal cancelled')
+      const hash = await cancelSeatUpdate(userTokenId)
+      if (hash) onWriteSent(hash, 'seat-cancel')
+      else onWriteClear()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Cancel failed')
+      onWriteClear()
+      toast.error(formatWalletSendError(err, 'Cancel failed'))
     }
   }
 
@@ -1651,12 +1864,18 @@ function BoardProposalCard({
           </div>
         )}
       </div>
+
+      {seatWriteKind && (
+        <div className="mt-4">
+          <PendingTxBanner kind={seatWriteKind} hash={seatWriteHash} chainId={chainId} />
+        </div>
+      )}
     </motion.div>
   )
 }
 
 // New Transaction Form
-interface NewTransactionFormProps {
+interface NewTransactionFormProps extends QueueWriteReporters {
   chamberAddress: `0x${string}`
   userTokenId?: bigint
   nextTransactionId: number
@@ -1667,8 +1886,6 @@ interface NewTransactionFormProps {
     chamberVersionLabel?: string
     registryVersionLabel?: string
   }
-  onSeatProposalCreated: () => void | Promise<unknown>
-  onSuccess: () => void
 }
 
 // Helper to get placeholder text for different parameter types
@@ -1754,10 +1971,12 @@ function NewTransactionForm({
   currentSeats,
   hasSeatProposal,
   registryUpgradeDraft,
-  onSeatProposalCreated,
-  onSuccess,
+  onWriteStart,
+  onWriteSent,
+  onWriteClear,
 }: NewTransactionFormProps) {
   const { address: userAddress } = useAccount()
+  const chainId = useChainId()
   const [proposalType, setProposalType] = useState<'transaction' | 'seats'>('transaction')
   const [txType, setTxType] = useState<'eth' | 'token' | 'custom'>('eth')
   const [title, setTitle] = useState('')
@@ -1785,11 +2004,12 @@ function NewTransactionForm({
   const [sigError, setSigError] = useState<string | null>(null)
   const [encodedData, setEncodedData] = useState<string>('0x')
 
-  const { submit, isPending, isConfirming } = useSubmitTransaction(chamberAddress)
+  const { submit, isPending, isConfirming, hash: submitHash } = useSubmitTransaction(chamberAddress)
   const {
     updateSeats: proposeSeats,
     isPending: isSeatPending,
     isConfirming: isSeatConfirming,
+    hash: seatHash,
   } = useUpdateSeats(chamberAddress)
 
   const previewTarget = (txType === 'token' ? tokenAddress : target) as `0x${string}`
@@ -1927,14 +2147,15 @@ function NewTransactionForm({
         return
       }
 
+      onWriteStart('seat-propose')
       try {
-        await proposeSeats(userTokenId, BigInt(n))
-        await onSeatProposalCreated()
-        toast.success('Board proposal created')
-        onSuccess()
+        const hash = await proposeSeats(userTokenId, BigInt(n))
+        if (hash) onWriteSent(hash, 'seat-propose')
+        else onWriteClear()
       } catch (err) {
         console.error(err)
-        toast.error(err instanceof Error ? err.message : 'Board proposal failed')
+        onWriteClear()
+        toast.error(formatWalletSendError(err, 'Board proposal failed'))
       }
       return
     }
@@ -1992,11 +2213,12 @@ function NewTransactionForm({
           riskSummary: 'Token transfer proposal. Verify token contract, recipient, amount, and treasury balance.',
         }
         const metadataURI = createProposalMetadataURI(metadata)
-        await submit(userTokenId, tokenAddress as `0x${string}`, 0n, txData, metadataURI)
+        onWriteStart('submit')
+        const hash = await submit(userTokenId, tokenAddress as `0x${string}`, 0n, txData, metadataURI)
         setStoredProposalCalldata(chamberAddress, nextTransactionId, txData)
         setProposalMetadata(chamberAddress, nextTransactionId, { ...metadata, metadataURI })
-        toast.success('Transaction submitted!')
-        onSuccess()
+        if (hash) onWriteSent(hash, 'submit')
+        else onWriteClear()
         return
       } else if (txType === 'custom') {
         try {
@@ -2028,16 +2250,22 @@ function NewTransactionForm({
         riskSummary: risk.summary,
       }
       const metadataURI = createProposalMetadataURI(metadata)
-      await submit(userTokenId, target as `0x${string}`, txValue, txData, metadataURI)
+      const writeKind: QueueWriteKind =
+        parsedFunction?.name === 'upgradeImplementation' || selectorOf(txData) === UPGRADE_SELECTOR
+          ? 'upgrade'
+          : 'submit'
+      onWriteStart(writeKind)
+      const hash = await submit(userTokenId, target as `0x${string}`, txValue, txData, metadataURI)
       if (txData !== '0x') {
         setStoredProposalCalldata(chamberAddress, nextTransactionId, txData)
       }
       setProposalMetadata(chamberAddress, nextTransactionId, { ...metadata, metadataURI })
-      toast.success('Transaction submitted!')
-      onSuccess()
+      if (hash) onWriteSent(hash, writeKind)
+      else onWriteClear()
     } catch (err) {
       console.error(err)
-      toast.error('Failed to submit transaction')
+      onWriteClear()
+      toast.error(formatWalletSendError(err, 'Failed to submit transaction'))
     }
   }
 
@@ -2427,6 +2655,20 @@ function NewTransactionForm({
           </>
         )}
 
+        {busy && (
+          <PendingTxBanner
+            kind={
+              proposalType === 'seats'
+                ? 'seat-propose'
+                : parsedFunction?.name === 'upgradeImplementation' || !!registryUpgradeDraft
+                  ? 'upgrade'
+                  : 'submit'
+            }
+            hash={isSeatPending || isSeatConfirming ? seatHash : submitHash}
+            chainId={chainId}
+          />
+        )}
+
         <button
           type="submit"
           disabled={busy || (proposalType === 'seats' && hasSeatProposal)}
@@ -2435,7 +2677,7 @@ function NewTransactionForm({
           {busy ? (
             <>
               <FiLoader className="w-4 h-4 animate-spin" />
-              {isPending || isSeatPending ? 'Confirm in Wallet...' : 'Submitting...'}
+              {isPending || isSeatPending ? 'Confirm in Wallet...' : 'Waiting for confirmation...'}
             </>
           ) : (
             <>

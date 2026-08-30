@@ -20,6 +20,11 @@ function copyFromRepo() {
   for (const name of files) {
     copyFileSync(join(repoContracts, name), join(appContracts, name))
   }
+  const sepoliaRel = join('deployments', 'sepolia.txt')
+  if (existsSync(join(repoContracts, sepoliaRel))) {
+    mkdirSync(join(appContracts, 'deployments'), { recursive: true })
+    copyFileSync(join(repoContracts, sepoliaRel), join(appContracts, sepoliaRel))
+  }
   console.log('sync-contracts: updated app/contracts from ../contracts')
 }
 
