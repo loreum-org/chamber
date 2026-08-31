@@ -28,6 +28,7 @@ Then, as you need detail:
 | Design goals | **[Vision](./protocol/vision.md)** |
 | Contracts and Registry | **[Architecture](./protocol/architecture.md)** |
 | Limits and implementation notes | **[Design notes](./protocol/design-notes.md)** |
+| Who may act for a director NFT | **[Director authorization](./protocol/director-authorization.md)** |
 | Deploy with Foundry | **[Deployment](./guides/deployment.md)** |
 | Function list | **[API reference](./reference/api-reference.md)** |
 | Flow diagrams | **[Sequence diagrams](./reference/sequence-diagrams.md)** |

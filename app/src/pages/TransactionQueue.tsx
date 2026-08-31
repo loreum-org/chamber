@@ -55,6 +55,7 @@ import {
   hasProposalCalldata,
   shortenAddress,
 } from '@/lib/utils'
+import { DirectorCallerStatus } from '@/components/DirectorCallerStatus'
 import {
   UPGRADE_SELECTOR,
   PAUSE_SELECTOR,
@@ -716,6 +717,11 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
             This chamber is paused. Deposits, withdrawals, and execute are halted. Directors can still submit and confirm an unpause proposal.
           </div>
         )}
+        <DirectorCallerStatus
+          role={directorGate.role}
+          tokenId={directorGate.tokenId}
+          nftOwner={directorGate.nftOwner}
+        />
         {directorGate.seatingPending && (
           <div className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-200">
             You hold a live board seat, but director actions unlock at block {directorGate.seatedAt?.toString() ?? '…'}.

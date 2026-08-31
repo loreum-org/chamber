@@ -38,3 +38,8 @@ For many seat counts the result is about 55–67% of seats. One- and two-seat ch
 require 100% of seats (quorum equals seats).
 
 That threshold is a count of distinct director **token IDs**, not unique addresses. `isDirector` and confirmations are per membership NFT. One address holding `quorum` top-seat membership NFTs can submit, self-confirm, and execute — a **single-actor treasury**. This is intended (token-weighted quorum); confirmations are not capped per owner.
+
+Who may *call* as a given `tokenId` is specified in
+[Director authorization](./director-authorization.md): the NFT owner
+(`msg.sender == ownerOf`), or one Chamber-registered session key on a
+**contract-owned** membership NFT. ERC-1271 is not consulted (M-01).

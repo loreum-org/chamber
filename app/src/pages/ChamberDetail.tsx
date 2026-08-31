@@ -37,8 +37,10 @@ import {
   useIsChamber,
   useNftImageMap,
   useChamberRegistryImplementationSync,
+  useDirectorActionGate,
 } from '@/hooks'
 import BoardVisualization from '@/components/BoardVisualization'
+import { DirectorCallerStatus } from '@/components/DirectorCallerStatus'
 import TreasuryOverview from '@/components/TreasuryOverview'
 import DelegationManager from '@/components/DelegationManager'
 import SeatTheBoard from '@/components/SeatTheBoard'
@@ -139,6 +141,12 @@ function ChamberDetailContent({ chamberAddress }: { chamberAddress: `0x${string}
     [boardMembersRaw, membershipOwners]
   )
   const { delegations } = useDelegations(chamberAddress, userAddress)
+  const directorGate = useDirectorActionGate(
+    chamberAddress,
+    userAddress,
+    chamberInfo.directors,
+    members,
+  )
   const transactionIds = useMemo(
     () => Array.from({ length: chamberInfo.transactionCount || 0 }, (_, i) => i),
     [chamberInfo.transactionCount]
@@ -361,6 +369,12 @@ function ChamberDetailContent({ chamberAddress }: { chamberAddress: `0x${string}
             </Link>
           </div>
         </div>
+
+        <DirectorCallerStatus
+          role={directorGate.role}
+          tokenId={directorGate.tokenId}
+          nftOwner={directorGate.nftOwner}
+        />
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-slate-700/30">

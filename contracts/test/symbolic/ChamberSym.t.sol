@@ -7,6 +7,19 @@ import {Chamber} from "src/Chamber.sol";
 import {MockERC20} from "test/mock/MockERC20.sol";
 import {MockERC721} from "test/mock/MockERC721.sol";
 import {DeployChamber} from "test/utils/DeployChamber.sol";
+import {IChamber} from "src/interfaces/IChamber.sol";
+
+/// @dev Contract wallet that can register a session key as itself.
+contract MockSessionOwner {
+    function execute(address target, bytes calldata data) external {
+        (bool ok, bytes memory ret) = target.call(data);
+        if (!ok) {
+            assembly {
+                revert(add(ret, 0x20), mload(ret))
+            }
+        }
+    }
+}
 
 /// @notice Symbolic verification of Chamber delegation accounting via Halmos
 contract ChamberSymTest is Test, SymTest {
@@ -86,5 +99,39 @@ contract ChamberSymTest is Test, SymTest {
         chamber.deposit(depositAmount, USER);
         chamber.delegate(tokenId, delegateAmount);
         vm.stopPrank();
+    }
+
+    /// @dev EOA owner is authorized; any other symbolic caller is not (no 1271, no implicit operator).
+    function symbolicUnauthorizedCallerIsNotTokenAuthorized() public {
+        uint256 tokenId = svm.createUint(128, "tokenId");
+        address caller = svm.createAddress("caller");
+        vm.assume(tokenId > 0);
+        vm.assume(caller != USER && caller != address(0));
+
+        nft.mintWithTokenId(USER, tokenId);
+
+        assertTrue(chamber.isTokenAuthorized(tokenId, USER));
+        assertFalse(chamber.isTokenAuthorized(tokenId, caller));
+    }
+
+    /// @dev Only the registered session key (plus the contract owner) is authorized.
+    function symbolicSessionKeyIsOnlyApprovedOperator() public {
+        uint256 tokenId = svm.createUint(128, "tokenId");
+        address sessionKey = svm.createAddress("sessionKey");
+        address other = svm.createAddress("other");
+        vm.assume(tokenId > 0);
+        vm.assume(sessionKey != address(0));
+        vm.assume(other != address(0) && other != sessionKey);
+
+        MockSessionOwner wallet = new MockSessionOwner();
+        vm.assume(other != address(wallet));
+
+        nft.mintWithTokenId(address(wallet), tokenId);
+        wallet.execute(address(chamber), abi.encodeCall(IChamber.setDirectorOperator, (tokenId, sessionKey)));
+
+        assertTrue(chamber.isTokenAuthorized(tokenId, address(wallet)));
+        assertTrue(chamber.isTokenAuthorized(tokenId, sessionKey));
+        assertFalse(chamber.isTokenAuthorized(tokenId, other));
+        assertEq(chamber.getDirectorOperator(tokenId), sessionKey);
     }
 }
