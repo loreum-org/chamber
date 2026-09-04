@@ -11,7 +11,9 @@ import { formatChamberError } from '../src/errors.ts'
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 
 function abiNames(kind: 'function' | 'event'): string[] {
-  return chamberAbi.filter((item) => item.type === kind).map((item) => item.name)
+  return chamberAbi.flatMap((item) =>
+    item.type === kind && 'name' in item ? [item.name] : [],
+  )
 }
 
 test('ChamberOperator exposes session-key read, set, and clear', () => {

@@ -108,13 +108,14 @@ npm run example:anvil
 That script starts Anvil if needed, runs `DeployAllAnvil`, creates a 3-seat chamber, then:
 
 1. Reads `getDirectorOperator` (zero) and shows EOA `setDirectorOperator` → `You are not a director`
-2. Delegates from two directors and shows a pending board
-3. `submit` before the seating delay → `Your seat is not mature yet`
-4. Mines one block (`SEATING_DELAY = 1`)
-5. `submit` → `confirm` → `execute`
-6. A third key `confirm` → `You are not a director`
-7. A short-deadline nonce after `evm_increaseTime` → `This transaction has expired`
-8. Board `pause()` then `execute` → `This chamber is paused`
+2. Contract-wallet owner `setDirectorOperator` / CLI `operator` read / `clearDirectorOperator`
+3. Delegates from two directors and shows a pending board
+4. `submit` before the seating delay → `Your seat is not mature yet`
+5. Mines one block (`SEATING_DELAY = 1`)
+6. `submit` → `confirm` → `execute`
+7. A third key `confirm` → `You are not a director`
+8. A short-deadline nonce after `evm_increaseTime` → `This transaction has expired`
+9. Board `pause()` then `execute` → `This chamber is paused`
 
 ## Out of scope
 
