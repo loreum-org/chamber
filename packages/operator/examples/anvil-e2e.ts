@@ -5,8 +5,9 @@
  * From `packages/operator`: `npm run example:anvil`
  *
  * Spawns a fresh Anvil, deploys Registry/Factory/mocks, creates a 3-seat
- * chamber, then exercises board/quorum/delegate/submit/confirm/execute and
- * the four app-mapped failure strings.
+ * chamber, then exercises board/quorum/delegate/submit/confirm/execute,
+ * session-key read + EOA setDirectorOperator rejection, and the four
+ * app-mapped failure strings.
  */
 import { spawn, type ChildProcess } from 'node:child_process'
 import { readFile } from 'node:fs/promises'
@@ -278,6 +279,19 @@ async function main(): Promise<void> {
       })
     }
 
+    log('session key: unset read is address(0); EOA owner cannot register')
+    const unset = await opA.getDirectorOperator(1n)
+    if (unset !== '0x0000000000000000000000000000000000000000') {
+      throw new Error(`expected unset operator, got ${unset}`)
+    }
+    await expectMessage('EOA setDirectorOperator', CHAMBER_ERROR_MESSAGES.NotDirector, () =>
+      opA.setDirectorOperator(1n, outsider.address),
+    )
+    const stillUnset = await opA.getDirectorOperator(1n)
+    if (stillUnset !== '0x0000000000000000000000000000000000000000') {
+      throw new Error(`expected operator to stay unset after EOA reject, got ${stillUnset}`)
+    }
+
     log('delegate (both directors)')
     await opA.delegate(1n, deposit)
     await opB.delegate(2n, deposit)
@@ -370,7 +384,9 @@ async function main(): Promise<void> {
       opA.execute(1n, pausedTx.nonce, '0x'),
     )
 
-    log('done — board, quorum, delegate, submit, confirm, execute, and the four app error strings')
+    log(
+      'done — board, quorum, session-key read, EOA setDirectorOperator reject, delegate, submit, confirm, execute, and the four app error strings',
+    )
   } finally {
     if (spawned) {
       spawned.kill('SIGTERM')
