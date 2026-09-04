@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { test } from 'node:test'
 import { fileURLToPath } from 'node:url'
-import { encodeErrorResult } from 'viem'
+import { decodeFunctionData, encodeErrorResult, encodeFunctionData } from 'viem'
 import { chamberAbi, directorOperatorAbi } from '../src/abi.ts'
 import { ChamberOperator } from '../src/client.ts'
 import { formatChamberError } from '../src/errors.ts'
@@ -29,6 +29,37 @@ test('generated-plus-IChamber ABI exposes session-key read/set/event', () => {
   assert.ok(functions.includes('setDirectorOperator'))
   assert.ok(events.includes('DirectorOperatorSet'))
   assert.equal(directorOperatorAbi.length, 3)
+})
+
+test('chamberAbi encodes setDirectorOperator and getDirectorOperator', () => {
+  const session = '0x0000000000000000000000000000000000000B0b' as const
+  const setData = encodeFunctionData({
+    abi: chamberAbi,
+    functionName: 'setDirectorOperator',
+    args: [3n, session],
+  })
+  const setDecoded = decodeFunctionData({ abi: chamberAbi, data: setData })
+  assert.equal(setDecoded.functionName, 'setDirectorOperator')
+  assert.equal(setDecoded.args[0], 3n)
+  assert.equal((setDecoded.args[1] as string).toLowerCase(), session.toLowerCase())
+
+  const clearData = encodeFunctionData({
+    abi: chamberAbi,
+    functionName: 'setDirectorOperator',
+    args: [3n, '0x0000000000000000000000000000000000000000'],
+  })
+  const clearDecoded = decodeFunctionData({ abi: chamberAbi, data: clearData })
+  assert.equal(clearDecoded.functionName, 'setDirectorOperator')
+  assert.equal(clearDecoded.args[1], '0x0000000000000000000000000000000000000000')
+
+  const readData = encodeFunctionData({
+    abi: chamberAbi,
+    functionName: 'getDirectorOperator',
+    args: [3n],
+  })
+  const readDecoded = decodeFunctionData({ abi: chamberAbi, data: readData })
+  assert.equal(readDecoded.functionName, 'getDirectorOperator')
+  assert.deepEqual([...readDecoded.args], [3n])
 })
 
 test('session-key writes decode NotDirector the same as other director calls', () => {
