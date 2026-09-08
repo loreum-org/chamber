@@ -42,7 +42,7 @@ import { DirectorCallerStatus } from '@/components/DirectorCallerStatus'
 import { DirectorOperatorManager } from '@/components/DirectorOperatorManager'
 import TreasuryOverview from '@/components/TreasuryOverview'
 import DelegationManager from '@/components/DelegationManager'
-import SeatTheBoard from '@/components/SeatTheBoard'
+import SeatTheBoard, { SeatTheBoardLink } from '@/components/SeatTheBoard'
 import ChamberAssetsAlchemy from '@/components/ChamberAssetsAlchemy'
 import { NftRetryableImage } from '@/components/NftRetryableImage'
 import { ChamberRouteGate } from '@/components/ChamberRouteGate'
@@ -857,13 +857,13 @@ function OverviewTab({ chamberAddress, chamberInfo, members, totalDelegated, use
               >
                 Getting started →
               </Link>
-              <button
-                type="button"
-                onClick={() => setActiveTab('delegation')}
+              <SeatTheBoardLink
+                chamberAddress={chamberAddress}
+                nftToken={chamberInfo.nftToken}
                 className="btn btn-primary inline-flex"
               >
                 Seat the board
-              </button>
+              </SeatTheBoardLink>
             </div>
           )}
         </div>
@@ -881,15 +881,15 @@ function OverviewTab({ chamberAddress, chamberInfo, members, totalDelegated, use
             <div className="p-4 space-y-3">
               {boardEmpty ? (
                 <>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('delegation')}
+                  <SeatTheBoardLink
+                    chamberAddress={chamberAddress}
+                    nftToken={chamberInfo.nftToken}
                     className="btn btn-primary w-full justify-start"
                   >
                     <FiSend className="w-4 h-4" />
                     Seat the board
                     <FiArrowLeft className="w-4 h-4 rotate-180 ml-auto" />
-                  </button>
+                  </SeatTheBoardLink>
                   <button
                     type="button"
                     onClick={() => setActiveTab('staking')}
