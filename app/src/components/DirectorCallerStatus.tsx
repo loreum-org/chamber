@@ -35,22 +35,16 @@ export function DirectorCallerStatus({
         <div>
           {isOwner ? (
             <>
-              Connected wallet is the <span className="font-semibold">NFT owner</span> of {member}.
-              {sessionOperator ? (
-                <>
-                  {' '}
-                  Session key {shortenAddress(sessionOperator)}.
-                </>
-              ) : null}
+              Connected wallet is the owner of {member}.
             </>
           ) : (
             <>
-              Connected wallet is an <span className="font-semibold">operator</span> (session key) for{' '}
-              {member}
+              Connected wallet is an <span className="font-semibold">Operator (session key)</span> for{' '}
+              {member} — a registered key that can act for this membership token
               {nftOwner ? (
                 <>
                   {' '}
-                  — NFT owner {shortenAddress(nftOwner)}
+                  (owner {shortenAddress(nftOwner)})
                 </>
               ) : null}
               .
