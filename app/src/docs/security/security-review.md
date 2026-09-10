@@ -1,6 +1,6 @@
 # Security review (methodology)
 
-> **Audience:** auditors and developers running structured reviews. Product users should rely on published audit reports and **[What is a Chamber?](../introduction/overview.md)** for trust assumptions.
+> **Audience:** auditors and developers running structured reviews. Product users should read **[What is a Chamber?](../introduction/overview.md)** for trust assumptions. There is no named public audit of Chamber as of this writing.
 
 Chamber’s **trust surface** is the Solidity in **`contracts/src/`** (`Factory`, `Chamber`, `Board`, `Wallet`, leftover `Registry`). This page summarizes how to review it systematically.
 

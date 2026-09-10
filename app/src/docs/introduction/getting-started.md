@@ -21,7 +21,7 @@ Skim **[What is a Chamber?](./overview.md)** first if the ideas are new.
 
 **Go to:** **Deploy** (`/deploy`)
 
-You are launching a new treasury + governance ruleset through the **Factory**. A leftover Registry create path may still exist if Factory is unset — that is not the live default.
+You are launching a new treasury + governance ruleset through the **Factory**. That is the intended create path. Registry `createChamber` is leftover — the app falls back to it only if Factory is unset.
 
 | Field | What it means |
 |--------|----------------|
@@ -46,7 +46,7 @@ Happy path on **Sepolia** or **Anvil**:
    - **Your own collection:** receive or already hold a token. Chamber does not mint third-party NFTs and does not auto-seat strangers.
 3. **Deposit shares** — **Staking** tab. Delegation needs Chamber shares.
 4. **Delegate** to a token ID you hold — **Delegation** tab (the CTA prefills a token you own when it can).
-5. **Wait `SEATING_DELAY`** — **1 block**. Then the creator is a seated director and the queue can run.
+5. **Wait `SEATING_DELAY`** — **1 block**. Then the creator is a seated director and the queue can run. The same 1-block delay applies when `ownerOf` changes for an already-seated token.
 
 Quorum is `1 + (n * 51) / 100` over reachable authorized directors (PMN-M01). Seating delay stays 1 block (H-02).
 
@@ -126,4 +126,4 @@ This is the Chamber equivalent of a multisig transaction — but confirmations a
 - **[Why not just a multisig?](./why-not-multisig.md)**  
 - **[App routes](../guides/app-routes.md)** — URL map  
 - **[Governance](../protocol/governance.md)** — quorum and seats  
-- **[Treasury actions](../protocol/multisig.md)** — proposal details  
+- **[Treasury actions](../protocol/multisig.md)** — proposal details

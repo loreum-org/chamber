@@ -86,10 +86,10 @@ Directors can **vote to cancel** a queued transaction. If cancel votes reach **q
 
 ## Nested chambers (contemplated)
 
-A leftover Registry can record **parent / child** links when a Chamber’s vault asset is **another Chamber’s share token**. That is **not** what Factory Create writes. Nested Sub-Chambers remain a contemplated pattern. See **[Chambers and Sub-Chambers](../introduction/chamber-and-sub-chambers.md)**.
+**Sub-Chambers** with Registry **parent / child** links are a contemplated pattern, not live architecture. Leftover Registry `createChamber` can still record those links when the vault asset is another registered Chamber; Factory create does not. Each Chamber you deploy still has its **own** board and queue. See **[Chambers and Sub-Chambers](../introduction/chamber-and-sub-chambers.md)**.
 
 ## Read next
 
 - **[Treasury actions](./multisig.md)** — submit, confirm, execute  
 - **[Vault](./vaults.md)** — shares and deposits  
-- **[Why not just a multisig?](../introduction/why-not-multisig.md)**  
+- **[Why not just a multisig?](../introduction/why-not-multisig.md)**
