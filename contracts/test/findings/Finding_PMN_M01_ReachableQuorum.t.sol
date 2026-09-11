@@ -105,14 +105,15 @@ contract FindingPMNM01ReachableQuorumTest is Test {
     }
 
     function test_PMNM01_caseB_createRejectsSeatsAboveSupply() public {
-        // IERC721 has no standard totalSupply. Factory/Registry create before membership
-        // mint (FactoryBootstrap). A seats-vs-supply bound is not knowable onchain without
+        // IERC721 has no standard totalSupply. Factory create before membership mint
+        // (FactoryBootstrap). A seats-vs-supply bound is not knowable onchain without
         // an invented oracle — B's supply check is skipped. seats == 0 remains the
-        // knowable create-time reject.
+        // knowable create-time reject on Factory. Registry.createChamber is disabled
+        // (PMN-M03 A) and reverts CreateDisabled even for seats == 0.
         vm.expectRevert(Factory.InvalidSeats.selector);
         factory.createChamber(address(token), address(nft), 0, "Zero", "Z");
 
-        vm.expectRevert(Registry.InvalidSeats.selector);
+        vm.expectRevert(Registry.CreateDisabled.selector);
         registry.createChamber(address(token), address(nft), 0, "Zero", "Z");
 
         address created = factory.createChamber(address(token), address(nft), 5, "EmptyNft", "E");
