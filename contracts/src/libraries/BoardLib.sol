@@ -443,7 +443,9 @@ library BoardLib {
         return false;
     }
 
-    /// @dev Live top-seat flags whose recorded controller still matches `ownerOf` (PMN-H01 A).
+    /// @dev Live top-seat flags with a current owner path (PMN-H01 A, PMN-M02 A).
+    ///      Skips `ownerOf` failure. A control change with no live session key is
+    ///      dropped when the recorded controller no longer matches `ownerOf`.
     function countCurrentDirectorFlags(
         BoardTypes.BoardStorage storage $,
         IERC721 nft,
@@ -471,11 +473,21 @@ library BoardLib {
         uint256 tokenId
     ) internal view returns (bool) {
         address owner = tryOwnerOf(nft, tokenId);
-        // PMN-M01 / minimal PMN-M02: burned or otherwise inert tokenIds do not contribute flags.
+        // PMN-M01 / PMN-M02 A: burned or otherwise inert tokenIds do not contribute flags.
         if (owner == address(0)) return false;
         address recorded = flagOwners[nonce][tokenId];
         if (recorded == address(0)) return true;
         return owner == recorded;
+    }
+
+    /// @dev Permissionless rank drop for a burned / `ownerOf`-failing node (PMN-M02 B).
+    function cleanupInertSeat(BoardTypes.BoardStorage storage $, IERC721 nft, uint256 tokenId) external {
+        if ($.nodes[tokenId].tokenId != tokenId) revert IBoard.NodeDoesNotExist();
+        if (tryOwnerOf(nft, tokenId) != address(0)) revert IBoard.SeatNotInert();
+        uint256[] memory prevTop = topTokenIds($);
+        remove($, tokenId);
+        refreshSeating($, prevTop);
+        syncTopSeatControl($, nft);
     }
 
     function swapUp(BoardTypes.BoardStorage storage $, uint256 tokenId) internal {

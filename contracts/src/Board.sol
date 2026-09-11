@@ -137,6 +137,10 @@ abstract contract Board is ReentrancyGuardTransientUpgradeable {
         return BoardLib.countCurrentDirectorFlags(_getBoardStorage(), nft, flags, flagOwners, nonce);
     }
 
+    function _cleanupInertSeat(IERC721 nft, uint256 tokenId) internal {
+        BoardLib.cleanupInertSeat(_getBoardStorage(), nft, tokenId);
+    }
+
     function _collectDelegations(
         mapping(address => mapping(uint256 => uint256)) storage holderDelegation,
         mapping(address => uint256) storage totalHolderDelegations,

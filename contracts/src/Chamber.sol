@@ -1028,6 +1028,13 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
         _syncSeatingControl(_getChamberStorage().nft, tokenId);
     }
 
+    /// @inheritdoc IChamber
+    function cleanupInertSeat(uint256 tokenId) external override nonReentrant {
+        if (tokenId == 0) revert IChamber.ZeroTokenId();
+        _cleanupInertSeat(_getChamberStorage().nft, tokenId);
+        emit IChamber.InertSeatCleaned(tokenId);
+    }
+
     /// PROXY UPGRADE FUNCTIONS ///
 
     /**
