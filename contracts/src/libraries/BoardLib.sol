@@ -15,17 +15,17 @@ library BoardLib {
     using EnumerableSet for EnumerableSet.UintSet;
     using BoardTypes for BoardTypes.BoardStorage;
 
-    function getNode(BoardTypes.BoardStorage storage $, uint256 tokenId) external view returns (BoardTypes.Node memory) {
+    function getNode(BoardTypes.BoardStorage storage $, uint256 tokenId)
+        external
+        view
+        returns (BoardTypes.Node memory)
+    {
         return $.nodes[tokenId];
     }
 
-    function delegate(
-        BoardTypes.BoardStorage storage $,
-        uint256 tokenId,
-        uint256 amount,
-        address sender,
-        IERC721 nft
-    ) external {
+    function delegate(BoardTypes.BoardStorage storage $, uint256 tokenId, uint256 amount, address sender, IERC721 nft)
+        external
+    {
         uint256[] memory prevTop = topTokenIds($);
         BoardTypes.Node storage node = $.nodes[tokenId];
         if (node.tokenId == tokenId) {
@@ -40,13 +40,9 @@ library BoardLib {
         emit IBoard.Delegate(sender, tokenId, amount);
     }
 
-    function undelegate(
-        BoardTypes.BoardStorage storage $,
-        uint256 tokenId,
-        uint256 amount,
-        address sender,
-        IERC721 nft
-    ) external {
+    function undelegate(BoardTypes.BoardStorage storage $, uint256 tokenId, uint256 amount, address sender, IERC721 nft)
+        external
+    {
         uint256[] memory prevTop = topTokenIds($);
         BoardTypes.Node storage node = $.nodes[tokenId];
         if (node.tokenId != tokenId) revert IBoard.NodeDoesNotExist();
@@ -712,8 +708,9 @@ library BoardLib {
     function syncTrackedDelegations(
         BoardTypes.BoardStorage storage $b,
         mapping(address => mapping(uint256 => uint256)) storage holderDelegation,
-        mapping(address => uint256) storage totalHolderDelegations,
-        mapping(address => EnumerableSet.UintSet) storage holderDelegatedTokenIds,
+        mapping(
+            address => EnumerableSet.UintSet
+        ) storage holderDelegatedTokenIds,
         address holder
     ) external {
         EnumerableSet.UintSet storage tracked = holderDelegatedTokenIds[holder];
