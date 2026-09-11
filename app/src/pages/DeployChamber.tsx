@@ -1,13 +1,18 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useAccount, useReadContract } from 'wagmi'
+import { useAccount, useReadContract, useSwitchChain } from 'wagmi'
 import { sepolia } from 'wagmi/chains'
 import { isAddress, parseEventLogs, zeroAddress } from 'viem'
 import { useQueryClient } from '@tanstack/react-query'
-import { FiAlertCircle, FiCheck, FiLoader, FiArrowRight, FiArrowLeft, FiCopy } from 'react-icons/fi'
+import { FiAlertCircle, FiAlertTriangle, FiCheck, FiLoader, FiArrowRight, FiArrowLeft, FiCopy } from 'react-icons/fi'
 import { useCreateChamberTarget, useCreateChamberWithStatus } from '@/hooks'
-import { getContractAddresses, isNonZeroAddress, LOCAL_CHAIN_ID } from '@/lib/wagmi'
+import {
+  getConfiguredChainIds,
+  getContractAddresses,
+  getNetworkName,
+  isNonZeroAddress,
+} from '@/lib/wagmi'
 import { addRecentChamber } from '@/lib/recentChambers'
 import { factoryAbi, registryAbi } from '@/contracts/abis'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
@@ -17,10 +22,8 @@ import toast from 'react-hot-toast'
 
 type Step = 'form' | 'review' | 'deploying' | 'success'
 
-/** In-app getting-started guide (Docs.tsx route is `/docs/*`). */
-const GETTING_STARTED_HREF = '/docs/introduction/getting-started'
-
-type MembershipPath = 'existing' | 'need-collection'
+const CREATE_TARGET_MISSING =
+  'No Factory or Registry is configured on this network. Switch to a supported chain to deploy.'
 
 function quorumForSeats(seats: number) {
   return 1 + Math.floor((seats * 51) / 100)
@@ -36,7 +39,16 @@ function shortenAddress(addr: `0x${string}`) {
 
 export default function DeployChamber() {
   const { isConnected, chainId } = useAccount()
+  const { switchChain, isPending: isSwitching } = useSwitchChain()
   const { address: createAddress, abi: createAbi, source: createSource } = useCreateChamberTarget()
+  const canCreate = createSource !== 'none' && !!createAddress
+  const configuredCreateChainIds = getConfiguredChainIds()
+  const preferredCreateChainId = configuredCreateChainIds.includes(sepolia.id)
+    ? sepolia.id
+    : configuredCreateChainIds[0]
+  const preferredCreateChainName =
+    preferredCreateChainId != null ? getNetworkName(preferredCreateChainId) : 'this network'
+  const currentNetworkName = typeof chainId === 'number' ? getNetworkName(chainId) : 'this network'
   const sepoliaAddrs = getContractAddresses(sepolia.id)
   const sepoliaDemoReady =
     isNonZeroAddress(sepoliaAddrs?.mockERC20) && isNonZeroAddress(sepoliaAddrs?.mockERC721)
@@ -176,7 +188,7 @@ export default function DeployChamber() {
   const erc721Error = erc721Valid && !erc721Loading && !erc721Name
 
   const canProceedToReview =
-    membershipPath === 'existing' &&
+    canCreate &&
     !!formData.name &&
     !!formData.symbol &&
     erc20Confirmed &&
@@ -184,10 +196,18 @@ export default function DeployChamber() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!canCreate) {
+      toast.error(CREATE_TARGET_MISSING)
+      return
+    }
     if (canProceedToReview) setStep('review')
   }
 
   const handleConfirmDeploy = async () => {
+    if (!createAddress) {
+      toast.error(CREATE_TARGET_MISSING)
+      return
+    }
     setStep('deploying')
     reset()
     try {
@@ -200,8 +220,23 @@ export default function DeployChamber() {
       )
     } catch (err) {
       console.error('Failed to initiate deployment:', err)
+      if (err instanceof Error && err.message.includes('No Factory or Registry')) {
+        toast.error(CREATE_TARGET_MISSING)
+      }
       setStep('review')
     }
+  }
+
+  const handleSwitchToCreateChain = () => {
+    if (preferredCreateChainId == null) return
+    switchChain(
+      { chainId: preferredCreateChainId },
+      {
+        onError: (err) => {
+          toast.error(err.message || `Failed to switch to ${preferredCreateChainName}`)
+        },
+      },
+    )
   }
 
   const seats = parseInt(formData.seats)
@@ -323,6 +358,15 @@ export default function DeployChamber() {
                 </p>
               )}
             </div>
+          ) : !canCreate ? (
+            <CreateTargetMissing
+              chainId={chainId}
+              networkName={currentNetworkName}
+              preferredCreateChainId={preferredCreateChainId}
+              preferredCreateChainName={preferredCreateChainName}
+              isSwitching={isSwitching}
+              onSwitch={handleSwitchToCreateChain}
+            />
           ) : (
             <AnimatePresence mode="wait">
               {step === 'form' && (
@@ -638,7 +682,7 @@ export default function DeployChamber() {
                     </button>
                     <button
                       onClick={handleConfirmDeploy}
-                      disabled={isPending || isConfirming || step === 'deploying'}
+                      disabled={!canCreate || isPending || isConfirming || step === 'deploying'}
                       className="btn btn-primary flex-1 py-3.5"
                     >
                       {isPending || isConfirming ? (
@@ -661,7 +705,7 @@ export default function DeployChamber() {
         </div>
 
         {/* Info Cards */}
-        {step === 'form' && (
+        {step === 'form' && (canCreate || !isConnected) && (
           <div className="grid md:grid-cols-2 gap-4">
             <div className="card">
               <h4 className="font-heading font-semibold text-slate-100 mb-2">What is a Chamber?</h4>
@@ -680,6 +724,83 @@ export default function DeployChamber() {
           </div>
         )}
       </motion.div>
+    </div>
+  )
+}
+
+function CreateTargetMissing({
+  chainId,
+  networkName,
+  preferredCreateChainId,
+  preferredCreateChainName,
+  isSwitching,
+  onSwitch,
+}: {
+  chainId: number | undefined
+  networkName: string
+  preferredCreateChainId: number | undefined
+  preferredCreateChainName: string
+  isSwitching: boolean
+  onSwitch: () => void
+}) {
+  const canSwitch =
+    preferredCreateChainId != null &&
+    (typeof chainId !== 'number' || preferredCreateChainId !== chainId)
+
+  return (
+    <div className="text-center py-6">
+      <div className="w-16 h-16 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-center justify-center mx-auto mb-5">
+        <FiAlertTriangle className="w-8 h-8 text-amber-400" />
+      </div>
+      <h3 className="font-heading text-xl font-semibold text-slate-100 mb-2">
+        This network cannot deploy Chambers
+      </h3>
+      <p className="text-slate-400 mb-6 max-w-md mx-auto">
+        No Factory or Registry address is configured for{' '}
+        <strong className="text-slate-200">{networkName}</strong>
+        {typeof chainId === 'number' ? ` (Chain ID: ${chainId})` : ''}. Review and Confirm stay
+        locked until a create target exists.
+      </p>
+      {canSwitch && (
+        <button
+          type="button"
+          onClick={onSwitch}
+          disabled={isSwitching}
+          className="btn btn-primary mx-auto"
+        >
+          {isSwitching ? (
+            <>
+              <FiLoader className="w-4 h-4 animate-spin" />
+              Switching…
+            </>
+          ) : (
+            <>Switch to {preferredCreateChainName}</>
+          )}
+        </button>
+      )}
+      {chainId === 31337 ? (
+        <p className="text-slate-500 text-xs mt-6 max-w-md mx-auto leading-relaxed text-left">
+          Deploy contracts to Anvil and set Factory (preferred) or Registry in your{' '}
+          <code className="text-accent-400">.env</code>:
+          <code className="block mt-2 p-2 bg-slate-800/50 rounded text-xs text-slate-300">
+            VITE_LOCALHOST_FACTORY=0x...your_factory_address
+          </code>
+          <code className="block mt-1 p-2 bg-slate-800/50 rounded text-xs text-slate-300">
+            VITE_LOCALHOST_REGISTRY=0x...your_registry_address
+          </code>
+        </p>
+      ) : !canSwitch ? (
+        <p className="text-slate-500 text-xs mt-6 max-w-md mx-auto leading-relaxed">
+          Set <code className="text-accent-400">VITE_*_FACTORY</code> or{' '}
+          <code className="text-accent-400">VITE_*_REGISTRY</code> for this chain. Do not invent
+          mainnet addresses.
+        </p>
+      ) : (
+        <p className="text-slate-500 text-xs mt-6 max-w-md mx-auto leading-relaxed">
+          Or switch with your wallet to any network that already has a Factory or Registry in this
+          build.
+        </p>
+      )}
     </div>
   )
 }
