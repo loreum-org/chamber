@@ -36,6 +36,7 @@ import {
   useNftImageMap,
   useChamberRegistryImplementationSync,
   useDirectorActionGate,
+  useShareDecimals,
 } from '@/hooks'
 import BoardVisualization from '@/components/BoardVisualization'
 import { DirectorCallerStatus } from '@/components/DirectorCallerStatus'
@@ -706,6 +707,7 @@ interface OverviewTabProps {
 
 function OverviewTab({ chamberAddress, chamberInfo, members, totalDelegated, userBalance, boardEmpty, setActiveTab }: OverviewTabProps) {
   const chainId = useChainId()
+  const shareDecimals = useShareDecimals(chamberAddress)
   const { chambers: relatedChambers } = useChambersByAsset(chamberInfo.assetToken as `0x${string}`)
   const { parentChamber, isLoading: isLoadingParent } = useParentChamber(chamberAddress)
   const { childChambers, isLoading: isLoadingChildren } = useChildChambers(chamberAddress)
@@ -840,7 +842,7 @@ function OverviewTab({ chamberAddress, chamberInfo, members, totalDelegated, use
                   </span>
                 </div>
                 <span className="text-slate-500 text-xs font-mono shrink-0">
-                  {parseFloat(formatUnits(m.amount, 18)).toFixed(2)} {chamberInfo.symbol}
+                  {parseFloat(formatUnits(m.amount, shareDecimals)).toFixed(2)} {chamberInfo.symbol}
                 </span>
                 <FiArrowLeft className="w-3.5 h-3.5 text-slate-600 group-hover:text-accent-400 rotate-180 transition-colors shrink-0" />
               </Link>
@@ -938,7 +940,7 @@ function OverviewTab({ chamberAddress, chamberInfo, members, totalDelegated, use
               <div className="p-4 border-t border-slate-700/30 bg-accent-950/20">
                 <div className="text-slate-400 text-xs mb-1">Your Balance</div>
                 <div className="font-heading text-xl font-bold gradient-text">
-                  {parseFloat(formatUnits(userBalance, 18)).toLocaleString(undefined, {
+                  {parseFloat(formatUnits(userBalance, shareDecimals)).toLocaleString(undefined, {
                     maximumFractionDigits: 4,
                   })}{' '}
                   shares
@@ -962,7 +964,7 @@ function OverviewTab({ chamberAddress, chamberInfo, members, totalDelegated, use
                 <div className="text-slate-500 text-xs mb-1.5">Total Supply (Shares)</div>
                 <div className="font-mono text-slate-100 text-sm">
                   {chamberInfo.totalSupply !== undefined
-                    ? parseFloat(formatUnits(chamberInfo.totalSupply, 18)).toLocaleString()
+                    ? parseFloat(formatUnits(chamberInfo.totalSupply, shareDecimals)).toLocaleString()
                     : '...'}{' '}
                   {chamberInfo.symbol && <span className="text-slate-400">{chamberInfo.symbol}</span>}
                 </div>
@@ -970,7 +972,7 @@ function OverviewTab({ chamberAddress, chamberInfo, members, totalDelegated, use
               <div className="stat-card">
                 <div className="text-slate-500 text-xs mb-1.5">Total Delegated (Voting Power)</div>
                 <div className="font-mono text-slate-100 text-sm">
-                  {parseFloat(formatUnits(totalDelegated, 18)).toLocaleString()}{' '}
+                  {parseFloat(formatUnits(totalDelegated, shareDecimals)).toLocaleString()}{' '}
                   {chamberInfo.symbol && <span className="text-slate-400">{chamberInfo.symbol}</span>}
                 </div>
               </div>

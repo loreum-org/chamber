@@ -109,6 +109,20 @@ export function shortenAddress(address: string, chars = 4): string {
   return `${address.slice(0, chars + 2)}...${address.slice(-chars)}`
 }
 
+/**
+ * Safe ERC-20 / ERC-4626 `decimals()` for formatUnits / parseUnits.
+ * Viem decodes uint8 as a number; accept bigint too. Out-of-range values fall back.
+ */
+export function resolveTokenDecimals(value: unknown, fallback = 18): number {
+  if (typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= 36) {
+    return value
+  }
+  if (typeof value === 'bigint' && value >= 0n && value <= 36n) {
+    return Number(value)
+  }
+  return fallback
+}
+
 export function formatNumber(value: number | bigint, decimals = 2): string {
   const num = typeof value === 'bigint' ? Number(value) : value
   return new Intl.NumberFormat('en-US', {

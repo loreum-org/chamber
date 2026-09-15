@@ -3,19 +3,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAccount, useChainId, useReadContracts, useSwitchChain } from 'wagmi'
 import { formatUnits, isAddress } from 'viem'
-import { useChainModal, useConnectModal } from '@rainbow-me/rainbowkit'
-import {
-  FiLayers,
-  FiPlus,
-  FiAlertTriangle,
-  FiUser,
-  FiBriefcase,
-  FiShield,
-  FiArrowRight,
-  FiRefreshCw,
-  FiLoader,
-} from 'react-icons/fi'
-import { useHasValidConfig, useMyChambers, useOrganizationsByNFT } from '@/hooks'
+import { FiLayers, FiPlus, FiAlertTriangle, FiUser, FiBriefcase, FiShield, FiArrowRight } from 'react-icons/fi'
+import { useHasValidConfig, useMyChambers, useOrganizationsByNFT, useShareDecimals } from '@/hooks'
 import { erc721Abi } from '@/contracts'
 import {
   getNetworkName,
@@ -363,9 +352,7 @@ export default function Dashboard() {
                       )}
                       {entry.balance > 0n && !entry.isDirector && (
                         <div className="absolute -top-2 -left-2 z-10">
-                          <span className="badge bg-slate-700 text-slate-300 border-slate-600 text-[10px]">
-                            {parseFloat(formatUnits(entry.balance, 18)).toFixed(2)} shares
-                          </span>
+                          <ShareBalanceBadge address={entry.address} balance={entry.balance} />
                         </div>
                       )}
                       <ChamberCard address={entry.address} />
@@ -412,6 +399,15 @@ export default function Dashboard() {
         </AnimatePresence>
       </section>
     </div>
+  )
+}
+
+function ShareBalanceBadge({ address, balance }: { address: `0x${string}`; balance: bigint }) {
+  const shareDecimals = useShareDecimals(address)
+  return (
+    <span className="badge bg-slate-700 text-slate-300 border-slate-600 text-[10px]">
+      {parseFloat(formatUnits(balance, shareDecimals)).toFixed(2)} shares
+    </span>
   )
 }
 
