@@ -266,13 +266,8 @@ export default function TreasuryOverview({ chamberAddress, chamberInfo, userBala
               </p>
             </div>
           </div>
-          <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: '75%' }}
-              transition={{ duration: 1 }}
-              className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full"
-            />
+          <div className="text-slate-500 text-sm">
+            Held in the vault
           </div>
         </motion.div>
 
