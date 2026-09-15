@@ -4,9 +4,15 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useAccount, useChainId, useReadContracts } from 'wagmi'
 import { formatUnits, isAddress } from 'viem'
 import { FiLayers, FiPlus, FiAlertTriangle, FiUser, FiBriefcase, FiShield, FiArrowRight } from 'react-icons/fi'
-import { useHasValidConfig, useMyChambers, useOrganizationsByNFT } from '@/hooks'
+import {
+  useHasValidConfig,
+  useMyChambers,
+  useOrganizationsByNFT,
+  useConnectedChainImplementationVersion,
+} from '@/hooks'
 import { erc721Abi } from '@/contracts'
 import { getNetworkName, isMainnetConfigured } from '@/lib/wagmi'
+import { formatChamberVersionTag } from '@/lib/utils'
 import ChamberCard from '@/components/ChamberCard'
 
 export default function Dashboard() {
@@ -31,6 +37,9 @@ export default function Dashboard() {
   const myAddresses = myChambers.map((entry) => entry.address)
   const { organizations, isLoading: orgsLoading } = useOrganizationsByNFT(myAddresses)
   const { isValid } = useHasValidConfig()
+  const { versionLabel, isLoading: versionLoading } = useConnectedChainImplementationVersion()
+  const versionTag = formatChamberVersionTag(versionLabel, versionLoading)
+  const versionUnavailable = versionTag === '…' || versionTag === '—'
 
   useEffect(() => {
     if (location.pathname === '/') {
@@ -163,9 +172,11 @@ export default function Dashboard() {
             <div className="flex items-baseline">
               <span
                 title="Chamber Solidity VERSION constant (implementation)"
-                className="text-slate-200 text-sm font-mono font-semibold tabular-nums"
+                className={`text-sm font-mono font-semibold tabular-nums ${
+                  versionUnavailable ? 'text-slate-500' : 'text-slate-200'
+                }`}
               >
-                v1.1.6
+                {versionTag}
               </span>
             </div>
           </div>

@@ -477,3 +477,51 @@ export function useChamberRegistryImplementationSync(chamberAddress: `0x${string
       factoryImplLoading || registryImplLoading || slotLoading || chamberVerLoading || registryVerLoading,
   }
 }
+
+/**
+ * Live Chamber implementation `VERSION` for the connected chain.
+ * Same pointer as `useChamberRegistryImplementationSync`: Factory.implementation()
+ * when a factory is configured, otherwise Registry.implementation().
+ * No fallback version string and no invented addresses.
+ */
+export function useConnectedChainImplementationVersion() {
+  const factoryAddress = useFactoryAddress()
+  const registryAddress = useRegistryAddress()
+  const factoryOk = isNonZeroAddress(factoryAddress)
+  const registryOk = isNonZeroAddress(registryAddress)
+
+  const { data: factoryImplementation, isLoading: factoryImplLoading } = useReadContract({
+    address: factoryOk ? factoryAddress : undefined,
+    abi: factoryAbi,
+    functionName: 'implementation',
+    query: { enabled: factoryOk },
+  })
+
+  const { data: registryImplementation, isLoading: registryImplLoading } = useReadContract({
+    address: registryOk && !factoryOk ? registryAddress : undefined,
+    abi: registryAbi,
+    functionName: 'implementation',
+    query: { enabled: registryOk && !factoryOk },
+  })
+
+  const preferredImpl = factoryOk ? factoryImplementation : registryImplementation
+  const impl =
+    preferredImpl && preferredImpl !== zeroAddress
+      ? (preferredImpl as `0x${string}`)
+      : undefined
+
+  const { data: versionRaw, isLoading: versionLoading } = useReadContract({
+    address: impl,
+    abi: chamberAbi,
+    functionName: 'VERSION',
+    query: { enabled: !!impl },
+  })
+
+  return {
+    versionLabel: chamberVersionBytes32ToLabel(versionRaw as Hex | undefined),
+    isLoading:
+      (factoryOk && factoryImplLoading) ||
+      (registryOk && !factoryOk && registryImplLoading) ||
+      (!!impl && versionLoading),
+  }
+}
