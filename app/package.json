@@ -10,8 +10,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "test": "vitest run",
-    "test:discovery": "npx --yes tsx --tsconfig tsconfig.json scripts/verify-chamber-discovery.ts && npx --yes tsx --tsconfig tsconfig.json scripts/verify-sepolia-discovery.ts && npx --yes tsx --tsconfig tsconfig.json scripts/verify-chamber-route-gate.ts"
+    "test:discovery": "npx --yes tsx --tsconfig tsconfig.json scripts/verify-chamber-discovery.ts && npx --yes tsx --tsconfig tsconfig.json scripts/verify-sepolia-discovery.ts && npx --yes tsx --tsconfig tsconfig.json scripts/verify-chamber-route-gate.ts && npx --yes tsx --tsconfig tsconfig.json scripts/verify-impl-source-label.ts"
   },
   "dependencies": {
     "@rainbow-me/rainbowkit": "^2.1.0",
