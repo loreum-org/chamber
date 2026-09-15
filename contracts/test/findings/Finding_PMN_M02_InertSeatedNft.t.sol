@@ -188,7 +188,12 @@ contract FindingPMNM02InertSeatedNftTest is Test {
         _seat(user2, 2, 80 ether);
         vm.roll(block.number + SEATING_DELAY);
 
-        wallet.execute(address(chamber), abi.encodeCall(chamber.setDirectorOperator, (4, sessionKey)));
+        wallet.execute(
+            address(chamber),
+            abi.encodeCall(
+                chamber.setDirectorOperator, (4, sessionKey, block.timestamp + 30 days, chamber.SESSION_SCOPE_UNSCOPED())
+            )
+        );
         assertEq(chamber.getDirectorOperator(4), sessionKey);
         assertTrue(chamber.isTokenAuthorized(4, sessionKey));
         assertTrue(_inTop(4));
