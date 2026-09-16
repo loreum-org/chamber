@@ -15,6 +15,7 @@ import {
   hasValidAddresses,
   isNonZeroAddress,
 } from '@/lib/wagmi'
+import { preferredImplSourceLabel } from '@/lib/implSource'
 import {
   ERC1967_IMPLEMENTATION_SLOT,
   addressFromEip1967ImplementationSlot,
@@ -399,9 +400,10 @@ export function useCreateChamber() {
 }
 
 /**
- * Compare this chamber proxy’s EIP-1967 implementation with the Registry’s
- * default implementation used for new deployments. When the Registry bumps
- * its implementation pointer, existing proxies may lag until upgraded.
+ * Compare this chamber proxy’s EIP-1967 implementation with the preferred
+ * default impl (Factory when configured; Registry only when Factory is unset).
+ * When that source bumps its implementation pointer, existing proxies may lag
+ * until upgraded.
  */
 export function useChamberRegistryImplementationSync(chamberAddress: `0x${string}` | undefined) {
   const factoryAddress = useFactoryAddress()
@@ -472,6 +474,7 @@ export function useChamberRegistryImplementationSync(chamberAddress: `0x${string
     chamberVersionLabel,
     registryImplementationVersionLabel,
     implMismatch,
+    implSourceLabel: preferredImplSourceLabel(factoryOk, registryOk),
     registryAddress: factoryOk ? factoryAddress : registryOk ? registryAddress : undefined,
     isLoading:
       factoryImplLoading || registryImplLoading || slotLoading || chamberVerLoading || registryVerLoading,

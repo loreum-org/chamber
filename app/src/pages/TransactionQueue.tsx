@@ -54,6 +54,7 @@ import {
   hasProposalCalldata,
   shortenAddress,
 } from '@/lib/utils'
+import { implQueueUpgradeCopy, type PreferredImplSource } from '@/lib/implSource'
 import { ChamberRouteGate } from '@/components/ChamberRouteGate'
 import { DirectorCallerStatus } from '@/components/DirectorCallerStatus'
 import {
@@ -298,14 +299,18 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
   const userTokenId = directorGate.tokenId
 
   const upgradeProposalIntent = searchParams.get('proposal') === 'upgrade'
+  const implSourceLabel = implSync.implSourceLabel
+  const queueUpgradeCopy = implSourceLabel ? implQueueUpgradeCopy(implSourceLabel) : undefined
   const registryUpgradeDraft =
     upgradeProposalIntent &&
     implSync.implMismatch &&
-    implSync.registryImplementation
+    implSync.registryImplementation &&
+    implSourceLabel
       ? ({
           newImplementation: implSync.registryImplementation,
           chamberVersionLabel: implSync.chamberVersionLabel,
           registryVersionLabel: implSync.registryImplementationVersionLabel,
+          implSourceLabel,
         } as const)
       : undefined
 
@@ -320,7 +325,11 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
     upgradeProposalHandledRef.current = true
 
     if (!registryUpgradeDraft?.newImplementation) {
-      toast('This chamber already matches the Registry’s default implementation.', { duration: 4500 })
+      toast(
+        queueUpgradeCopy?.alreadyMatchesToast ??
+          'This chamber already matches the default implementation.',
+        { duration: 4500 },
+      )
       setSearchParams(
         (prev) => {
           const next = new URLSearchParams(prev)
@@ -338,6 +347,7 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
     implSync.isLoading,
     registryUpgradeDraft?.newImplementation,
     registryUpgradeDraft,
+    queueUpgradeCopy,
     setSearchParams,
   ])
 
@@ -1044,10 +1054,11 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
                   <div className="panel p-4 border border-amber-400/30 bg-amber-500/[0.08] rounded-xl text-left text-sm text-amber-50/95">
                     <p className="font-medium text-amber-100 flex items-center gap-2 mb-2">
                       <FiAlertCircle className="w-4 h-4 shrink-0 text-amber-400" aria-hidden />
-                      Registry upgrade available
+                      {queueUpgradeCopy?.availableTitle ?? 'Implementation upgrade available'}
                     </p>
                     <p className="text-amber-100/85 mb-3 leading-relaxed">
-                      Align this Chamber proxy with the Registry’s default implementation{' '}
+                      {queueUpgradeCopy?.availableLead ??
+                        'Align this Chamber proxy with the preferred default implementation'}{' '}
                       <span className="font-mono tabular-nums">
                         ({shortenAddress(registryUpgradeDraft.newImplementation, 6)}
                         {registryUpgradeDraft.registryVersionLabel
@@ -1935,6 +1946,7 @@ interface NewTransactionFormProps extends QueueWriteReporters {
     newImplementation: `0x${string}`
     chamberVersionLabel?: string
     registryVersionLabel?: string
+    implSourceLabel: PreferredImplSource
   }
 }
 
@@ -2069,6 +2081,9 @@ function NewTransactionForm({
     ? classifyTransactionRisk(chamberAddress, previewTarget, previewValue, previewData)
     : null
   const busy = isPending || isConfirming || isSeatPending || isSeatConfirming
+  const queueUpgradeCopy = registryUpgradeDraft
+    ? implQueueUpgradeCopy(registryUpgradeDraft.implSourceLabel)
+    : undefined
 
   const registryUpgradePrefilledRef = useRef<string | undefined>(undefined)
 
@@ -2088,7 +2103,8 @@ function NewTransactionForm({
 
     const regV = registryUpgradeDraft.registryVersionLabel
     const curV = registryUpgradeDraft.chamberVersionLabel
-    setTitle(`Upgrade Chamber to Registry implementation${regV ? ` v${regV}` : ''}`)
+    const copy = implQueueUpgradeCopy(registryUpgradeDraft.implSourceLabel)
+    setTitle(copy.proposalTitle(regV))
     setDescription(
       `Multisig: upgradeImplementation(${impl}, 0x). Current proxy implementation VERSION reports ${curV ?? 'unknown'}. Confirm audit status and migrations before approving; init calldata left empty.`,
     )
@@ -2122,7 +2138,7 @@ function NewTransactionForm({
     }
   }, [functionSig])
 
-  // After Registry-upgrade prefill parses, repopulate params (signature effect resets param maps).
+  // After preferred-impl upgrade prefill parses, repopulate params (signature effect resets param maps).
   useEffect(() => {
     const impl = registryUpgradeDraft?.newImplementation
     if (!impl) return
@@ -2433,12 +2449,14 @@ function NewTransactionForm({
           </>
         ) : (
           <>
-            {registryUpgradeDraft && (
+            {registryUpgradeDraft && queueUpgradeCopy && (
               <div className="rounded-xl border border-accent-400/35 bg-accent-500/[0.08] px-4 py-3 text-sm text-slate-100/95">
-                <p className="font-medium text-accent-300 mb-1">Prefilled Registry upgrade proposal</p>
+                <p className="font-medium text-accent-300 mb-1">
+                  {queueUpgradeCopy.prefilledTitle}
+                </p>
                 <p className="text-slate-400 text-xs leading-relaxed">
                   Target is this Chamber. Calldata invokes <span className="font-mono">upgradeImplementation</span> using
-                  the Registry’s default implementation{' '}
+                  {' '}{queueUpgradeCopy.prefilledImplLead}{' '}
                   <span className="font-mono text-slate-300">
                     {shortenAddress(registryUpgradeDraft.newImplementation, 6)}
                   </span>
