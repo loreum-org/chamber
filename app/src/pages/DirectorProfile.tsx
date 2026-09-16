@@ -376,15 +376,17 @@ function DirectorProfileContent({
         </div>
       </motion.div>
 
-      <DirectorOperatorManager
-        chamberAddress={chamberAddress}
-        nftToken={
-          chamberInfo.nftToken && chamberInfo.nftToken !== zeroAddress
-            ? (chamberInfo.nftToken as `0x${string}`)
-            : undefined
-        }
-        tokenId={tokenId}
-      />
+      {tokenId > 0n && (
+        <DirectorOperatorManager
+          chamberAddress={chamberAddress}
+          nftToken={
+            chamberInfo.nftToken && chamberInfo.nftToken !== zeroAddress
+              ? (chamberInfo.nftToken as `0x${string}`)
+              : undefined
+          }
+          tokenId={tokenId}
+        />
+      )}
 
       {/* Two-column layout: Activity + Details */}
       <div className="grid md:grid-cols-3 gap-6">
