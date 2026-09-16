@@ -7,8 +7,8 @@ import {Vm} from "forge-std/Vm.sol";
 /**
  * @title MainnetDeployGuard
  * @notice Shared gates for the human-run mainnet Factory / createChamber scripts.
- * @dev Broadcast stays blocked unless `MAINNET_DEPLOY_UNBLOCKED=1` after #208 is
- *      accepted or fixed (and #209–#212 reviewed). Never calls Safe / transferOwnership.
+ * @dev Broadcast stays blocked unless `MAINNET_DEPLOY_UNBLOCKED=1` after #210
+ *      and #211 are accepted or fixed. Never calls Safe / transferOwnership.
  */
 library MainnetDeployGuard {
     Vm internal constant vm = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
@@ -20,7 +20,7 @@ library MainnetDeployGuard {
         if (vm.isContext(VmSafe.ForgeContext.ScriptBroadcast) || vm.isContext(VmSafe.ForgeContext.ScriptResume)) {
             if (!vm.envOr("MAINNET_DEPLOY_UNBLOCKED", false)) {
                 revert(
-                    "mainnet deploy blocked on #208 (and #209-#212) until accepted or fixed; set MAINNET_DEPLOY_UNBLOCKED=1 only after that. Never pass --broadcast to the rehearsal."
+                    "mainnet deploy blocked on #210 and #211 until accepted or fixed; set MAINNET_DEPLOY_UNBLOCKED=1 only after that. Never pass --broadcast to the rehearsal."
                 );
             }
         }

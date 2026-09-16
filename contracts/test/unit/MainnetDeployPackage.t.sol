@@ -36,7 +36,8 @@ contract MainnetDeployPackageTest is Test {
         assertTrue(_containsInsensitive(raw, _hexNoPrefix(MainnetLoreHandoff.TEAM_SAFE)), "team Safe");
         assertTrue(_contains(raw, "NOT DEPLOYED"), "template must say not deployed");
         assertTrue(_contains(raw, "Do not treat TBD as live"), "template must say TBD is not live");
-        assertTrue(_contains(raw, "#208"), "must cite PMN-H01 blocker");
+        assertTrue(_contains(raw, "#210"), "must cite remaining PMN-M02 blocker");
+        assertTrue(_contains(raw, "#211"), "must cite remaining PMN-M03 blocker");
     }
 
     function test_mainnetTxtDoesNotTreatSepoliaFactoryAsMainnetFactory() public view {
@@ -67,7 +68,8 @@ contract MainnetDeployPackageTest is Test {
     function test_printScriptRefusesBroadcastFlag() public view {
         string memory raw = vm.readFile("script/print-mainnet-factory-deploy.sh");
         assertTrue(_contains(raw, "never broadcasts"), "print script must refuse --broadcast");
-        assertTrue(_contains(raw, "#208"), "print script must cite the blocker");
+        assertTrue(_contains(raw, "#210"), "print script must cite remaining blockers");
+        assertTrue(_contains(raw, "#211"), "print script must cite remaining blockers");
     }
 
     function test_createParamsMatchChamberScriptMainnet() public pure {

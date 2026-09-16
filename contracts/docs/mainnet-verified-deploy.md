@@ -2,7 +2,7 @@
 
 Human-run package for deploying **Factory + Chamber implementation + BoardLib + WalletLib**, then `createChamber` for live LORE. This is **not** a broadcast. The rehearsal still cannot broadcast. Safe `transferOwnership` is **human-only**.
 
-**Deploy remains blocked** on [PMN-H01 (#208)](https://github.com/loreum-org/chamber/issues/208) until that finding is formally accepted or fixed. Mediums [#209](https://github.com/loreum-org/chamber/issues/209)–[#212](https://github.com/loreum-org/chamber/issues/212) are open. PRs [#213](https://github.com/loreum-org/chamber/pull/213) (Chamber 1.1.7 eviction fix) and [#206](https://github.com/loreum-org/chamber/pull/206) (Halmos harness, not a full proof) are open and unmerged. **Do not claim deploy is unblocked.**
+**Deploy remains blocked** on open mediums [PMN-M02 (#210)](https://github.com/loreum-org/chamber/issues/210) (inert seated NFTs) and [PMN-M03 (#211)](https://github.com/loreum-org/chamber/issues/211) (Factory-only create / impl pointer). [PMN-H01 (#208)](https://github.com/loreum-org/chamber/issues/208), [PMN-M01 (#209)](https://github.com/loreum-org/chamber/issues/209), and [PMN-M04 (#212)](https://github.com/loreum-org/chamber/issues/212) are on `main` (#220 / #223 / #226). PRs [#213](https://github.com/loreum-org/chamber/pull/213) (Chamber 1.1.7 eviction fix) and [#206](https://github.com/loreum-org/chamber/pull/206) (Halmos harness, not a full proof) are open and unmerged. **Do not claim deploy is unblocked.**
 
 Fork rehearsal (mechanics only): [`mainnet-lore-handoff-rehearsal.md`](./mainnet-lore-handoff-rehearsal.md).
 
@@ -28,7 +28,7 @@ Fork rehearsal (mechanics only): [`mainnet-lore-handoff-rehearsal.md`](./mainnet
 | `--account` / keystore | Deployer (Foundry). Do not commit keys |
 | `ADMIN` | Optional. Default: team Safe `0x5d45A213B2B6259F0b3c116a8907B56AB5E22095` |
 | `FACTORY` | Required for create. From the Factory **broadcast receipt**, never Sepolia |
-| `MAINNET_DEPLOY_UNBLOCKED` | Must be `1` to pass `--broadcast`. Set only after #208 is accepted or fixed |
+| `MAINNET_DEPLOY_UNBLOCKED` | Must be `1` to pass `--broadcast`. Set only after #210 and #211 are accepted or fixed |
 
 Do not commit RPC URLs or keys. Sepolia Factory `0x43aA92c8A26392f21F63cdA88B6BaB5031C40550` is **reference only**. Do not copy it onto chain id 1.
 
@@ -53,7 +53,7 @@ Same args as `script/Chamber.s.sol` when `block.chainid == 1` and the fork rehea
 | --- | --- |
 | `erc20Token` | LORE `0x7756D245527F5f8925A537be509BF54feb2FdC99` |
 | `erc721Token` | membership `0xB99DEdbDe082B8Be86f06449f2fC7b9FED044E15` |
-| `seats` | `5` (quorum `1 + (5 * 51) / 100` = 3) |
+| `seats` | `5` (quorum `1 + (n * 51) / 100` over reachable authorized directors; n=5 → 3) |
 | `name` | `Chamber LORE` |
 | `symbol` | `cLORE` |
 
@@ -90,7 +90,7 @@ forge script script/DeployMainnetFactory.s.sol:DeployMainnetFactory \
 
 Dry-run addresses are **not** live. Do not paste them into `deployments/mainnet.txt`.
 
-### 2. Broadcast Factory (human, after #208)
+### 2. Broadcast Factory (human, after #210 / #211)
 
 ```bash
 export MAINNET_DEPLOY_UNBLOCKED=1
@@ -157,7 +157,7 @@ Do **not** run this from a script. From the team Safe (`0x5d45A213B2B6259F0b3c11
 
 - Does not broadcast from Make / print / verify / extract
 - Does not execute Safe or `transferOwnership`
-- Does not fix or accept #208–#212
+- Does not fix or accept remaining #210 / #211
 - Does not merge #213 / #206
 - Does not copy Sepolia addresses onto chain id 1
 - Does not pre-compute the Chamber proxy (CREATE, no salt)

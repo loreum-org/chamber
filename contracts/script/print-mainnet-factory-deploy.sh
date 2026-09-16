@@ -24,8 +24,8 @@ NFT="0xB99DEdbDe082B8Be86f06449f2fC7b9FED044E15"
 cat <<EOF
 # Ethereum mainnet verified deploy package (print only)
 # =====================================================
-# Deploy remains blocked on PMN-H01 (#208) until accepted or fixed.
-# #209–#212 are open mediums. PRs #213 and #206 are unmerged.
+# Deploy remains blocked on open mediums #210 and #211 until accepted or fixed.
+# H01/M01/M04 are on main. PRs #213 and #206 are unmerged.
 # This Make target / script does not pass --broadcast.
 # Safe transferOwnership is human-only — not in these scripts.
 #
@@ -33,7 +33,7 @@ cat <<EOF
 #   MAINNET_RPC_URL or ETH_RPC_URL     Ethereum archive/full RPC
 #   ETHERSCAN_API_KEY                  Etherscan v2 key (foundry.toml [etherscan].mainnet)
 #   account / keystore                 Foundry --account (or --private-key locally)
-# After #208 is accepted or fixed ONLY:
+# After #210 and #211 are accepted or fixed ONLY:
 #   MAINNET_DEPLOY_UNBLOCKED=1
 #
 # Order: Factory (+ libs + Chamber impl) → verify → createChamber → paste Chamber.
@@ -49,7 +49,7 @@ make rehearse-mainnet-lore-handoff
 forge script script/DeployMainnetFactory.s.sol:DeployMainnetFactory \\
   --fork-url "\$MAINNET_RPC_URL" -vvv
 
-# 2) Human broadcast — only after #208 accepted or fixed
+# 2) Human broadcast — only after #210 and #211 accepted or fixed
 #    ADMIN defaults to team Safe ${ADMIN}
 # export MAINNET_DEPLOY_UNBLOCKED=1
 # export ADMIN=${ADMIN}
