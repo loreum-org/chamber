@@ -17,6 +17,16 @@ import { privateKeyToAccount } from 'viem/accounts'
 import { chamberAbi } from './abi.ts'
 import { ChamberOperatorError, wrapChamberError } from './errors.ts'
 import { isSeatingMature } from './seating.ts'
+import {
+  SESSION_SCOPE_UNSCOPED,
+  asUint32,
+  defaultSessionExpiry,
+  directorSessionStatus,
+  isValidSessionExpiry,
+  isZeroAddress,
+  type DirectorOperatorSnapshot,
+  type DirectorSessionRaw,
+} from './session.ts'
 
 export type { Account, Address, Hex, PublicClient, WalletClient }
 
@@ -74,6 +84,8 @@ export type WriteResult = {
 }
 
 export type SubmitResult = WriteResult & { nonce: bigint }
+
+export type { DirectorOperatorSnapshot, DirectorSessionRaw }
 
 function assertAddress(value: string, label: string): Address {
   if (!/^0x[0-9a-fA-F]{40}$/.test(value)) {
@@ -180,7 +192,8 @@ export class ChamberOperator {
       | 'revokeConfirmation'
       | 'cancelTransaction'
       | 'executeTransaction'
-      | 'submitTransaction',
+      | 'submitTransaction'
+      | 'setDirectorOperator',
   >(
     functionName: TFunctionName,
     args: readonly unknown[],
@@ -412,6 +425,160 @@ export class ChamberOperator {
 
   async execute(tokenId: bigint, nonce: bigint, data: Hex | string = '0x'): Promise<WriteResult> {
     return this.write('executeTransaction', [tokenId, nonce, toHexData(data)])
+  }
+
+  /**
+   * Live session key for `tokenId`, or `address(0)` if unset, stale, expired,
+   * or the NFT is EOA-owned. Does not apply scope or the confirm/execute delay.
+   * Chamber never consults ERC-1271.
+   */
+  async getDirectorOperator(tokenId: bigint): Promise<Address> {
+    try {
+      return await this.publicClient.readContract({
+        address: this.chamber,
+        abi: chamberAbi,
+        functionName: 'getDirectorOperator',
+        args: [tokenId],
+      })
+    } catch (error) {
+      throw wrapChamberError(error, 'Failed to read director operator')
+    }
+  }
+
+  /**
+   * Live session `scope`, or `0` if none / stale / expired / burned.
+   * `0` means no live session, not unscoped (`SESSION_SCOPE_UNSCOPED`).
+   */
+  async getDirectorOperatorScope(tokenId: bigint): Promise<number> {
+    try {
+      const scope = await this.publicClient.readContract({
+        address: this.chamber,
+        abi: chamberAbi,
+        functionName: 'getDirectorOperatorScope',
+        args: [tokenId],
+      })
+      return asUint32(scope)
+    } catch (error) {
+      throw wrapChamberError(error, 'Failed to read director operator scope')
+    }
+  }
+
+  /**
+   * First block the live session may confirm or execute, or `0` if none /
+   * stale / expired / burned. Confirm/execute require `block.number >= liveAt`.
+   */
+  async getDirectorOperatorLiveAt(tokenId: bigint): Promise<bigint> {
+    try {
+      return await this.publicClient.readContract({
+        address: this.chamber,
+        abi: chamberAbi,
+        functionName: 'getDirectorOperatorLiveAt',
+        args: [tokenId],
+      })
+    } catch (error) {
+      throw wrapChamberError(error, 'Failed to read director operator liveAt')
+    }
+  }
+
+  /**
+   * Stored session fields (raw; not liveness-filtered). Prefer
+   * {@link getDirectorOperatorState} for the live operator / expiry / scope / liveAt.
+   */
+  async getDirectorSession(tokenId: bigint): Promise<DirectorSessionRaw> {
+    try {
+      const [sessionOwner, operator, expiry, scope, liveAt] = await this.publicClient.readContract({
+        address: this.chamber,
+        abi: chamberAbi,
+        functionName: 'getDirectorSession',
+        args: [tokenId],
+      })
+      return {
+        sessionOwner,
+        operator,
+        expiry,
+        scope: asUint32(scope),
+        liveAt,
+      }
+    } catch (error) {
+      throw wrapChamberError(error, 'Failed to read director session')
+    }
+  }
+
+  /**
+   * Live operator, expiry, scope, and liveAt for `tokenId`, plus raw leftovers
+   * and a status (`none` / `active` / `delayed` / `expired` / `stale`).
+   * Confirm/execute wait until `block.number >= liveAt`.
+   */
+  async getDirectorOperatorState(tokenId: bigint): Promise<DirectorOperatorSnapshot> {
+    try {
+      const [operator, scope, liveAt, raw, blockNumber] = await Promise.all([
+        this.getDirectorOperator(tokenId),
+        this.getDirectorOperatorScope(tokenId),
+        this.getDirectorOperatorLiveAt(tokenId),
+        this.getDirectorSession(tokenId),
+        this.publicClient.getBlockNumber(),
+      ])
+      const live = !isZeroAddress(operator)
+      return {
+        tokenId,
+        operator,
+        expiry: live ? raw.expiry : 0n,
+        scope,
+        liveAt,
+        status: directorSessionStatus({
+          liveOperator: operator,
+          rawOperator: raw.operator,
+          rawExpiry: raw.expiry,
+          liveAt,
+          blockNumber,
+        }),
+        blockNumber,
+        raw,
+      }
+    } catch (error) {
+      throw wrapChamberError(error, 'Failed to read director operator state')
+    }
+  }
+
+  /**
+   * Register (or replace) the session key. `msg.sender` must be the current
+   * contract owner of `tokenId`. EOA-owned NFTs revert `NotDirector`.
+   *
+   * Defaults: 30-day future `expiry`, `SESSION_SCOPE_UNSCOPED`. `expiry == 0`
+   * and `scope == 0` are rejected (not sentinels). Confirm/execute wait until
+   * `liveAt` (`SEATING_DELAY` after set). Refreshing restarts `liveAt`.
+   */
+  async setDirectorOperator(
+    tokenId: bigint,
+    operator: Address,
+    expiry?: bigint,
+    scope?: number,
+  ): Promise<WriteResult> {
+    const next = assertAddress(operator, 'operator')
+    if (isZeroAddress(next)) {
+      return this.write('setDirectorOperator', [tokenId, ZERO_ADDRESS, 0n, 0])
+    }
+    const resolvedExpiry = expiry ?? defaultSessionExpiry()
+    const resolvedScope = scope ?? SESSION_SCOPE_UNSCOPED
+    if (!isValidSessionExpiry(resolvedExpiry)) {
+      throw new ChamberOperatorError(
+        'Session expiry must be a future unix timestamp (0 is rejected)',
+      )
+    }
+    if (resolvedScope === 0) {
+      throw new ChamberOperatorError(
+        'Session scope 0 is rejected; pass SESSION_SCOPE_UNSCOPED for full access',
+      )
+    }
+    return this.write('setDirectorOperator', [tokenId, next, resolvedExpiry, asUint32(resolvedScope)])
+  }
+
+  /**
+   * Clear the session key (`setDirectorOperator(tokenId, address(0), 0, 0)`).
+   * The owner may clear immediately, including during the post-set delay.
+   */
+  async clearDirectorOperator(tokenId: bigint): Promise<WriteResult> {
+    return this.setDirectorOperator(tokenId, ZERO_ADDRESS, 0n, 0)
   }
 }
 
