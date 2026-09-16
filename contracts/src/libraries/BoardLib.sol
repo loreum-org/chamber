@@ -691,13 +691,32 @@ library BoardLib {
         }
     }
 
+    /**
+     * @dev Lazy-backfill the holder set from leftover board/evicted amounts after an upgrade.
+     *      Fresh holders already maintain the set on `delegate`/`undelegate`. Skip the
+     *      board and eviction walks when the set already accounts for `totalHolderDelegations`
+     *      so those paths stay O(holder set) instead of O(evictedTokenIds) (PMN-H02).
+     */
     function syncTrackedDelegations(
         BoardTypes.BoardStorage storage $b,
         mapping(address => mapping(uint256 => uint256)) storage holderDelegation,
+        mapping(address => uint256) storage totalHolderDelegations,
         mapping(address => EnumerableSet.UintSet) storage holderDelegatedTokenIds,
         address holder
     ) external {
         EnumerableSet.UintSet storage tracked = holderDelegatedTokenIds[holder];
+        uint256[] memory setIds = tracked.values();
+        uint256 setLen = setIds.length;
+        uint256 trackedTotal;
+        for (uint256 i = 0; i < setLen;) {
+            trackedTotal += holderDelegation[holder][setIds[i]];
+            unchecked {
+                ++i;
+            }
+        }
+        if (trackedTotal == totalHolderDelegations[holder]) {
+            return;
+        }
 
         uint256 tokenId = $b.head;
         while (tokenId != 0) {

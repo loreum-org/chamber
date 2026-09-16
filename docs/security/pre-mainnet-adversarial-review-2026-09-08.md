@@ -1,12 +1,30 @@
 # Pre-mainnet adversarial review — Chamber `contracts/src`
 
-**Date**: 2026-09-08  
+**Date**: 2026-09-08 (reconciled 2026-09-16)  
 **Reviewer**: Cursor Cloud Agent  
-**Repo / commit reviewed**: `loreum-org/chamber` `ce7845e` (`main` at review start), plus the localized `1.1.7` hot-path fix in this PR  
-**Version**: `Chamber.VERSION` was `"1.1.6"` on `main`; this PR sets `"1.1.7"`  
+**Repo / commit reviewed**: `loreum-org/chamber` `ce7845e` (`main` at review start). Rebased onto `fdd530b` (`main` after PMN-H01 / M01 / M04). Localized H02 hot-path skip in this PR.  
+**Version**: `Chamber.VERSION` was `"1.1.6"` at review start; `main` is `"1.1.8"` after later PMN merges; this PR sets `"1.1.9"`  
 **Scope**: Production Solidity under `contracts/src/` — `Board.sol`, `Chamber.sol`, `Factory.sol`, `Registry.sol`, `Wallet.sol`, `libraries/BoardLib.sol`, `libraries/WalletLib.sol`, plus types and interfaces as needed. Tests, mocks, app, CCA, and landing are out of scope.
 
 This is a defensive review of code we maintain. It does **not** include exploit proofs of concept, payloads, calldata recipes, or step-by-step attack procedures. It does not invent Ethereum mainnet addresses. Addresses quoted below already appear in the repository README.
+
+---
+
+## Reconciliation — 2026-09-16 rebase onto `main` (`fdd530b`)
+
+The findings table below is the review-time record against `1.1.6`. `main` has since merged several remediations. Delegation helpers now live in `BoardLib` (not `Chamber.sol`). This PR ports the H02 skip onto that layout and bumps `VERSION` to `"1.1.9"`.
+
+| ID | Review-time sev | Disposition on `fdd530b` + this PR |
+| --- | --- | --- |
+| PMN-H01 | high | **Fixed on main** ([#220](https://github.com/loreum-org/chamber/pull/220); [#208](https://github.com/loreum-org/chamber/issues/208) closed). `seatedOwner` snapshot; `effectiveSeatedAt` treats a control change as newly seated; confirm/cancel flags require the current `ownerOf` (`flagBelongsToCurrentController`). Residual: burned/inert tokens can still occupy rank (PMN-M02). |
+| PMN-H02 | high | **Fixed in this PR.** On `1.1.8`, `BoardLib.syncTrackedDelegations` still walks `evictedTokenIds` on every `delegate`/`undelegate`. This PR returns when the holder set already sums to `totalHolderDelegations`. Residual storage growth is PMN-L06. |
+| PMN-M01 | medium | **Fixed on main** ([#223](https://github.com/loreum-org/chamber/pull/223); [#209](https://github.com/loreum-org/chamber/issues/209) closed). Wallet quorum is `quorumFor(countReachableAuthorized)` (`ownerOf` succeeds and owner is not the chamber). Create still rejects only `seats == 0` / `> 20`; IERC721 has no standard supply oracle. No on-chain path to lower `seats` when authorized seats fall below quorum. |
+| PMN-M02 | medium | **Still open** ([#210](https://github.com/loreum-org/chamber/issues/210); PR [#224](https://github.com/loreum-org/chamber/pull/224) not merged). Burned / failed `ownerOf` already skip flags. Rank cleanup is not on `main`. |
+| PMN-M03 | medium | **Still open** ([#211](https://github.com/loreum-org/chamber/issues/211); PR [#225](https://github.com/loreum-org/chamber/pull/225) not merged). `Registry.createChamber` is still live. `Factory.setImplementation` still accepts EOAs (PMN-L09). |
+| PMN-M04 | medium | **Fixed on main** ([#226](https://github.com/loreum-org/chamber/pull/226); [#212](https://github.com/loreum-org/chamber/issues/212) closed). Expiry is required; `scope == 0` is rejected; `SESSION_SCOPE_UNSCOPED` is explicit full access; confirm/execute wait `SEATING_DELAY`. Owner still sets and clears; ERC-1271 is still unconsulted. |
+| PMN-L01–L10, I01–I06 | low / info | Unchanged unless noted. L09 overlaps open M03. |
+
+**Mainnet deploy (updated):** H01 and M01 are no longer source blockers. Remaining: deploy `1.1.9+` (do not ship `1.1.8` if the eviction index can grow), then close M02 and M03 (Factory-only Ethereum create, reviewed implementation, non-EOA Factory owner). M04 is implemented; operate the 4-arg setter. Do not merge this review as a substitute for the M02/M03 work.
 
 ---
 
@@ -51,7 +69,7 @@ Chamber is one transparent proxy that joins three surfaces:
 | ID | Severity | File | Invariant broken | Recommended fix |
 | --- | --- | --- | --- | --- |
 | PMN-H01 | **high** | `Chamber.sol` (`_isDirector`, `_isSeatingMature`); `BoardLib.sol` (`refreshSeating`) | A controller who newly acquires an *already-seated* `tokenId` must not exercise that seat in the same transaction (H-02’s flash-resistance goal). Today `seatedAt` and confirm/cancel flags are bound to `tokenId` only. Session keys go stale on transfer; seating and votes do not. | Snapshot `ownerOf` (or a transfer generation) when a seat becomes mature. On owner change, treat the token as newly seated (write `seatedAt = block.number + SEATING_DELAY`) and drop or ignore flags recorded under the previous owner. Do not rely on a 1-block tokenId delay alone if the membership NFT is transferable. |
-| PMN-H02 | **high** → **low** in this PR | `Chamber.sol` (`_syncTrackedDelegations`); `BoardLib.sol` (`insert` / `evictedTokenIds`) | `delegate` / `undelegate` (and therefore withdraw, because of the delegation lock) must stay callable as the eviction index grows. On `1.1.6`, every sync walked the entire `evictedTokenIds` set. | **This PR:** skip board/eviction walks when the holder set already sums to `totalHolderDelegations`. Residual: the eviction index can still grow in storage (PMN-L06). Cap or prune `evictedTokenIds` if long-lived chambers will churn many unique tails. |
+| PMN-H02 | **high** → **low** in this PR | `BoardLib.sol` (`syncTrackedDelegations`; was inlined on `Chamber` at review time); `insert` / `evictedTokenIds` | `delegate` / `undelegate` (and therefore withdraw, because of the delegation lock) must stay callable as the eviction index grows. On `1.1.6`/`1.1.8`, every sync walked the entire `evictedTokenIds` set. | **This PR:** skip board/eviction walks when the holder set already sums to `totalHolderDelegations`. Residual: the eviction index can still grow in storage (PMN-L06). Cap or prune `evictedTokenIds` if long-lived chambers will churn many unique tails. |
 | PMN-M01 | **medium** | `BoardLib.sol` (`getQuorum`); `Chamber.sol` (`_countCurrentDirectorFlags`, `_isInTopSeats`); `Factory.sol` / `Registry.sol` (`createChamber`) | Wallet and seat-change liveness require that *reachable, authorized* directors can meet quorum. Quorum is `1 + (seats * 51) / 100` against the *configured* seat count, including empty seats and inert `tokenId`s (burned, uncallable contract, chamber-held). | Count only `tokenId`s whose `ownerOf` succeeds and that can still authorize a caller. Reject or warn at create when `seats` exceeds a documented bound vs collection supply. Add a recovery path that can lower `seats` when filled authorized seats are below quorum (for example a long delay + remaining-director threshold). |
 | PMN-M02 | **medium** | `Chamber.sol` (`_countCurrentDirectorFlags`, `revokeConfirmation`); `WalletLib.sol` | Flags and rank must not outlive a `tokenId` that no current controller can operate. Burned or inert tokens stay in the top set if weight remains; prior confirm/cancel bits still count; `revokeConfirmation` cannot run if `ownerOf` reverts. | Skip flags for tokenIds that fail `ownerOf` or fail `_isTokenAuthorized` for every realistic caller. On burn/inert, drop rank (or auto-undelegate) rather than leaving a zombie seat. Allow a public cleanup that clears flags when `ownerOf` reverts. |
 | PMN-M03 | **medium** | `Factory.sol`; `Registry.sol` | New mainnet chambers must come from one reviewed implementation pointer, with an admin that cannot silently retarget creates. `Registry.createChamber` is still live and has its own implementation slot. Factory `setImplementation` is single-`Ownable` and does not check that the new address has code. | Ship Factory as the only create path. Disable or document-never-call Registry create on Ethereum. Put Factory owner on a timelock/Safe. Require `extcodesize` (and, if practical, a version/interface probe) in `setImplementation`. |
@@ -107,8 +125,8 @@ Historical criticals from 2026-02-06 (permissionless upgrade, double delegation,
 ### Chamber
 
 - `initialize`: zero-address, `seats` in `1..=20`, `_disableInitializers` on the implementation. No ERC-20/721 interface probe (create-time trust).
-- `delegate` / `undelegate`: existence via `ownerOf`; share-balance vs `totalHolderDelegations`; evicted nodes skip `_undelegate`. After this PR, `_syncTrackedDelegations` is a no-op when the holder set is complete.
-- `setDirectorOperator`: current *contract* owner only; transfer stale-binds the key. Operator cannot replace itself. No expiry/scope (PMN-M04).
+- `delegate` / `undelegate`: existence via `ownerOf`; share-balance vs `totalHolderDelegations`; evicted nodes skip `_undelegate`. After this PR, `BoardLib.syncTrackedDelegations` is a no-op when the holder set is complete.
+- `setDirectorOperator`: current *contract* owner only; transfer stale-binds the key. Operator cannot replace itself. **As of `#226`:** expiry required, explicit scope (or `SESSION_SCOPE_UNSCOPED`), confirm/execute wait `SEATING_DELAY` (PMN-M04 A+B+C).
 - Wallet wrappers: `isDirector` = authorized + top seats + seating mature. Submit validates self-call selectors and ETH balance at submit time only. Execute re-checks live flags, expiry, cancel, and pause (unpause-only while paused). Batch execute uses the same rules per nonce.
 - `revokeConfirmation`: authorized owner/session key; not seat-gated (intentional for outgoing seats).
 - ERC-4626: `nonReentrant` + `whenNotPaused` on deposit/withdraw; `_decimalsOffset == 3`; `_update` enforces the delegation lock on transfer and burn.
@@ -119,9 +137,9 @@ Historical criticals from 2026-02-06 (permissionless upgrade, double delegation,
 ### BoardLib
 
 - Sorted doubly-linked list, `MAX_NODES = 50`, evict tail when the new amount is strictly greater.
-- Quorum formula `1 + (seats * 51) / 100` (integer). 1- and 2-seat chambers require all seats.
+- Quorum formula `1 + (n * 51) / 100` (integer). 1- and 2-seat chambers require all seats. **As of `#223`:** wallet confirm/execute uses `n = countReachableAuthorized` (PMN-M01); configured-seat `getQuorum()` remains for first-time `setSeats` and Board unit tests.
 - Seat updates: snapshot quorum, 7-day execute timelock, supporters re-checked against the current top set, 14-day cancel expiry.
-- `refreshSeating`: new top-set tokenIds get `block.number + 1`; incumbents already in `prevTop` are not re-stamped. `isSeatingMature` treats `seatedAt == 0` as mature (post-upgrade incumbents).
+- `refreshSeating`: new top-set tokenIds get `block.number + 1`; incumbents already in `prevTop` are not re-stamped. `isSeatingMature` treats `seatedAt == 0` as mature (post-upgrade incumbents). **As of `#220`:** `seatedOwner` + `effectiveSeatedAt` reset the clock on control transfer (PMN-H01).
 
 ### WalletLib
 
@@ -153,20 +171,20 @@ Historical criticals from 2026-02-06 (permissionless upgrade, double delegation,
 
 ## Mainnet deploy blocked until
 
-These items remain **high** or are **medium** with a realistic Ethereum liveness/integrity impact if left as “fix later”:
+Review-time blockers, **updated 2026-09-16** after H01 / M01 / M04 landed on `main`:
 
-1. **PMN-H01 (high) — still open** ([#208](https://github.com/loreum-org/chamber/issues/208)). Either implement owner-change seating + flag binding, or record an explicit product acceptance: membership NFTs used on Ethereum must not be flash-loanable / freely transferable into a same-transaction control path, and transferring a seated NFT is transferring a live signer (including inherited confirm/cancel flags). A 1-block `tokenId` delay is not that acceptance by itself.
-2. **PMN-H02 (high) — remediated in this PR for the hot path.** Do not deploy `1.1.6` if the eviction index can grow. Deploy `1.1.7` (or later) that skips complete-set sync walks. Residual storage growth (PMN-L06) is not a deploy blocker.
-3. **PMN-M01 (medium) — still open** ([#209](https://github.com/loreum-org/chamber/issues/209)) for chambers that can be underfilled or inert-seated. Do not create an Ethereum chamber whose `seats` (and therefore quorum) can exceed the number of membership tokens that will actually be held by callable directors. Prefer a seat count where a minority cannot freeze the wallet by making their own seats inert while keeping rank. Document a recovery plan before pause is used in anger (pause plus unreachable quorum is a permanent vault lock).
-4. **PMN-M02 (medium) — still open** ([#210](https://github.com/loreum-org/chamber/issues/210)). Same cluster as M01/H01: burned or uncallable seated tokens must not keep spend flags or occupy seats indefinitely.
+1. **PMN-H01 (high) — remediated on main** ([#220](https://github.com/loreum-org/chamber/pull/220); [#208](https://github.com/loreum-org/chamber/issues/208) closed). Owner-change seating + flag binding is in `1.1.8`. Residual rank occupancy after burn/inert is PMN-M02.
+2. **PMN-H02 (high) — remediated in this PR for the hot path.** Do not deploy `1.1.8` (or earlier) if the eviction index can grow. Deploy `1.1.9` (or later) that skips complete-set sync walks. Residual storage growth (PMN-L06) is not a deploy blocker.
+3. **PMN-M01 (medium) — remediated on main** ([#223](https://github.com/loreum-org/chamber/pull/223); [#209](https://github.com/loreum-org/chamber/issues/209) closed). Live quorum is over reachable authorized directors. Create-time `seats == 0` is rejected; there is still no collection-supply oracle or seat-lowering recovery path — pick `seats` so a minority cannot freeze the wallet by making their own seats inert. Pause plus unreachable quorum remains a vault lock.
+4. **PMN-M02 (medium) — still open** ([#210](https://github.com/loreum-org/chamber/issues/210)). Burned tokens already skip flags. Rank cleanup is not on `main`.
 5. **PMN-M03 (medium) — operational blocker** ([#211](https://github.com/loreum-org/chamber/issues/211)). Ethereum create must use Factory only, with a reviewed implementation and a non-EOA owner policy. Do not leave Registry `createChamber` as an accidental second implementation pointer.
 
-**Not blockers** (do not hold the deploy by themselves): PMN-M04 ([#212](https://github.com/loreum-org/chamber/issues/212), session-key hygiene; document and operate), PMN-L01–L10, PMN-I01–I06, accepted I-03.
+**Not blockers** (do not hold the deploy by themselves): PMN-M04 ([#212](https://github.com/loreum-org/chamber/issues/212) closed via [#226](https://github.com/loreum-org/chamber/pull/226); operate the 4-arg setter), PMN-L01–L10, PMN-I01–I06, accepted I-03.
 
-**Do not merge this review as a substitute for the H01/M01/M02/M03 work.** This PR is the report plus the H02 hot-path fix only.
+**Do not merge this review as a substitute for the M02/M03 work.** This PR is the report plus the H02 hot-path fix only.
 
 ---
 
 ## Localized fix in this PR
 
-`_syncTrackedDelegations` now returns immediately when the per-holder enumerable set already accounts for `totalHolderDelegations`. Fresh `delegate` / `undelegate` traffic never walks `evictedTokenIds`. Post-upgrade holders with leftover mapping amounts still backfill once (M-03 tests remain green). Tests: `contracts/test/findings/Finding_PMN_H02_EvictedSetHotPath.t.sol`.
+`BoardLib.syncTrackedDelegations` now returns immediately when the per-holder enumerable set already accounts for `totalHolderDelegations`. Fresh `delegate` / `undelegate` traffic never walks `evictedTokenIds`. Post-upgrade holders with leftover mapping amounts still backfill once (M-03 tests remain green). Tests: `contracts/test/findings/Finding_PMN_H02_EvictedSetHotPath.t.sol`.

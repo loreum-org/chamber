@@ -102,7 +102,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
      *      (length word + data word) and incurs an SLOAD on every read. A bytes32 constant is
      *      inlined at compile time: zero runtime gas, zero storage slots.
      */
-    bytes32 public constant VERSION = "1.1.8";
+    bytes32 public constant VERSION = "1.1.9";
 
     /// @notice Function selector for upgradeImplementation(address,bytes)
     bytes4 private constant UPGRADE_SELECTOR = 0xc89311b6;
@@ -188,7 +188,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
         }
 
         _delegate(tokenId, amount, $.nft);
-        _syncTrackedDelegations($.holderDelegation, $.holderDelegatedTokenIds, msg.sender);
+        _syncTrackedDelegations($.holderDelegation, $.totalHolderDelegations, $.holderDelegatedTokenIds, msg.sender);
 
         emit IChamber.DelegationUpdated(msg.sender, tokenId, $.holderDelegation[msg.sender][tokenId]);
     }
@@ -219,7 +219,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
             _undelegate(tokenId, amount, $.nft);
         }
 
-        _syncTrackedDelegations($.holderDelegation, $.holderDelegatedTokenIds, msg.sender);
+        _syncTrackedDelegations($.holderDelegation, $.totalHolderDelegations, $.holderDelegatedTokenIds, msg.sender);
 
         emit IChamber.DelegationUpdated(msg.sender, tokenId, newDelegation);
     }
