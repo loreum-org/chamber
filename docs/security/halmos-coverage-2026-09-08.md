@@ -147,7 +147,7 @@ Exercised through `MockWallet` (no director modifier) plus Chamber wallet tests.
 | Invariant | Where it is checked | Bound / gap |
 |---|---|---|
 | Board ranking uniqueness | `BoardSym.symbolicSortedOrderAfterTwoInserts`, `symbolicDelegateSameIdDoesNotDuplicateNode` | Two nodes or one id. No 3–50 node shapes |
-| Quorum formula | `BoardSym.symbolicQuorumFormula`; Chamber setUp asserts two reachable seats → quorum=2 | Configured-seat formula closed for `seats ∈ [1,20]`. Live quorum is reachable authorized top-seats (PMN-M01) |
+| Quorum formula | `BoardSym.symbolicQuorumFormula`; empty Chamber board is reachable 0 → quorum 1; two seated directors → quorum 2 | Configured-seat formula closed for `seats ∈ [1,20]`. Live quorum is reachable authorized top-seats (PMN-M01) |
 | Seating delay | `BoardSym.symbolicSeatingDelay*`; `ChamberSym.symbolicImmatureDirectorCannotSubmit` | `SEATING_DELAY = 1` |
 | Seating-control transfer | `ChamberSym.symbolicControlTransferRequiresSyncSeating` | New `ownerOf` waits `syncSeating` + delay (PMN-H01). Reverted director calls do not persist the bind |
 | Operator cleared on transfer | `ChamberSym.symbolicOperatorClearedOnTransfer`, `symbolicSessionKeyCanSubmitUntilTransfer` | Logical clear (`owner` mismatch), not storage `delete` |

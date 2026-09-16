@@ -36,11 +36,13 @@ contract ChamberSymTest is Test, SymTest {
         chamber = new ChamberAuthHarness(address(nft), 2);
     }
 
-    /// @dev Constructor writes the intended membership NFT and seat count
+    /// @dev Constructor writes the intended membership NFT and seat count.
+    ///      Live quorum is reachable directors (PMN-M01): empty board → n=0 → 1.
     function symbolicInitializeStoresConfig() public view {
         assertEq(address(chamber.nft()), address(nft));
         assertEq(chamber.getSeats(), 2);
-        assertEq(chamber.getQuorum(), 2);
+        assertEq(chamber.getReachableDirectorCount(), 0);
+        assertEq(chamber.getQuorum(), 1);
     }
 
     /// @dev Zero or >20 seats cannot construct the harness (same bounds as Chamber.initialize)
@@ -249,7 +251,7 @@ contract ChamberSymTest is Test, SymTest {
 
         _fundAndDelegate(USER, 1, 2e18, 2e18);
         _fundAndDelegate(USER2, 2, 1e18, 1e18);
-        vm.roll(block.number + BoardTypes.SEATING_DELAY);
+        _rollDelay();
 
         vm.prank(stranger);
         (bool submitOk,) = address(chamber).call(_submitTx(1));
@@ -282,7 +284,7 @@ contract ChamberSymTest is Test, SymTest {
     function symbolicWalletCancelRequiresQuorum() public {
         _fundAndDelegate(USER, 1, 2e18, 2e18);
         _fundAndDelegate(USER2, 2, 1e18, 1e18);
-        vm.roll(block.number + BoardTypes.SEATING_DELAY);
+        _rollDelay();
 
         vm.prank(USER);
         chamber.submitTransaction(1, TARGET, 0, "");
@@ -307,7 +309,7 @@ contract ChamberSymTest is Test, SymTest {
 
         _fundAndDelegate(address(sessionOwner), 1, 2e18, 2e18);
         _fundAndDelegate(USER, 2, 1e18, 1e18);
-        vm.roll(block.number + BoardTypes.SEATING_DELAY);
+        _rollDelay();
 
         sessionOwner.execute(address(chamber), _setOperator(1, sessionKey));
 
@@ -330,19 +332,20 @@ contract ChamberSymTest is Test, SymTest {
 
         _fundAndDelegate(USER, 1, 2e18, 2e18);
         _fundAndDelegate(address(sessionOwner), 2, 1e18, 1e18);
-        vm.roll(block.number + BoardTypes.SEATING_DELAY);
+        _rollDelay();
 
         vm.prank(USER);
         chamber.submitTransaction(1, TARGET, 0, "");
 
+        uint256 setBlock = vm.getBlockNumber();
         sessionOwner.execute(address(chamber), _setOperator(2, sessionKey));
-        assertEq(chamber.getDirectorOperatorLiveAt(2), block.number + BoardTypes.SEATING_DELAY);
+        assertEq(chamber.getDirectorOperatorLiveAt(2), setBlock + BoardTypes.SEATING_DELAY);
 
         vm.prank(sessionKey);
         (bool earlyConfirm,) = address(chamber).call(abi.encodeCall(chamber.confirmTransaction, (uint256(2), uint256(0))));
         assertFalse(earlyConfirm);
 
-        vm.roll(block.number + BoardTypes.SEATING_DELAY);
+        _rollDelay();
         vm.prank(sessionKey);
         chamber.confirmTransaction(2, 0);
         assertTrue(chamber.getConfirmation(2, 0));
@@ -352,7 +355,7 @@ contract ChamberSymTest is Test, SymTest {
     function symbolicReachableQuorumDropsChamberHeldSeat() public {
         _fundAndDelegate(USER, 1, 2e18, 2e18);
         _fundAndDelegate(USER2, 2, 1e18, 1e18);
-        vm.roll(block.number + BoardTypes.SEATING_DELAY);
+        _rollDelay();
 
         assertEq(chamber.getReachableDirectorCount(), 2);
         assertEq(chamber.getQuorum(), 2);
@@ -369,7 +372,7 @@ contract ChamberSymTest is Test, SymTest {
     function symbolicControlTransferRequiresSyncSeating() public {
         _fundAndDelegate(address(sessionOwner), 1, 2e18, 2e18);
         _fundAndDelegate(USER, 2, 1e18, 1e18);
-        vm.roll(block.number + BoardTypes.SEATING_DELAY);
+        _rollDelay();
 
         sessionOwner.execute(address(nft), abi.encodeCall(nft.transferFrom, (address(sessionOwner), USER2, uint256(1))));
 
@@ -377,17 +380,23 @@ contract ChamberSymTest is Test, SymTest {
         (bool beforeSync,) = address(chamber).call(_submitTx(1));
         assertFalse(beforeSync);
 
+        uint256 syncBlock = vm.getBlockNumber();
         chamber.syncSeating(1);
-        assertEq(chamber.getSeatedAt(1), block.number + BoardTypes.SEATING_DELAY);
+        assertEq(chamber.getSeatedAt(1), syncBlock + BoardTypes.SEATING_DELAY);
 
         vm.prank(USER2);
         (bool beforeDelay,) = address(chamber).call(_submitTx(1));
         assertFalse(beforeDelay);
 
-        vm.roll(block.number + BoardTypes.SEATING_DELAY);
+        _rollDelay();
         vm.prank(USER2);
         chamber.submitTransaction(1, TARGET, 0, "");
         assertEq(chamber.getTransactionCount(), 1);
+    }
+
+    function _rollDelay() internal {
+        uint256 n = vm.getBlockNumber();
+        vm.roll(n + BoardTypes.SEATING_DELAY);
     }
 
     function _submitTx(uint256 tokenId) internal view returns (bytes memory) {
