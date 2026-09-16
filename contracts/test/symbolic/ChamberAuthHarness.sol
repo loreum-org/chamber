@@ -73,7 +73,7 @@ contract ChamberAuthHarness is Board, Wallet {
             revert IChamber.InsufficientChamberBalance();
         }
 
-        _delegate(tokenId, amount);
+        _delegate(tokenId, amount, nft);
     }
 
     function undelegate(uint256 tokenId, uint256 amount) external nonReentrant {
@@ -87,7 +87,7 @@ contract ChamberAuthHarness is Board, Wallet {
 
         BoardTypes.BoardStorage storage $b = _getBoardStorage();
         if ($b.nodes[tokenId].tokenId == tokenId) {
-            _undelegate(tokenId, amount);
+            _undelegate(tokenId, amount, nft);
         }
     }
 
