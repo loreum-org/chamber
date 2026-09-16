@@ -1,5 +1,5 @@
 import { type Address, type Hex, isAddress, isHex, parseEther } from 'viem'
-import { createOperator } from './client.ts'
+import { SESSION_SCOPE_UNSCOPED, createOperator } from './client.ts'
 import { ChamberOperatorError } from './errors.ts'
 
 const USAGE = `chamber-operator — typed Chamber board / queue actions (same ABI as the app)
@@ -16,8 +16,8 @@ Commands:
   submit                submitTransaction (director)
   confirm               confirmTransaction (director)
   execute               executeTransaction (director)
-  set-operator          setDirectorOperator (contract-wallet NFT owner)
-  clear-operator        setDirectorOperator(tokenId, address(0))
+  set-operator          setDirectorOperator(tokenId, operator, expiry, scope)
+  clear-operator        setDirectorOperator(tokenId, address(0), 0, 0)
 
 Required (or env):
   --rpc <url>           RPC_URL / CHAMBER_RPC
@@ -33,12 +33,16 @@ Writes:
   --deadline <unix>     optional submit deadline
   --nonce <n>           confirm / execute / tx
   --operator <addr>     set-operator session key
+  --expiry <unix>       set-operator exclusive-after timestamp (must be future)
+  --scope <n|unscoped>  set-operator bitmask, or "unscoped" (uint32 max)
 
 Session keys: only a contract-owned membership NFT can register an operator.
 EOA-owned NFTs revert (NotDirector / You are not a director). There is no
 ERC-1271 fallback — Chamber never calls isValidSignature. set-operator and
 clear-operator must be sent by the NFT owner (a 4337 / smart-account signer
-whose address is that owner). Reads return address(0) when unset or stale.
+whose address is that owner). A non-zero operator requires a future expiry
+and a non-zero scope (pass unscoped for explicit full access). Reads return
+address(0) when unset, stale, or expired.
 
 A 4337 smart-account client is supported from the library API
 (createOperator({ signer: { type: 'walletClient', walletClient } })),
@@ -117,6 +121,26 @@ function parseUint(raw: string, label: string): bigint {
   return BigInt(raw.trim())
 }
 
+function parseScope(raw: string): number {
+  const trimmed = raw.trim().toLowerCase()
+  if (trimmed === 'unscoped' || trimmed === 'max') return SESSION_SCOPE_UNSCOPED
+  if (/^0x[0-9a-f]+$/.test(trimmed)) {
+    const value = Number(BigInt(trimmed))
+    if (!Number.isInteger(value) || value < 0 || value > SESSION_SCOPE_UNSCOPED) {
+      throw new ChamberOperatorError(`Invalid scope: ${raw}`)
+    }
+    return value
+  }
+  if (!/^\d+$/.test(trimmed)) {
+    throw new ChamberOperatorError(`Invalid scope: ${raw}`)
+  }
+  const value = Number(trimmed)
+  if (!Number.isInteger(value) || value < 0 || value > SESSION_SCOPE_UNSCOPED) {
+    throw new ChamberOperatorError(`Invalid scope: ${raw}`)
+  }
+  return value
+}
+
 function jsonReplacer(_key: string, value: unknown): unknown {
   return typeof value === 'bigint' ? value.toString() : value
 }
@@ -160,13 +184,20 @@ async function main(): Promise<void> {
     }
     case 'operator': {
       const tokenId = parseUint(requireFlag(flags, 'token-id'), 'token-id')
-      printJson({ tokenId, operator: await operator.getDirectorOperator(tokenId) })
+      const [next, scope, liveAt] = await Promise.all([
+        operator.getDirectorOperator(tokenId),
+        operator.getDirectorOperatorScope(tokenId),
+        operator.getDirectorOperatorLiveAt(tokenId),
+      ])
+      printJson({ tokenId, operator: next, scope, liveAt })
       return
     }
     case 'set-operator': {
       const tokenId = parseUint(requireFlag(flags, 'token-id'), 'token-id')
       const next = requireAddress(requireFlag(flags, 'operator'), 'operator')
-      printJson(await operator.setDirectorOperator(tokenId, next))
+      const expiry = parseUint(requireFlag(flags, 'expiry'), 'expiry')
+      const scope = parseScope(requireFlag(flags, 'scope'))
+      printJson(await operator.setDirectorOperator(tokenId, next, expiry, scope))
       return
     }
     case 'clear-operator': {

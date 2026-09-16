@@ -11,12 +11,12 @@ Given RPC + a signer + a chamber address:
 | Action | Chamber function |
 | --- | --- |
 | Read board + quorum | `getTop`, `getSeats`, `getQuorum`, `getReachableDirectorCount`, `getDirectors`, `getSeatedAt`, `paused` |
-| Read session key | `getDirectorOperator` |
+| Read session key | `getDirectorOperator`, `getDirectorOperatorScope`, `getDirectorOperatorLiveAt` |
 | Delegate | `delegate` |
 | Submit | `submitTransaction` |
 | Confirm | `confirmTransaction` |
 | Execute | `executeTransaction` |
-| Set / clear session key | `setDirectorOperator` (`address(0)` clears) |
+| Set / clear session key | `setDirectorOperator(tokenId, operator, expiry, scope)` (`address(0), 0, 0` clears) |
 
 Signer is a private key, a viem `Account`, or a prebuilt `WalletClient` (including a 4337 smart-account client whose `writeContract` submits a user operation). This package does not ship a bundler or paymaster.
 
@@ -32,7 +32,7 @@ Failures decode to the same copy the app already shows:
 ## Library
 
 ```ts
-import { createOperator } from '@loreum/chamber-operator'
+import { SESSION_SCOPE_UNSCOPED, createOperator } from '@loreum/chamber-operator'
 
 const op = await createOperator({
   rpcUrl: process.env.RPC_URL!,
@@ -52,11 +52,11 @@ await op.confirm(2n, nonce)
 await op.execute(1n, nonce, '0x')
 
 const live = await op.getDirectorOperator(1n)
-await op.setDirectorOperator(1n, '0x…') // contract-wallet owner only
-await op.clearDirectorOperator(1n) // setDirectorOperator(tokenId, address(0))
+await op.setDirectorOperator(1n, '0x…', expiry, SESSION_SCOPE_UNSCOPED) // contract-wallet owner only
+await op.clearDirectorOperator(1n) // setDirectorOperator(tokenId, address(0), 0, 0)
 ```
 
-`setDirectorOperator` / `clearDirectorOperator` must be sent by the current NFT owner, and that owner must be a **contract**. EOA-owned membership NFTs are rejected by the protocol (`NotDirector` / `You are not a director`). There is **no ERC-1271 fallback** — Chamber never calls `isValidSignature`. Use a 4337 / smart-account `walletClient` whose address is the contract owner (see below). Reads return `address(0)` when the key is unset, stale after transfer, or the owner is an EOA.
+`setDirectorOperator` / `clearDirectorOperator` must be sent by the current NFT owner, and that owner must be a **contract**. EOA-owned membership NFTs are rejected by the protocol (`NotDirector` / `You are not a director`). There is **no ERC-1271 fallback** — Chamber never calls `isValidSignature`. A non-zero operator requires a future `expiry` and a non-zero `scope` (`SESSION_SCOPE_UNSCOPED` / `type(uint32).max` for explicit full access; `0` is rejected). Use a 4337 / smart-account `walletClient` whose address is the contract owner (see below). Reads return `address(0)` when the key is unset, stale after transfer, expired, or the owner is an EOA.
 
 4337 signer:
 
@@ -81,7 +81,7 @@ npx chamber-operator board --rpc "$CHAMBER_RPC" --chamber "$CHAMBER"
 npx chamber-operator quorum --rpc "$CHAMBER_RPC" --chamber "$CHAMBER"
 npx chamber-operator operator --rpc "$CHAMBER_RPC" --chamber "$CHAMBER" --token-id 1
 npx chamber-operator set-operator --rpc "$CHAMBER_RPC" --chamber "$CHAMBER" --key "$PRIVATE_KEY" \
-  --token-id 1 --operator 0x…
+  --token-id 1 --operator 0x… --expiry 1893456000 --scope unscoped
 npx chamber-operator clear-operator --rpc "$CHAMBER_RPC" --chamber "$CHAMBER" --key "$PRIVATE_KEY" \
   --token-id 1
 npx chamber-operator delegate --rpc "$CHAMBER_RPC" --chamber "$CHAMBER" --key "$PRIVATE_KEY" \
@@ -108,7 +108,7 @@ npm run example:anvil
 That script starts Anvil if needed, runs `DeployAllAnvil`, creates a 3-seat chamber, then:
 
 1. Reads `getDirectorOperator` (zero) and shows EOA `setDirectorOperator` → `You are not a director`
-2. Contract-wallet owner `setDirectorOperator` / CLI `operator` read / `clearDirectorOperator`
+2. Contract-wallet owner `setDirectorOperator(tokenId, operator, expiry, scope)` / CLI `operator` read / `clearDirectorOperator`
 3. Delegates from two directors and shows a pending board
 4. `submit` before the seating delay → `Your seat is not mature yet`
 5. Mines one block (`SEATING_DELAY = 1`)

@@ -27,7 +27,7 @@ import {
 } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { chamberAbi, factoryAbi, mockERC20Abi, mockERC721Abi } from '../src/abi.ts'
-import { createOperator } from '../src/client.ts'
+import { SESSION_SCOPE_UNSCOPED, createOperator } from '../src/client.ts'
 import { CHAMBER_ERROR_MESSAGES, formatChamberError } from '../src/errors.ts'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..')
@@ -150,7 +150,7 @@ function contractOwnerClient(owner: Account, wallet: Address): WalletClient {
       const data = encodeFunctionData({
         abi: args.abi,
         functionName: args.functionName as 'setDirectorOperator',
-        args: args.args as [bigint, Address],
+        args: args.args as [bigint, Address, bigint, number],
       })
       return inner.writeContract({
         address: wallet,
@@ -369,8 +369,9 @@ async function main(): Promise<void> {
     if (unset !== '0x0000000000000000000000000000000000000000') {
       throw new Error(`expected unset operator, got ${unset}`)
     }
+    const sessionExpiry = (await publicClient.getBlock()).timestamp + 3600n
     await expectMessage('EOA setDirectorOperator', CHAMBER_ERROR_MESSAGES.NotDirector, () =>
-      opA.setDirectorOperator(1n, outsider.address),
+      opA.setDirectorOperator(1n, outsider.address, sessionExpiry, SESSION_SCOPE_UNSCOPED),
     )
     const stillUnset = await opA.getDirectorOperator(1n)
     if (stillUnset !== '0x0000000000000000000000000000000000000000') {
@@ -392,7 +393,7 @@ async function main(): Promise<void> {
       chamber,
       signer: { type: 'walletClient', walletClient: contractOwnerClient(admin, ownerWallet) },
     })
-    await opWallet.setDirectorOperator(3n, outsider.address)
+    await opWallet.setDirectorOperator(3n, outsider.address, sessionExpiry, SESSION_SCOPE_UNSCOPED)
     const live = await opWallet.getDirectorOperator(3n)
     if (live.toLowerCase() !== outsider.address.toLowerCase()) {
       throw new Error(`expected live operator ${outsider.address}, got ${live}`)

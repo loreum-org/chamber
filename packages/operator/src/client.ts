@@ -22,6 +22,29 @@ export type { Account, Address, Hex, PublicClient, WalletClient }
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as const
 
+/** Session scope bit: submit (including batch and metadata variants). */
+export const SESSION_SCOPE_SUBMIT = 1 << 0
+/** Session scope bit: confirm (including batch). */
+export const SESSION_SCOPE_CONFIRM = 1 << 1
+/** Session scope bit: execute (including batch). */
+export const SESSION_SCOPE_EXECUTE = 1 << 2
+/** Session scope bit: updateSeats / executeSeatsUpdate / cancelSeatUpdate. */
+export const SESSION_SCOPE_UPDATE_SEATS = 1 << 3
+/** Session scope bit: revokeConfirmation. */
+export const SESSION_SCOPE_REVOKE = 1 << 4
+/** Session scope bit: cancelTransaction. */
+export const SESSION_SCOPE_CANCEL = 1 << 5
+/** Explicit unscoped sentinel (`type(uint32).max`). Scope `0` is rejected at set. */
+export const SESSION_SCOPE_UNSCOPED = 0xffff_ffff
+
+export type DirectorSessionSnapshot = {
+  sessionOwner: Address
+  operator: Address
+  expiry: bigint
+  scope: number
+  liveAt: bigint
+}
+
 export type OperatorSigner =
   | { type: 'privateKey'; privateKey: Hex }
   | { type: 'account'; account: Account }
@@ -393,8 +416,8 @@ export class ChamberOperator {
   }
 
   /**
-   * Live session key for `tokenId`, or `address(0)` if unset, stale, or the
-   * NFT is EOA-owned. Chamber never consults ERC-1271.
+   * Live session key for `tokenId`, or `address(0)` if unset, stale, expired,
+   * or the NFT is EOA-owned. Chamber never consults ERC-1271.
    */
   async getDirectorOperator(tokenId: bigint): Promise<Address> {
     try {
@@ -409,17 +432,72 @@ export class ChamberOperator {
     }
   }
 
+  /** Live session scope, or `0` if there is no live session. */
+  async getDirectorOperatorScope(tokenId: bigint): Promise<number> {
+    try {
+      return await this.publicClient.readContract({
+        address: this.chamber,
+        abi: chamberAbi,
+        functionName: 'getDirectorOperatorScope',
+        args: [tokenId],
+      })
+    } catch (error) {
+      throw wrapChamberError(error, 'Failed to read director operator scope')
+    }
+  }
+
+  /** First block the live session may confirm or execute, or `0` if none. */
+  async getDirectorOperatorLiveAt(tokenId: bigint): Promise<bigint> {
+    try {
+      return await this.publicClient.readContract({
+        address: this.chamber,
+        abi: chamberAbi,
+        functionName: 'getDirectorOperatorLiveAt',
+        args: [tokenId],
+      })
+    } catch (error) {
+      throw wrapChamberError(error, 'Failed to read director operator liveAt')
+    }
+  }
+
+  /** Raw stored session fields. May be stale or expired. */
+  async getDirectorSession(tokenId: bigint): Promise<DirectorSessionSnapshot> {
+    try {
+      const [sessionOwner, operator, expiry, scope, liveAt] = await this.publicClient.readContract({
+        address: this.chamber,
+        abi: chamberAbi,
+        functionName: 'getDirectorSession',
+        args: [tokenId],
+      })
+      return { sessionOwner, operator, expiry, scope, liveAt }
+    } catch (error) {
+      throw wrapChamberError(error, 'Failed to read director session')
+    }
+  }
+
   /**
    * Register (or replace) the session key. `msg.sender` must be the current
    * contract owner of `tokenId`. EOA-owned NFTs revert `NotDirector`.
+   * Non-zero `operator` requires a future `expiry` and a non-zero `scope`
+   * (`SESSION_SCOPE_UNSCOPED` for explicit full access).
    */
-  async setDirectorOperator(tokenId: bigint, operator: Address): Promise<WriteResult> {
-    return this.write('setDirectorOperator', [tokenId, assertAddress(operator, 'operator')])
+  async setDirectorOperator(
+    tokenId: bigint,
+    operator: Address,
+    expiry: bigint,
+    scope: number,
+  ): Promise<WriteResult> {
+    return this.write('setDirectorOperator', [
+      tokenId,
+      assertAddress(operator, 'operator'),
+      expiry,
+      scope,
+    ])
   }
 
-  /** Clear the session key (`setDirectorOperator(tokenId, address(0))`). */
+  /** Clear the session key (`setDirectorOperator(tokenId, address(0), 0, 0)`). */
   async clearDirectorOperator(tokenId: bigint): Promise<WriteResult> {
-    return this.setDirectorOperator(tokenId, ZERO_ADDRESS)
+    return this.setDirectorOperator(tokenId, ZERO_ADDRESS, 0n, 0)
   }
 }
 
