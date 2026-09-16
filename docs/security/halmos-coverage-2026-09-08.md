@@ -57,10 +57,12 @@ input; **partial** = some paths or a related mock/implementation-only setup;
 | `initialize` | partial | Harness constructor stores NFT / seats and rejects 0 and >20; asset/ERC-20 name live only on Chamber |
 | `delegate` | covered | holder ≤ balance; node amount matches; uniqueness via `BoardSym` |
 | `undelegate` | covered | holder + node conservation |
-| `setDirectorOperator` | covered | only registered key; EOA implicit operator rejected |
+| `setDirectorOperator` | covered | 4-arg ABI (PMN-M04): expiry 0 / scope 0 rejected; unscoped key + owner authorized; confirm waits `liveAt`; NFT transfer clears |
 | `updateSeats` | partial | proposal + quorum snapshot on `MockBoard.setSeats` (`BoardSym`); Chamber `isDirector` gate is the wallet/director tests |
 | `executeSeatsUpdate` | missing | supporter walk is `O(seats × supporters)`; default `--loop 2` cannot close a real quorum execute. Unit: `Board.t.sol` / H-03 |
 | `cancelSeatUpdate` | missing | same; unit coverage exists |
+| `recoverSeats` | missing | PMN-M01 C; needs filled `<` configured-seat quorum. Unit: `Finding_PMN_M01_ReachableQuorum.t.sol` |
+| `syncSeating` | covered | after `ownerOf` change, new controller cannot act until `syncSeating` + `SEATING_DELAY` (PMN-H01) |
 | `submitTransaction` (4-arg) | covered | director + seating + auto-confirm; session key |
 | `submitTransaction` (deadline) | partial | deadline / expiry on `MockWallet` (`WalletSym`); Chamber overload not separately hashed |
 | `submitTransactionWithMetadata` (both) | partial | same `WalletLib` submit path as 4-arg submit |
@@ -90,8 +92,10 @@ Exercised through `MockBoard` (same ERC-7201 slot + `BoardLib`).
 | insert / ranking sort | covered | two distinct ids, descending amounts, unique top set |
 | `delegate` same id | covered | size stays 1 |
 | `delegate` / `undelegate` amounts | covered | |
-| `getQuorum` | covered | `1 + (seats * 51) / 100` for seats in `1..=20` |
+| `getQuorum` (configured seats) | covered | `1 + (seats * 51) / 100` for seats in `1..=20` (`BoardSym`) |
+| `getQuorum` (reachable directors) | covered | Chamber live quorum excludes chamber-held top-seat NFTs (`ChamberSym`, PMN-M01) |
 | seating delay | covered | new top node immature until `SEATING_DELAY`; extra delegate does not reset |
+| seating-control transfer | covered | `ChamberSym.symbolicControlTransferRequiresSyncSeating` (PMN-H01) |
 | seat-update quorum snapshot | covered | first proposal stores live quorum |
 | reentrancy on delegate | covered | shared OZ lock |
 | `executeSeatsUpdate` / `cancelSeatUpdate` | missing | see Chamber row |
@@ -143,9 +147,11 @@ Exercised through `MockWallet` (no director modifier) plus Chamber wallet tests.
 | Invariant | Where it is checked | Bound / gap |
 |---|---|---|
 | Board ranking uniqueness | `BoardSym.symbolicSortedOrderAfterTwoInserts`, `symbolicDelegateSameIdDoesNotDuplicateNode` | Two nodes or one id. No 3–50 node shapes |
-| Quorum formula | `BoardSym.symbolicQuorumFormula`; Chamber setUp asserts seats=2 → quorum=2 | Closed for `seats ∈ [1,20]` |
+| Quorum formula | `BoardSym.symbolicQuorumFormula`; Chamber setUp asserts two reachable seats → quorum=2 | Configured-seat formula closed for `seats ∈ [1,20]`. Live quorum is reachable authorized top-seats (PMN-M01) |
 | Seating delay | `BoardSym.symbolicSeatingDelay*`; `ChamberSym.symbolicImmatureDirectorCannotSubmit` | `SEATING_DELAY = 1` |
+| Seating-control transfer | `ChamberSym.symbolicControlTransferRequiresSyncSeating` | New `ownerOf` waits `syncSeating` + delay (PMN-H01). Reverted director calls do not persist the bind |
 | Operator cleared on transfer | `ChamberSym.symbolicOperatorClearedOnTransfer`, `symbolicSessionKeyCanSubmitUntilTransfer` | Logical clear (`owner` mismatch), not storage `delete` |
+| Session expiry / scope / liveAt | `ChamberSym.symbolicSessionKeyIsOnlyApprovedOperator`, `symbolicSessionSetRejectsZeroExpiryOrScope`, `symbolicSessionKeyConfirmWaitsLiveAt` | Concrete unscoped + zero expiry/scope. Not a proof of every scope bit |
 | Wallet queue auth (submit / confirm / execute / cancel) | `ChamberSym.symbolicWalletQueueRequiresDirector`, `symbolicWalletCancelRequiresQuorum`; lifecycle on `WalletSym` | Two seats, concrete token ids 1 and 2, symbolic stranger / session key |
 | Vault share accounting | `VaultSym` empty-vault multiplier + pause zeroes `max*` | Redeem / multi-depositor `convertTo*` is nonlinear; Halmos timed out and the test was removed from CI |
 | Factory only creates with intended admin / impl | `FactorySym` constructor + `setImplementation` + invalid `createChamber` does not mutate | **Success-path CREATE is a documented gap**; unit tests own the proxy handoff |
@@ -194,7 +200,7 @@ everything tagged **missing** or **partial**.
 | Suite | Result |
 |---|---|
 | BoardSymTest | 8 passed |
-| ChamberSymTest | 13 passed |
+| ChamberSymTest | 17 tests after PMN-M04/M01/H01 rebase (CI count TBD) |
 | FactorySymTest | 5 passed |
 | RegistrySymTest | 6 passed |
 | VaultSymTest | 3 passed |
