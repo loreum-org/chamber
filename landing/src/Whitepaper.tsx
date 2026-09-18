@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useSeo } from './seo';
 
 const FadeIn = ({ children, delay = 0, className = "" }: { children: React.ReactNode, delay?: number, className?: string }) => (
   <motion.div
@@ -16,6 +17,12 @@ const FadeIn = ({ children, delay = 0, className = "" }: { children: React.React
 );
 
 function Whitepaper() {
+  useSeo(
+    'Whitepaper — Loreum',
+    'The Loreum Chamber whitepaper: protocol design for a Decentralized Governance System under CLARITY Act § 104.',
+    '/whitepaper',
+  );
+
   return (
     <div className="min-h-screen bg-space-900 text-white selection:bg-space-accent selection:text-space-900 overflow-hidden relative">
       

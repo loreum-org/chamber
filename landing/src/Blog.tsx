@@ -1,8 +1,9 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import { Link, useParams } from 'react-router-dom';
 import Markdown from 'react-markdown';
 import { formatPostDate, getPost, posts } from './posts.ts';
+import { useSeo } from './seo';
 
 const FadeIn = ({ children, delay = 0, className = "" }: { children: React.ReactNode, delay?: number, className?: string }) => (
   <motion.div
@@ -61,13 +62,13 @@ const markdownComponents = {
   ),
 };
 
-function BlogChrome({ title, children }: { title: string; children: React.ReactNode }) {
-  useEffect(() => {
-    document.title = title;
-    return () => {
-      document.title = 'Loreum — Chamber: onchain governance for DAOs';
-    };
-  }, [title]);
+function BlogChrome({
+  title,
+  description = 'Changelog and research notes from the Loreum team.',
+  path = '/blog',
+  children,
+}: { title: string; description?: string; path?: string; children: React.ReactNode }) {
+  useSeo(title, description, path);
 
   return (
     <div className="min-h-screen w-full min-w-0 bg-space-900 text-white selection:bg-space-accent selection:text-space-900 overflow-x-hidden relative">
@@ -224,7 +225,7 @@ export function BlogPost() {
   }
 
   return (
-    <BlogChrome title={`${post.title} — Loreum`}>
+    <BlogChrome title={`${post.title} — Loreum`} description={post.summary} path={`/blog/${post.slug}`}>
       <section className="relative z-10 py-20 md:py-32 px-4 sm:px-6 w-full min-w-0 box-border">
         <div className="max-w-4xl mx-auto w-full min-w-0 px-1 sm:px-0">
           <FadeIn>
