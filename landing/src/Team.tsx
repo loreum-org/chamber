@@ -1,6 +1,7 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { useSeo } from './seo';
 
 const FadeIn = ({ children, delay = 0, className = "" }: { children: React.ReactNode, delay?: number, className?: string }) => (
   <motion.div
@@ -39,12 +40,7 @@ const founders = [
 ];
 
 function Team() {
-  useEffect(() => {
-    document.title = 'Team — Loreum';
-    return () => {
-      document.title = 'Loreum — Chamber: onchain governance for DAOs';
-    };
-  }, []);
+  useSeo('Team — Loreum', 'The team behind Loreum Chamber.', '/team');
 
   return (
     <div className="min-h-screen w-full min-w-0 bg-space-900 text-white selection:bg-space-accent selection:text-space-900 overflow-x-hidden relative">

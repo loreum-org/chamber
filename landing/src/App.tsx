@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ChevronRight, Layers, Shield, Cpu, TrendingUp, ShieldAlert, Search, Radio, Scale, Eye, Network } from 'lucide-react';
+import { useSeo } from './seo';
 
 const FadeIn = ({ children, delay = 0, className = "" }: { children: React.ReactNode, delay?: number, className?: string }) => (
   <motion.div
@@ -21,6 +22,12 @@ const chamberAppUrl =
   'https://app.loreum.org';
 
 function App() {
+  useSeo(
+    'Loreum — Chamber: onchain governance for DAOs',
+    'Factory-deployed ERC-4626 vault, liquid-delegated ranked board, and quorum wallet — onchain and verifiable by your community.',
+    '/',
+  );
+
   return (
     <div className="min-h-screen w-full min-w-0 bg-space-900 text-white selection:bg-space-accent selection:text-space-900 overflow-x-hidden relative">
       
@@ -265,9 +272,9 @@ function App() {
           <FadeIn className="mb-20 max-w-2xl">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-display mb-6 break-words text-balance">Autonomous Architecture</h2>
             <p className="text-gray-400 text-lg font-light leading-relaxed break-words">
-              The shipped Chamber is a factory-deployed ERC-4626 vault with a
+              Each shipped Chamber is a factory-deployed ERC-4626 vault with a
               liquid-delegated ranked board of membership NFTs and a quorum wallet —
-              the onchain object that Create deploys today.
+              the same primitives the app deploys in one click.
             </p>
           </FadeIn>
 
@@ -276,7 +283,7 @@ function App() {
               {
                 icon: <Layers className="w-8 h-8 text-blue-400" />,
                 title: "Factory",
-                desc: "Create deploys each Chamber from a Factory as an upgradeable proxy. On Sepolia the Factory address is an in-repo default — not a leftover Registry crawl, and not gated on a local env var.",
+                desc: "Create deploys each Chamber from a Factory as an upgradeable proxy — one canonical, Etherscan-verified Factory address on Sepolia. No local config, no registry crawling.",
                 glow: "bg-blue-500/20"
               },
               {
@@ -288,7 +295,7 @@ function App() {
               {
                 icon: <Cpu className="w-8 h-8 text-emerald-400" />,
                 title: "Ranked Board & Quorum Wallet",
-                desc: "Membership NFTs form a liquid-delegated ranked board. Directors submit and confirm; a quorum of seats executes. The caller must be the NFT owner — an EIP-1271 agent-director path is not shipped.",
+                desc: "Membership NFTs form a liquid-delegated ranked board. Directors submit and confirm; a quorum of seats executes — and every seat requires its NFT owner's signature. Agent directors via EIP-1271 are the next step on the roadmap.",
                 glow: "bg-emerald-500/20"
               }
             ].map((feature, i) => (
@@ -402,6 +409,10 @@ function App() {
                   </div>
                 ))}
               </div>
+              <p className="text-sm text-gray-500 font-light max-w-md">
+                The vault, ranked board, and quorum wallet ship today — fleet
+                automation rolls out on the public <Link to="/blog" className="text-gray-400 hover:text-space-accent transition-colors">changelog</Link>.
+              </p>
               <a
                 href={chamberAppUrl}
                 className="mt-10 inline-flex items-center gap-2 text-space-accent hover:text-white transition-colors tracking-widest text-sm font-bold"
@@ -582,20 +593,20 @@ function App() {
             <ul className="space-y-4 text-sm text-gray-400 font-light">
               <li><Link to="/team" className="hover:text-white transition-colors">Team</Link></li>
               <li><Link to="/blog" className="hover:text-white transition-colors">Blog</Link></li>
-              <li><a href="#" className="hover:text-white transition-colors">Agents</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Chambers</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Security</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Roadmap</a></li>
+              <li><a href="/#technology" className="hover:text-white transition-colors">Agents</a></li>
+              <li><a href="/#governance" className="hover:text-white transition-colors">Chambers</a></li>
+              <li><a href="/#clarity" className="hover:text-white transition-colors">Security</a></li>
+              <li><Link to="/blog" className="hover:text-white transition-colors">Roadmap</Link></li>
             </ul>
           </div>
           
           <div>
             <h4 className="font-bold tracking-widest text-sm mb-6">COMMUNITY</h4>
             <ul className="space-y-4 text-sm text-gray-400 font-light">
-              <li><a href="#" className="hover:text-white transition-colors">Discord</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Twitter</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">GitHub</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Documentation</a></li>
+              <li><a href="https://github.com/loreum-org" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">GitHub</a></li>
+              <li><a href="https://github.com/loreum-org/chamber/tree/main/contracts" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Contracts</a></li>
+              <li><Link to="/whitepaper" className="hover:text-white transition-colors">Whitepaper</Link></li>
+              <li><Link to="/blog" className="hover:text-white transition-colors">Changelog</Link></li>
             </ul>
           </div>
         </div>
