@@ -12,6 +12,7 @@ import {
   getContractAddresses,
   getNetworkName,
   isNonZeroAddress,
+  LOCAL_CHAIN_ID,
 } from '@/lib/wagmi'
 import { addRecentChamber } from '@/lib/recentChambers'
 import { factoryAbi, registryAbi } from '@/contracts/abis'
@@ -21,6 +22,10 @@ import SeatTheBoard from '@/components/SeatTheBoard'
 import toast from 'react-hot-toast'
 
 type Step = 'form' | 'review' | 'deploying' | 'success'
+
+const GETTING_STARTED_HREF = '/docs/introduction/getting-started'
+
+type MembershipPath = 'existing' | 'need-collection'
 
 const CREATE_TARGET_MISSING =
   'No Factory or Registry is configured on this network. Switch to a supported chain to deploy.'
