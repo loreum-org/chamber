@@ -63,7 +63,7 @@ function Whitepaper() {
           <div className="mb-12 text-center">
             <h1 className="text-5xl md:text-6xl font-display mb-4">Chamber Protocol</h1>
             <p className="text-xl text-gray-400 font-light">A Technical Framework for Agentic Organizational Governance</p>
-            <p className="text-sm text-gray-500 mt-4">Version 1.2.0 | April 2026</p>
+            <p className="text-sm text-gray-500 mt-4">Version 1.3.0 | September 2026</p>
           </div>
         </FadeIn>
 
@@ -94,8 +94,10 @@ function Whitepaper() {
               <p className="text-gray-300 leading-relaxed">
                 Technical contributions include: (1) NFT-based directorship (live auth is the
                 membership NFT owner as <code className="text-space-accent">msg.sender</code>,
-                or a session key the contract owner registered; EIP-1271 contract-agent
-                directors remain a design path, not shipped),
+                or a session key registered with{" "}
+                <code className="text-space-accent">setDirectorOperator</code> for
+                contract-owned NFTs; Chamber never calls ERC-1271 — EIP-1271 contract-agent
+                directors remain research, not shipped),
                 (2) liquid delegation without governance lockups, subject to solvency checks on delegated balances, 
                 (3) circuit-safe linked list repositioning for the governance leaderboard, and (4) self-sovereign
                 upgrade paths executed only through quorum-approved transactions. We provide specifications, security
@@ -145,10 +147,11 @@ function Whitepaper() {
                 Chamber&apos;s published solidity; <strong className="text-space-accent font-normal">dispersed authority</strong>{" "}
                 (cf. § 104(c)(2)(E–G)) — liquid delegation to a ranked board plus majority quorum on execution resists
                 single-actor capture when parameters and seat counts are tuned to policy; <strong className="text-space-accent font-normal">
-                agent parity</strong> — a designed EIP-1271 path would let smart-contract directors participate under the
-                same validation rules as EOAs. That path is not shipped; live director auth requires
-                {" "}<code className="text-space-accent">msg.sender</code> to be the membership NFT owner, or a
-                session key the contract owner registered.
+                agent parity</strong> — contract-owned membership NFTs register a session key
+                via <code className="text-space-accent">setDirectorOperator</code> so an agent
+                can call Chamber as <code className="text-space-accent">msg.sender</code>{" "}
+                without Chamber consulting ERC-1271. A designed EIP-1271 path remains
+                research; it is not shipped.
               </p>
 
               <h3 className="text-2xl font-display mb-4 mt-10 text-white">1.2 Chamber as protocol response</h3>
@@ -196,7 +199,8 @@ function Whitepaper() {
                   receives ownership of its ProxyAdmin, enabling self-governed upgrades.
                   The Factory does not store a world directory, asset index, or parent/child
                   tables. Discover chambers via <code className="text-space-accent">ChamberCreated</code> logs.
-                  There is no <code className="text-space-accent">createAgent()</code> API.
+                  There is no <code className="text-space-accent">createAgent()</code> API —
+                  that function does not exist on Factory or Registry.
                 </p>
                 <p className="text-gray-400 text-sm font-mono">
                   Key Functions: createChamber(), setImplementation(), implementation()
@@ -236,7 +240,23 @@ function Whitepaper() {
                   (CEI) pattern and supports batch operations for gas efficiency.
                 </p>
                 <p className="text-gray-400 text-sm font-mono">
-                  Key Functions: _submitTransaction(), _confirmTransaction(), _executeTransaction()
+                  Key Functions: _submitTransaction(), _confirmTransaction(), _cancelTransaction(), _executeTransaction()
+                </p>
+              </div>
+
+              <div className="bg-space-800/40 border border-white/10 rounded-xl p-6 mb-6 backdrop-blur-md">
+                <h4 className="text-xl font-display mb-3 text-space-accent">Registry (leftover)</h4>
+                <p className="text-gray-300 leading-relaxed mb-3">
+                  Historical factory and enumerable index. An earlier create path used
+                  Registry <code className="text-space-accent">createChamber()</code> and
+                  {" "}<code className="text-space-accent">getAllChambers()</code>, and could
+                  record parent↔child links when a Chamber&apos;s asset was another Chamber&apos;s
+                  share token. Create today uses Factory. Registry remains in-repo as leftover
+                  / historical — not the product default.{" "}
+                  <code className="text-space-accent">createAgent()</code> was never a shipped API.
+                </p>
+                <p className="text-gray-400 text-sm font-mono">
+                  Leftover: createChamber(), getAllChambers(), getParentChamber(), getChildChambers()
                 </p>
               </div>
 
@@ -264,103 +284,107 @@ function Whitepaper() {
             <section className="mb-16">
               <h2 className="text-3xl font-display mb-6 text-space-accent">3. Delegation Mechanism</h2>
               
-              <h3 className="text-2xl font-display mb-4 mt-8 text-white">3.1 Sorted Linked List Structure</h3>
-              <p className="text-gray-300 leading-relaxed mb-4">
-                The Board contract maintains a doubly-linked list of nodes, where each node represents a tokenId 
-                and its total delegated amount. The list is sorted in descending order by delegation amount, enabling 
-                O(1) access to the top N directors.
-              </p>
-              
-              <div className="bg-space-800/40 border border-white/10 rounded-xl p-6 mb-6 backdrop-blur-md">
-                <pre className="text-gray-300 text-sm font-mono overflow-x-auto">
-{`struct Node {
-    uint256 tokenId;
-    uint256 amount;      // Total delegations
-    uint256 next;        // Next node (higher amount)
-    uint256 prev;        // Previous node (lower amount)
-}`}
-                </pre>
-              </div>
+              <h3 className="text-2
 
-              <p className="text-gray-300 leading-relaxed mb-4">
-                When an agent delegates tokens to a tokenId, the Board contract:
-              </p>
-              <ol className="list-decimal list-inside text-gray-300 space-y-2 mb-4 ml-4">
-                <li>Checks if a node exists for the tokenId</li>
-                <li>If exists, increments the amount and calls <code className="text-space-accent">_reposition()</code></li>
-                <li>If not, calls <code className="text-space-accent">_insert()</code> to create a new node</li>
-                <li>The insertion/repositioning maintains sorted order by traversing from head</li>
-              </ol>
+... [OUTPUT TRUNCATED - 4,931 chars omitted out of 54,859 total] ...
 
-              <h3 className="text-2xl font-display mb-4 mt-8 text-white">3.2 Director Selection</h3>
-              <p className="text-gray-300 leading-relaxed mb-4">
-                Directors are selected dynamically: the top N tokenIds (where N = seats) form the board. The 
-                <code className="text-space-accent"> getDirectors()</code> function resolves tokenId → address 
-                by calling <code className="text-space-accent">nft.ownerOf(tokenId)</code>. If an NFT has been 
-                burned or transferred, the function returns <code className="text-space-accent">address(0)</code> 
-                for that position.
-              </p>
-
-              <div className="bg-space-800/40 border border-white/10 rounded-xl p-6 mb-6 backdrop-blur-md">
-                <p className="text-gray-300 leading-relaxed mb-2">
-                  <strong className="text-space-accent">Quorum Calculation:</strong>
-                </p>
-                <code className="text-space-accent text-lg font-mono">
-                  quorum = 1 + (seats × 51) / 100
-                </code>
-                <p className="text-gray-400 text-sm mt-2">
-                  Exact integer formula (`/` truncates). This is not a simple majority:
-                  one- and two-seat chambers require 100% of seats.
-                </p>
-              </div>
-
-              <h3 className="text-2xl font-display mb-4 mt-8 text-white">3.3 Liquid Delegation</h3>
-              <p className="text-gray-300 leading-relaxed mb-4">
-                Unlike traditional governance systems with lockup periods, Chamber allows agents to redelegate or 
-                undelegate tokens at any time. However, the Chamber contract enforces that agents cannot transfer 
-                tokens if doing so would reduce their balance below their total delegated amount:
-              </p>
-              
-              <div className="bg-space-800/40 border border-white/10 rounded-xl p-6 mb-6 backdrop-blur-md">
-                <pre className="text-gray-300 text-sm font-mono overflow-x-auto">
-{`function transfer(address to, uint256 value) public override {
-    uint256 ownerBalance = balanceOf(owner);
-    if (ownerBalance - value < totalAgentDelegations[owner]) {
-        revert ExceedsDelegatedAmount();
-    }
-    _transfer(owner, to, value);
-}`}
-                </pre>
-              </div>
-
-              <p className="text-gray-300 leading-relaxed">
-                This constraint ensures that delegated voting power remains backed by actual token balances, 
-                preventing double-spending of governance rights.
-              </p>
-            </section>
-          </FadeIn>
-
-          {/* Agent Integration */}
+/}
           <FadeIn delay={0.5}>
             <section className="mb-16">
               <h2 className="text-3xl font-display mb-6 text-space-accent">4. Agent Integration</h2>
-              <p className="text-gray-400 leading-relaxed mb-4 text-sm md:text-base">
-                This section is a design specification for contract-agent directors, not the live
-                authorization path. Shipped Chamber requires{" "}
-                <code className="text-space-accent">msg.sender</code> to be the membership NFT
-                owner, or a session key the contract owner registered. EIP-1271 agent directors
-                are research; they are not a Chamber capability until that path ships.
+              <p className="text-gray-300 leading-relaxed mb-4">
+                Live director authorization is owner-as-
+                <code className="text-space-accent">msg.sender</code>, or a session key
+                registered with <code className="text-space-accent">setDirectorOperator</code>{" "}
+                for <strong className="text-white font-normal">contract-owned</strong> membership
+                NFTs. Chamber <strong className="text-white font-normal">never</strong> calls
+                ERC-1271 / <code className="text-space-accent">isValidSignature</code>. EIP-1271
+                agent directors stay research (§4.3); they are not a shipped capability.
               </p>
               
-              <h3 className="text-2xl font-display mb-4 mt-8 text-white">4.1 EIP-1271 Signature Validation</h3>
+              <h3 className="text-2xl font-display mb-4 mt-8 text-white">4.1 Live authorization: owner *** session keys</h3>
               <p className="text-gray-300 leading-relaxed mb-4">
-                The design would enable smart contract agents to act as directors through EIP-1271
-                signature validation. When a director function is called, the specified check is:
+                For a seated <code className="text-space-accent">tokenId</code>, Chamber
+                authorizes <code className="text-space-accent">msg.sender</code> if and only if
+                one of the following holds:
+              </p>
+              
+              <ol className="list-decimal list-inside text-gray-300 space-y-2 mb-4 ml-4">
+                <li>
+                  <code className="text-space-accent">msg.sender == nft.ownerOf(tokenId)</code>{" "}
+                  — the NFT owner (EOA or contract wallet) acts as itself.
+                </li>
+                <li>
+                  The owner is a contract, previously called{" "}
+                  <code className="text-space-accent">setDirectorOperator(tokenId, operator)</code>{" "}
+                  while it was <code className="text-space-accent">ownerOf</code> and{" "}
+                  <code className="text-space-accent">msg.sender</code>, the session is still
+                  bound to the current owner, and{" "}
+                  <code className="text-space-accent">msg.sender == operator</code>.
+                </li>
+              </ol>
+
+              <p className="text-gray-300 leading-relaxed mb-4">
+                A Safe, ERC-4337 account, or other contract wallet that holds the membership NFT
+                calls Chamber as itself (for example Safe{" "}
+                <code className="text-space-accent">execTransaction</code>). To let an agent
+                call Chamber directly, that owner wallet registers the operator. Transferring
+                the NFT invalidates the key. EOA-owned NFTs cannot register a session key.
+                Only the current owner may set or clear the key.
+              </p>
+
+              <h3 className="text-2xl font-display mb-4 mt-8 text-white">4.2 Agent delegation patterns</h3>
+              <p className="text-gray-300 leading-relaxed mb-4">
+                Agents participate in governance through these live patterns:
+              </p>
+              
+              <div className="space-y-4 mb-6">
+                <div className="bg-space-800/40 border border-white/10 rounded-lg p-4">
+                  <h4 className="text-lg font-display mb-2 text-space-accent">Pattern 1: Direct ownership</h4>
+                  <p className="text-gray-300 text-sm">
+                    An agent contract owns an NFT tokenId and calls Chamber as{" "}
+                    <code className="text-space-accent">msg.sender</code>. The token must
+                    accumulate enough delegations to enter the top N seats, then wait{" "}
+                    <code className="text-space-accent">SEATING_DELAY</code> (1 block).
+                  </p>
+                </div>
+                
+                <div className="bg-space-800/40 border border-white/10 rounded-lg p-4">
+                  <h4 className="text-lg font-display mb-2 text-space-accent">Pattern 2: Session key (live agent path)</h4>
+                  <p className="text-gray-300 text-sm">
+                    A contract wallet holds the NFT and calls{" "}
+                    <code className="text-space-accent">setDirectorOperator(tokenId, operator)</code>.
+                    The operator may then call Chamber directly for that tokenId. This is an
+                    explicit Chamber allowlist — not EIP-1271, not Safe{" "}
+                    <code className="text-space-accent">isModuleEnabled</code>, and not EntryPoint
+                    validation.
+                  </p>
+                </div>
+                
+                <div className="bg-space-800/40 border border-white/10 rounded-lg p-4">
+                  <h4 className="text-lg font-display mb-2 text-space-accent">Pattern 3: Voting power delegation</h4>
+                  <p className="text-gray-300 text-sm">
+                    Agents delegate their Chamber tokens to specific tokenIds, influencing director selection without 
+                    holding NFTs themselves. This enables liquid democracy where agents can redelegate based on 
+                    performance or policy alignment.
+                  </p>
+                </div>
+              </div>
+
+              <h3 className="text-2xl font-display mb-4 mt-8 text-white">4.3 EIP-1271 (research — not shipped)</h3>
+              <p className="text-gray-400 leading-relaxed mb-4 text-sm md:text-base">
+                The following is a design specification only. Chamber does not call{" "}
+                <code className="text-space-accent">isValidSignature</code>. Safe-owned NFTs
+                do not use this path.
+              </p>
+              <p className="text-gray-300 leading-relaxed mb-4">
+                A researched alternative would enable smart contract agents to act as directors
+                through EIP-1271 signature validation. The specified check would be:
               </p>
               
               <ol className="list-decimal list-inside text-gray-300 space-y-2 mb-4 ml-4">
                 <li>If <code className="text-space-accent">msg.sender</code> directly owns the tokenId</li>
-                <li>If not, and the owner is a contract, constructs a "DirectorAuth" hash</li>
+                <li>If not, and the owner is a contract, constructs a &quot;DirectorAuth&quot; hash</li>
                 <li>Calls <code className="text-space-accent">IERC1271(owner).isValidSignature()</code></li>
                 <li>If valid, grants directorship to the agent</li>
               </ol>
@@ -378,42 +402,10 @@ if (IERC1271(owner).isValidSignature(hash, abi.encode(msg.sender))
               </div>
 
               <p className="text-gray-300 leading-relaxed mb-4">
-                This mechanism allows an Agent contract to hold an NFT and authorize other contracts (or EOAs) 
-                to act on its behalf, enabling complex delegation patterns and multi-signature agent configurations.
+                That scheme was removed (M-01): a promiscuous 1271 contract that returned the
+                magic for arbitrary data would authorize every caller. Session keys never
+                consult the owner&apos;s signature interface.
               </p>
-
-              <h3 className="text-2xl font-display mb-4 mt-8 text-white">4.2 Agent Delegation Patterns</h3>
-              <p className="text-gray-300 leading-relaxed mb-4">
-                Agents can participate in governance through multiple patterns:
-              </p>
-              
-              <div className="space-y-4 mb-6">
-                <div className="bg-space-800/40 border border-white/10 rounded-lg p-4">
-                  <h4 className="text-lg font-display mb-2 text-space-accent">Pattern 1: Direct Ownership</h4>
-                  <p className="text-gray-300 text-sm">
-                    An agent contract owns an NFT tokenId and directly calls Chamber functions. The agent must 
-                    accumulate enough delegations to enter the top N seats.
-                  </p>
-                </div>
-                
-                <div className="bg-space-800/40 border border-white/10 rounded-lg p-4">
-                  <h4 className="text-lg font-display mb-2 text-space-accent">Pattern 2: Delegated Authority</h4>
-                  <p className="text-gray-300 text-sm">
-                    Design only: an agent contract would hold an NFT and authorize another contract
-                    (via EIP-1271) to act as director. This would separate identity from the
-                    authorized caller. It is not the live path.
-                  </p>
-                </div>
-                
-                <div className="bg-space-800/40 border border-white/10 rounded-lg p-4">
-                  <h4 className="text-lg font-display mb-2 text-space-accent">Pattern 3: Voting Power Delegation</h4>
-                  <p className="text-gray-300 text-sm">
-                    Agents delegate their Chamber tokens to specific tokenIds, influencing director selection without 
-                    holding NFTs themselves. This enables liquid democracy where agents can redelegate based on 
-                    performance or policy alignment.
-                  </p>
-                </div>
-              </div>
             </section>
           </FadeIn>
 
@@ -483,13 +475,14 @@ if (IERC1271(owner).isValidSignature(hash, abi.encode(msg.sender))
                 <li>Balance checks before delegations and transfers</li>
                 <li>NFT existence verification via <code className="text-space-accent">ownerOf()</code> try-catch</li>
                 <li>Seat count bounds (1-20 seats maximum)</li>
-                <li>Node count limits (100 nodes maximum)</li>
+                <li>Node count limits (50 nodes maximum; <code className="text-space-accent">MAX_NODES</code>)</li>
               </ul>
 
               <h3 className="text-2xl font-display mb-4 mt-8 text-white">5.4 Upgrade Safety</h3>
               <p className="text-gray-300 leading-relaxed mb-4">
-                Chambers use the TransparentUpgradeableProxy pattern with self-ownership. The Registry transfers 
-                ProxyAdmin ownership to each Chamber upon deployment, enabling governance-controlled upgrades. 
+                Chambers use the TransparentUpgradeableProxy pattern with self-ownership. Factory
+                (and leftover Registry create) transfers ProxyAdmin ownership to each Chamber upon
+                deployment, enabling governance-controlled upgrades.
                 Upgrades must be executed through the transaction system, requiring quorum approval.
               </p>
               <p className="text-gray-300 leading-relaxed mb-4">
@@ -515,8 +508,8 @@ if (IERC1271(owner).isValidSignature(hash, abi.encode(msg.sender))
                 <li><strong>Top N retrieval:</strong> O(n) where n = min(N, list size)</li>
               </ul>
               <p className="text-gray-300 leading-relaxed mb-4">
-                The MAX_NODES constant (100) limits worst-case gas costs, making the system predictable for 
-                typical governance scenarios.
+                The <code className="text-space-accent">MAX_NODES</code> constant (50) limits
+                worst-case gas costs, making the system predictable for typical governance scenarios.
               </p>
 
               <h3 className="text-2xl font-display mb-4 mt-8 text-white">6.2 Batch Operations</h3>
@@ -570,7 +563,7 @@ Node: 4 × uint256 = 4 storage slots (optimal for linked list operations)`}
 
               <h3 className="text-2xl font-display mb-4 mt-8 text-white">7.2 Transaction Lifecycle</h3>
               <p className="text-gray-300 leading-relaxed mb-4">
-                Transactions follow a three-phase lifecycle:
+                Transactions follow a submit / confirm / cancel-or-execute lifecycle:
               </p>
               <div className="bg-space-800/40 border border-white/10 rounded-xl p-6 mb-6 backdrop-blur-md">
                 <ol className="list-decimal list-inside text-gray-300 space-y-3">
@@ -583,6 +576,11 @@ Node: 4 × uint256 = 4 storage slots (optimal for linked list operations)`}
                     <strong className="text-space-accent">Confirmation:</strong> Other directors call 
                     <code className="text-space-accent"> confirmTransaction()</code> until quorum is reached. 
                     Directors can revoke confirmations via <code className="text-space-accent">revokeConfirmation()</code>.
+                  </li>
+                  <li>
+                    <strong className="text-space-accent">Cancel:</strong> Directors can vote to cancel via{" "}
+                    <code className="text-space-accent">cancelTransaction()</code>. When cancel votes
+                    reach quorum, the proposal is dead — it cannot be confirmed or executed afterward.
                   </li>
                   <li>
                     <strong className="text-space-accent">Execution:</strong> Once quorum is reached, any director 
@@ -659,7 +657,7 @@ Node: 4 × uint256 = 4 storage slots (optimal for linked list operations)`}
               <ul className="list-disc list-inside text-gray-300 space-y-2 mb-4 ml-4">
                 <li><strong>Single Asset:</strong> Each Chamber manages one ERC20 token. Multi-asset support would require architectural changes.</li>
                 <li><strong>No Scheduling:</strong> Transactions execute immediately when quorum is reached. Time-based execution would require additional infrastructure.</li>
-                <li><strong>No Cancellation:</strong> Transactions cannot be cancelled once submitted, only revoked (reducing confirmations).</li>
+                <li><strong>Cancel is quorum-gated:</strong> Directors may vote to cancel a queued transaction; the proposal dies only when cancel votes reach quorum (same formula as execute). Individual confirmations can still be revoked without cancelling the proposal.</li>
                 <li><strong>Gas Costs:</strong> Linked list operations scale linearly with node count, limiting scalability for very large organizations.</li>
               </ul>
 
@@ -688,7 +686,8 @@ Node: 4 × uint256 = 4 storage slots (optimal for linked list operations)`}
               </p>
               <p className="text-gray-300 leading-relaxed mb-4">
                 Key innovations include the sorted linked list delegation mechanism, liquid
-                delegation patterns, and self-sovereign upgradeability gated by the same transaction
+                delegation patterns, session-key director operators for contract-owned NFTs, and
+                self-sovereign upgradeability gated by the same transaction
                 flow as other chamber actions. EIP-1271 agent directors and Sub-Chamber topologies
                 remain design work — not the live Factory, vault, ranked board, and quorum wallet.
               </p>

@@ -2,17 +2,17 @@
 
 > **Audience:** developers integrating with or auditing contracts. New users should start with **[What is a Chamber?](../introduction/overview.md)** and **[Governance](../protocol/governance.md)**.
 
-Generated from interfaces in `contracts/src/` (`Factory` / `IFactory`, leftover `Registry`, `Chamber` / `IChamber`, plus **`IWallet`**, **`IBoard`**, **`IERC4626`**). Prefer NatSpec in-repo for exact wording.
+Generated from interfaces in `contracts/src/` (`Factory` / leftover `Registry`, `Chamber` / `IChamber`, plus **`IWallet`**, **`IBoard`**, **`IERC4626`**). Prefer NatSpec in-repo for exact wording.
 
-## `Factory`
+## `Factory` (intended create path)
 
-Thin, non-proxy deployer (`contracts/src/Factory.sol`). Constructor pins the **Chamber implementation** and **owner**. Create today uses this path. There is no **`createAgent()`**. The Factory does **not** store a world list or parent/child tables.
+Thin, non-proxy deployer (`contracts/src/Factory.sol`, `script/Factory.s.sol`). Constructor pins the **Chamber implementation** and **owner**. Does **not** store a world directory, asset index, or parent/child tables. There is no `createAgent()`.
 
 ### Write
 
 | Function | Notes |
 |---------|--------|
-| **`createChamber(address erc20Token, address erc721Token, uint256 seats, string name, string symbol) → address payable chamber`** | Deploys **Chamber `TransparentUpgradeableProxy`**, runs **`Chamber.initialize`**, transfers **ProxyAdmin ownership to `chamber`**. Reverts on zero addresses, `implementation == 0`, or invalid **seats** (must be **1–20**). `erc20Token` must be a **standard ERC-20** (no factory allowlist; fee-on-transfer / rebasing unsupported). |
+| **`createChamber(address erc20Token, address erc721Token, uint256 seats, string name, string symbol) → address payable chamber`** | Deploys **Chamber `TransparentUpgradeableProxy`**, runs **`Chamber.initialize`**, transfers **ProxyAdmin ownership to `chamber`**, emits **`ChamberCreated`**. Reverts on zero addresses, `implementation == 0`, or invalid **seats** (must be **1–20**). |
 | **`setImplementation(address newImplementation)`** | **Owner only**; updates pointer for **future** `createChamber` only. Same-address updates are a no-op. |
 
 ### Read
@@ -20,18 +20,19 @@ Thin, non-proxy deployer (`contracts/src/Factory.sol`). Constructor pins the **C
 | Function | Returns |
 |---------|---------|
 | **`implementation()`** | Chamber logic for the next proxy. |
+| **`owner()`** | Ownable owner (`setImplementation`). |
 
 ### Events / errors
 
-- **`ChamberCreated(chamber, asset, nft, seats, name, symbol, creator)`**
-- **`ChamberImplementationUpdated(previous, newImplementation)`**
+- **`ChamberCreated(chamber, asset, nft, seats, name, symbol, creator)`**  
+- **`ChamberImplementationUpdated(previous, newImplementation)`**  
 - **`ZeroAddress()`**, **`InvalidSeats()`**
 
 ---
 
 ## `Registry` (leftover)
 
-Historical factory + enumerable index. Not the live Create path when Factory is configured. Upgradeable registry behind a **`TransparentUpgradeableProxy`** (`contracts/test/utils/DeployRegistry.sol`). `Registry.initialize` pins the **Chamber implementation** and grants **`DEFAULT_ADMIN_ROLE`** and **`ADMIN_ROLE`** to `admin`. Parent/child getters describe leftover Registry wiring, not Factory Create.
+Deprecated world directory and leftover create path. Existing chambers stay valid. Prefer **Factory** for new deploys. Upgradeable registry behind a **`TransparentUpgradeableProxy`** (`contracts/test/utils/DeployRegistry.sol`). `Registry.initialize` pins the **Chamber implementation** and grants **`DEFAULT_ADMIN_ROLE`** and **`ADMIN_ROLE`** to `admin`.
 
 ### Write
 
@@ -39,7 +40,7 @@ Historical factory + enumerable index. Not the live Create path when Factory is 
 |---------|--------|
 | **`initialize(address _implementation, address admin)`** | One-time; stores implementation address and `admin`; reverts `ZeroAddress`. |
 | **`setChamberImplementation(address newImplementation)`** | **`ADMIN_ROLE` only**; updates pointer for **future** `createChamber` only. |
-| **`createChamber(address erc20Token, address erc721Token, uint256 seats, string name, string symbol) → address payable chamber`** | Deploys **Chamber `TransparentUpgradeableProxy`**, runs **`Chamber.initialize`**, registers listing, transfers **ProxyAdmin ownership to `chamber`**. Reverts on zero addresses, `implementation == 0`, or invalid **seats** (must be **1–20**). If `isChamber(erc20Token)`, sets **parent** / **child** links. `erc20Token` must be a **standard ERC-20** (no factory allowlist; fee-on-transfer / rebasing unsupported). |
+| **`createChamber(address erc20Token, address erc721Token, uint256 seats, string name, string symbol) → address payable chamber`** | Leftover create. Deploys **Chamber `TransparentUpgradeableProxy`**, runs **`Chamber.initialize`**, registers listing, transfers **ProxyAdmin ownership to `chamber`**. Reverts on zero addresses, `implementation == 0`, or invalid **seats** (must be **1–20**). If `isChamber(erc20Token)`, sets leftover **parent** / **child** links (not a shipped Sub-Chamber surface). `erc20Token` must be a **standard ERC-20** (no factory allowlist; fee-on-transfer / rebasing unsupported). |
 
 ### Read
 
@@ -53,8 +54,8 @@ Historical factory + enumerable index. Not the live Create path when Factory is 
 | **`isChamber(address)`** | Registry membership flag. |
 | **`getAssets()`** | Distinct underlying ERC‑20s observed. |
 | **`getChambersByAsset(address asset)`** | Chambers using that asset. |
-| **`getParentChamber(address chamber)`** | Sub-chamber → parent, or `address(0)`. |
-| **`getChildChambers(address chamber)`** | Parent → children. |
+| **`getParentChamber(address chamber)`** | Leftover parent link, or `address(0)`. |
+| **`getChildChambers(address chamber)`** | Leftover children list. |
 
 ### Events / errors
 
@@ -169,4 +170,4 @@ See interface files for full enumerations.
 2. Enumerate chambers via **`ChamberCreated`** logs, indexer, or leftover Registry **`getChambers`**.  
 3. For a Chamber: read **`asset()`**, **`nft()`**, **`getSeats()`, `getQuorum()`, `getTop`/`getDirectors`**.  
 4. For wallets / indexers: subscribe to **`SubmitTransaction`** to persist **`bytes data`** alongside **`nonce`**.  
-5. For execution UI: reconstruct calldata matching stored hash before calling **`executeTransaction`**.  
+5. For execution UI: reconstruct calldata matching stored hash before calling **`executeTransaction`**.

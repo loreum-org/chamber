@@ -10,7 +10,7 @@ A new Chamber is one proxy address that combines:
 
 - **Vault** — the shared ERC‑4626 pot (deposit the configured token, receive shares).
 - **Board** — a ranked leaderboard of membership NFT token IDs; the top seats are directors.
-- **Quorum wallet** — directors submit, confirm, and execute outbound actions.
+- **Quorum wallet** — directors submit, confirm, cancel, and execute outbound actions.
 
 Think of it as the **city council** for your protocol or DAO — cross-cutting decisions and the flagship treasury live on this one object.
 
@@ -39,17 +39,17 @@ Multiple Chambers would make **structure explicit**: different vaults, different
 
 An earlier model used the **Registry** as a factory (`createChamber()`, `getAllChambers()`) and recorded **parent ↔ child** when a new Chamber used another Chamber’s share token as its asset.
 
-Create today calls **Factory** `createChamber()`. The Factory does **not** index a world list, does **not** write parent/child tables, and does **not** expose `createAgent()` — that API was never shipped.
+Create today calls **Factory** `createChamber()`. The Factory does **not** index a world list, does **not** write parent/child tables, and does **not** expose `createAgent()` — that function does not exist on Factory or Registry.
 
 You do not need that leftover wiring to use the app. Builders: **[Architecture](../protocol/architecture.md)**.
 
-## Directors can be people, contract wallets, or agents
+## Directors: people, contract wallets, session keys
 
 A **director** is whoever is authorized for a **membership NFT token ID** in a **top seat**:
 
-- **Individual** — an EOA holds the NFT and calls as `msg.sender`.
-- **Contract wallet** — a Safe or similar holds the NFT and calls as itself; it may register a **session key** so an operator can act for that token.
-- **Agent** — same submit / confirm / execute gates as everyone else. Live auth is the NFT owner as `msg.sender`, or a session key the contract owner registered. Chamber never uses EIP‑1271.
+- **Individual** — wallet holds the NFT; `msg.sender` is the owner.
+- **Multisig / contract wallet** — the NFT sits in a Safe (or similar); the wallet calls Chamber as itself. Chamber does **not** use EIP‑1271 for Safe directors.
+- **Session key (live agent path)** — the contract owner registers an operator with `setDirectorOperator`. That operator may then call Chamber directly for that tokenId.
 
 See **[Director authorization](../protocol/director-authorization.md)**. The point is **one rulebook** for every seat type, not a special admin lane.
 
