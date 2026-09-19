@@ -1,8 +1,10 @@
 /**
  * Decoded transaction view + simulation gate (#260).
  *
- * DecodedTxSummary — plain-English action line with ENS/label counterparty,
+ * DecodedTxSummary — plain-English action line with a labelled counterparty,
  * USD value of any ETH/token transfer, and an expandable raw-calldata section.
+ * It makes no RPC reads: token metadata comes from the built-in list or from
+ * the transaction-time simulation.
  * TxSimulationPanel — runs the pending action as an impersonated eth_call,
  * renders a before/after state diff, and surfaces the revert reason so the
  * queue can block Confirm on failure.
@@ -10,7 +12,7 @@
 
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { useEnsName, usePublicClient, useReadContracts } from 'wagmi'
+import { usePublicClient } from 'wagmi'
 import { formatEther, formatUnits, isAddress, type Address } from 'viem'
 import {
   FiAlertCircle,
@@ -25,16 +27,17 @@ import {
   FiRefreshCw,
   FiShield,
 } from 'react-icons/fi'
-import { erc20Abi } from '@/contracts/abis'
 import {
   chainSupportsSpotUsdPricing,
   fetchSpotUsdPrices,
   formatUsdCompact,
 } from '@/lib/portfolioUsd'
+import { lookupKnownToken } from '@/lib/knownTokens'
 import { decodeTransactionAction } from '@/lib/txDecoding'
 import {
   simulateChamberTx,
   type SimResult,
+  type SimTokenMeta,
   type SimulationMode,
 } from '@/lib/txSimulation'
 import { getBlockExplorerAddressUrl } from '@/lib/utils'
@@ -43,7 +46,7 @@ function shorten(address: string): string {
   return `${address.slice(0, 6)}…${address.slice(-4)}`
 }
 
-/** ENS name (when the chain resolves it) with a shortened-address fallback. */
+/** Known label (e.g. this chamber) with a shortened-address fallback. */
 function CounterpartyLabel({
   address,
   chainId,
@@ -53,9 +56,6 @@ function CounterpartyLabel({
   chainId: number
   knownLabel?: string
 }) {
-  const { data: ensName } = useEnsName({ address, chainId: chainId === 1 ? 1 : undefined })
-  const label = knownLabel ?? ensName
-  const verified = Boolean(ensName || knownLabel)
   const explorerUrl = chainId !== 31337 ? getBlockExplorerAddressUrl(address, chainId) : undefined
   return (
     <span className="inline-flex items-center gap-1.5 min-w-0">
@@ -68,15 +68,15 @@ function CounterpartyLabel({
           if (!explorerUrl) e.preventDefault()
         }}
       >
-        <span className="font-mono tabular-nums">{label ?? shorten(address)}</span>
+        <span className="font-mono tabular-nums">{knownLabel ?? shorten(address)}</span>
         <FiExternalLink className="w-3 h-3 shrink-0 opacity-60" />
       </a>
-      {verified && (
+      {knownLabel && (
         <span
           className="badge bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-[10px] px-1.5 py-0"
-          title={ensName ? `ENS name verified: ${ensName}` : knownLabel}
+          title={knownLabel}
         >
-          {ensName ? 'ENS' : 'Verified'}
+          Verified
         </span>
       )}
     </span>
@@ -140,6 +140,7 @@ export function DecodedTxSummary({
   calldata,
   dataHash,
   functionNameHint,
+  simulatedToken,
 }: {
   chainId: number
   chamberAddress: Address
@@ -149,6 +150,8 @@ export function DecodedTxSummary({
   calldata?: string | null
   dataHash?: string
   functionNameHint?: string
+  /** Token metadata from a simulation run on this card, if any. */
+  simulatedToken?: SimTokenMeta
 }) {
   const decoded = useMemo(
     () => decodeTransactionAction({ target, value, calldata, functionNameHint }),
@@ -158,15 +161,22 @@ export function DecodedTxSummary({
   const intent = decoded?.intent ?? null
   const token = intent?.kind === 'erc20' ? intent.token : null
 
-  const { data: tokenMeta } = useReadContracts({
-    contracts: [
-      { address: token ?? undefined, abi: erc20Abi, functionName: 'symbol' },
-      { address: token ?? undefined, abi: erc20Abi, functionName: 'decimals' },
-    ],
-    query: { enabled: !!token },
-  })
-  const symbol = typeof tokenMeta?.[0]?.result === 'string' ? tokenMeta[0].result : undefined
-  const decimals = typeof tokenMeta?.[1]?.result === 'number' ? tokenMeta[1].result : 18
+  const tokenMeta = token
+    ? simulatedToken && simulatedToken.address.toLowerCase() === token.toLowerCase()
+      ? simulatedToken
+      : lookupKnownToken(chainId, token)
+    : undefined
+  const symbol = tokenMeta?.symbol
+  const decimals = tokenMeta?.decimals
+  /** Amount in token units, or raw base units until decimals are known. */
+  const formatTokenAmount = (amountRaw: bigint): string => {
+    if (decimals === undefined) return `${amountRaw.toString()} base units`
+    try {
+      return `${formatUnits(amountRaw, decimals)} ${symbol ?? 'tokens'}`
+    } catch {
+      return `${amountRaw.toString()} base units`
+    }
+  }
 
   const counterparty = decoded?.counterparty
   const knownLabel =
@@ -191,22 +201,17 @@ export function DecodedTxSummary({
       }
     }
     if (intent?.kind === 'erc20') {
-      let human = 'tokens'
-      try {
-        human = `${formatUnits(intent.amountRaw, decimals)} ${symbol ?? ''}`.trim()
-      } catch {
-        human = `${intent.amountRaw.toString()} (raw)`
-      }
       return {
-        amount: human,
-        usd: (
-          <TransferUsdChip
-            chainId={chainId}
-            token={intent.token}
-            amountRaw={intent.amountRaw}
-            decimals={decimals}
-          />
-        ),
+        amount: formatTokenAmount(intent.amountRaw),
+        usd:
+          decimals === undefined ? null : (
+            <TransferUsdChip
+              chainId={chainId}
+              token={intent.token}
+              amountRaw={intent.amountRaw}
+              decimals={decimals}
+            />
+          ),
       }
     }
     return null
@@ -228,7 +233,7 @@ export function DecodedTxSummary({
             <span>
               {intent.amountRaw === 0n ? 'Revoke the allowance of' : 'Approve spending of'}{' '}
               <span className="font-mono text-slate-100">
-                {intent.amountRaw === 0n ? '0' : `${formatUnits(intent.amountRaw, decimals)} ${symbol ?? 'tokens'}`}
+                {intent.amountRaw === 0n ? '0' : formatTokenAmount(intent.amountRaw)}
               </span>
             </span>
             {counterparties.map((c) => (
@@ -240,9 +245,7 @@ export function DecodedTxSummary({
         {intent?.kind === 'erc20' && intent.mode === 'transferFrom' && (
           <>
             <span>Move</span>
-            <span className="font-mono text-slate-100">
-              {formatUnits(intent.amountRaw, decimals)} {symbol ?? 'tokens'}
-            </span>
+            <span className="font-mono text-slate-100">{formatTokenAmount(intent.amountRaw)}</span>
             <span>from</span>
             {counterparties.map((c) => (
               <CounterpartyLabel key={c.address} address={c.address} chainId={chainId} knownLabel={c.knownLabel} />
