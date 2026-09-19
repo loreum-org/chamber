@@ -30,10 +30,19 @@ export type SimDiffRow = {
   highlight?: boolean
 }
 
+export type SimTokenMeta = { address: Address; symbol: string; decimals: number }
+
+type SimResultBase = {
+  ranAt: number
+  diff: SimDiffRow[]
+  /** ERC-20 metadata read during the simulation, when the action moves a token. */
+  token?: SimTokenMeta
+}
+
 export type SimResult =
-  | { status: 'passed'; ranAt: number; diff: SimDiffRow[] }
-  | { status: 'reverted'; ranAt: number; reason: string; diff: SimDiffRow[] }
-  | { status: 'error'; ranAt: number; reason: string; diff: SimDiffRow[] }
+  | (SimResultBase & { status: 'passed' })
+  | (SimResultBase & { status: 'reverted'; reason: string })
+  | (SimResultBase & { status: 'error'; reason: string })
 
 export type SimulationMode = 'confirm' | 'execute'
 
@@ -92,6 +101,7 @@ export async function simulateChamberTx(params: {
   let beforeAllowance: bigint | undefined
   let tokenSymbol = 'tokens'
   let tokenDecimals = 18
+  let tokenMeta: SimTokenMeta | undefined
   const recipient =
     intent?.kind === 'eth'
       ? intent.recipient
@@ -143,6 +153,9 @@ export async function simulateChamberTx(params: {
       beforeChamberTokens = next() as bigint | undefined
       if (typeof sym === 'string' && sym.length > 0 && sym.length <= 12) tokenSymbol = sym
       if (typeof dec === 'number' && dec >= 0 && dec <= 36) tokenDecimals = dec
+      if (typeof sym === 'string' && typeof dec === 'number' && tokenSymbol === sym && tokenDecimals === dec) {
+        tokenMeta = { address: token, symbol: sym, decimals: dec }
+      }
     }
     if (recipient && token) beforeRecipientTokens = next() as bigint | undefined
     if (intent?.kind === 'erc20' && intent.mode === 'approve') beforeAllowance = next() as bigint | undefined
@@ -220,11 +233,12 @@ export async function simulateChamberTx(params: {
   }
 
   // ---- governance impersonation ---------------------------------------------
-  const callArgs = (to: Address, data: Hex, account: Address) =>
+  const callArgs = (to: Address, data: Hex, account: Address, callValue?: bigint) =>
     ({
       to,
       data,
       account,
+      value: callValue,
       gas: 5_000_000n,
     }) as const
 
@@ -241,9 +255,9 @@ export async function simulateChamberTx(params: {
           args: [userTokenId, BigInt(txId), calldata ?? ('0x' as Hex)],
         })
 
-  const runCall = async (to: Address, data: Hex, account: Address): Promise<Error | null> => {
+  const runCall = async (to: Address, data: Hex, account: Address, callValue?: bigint): Promise<Error | null> => {
     try {
-      await publicClient.call(callArgs(to, data, account))
+      await publicClient.call(callArgs(to, data, account, callValue))
       return null
     } catch (err) {
       return err instanceof Error ? err : new Error(String(err))
@@ -258,18 +272,21 @@ export async function simulateChamberTx(params: {
       ranAt,
       reason: humanizeSimulationError(governanceError),
       diff,
+      token: tokenMeta,
     }
   }
 
   // ---- inner payload impersonated from the Chamber ---------------------------
   if (mode === 'execute' && calldata) {
-    const innerError = await runCall(target, calldata, chamberAddress)
+    // Carry the proposal's ETH value so a payable call is simulated as sent.
+    const innerError = await runCall(target, calldata, chamberAddress, value > 0n ? value : undefined)
     if (innerError) {
       return {
         status: 'reverted',
         ranAt,
         reason: humanizeSimulationError(innerError),
         diff,
+        token: tokenMeta,
       }
     }
   }
@@ -282,5 +299,5 @@ export async function simulateChamberTx(params: {
     })
   }
 
-  return { status: 'passed', ranAt, diff }
+  return { status: 'passed', ranAt, diff, token: tokenMeta }
 }
