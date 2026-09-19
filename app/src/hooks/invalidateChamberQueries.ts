@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useQueryClient, type QueryClient } from '@tanstack/react-query'
+import { requireIndexerBlock } from '@/lib/indexer'
 
 /**
  * Invalidate every cached read that mentions this chamber. Called after a wallet
@@ -32,7 +33,7 @@ export function invalidateChamberQueries(
  */
 export function useInvalidateOnReceipt(
   hash: `0x${string}` | undefined,
-  isSuccess: boolean,
+  receipt: { blockNumber: bigint } | undefined,
   chamberAddress: `0x${string}` | undefined,
   account: `0x${string}` | undefined,
 ) {
@@ -40,9 +41,11 @@ export function useInvalidateOnReceipt(
   const handledRef = useRef<string | undefined>()
 
   useEffect(() => {
-    if (!hash || !isSuccess || handledRef.current === hash) return
+    if (!hash || !receipt || handledRef.current === hash) return
     handledRef.current = hash
+    // Indexer reads for this chamber wait until the indexer has this block.
+    if (chamberAddress) requireIndexerBlock(chamberAddress, receipt.blockNumber)
     invalidateChamberQueries(queryClient, chamberAddress)
     invalidateChamberQueries(queryClient, account)
-  }, [hash, isSuccess, chamberAddress, account, queryClient])
+  }, [hash, receipt, chamberAddress, account, queryClient])
 }
