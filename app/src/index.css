@@ -6,10 +6,10 @@
   body {
     @apply bg-[#0b0f17] text-slate-200 font-sans antialiased;
     background-color: #0b0f17;
-    background-image:
-      radial-gradient(ellipse 120% 80% at 50% -30%, rgba(37, 99, 235, 0.09), transparent 55%),
-      radial-gradient(ellipse 70% 50% at 100% 100%, rgba(15, 23, 42, 0.85), transparent 50%),
-      linear-gradient(180deg, rgba(15, 23, 42, 0.35) 0%, transparent 40%);
+      background-image:
+      radial-gradient(ellipse 120% 80% at 50% -30%, rgba(74, 47, 143, 0.14), transparent 55%),
+      radial-gradient(ellipse 70% 50% at 100% 100%, rgba(22, 18, 35, 0.85), transparent 50%),
+      linear-gradient(180deg, rgba(30, 26, 43, 0.35) 0%, transparent 40%);
     min-height: 100vh;
   }
 

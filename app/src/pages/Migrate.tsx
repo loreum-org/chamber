@@ -473,8 +473,8 @@ function PhaseConnect({
         </div>
 
         {!isConnected && (
-          <div className="mb-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
-            <p className="text-amber-300 text-sm">Connect your wallet to begin migration.</p>
+          <div className="mb-4 p-3 rounded-lg bg-accent-500/10 border border-accent-500/20">
+            <p className="text-accent-300 text-sm">Connect your wallet to begin migration.</p>
             <div className="mt-3">
               <ConnectButton />
             </div>
