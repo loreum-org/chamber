@@ -362,7 +362,8 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
     upgradeProposalHandledRef.current = true
 
     if (!registryUpgradeDraft?.newImplementation) {
-      toast('This chamber already matches the Registry’s default implementation.', { duration: 4500 })
+      const sourceLabel = implSync.implSourceLabel || 'Registry'
+      toast(`This chamber already matches the ${sourceLabel}'s default implementation.`, { duration: 4500 })
       setSearchParams(
         (prev) => {
           const next = new URLSearchParams(prev)
@@ -746,7 +747,8 @@ function NewTransactionForm({
 
     const regV = registryUpgradeDraft.registryVersionLabel
     const curV = registryUpgradeDraft.chamberVersionLabel
-    setTitle(`Upgrade Chamber to Registry implementation${regV ? ` v${regV}` : ''}`)
+    const sourceLabel = implSync.implSourceLabel || 'Registry'
+    setTitle(`Upgrade Chamber to ${sourceLabel} implementation${regV ? ` v${regV}` : ''}`)
     setDescription(
       `Multisig: upgradeImplementation(${impl}, 0x). Current proxy implementation VERSION reports ${curV ?? 'unknown'}. Confirm audit status and migrations before approving; init calldata left empty.`,
     )
@@ -1092,10 +1094,10 @@ function NewTransactionForm({
           <>
             {registryUpgradeDraft && (
               <div className="rounded-xl border border-accent-400/35 bg-accent-500/[0.08] px-4 py-3 text-sm text-slate-100/95">
-                <p className="font-medium text-accent-300 mb-1">Prefilled Registry upgrade proposal</p>
+                <p className="font-medium text-accent-300 mb-1">Prefilled {implSync.implSourceLabel || 'Registry'} upgrade proposal</p>
                 <p className="text-slate-400 text-xs leading-relaxed">
                   Target is this Chamber. Calldata invokes <span className="font-mono">upgradeImplementation</span> using
-                  the Registry’s default implementation{' '}
+                  the {implSync.implSourceLabel || 'Registry'}'s default implementation{' '}
                   <span className="font-mono text-slate-300">
                     {shortenAddress(registryUpgradeDraft.newImplementation, 6)}
                   </span>
