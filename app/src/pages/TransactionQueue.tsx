@@ -57,6 +57,7 @@ import {
 } from '@/lib/utils'
 import { ChamberRouteGate } from '@/components/ChamberRouteGate'
 import { DirectorCallerStatus } from '@/components/DirectorCallerStatus'
+import { SeatTheBoardLink } from '@/components/SeatTheBoard'
 import {
   UPGRADE_SELECTOR,
   PAUSE_SELECTOR,
@@ -606,12 +607,11 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
           if (ownedCount > 0 && leftoverConfirmData) {
             const offset = index * ownedCount
             for (let i = 0; i < ownedCount; i++) {
-              const row = leftoverConfirmData[offset + i]
-              if (row?
+              const
 
-... [OUTPUT TRUNCATED - 59,988 chars omitted out of 109,914 total] ...
+... [OUTPUT TRUNCATED - 56,007 chars omitted out of 105,933 total] ...
 
-ll
+main
 
     const name = match[1]
     const paramsStr = match[2].trim()
