@@ -204,7 +204,7 @@ function classifyTransactionRisk(chamberAddress: `0x${string}`, target: `0x${str
     return {
       level: 'high' as RiskLevel,
       label: 'Invalid: Chamber self-call',
-      summary: 'The wallet queue rejects Chamber self-calls except upgrades. Use the Board seats panel for seat changes.',
+      summary: 'Proposals reject Chamber self-calls except upgrades. Use Board changes for seat changes.',
     }
   }
 
@@ -249,7 +249,7 @@ function classifyTransactionRiskFromDataHash(
       level: 'high' as RiskLevel,
       label: 'Invalid: Chamber self-call',
       summary:
-        'The wallet queue rejects Chamber self-calls except upgrades. Use the Board seats panel for seat changes.',
+        'Proposals reject Chamber self-calls except upgrades. Use Board changes for seat changes.',
     }
   }
 
@@ -258,7 +258,7 @@ function classifyTransactionRiskFromDataHash(
       level: 'high' as RiskLevel,
       label: 'High risk: Chamber self-call',
       summary:
-        'Calls this Chamber from the treasury queue. Verify calldata matches the intended action (e.g. upgrade) before approving.',
+        'Calls this Chamber from Treasury proposals. Verify calldata matches the intended action (e.g. upgrade) before approving.',
     }
   }
 
@@ -612,15 +612,11 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
               ? deadlineResult.result
               : undefined
 
-          let leftoverTokenId: bigint | undefined
-          if (ownedCount > 0 && leftoverConfirmData) {
-            const offset = index * ownedCount
-            for (let i = 0; i < ownedCount; i++) {
-              const
+          let 
 
-... [OUTPUT TRUNCATED - 56,007 chars omitted out of 105,933 total] ...
+... [OUTPUT TRUNCATED - 52,846 chars omitted out of 102,772 total] ...
 
-main
+ across chrome (#198))
 
     const name = match[1]
     const paramsStr = match[2].trim()
@@ -680,6 +676,7 @@ function NewTransactionForm({
   userTokenId,
   nextTransactionId,
   currentSeats,
+  quorum,
   hasSeatProposal,
   boardEmpty,
   registryUpgradeDraft,
@@ -834,13 +831,13 @@ function NewTransactionForm({
     e.preventDefault()
 
     if (userTokenId === undefined) {
-      toast.error('You must be a director to submit transactions')
+      toast.error('You must be a director to submit proposals')
       return
     }
 
     if (proposalType === 'seats') {
       if (hasSeatProposal) {
-        toast.error('A board seat proposal is already active. Support or execute it from the queue.')
+        toast.error('A board change is already active. Support or execute it from Proposals.')
         return
       }
       const n = Number(seatDraft)
@@ -865,7 +862,7 @@ function NewTransactionForm({
       } catch (err) {
         console.error(err)
         onWriteClear()
-        toast.error(formatWalletSendError(err, 'Board proposal failed'))
+        toast.error(formatWalletSendError(err, 'Board change failed'))
       }
       return
     }
@@ -906,7 +903,7 @@ function NewTransactionForm({
           args: [target as `0x${string}`, parsedTokenAmount],
         })
         if (!isAllowedChamberSelfCall(chamberAddress, tokenAddress, txData)) {
-          toast.error('Chamber self-calls are only allowed for upgrades. Use the Board seats panel for seat changes.')
+          toast.error('Chamber self-calls are only allowed for upgrades. Use Board changes for seat changes.')
           return
         }
         // Target becomes token address
@@ -941,7 +938,7 @@ function NewTransactionForm({
       }
 
       if (!isAllowedChamberSelfCall(chamberAddress, target, txData)) {
-        toast.error('Chamber self-calls are only allowed for upgrades. Use the Board seats panel for seat changes.')
+        toast.error('Chamber self-calls are only allowed for upgrades. Use Board changes for seat changes.')
         return
       }
 
@@ -996,7 +993,7 @@ function NewTransactionForm({
         </div>
         <div>
           <h3 className="font-heading font-semibold text-slate-100">New Proposal</h3>
-          <p className="text-slate-500 text-xs">Create a treasury, contract, or board proposal</p>
+          <p className="text-slate-500 text-xs">Create a treasury proposal or board change</p>
         </div>
       </div>
 
@@ -1005,13 +1002,13 @@ function NewTransactionForm({
           {
             id: 'transaction',
             icon: FiDollarSign,
-            title: 'Treasury / contract proposal',
+            title: 'Treasury proposals',
             description: 'Submit a wallet transaction for director confirmation.',
           },
           {
             id: 'seats',
             icon: FiUsers,
-            title: 'Board seat change',
+            title: 'Board changes',
             description: 'Use the Chamber native seat proposal and timelock flow.',
           },
         ].map((type) => {
@@ -1048,9 +1045,9 @@ function NewTransactionForm({
               <div className="flex items-start gap-3">
                 <FiUsers className="w-5 h-5 text-accent-400 mt-0.5" />
                 <div>
-                  <h4 className="font-medium text-slate-100 text-sm">Board Proposal</h4>
+                  <h4 className="font-medium text-slate-100 text-sm">Board changes</h4>
                   <p className="text-slate-400 text-xs mt-1">
-                    Directors propose and support seat changes directly. Once quorum is reached, execution unlocks after the 7-day timelock. The proposer can cancel anytime; any current director can cancel after 14 days.
+                    Directors propose and support seat changes directly. {quorum} of {currentSeats} directors must confirm. Execution then unlocks after the 7-day timelock. The proposer can cancel anytime; any current director can cancel after 14 days.
                   </p>
                 </div>
               </div>
@@ -1058,7 +1055,7 @@ function NewTransactionForm({
 
             {hasSeatProposal && (
               <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 text-sm text-amber-300">
-                A board seat proposal is already active. Return to the queue to support or execute it.
+                A board change is already active. Return to Proposals to support or execute it.
               </div>
             )}
 
@@ -1105,7 +1102,7 @@ function NewTransactionForm({
                   {registryUpgradeDraft.registryVersionLabel
                     ? ` (VERSION ${registryUpgradeDraft.registryVersionLabel})`
                     : ''}
-                  . Other directors still need to confirm until quorum before execution.
+                  . Other directors still need to confirm — {quorum} of {currentSeats} directors must confirm — before execution.
                 </p>
                 <p className="mt-2">
                   <Link
@@ -1397,7 +1394,7 @@ function NewTransactionForm({
           ) : (
             <>
               <FiSend className="w-4 h-4" />
-              {proposalType === 'seats' ? 'Create Board Proposal' : 'Submit Transaction'}
+              {proposalType === 'seats' ? 'Create board change' : 'Submit proposal'}
             </>
           )}
         </button>

@@ -256,7 +256,7 @@ export default function DeployChamber() {
           <div>
             <h2 className="font-heading text-2xl font-bold text-slate-100 mb-2">Chamber Deployed</h2>
             <p className="text-slate-400">
-              Your chamber is live. The board is empty until you hold a membership NFT and delegate to it.
+              Your chamber is live. The board is empty until you hold a membership token and delegate to it.
             </p>
           </div>
           {(deployedTxHash || hash) && (
@@ -354,7 +354,7 @@ export default function DeployChamber() {
                 <p className="text-slate-500 text-xs mt-3 max-w-md mx-auto leading-relaxed">
                   On Sepolia the form pre-fills demo ERC-20 {shortenAddress(sepoliaAddrs.mockERC20)} and membership
                   ERC-721 {shortenAddress(sepoliaAddrs.mockERC721)}. After connecting, mint from the header so your
-                  wallet holds the membership NFT.
+                  wallet holds the membership token.
                 </p>
               )}
             </div>
@@ -445,37 +445,41 @@ export default function DeployChamber() {
 
                   {/* ERC721 Token */}
                   <div>
-                    <label className="block text-slate-300 text-sm font-medium mb-2">
-                      Existing membership collection (ERC-721) *
-                    </label>
-                    <p className="text-slate-500 text-xs mb-3">
-                      Paste an ERC-721 already deployed on this chain. Chamber does not create this collection.
-                    </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
-                      <button
-                        type="button"
-                        aria-pressed={membershipPath === 'existing'}
-                        onClick={() => setMembershipPath('existing')}
-                        className={`rounded-lg px-3 py-2.5 text-sm text-left border transition-colors ${
-                          membershipPath === 'existing'
-                            ? 'border-accent-500/50 bg-accent-500/10 text-slate-100'
-                            : 'border-slate-700/60 bg-slate-800/40 text-slate-400 hover:text-slate-200'
-                        }`}
-                      >
-                        Use existing collection
-                      </button>
-                      <button
-                        type="button"
-                        aria-pressed={membershipPath === 'need-collection'}
-                        onClick={() => setMembershipPath('need-collection')}
-                        className={`rounded-lg px-3 py-2.5 text-sm text-left border transition-colors ${
-                          membershipPath === 'need-collection'
-                            ? 'border-accent-500/50 bg-accent-500/10 text-slate-100'
-                            : 'border-slate-700/60 bg-slate-800/40 text-slate-400 hover:text-slate-200'
-                        }`}
-                      >
-                        I don't have a collection
-                      </button>
+                    <label className="block text-slate-300 text-sm font-medium mb-2">Membership collection (ERC-721) *</label>
+                    <input
+                      type="text"
+                      placeholder="0x..."
+                      className={`input font-mono ${erc721Error ? 'border-red-500/60 focus:border-red-500' : erc721Confirmed ? 'border-emerald-500/60' : ''}`}
+                      value={formData.erc721Token}
+                      onChange={(e) => setFormData({ ...formData, erc721Token: e.target.value })}
+                      required
+                    />
+                    <div className="mt-1.5 min-h-[1.25rem]">
+                      {erc721Loading && erc721Valid && (
+                        <span className="text-slate-500 text-xs flex items-center gap-1">
+                          <FiLoader className="w-3 h-3 animate-spin" /> Verifying contract…
+                        </span>
+                      )}
+                      {erc721Confirmed && (
+                        <span className="text-emerald-400 text-xs flex items-center gap-1">
+                          <FiCheck className="w-3 h-3" /> {erc721Name as string}{erc721Symbol ? ` (${erc721Symbol})` : ''}
+                        </span>
+                      )}
+                      {erc721Error && (
+                        <span className="text-red-400 text-xs flex items-center gap-1">
+                          <FiAlertCircle className="w-3 h-3" /> Address is not a valid ERC721 contract
+                        </span>
+                      )}
+                      {!erc721Valid && !formData.erc721Token && (
+                        <span className="text-slate-500 text-xs">Contract holders can become board members via delegation</span>
+                      )}
+                      {chainId === sepolia.id && erc20Valid && erc721Valid && (
+                        <p className="text-slate-500 text-xs mt-2">
+                          Sepolia demo tokens are pre-filled. Use <span className="text-accent-400">Mint Test NFT</span> and{' '}
+                          <span className="text-accent-400">Mint Test ERC20</span> in the header so your wallet holds the
+                          membership token and demo asset.
+                        </p>
+                      )}
                     </div>
                     {membershipPath === 'need-collection' ? (
                       <div className="rounded-xl p-4 bg-amber-500/10 border border-amber-500/30 flex items-start gap-3">
@@ -565,7 +569,7 @@ export default function DeployChamber() {
                       </div>
                     </div>
                     <p className="text-slate-500 text-xs mt-1.5">
-                      Number of board seats. Quorum: {quorum} of {seats} director confirmations required.
+                      Number of board seats. {quorum} of {seats} directors must confirm.
                     </p>
                   </div>
 
@@ -614,7 +618,7 @@ export default function DeployChamber() {
                         sub: formData.erc721Token,
                       },
                       { label: 'Board Seats', value: seats.toString() },
-                      { label: 'Required Quorum', value: `${quorum} of ${seats} directors` },
+                      { label: 'Required Quorum', value: `${quorum} of ${seats} directors must confirm` },
                     ].map(({ label, value, sub }) => (
                       <div key={label} className="stat-card flex items-start justify-between gap-4">
                         <span className="text-slate-500 text-sm shrink-0">{label}</span>
@@ -711,14 +715,14 @@ export default function DeployChamber() {
               <h4 className="font-heading font-semibold text-slate-100 mb-2">What is a Chamber?</h4>
               <p className="text-slate-400 text-sm leading-relaxed">
                 A Chamber is a smart vault that combines ERC4626 tokenized treasury with board-based governance.
-                Members can receive delegations to compete for board seats and control transactions.
+                Members can receive delegations to compete for board seats and control proposals.
               </p>
             </div>
             <div className="card">
               <h4 className="font-heading font-semibold text-slate-100 mb-2">How does voting work?</h4>
               <p className="text-slate-400 text-sm leading-relaxed">
-                Share holders delegate voting power to member IDs. The top delegated members become board directors
-                and can submit, confirm, and execute transactions once quorum is reached.
+                Share holders delegate voting power to members. The top delegated members become board directors
+                and can submit, confirm, and execute. {quorum} of {seats} directors must confirm.
               </p>
             </div>
           </div>
