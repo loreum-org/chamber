@@ -8,6 +8,7 @@ import { isSeatingMature } from '@/lib/chamberGovernance'
 import { getAlchemyApiKeyFromEnv } from '@/lib/alchemy'
 import { listOwnedErc721TokenIds } from '@/lib/ownedErc721'
 import { isOnchainContractBytecode } from '@/lib/address'
+import { asUint32 } from '@/lib/directorSession'
 import type { Transaction, BoardMember, SeatUpdate } from '@/types'
 
 /** Public RPC / long block times: retry eth_call simulation and refresh state after txs. */
@@ -952,6 +953,90 @@ export function useCancelSeatUpdate(chamberAddress: `0x${string}` | undefined) {
   return { cancelSeatUpdate, isPending, isConfirming, isSuccess, error, hash }
 }
 
+export type DirectorSessionView = {
+  liveOperator: `0x${string}` | undefined
+  liveScope: number
+  liveAt: bigint
+  sessionOwner: `0x${string}` | undefined
+  rawOperator: `0x${string}` | undefined
+  expiry: bigint
+  rawScope: number
+  rawLiveAt: bigint
+  isLive: boolean
+}
+
+/**
+ * Live session key plus raw `getDirectorSession` leftovers for `tokenId`.
+ * Live getters return zero when the session is unset, stale, expired, or EOA-owned.
+ */
+export function useDirectorSession(
+  chamberAddress: `0x${string}` | undefined,
+  tokenId: bigint | undefined,
+) {
+  const enabled = !!chamberAddress && tokenId !== undefined
+  const { data, refetch, isFetched } = useReadContracts({
+    contracts: [
+      {
+        address: chamberAddress,
+        abi: chamberAbi,
+        functionName: 'getDirectorOperator',
+        args: tokenId !== undefined ? [tokenId] : undefined,
+      },
+      {
+        address: chamberAddress,
+        abi: chamberAbi,
+        functionName: 'getDirectorOperatorScope',
+        args: tokenId !== undefined ? [tokenId] : undefined,
+      },
+      {
+        address: chamberAddress,
+        abi: chamberAbi,
+        functionName: 'getDirectorOperatorLiveAt',
+        args: tokenId !== undefined ? [tokenId] : undefined,
+      },
+      {
+        address: chamberAddress,
+        abi: chamberAbi,
+        functionName: 'getDirectorSession',
+        args: tokenId !== undefined ? [tokenId] : undefined,
+      },
+    ],
+    query: {
+      enabled,
+      staleTime: 0,
+      retry: false,
+    },
+  })
+
+  const liveOperator = data?.[0]?.status === 'success' ? (data[0].result as `0x${string}`) : undefined
+  const liveScope = data?.[1]?.status === 'success' ? asUint32(data[1].result) : 0
+  const liveAt = data?.[2]?.status === 'success' ? (data[2].result as bigint) : 0n
+  const raw = data?.[3]?.status === 'success'
+    ? (data[3].result as readonly [string, string, bigint, number | bigint, bigint])
+    : undefined
+
+  const sessionOwner = raw?.[0] as `0x${string}` | undefined
+  const rawOperator = raw?.[1] as `0x${string}` | undefined
+  const expiry = raw?.[2] ?? 0n
+  const rawScope = asUint32(raw?.[3])
+  const rawLiveAt = raw?.[4] ?? 0n
+  const isLive = !!liveOperator && liveOperator !== zeroAddress
+
+  const session: DirectorSessionView = {
+    liveOperator,
+    liveScope,
+    liveAt,
+    sessionOwner,
+    rawOperator,
+    expiry,
+    rawScope,
+    rawLiveAt,
+    isLive,
+  }
+
+  return { ...session, session, refetch, isFetched }
+}
+
 /**
  * Live session key for `tokenId`, or zero if unset / stale / EOA-owned.
  */
@@ -959,22 +1044,8 @@ export function useDirectorOperator(
   chamberAddress: `0x${string}` | undefined,
   tokenId: bigint | undefined,
 ) {
-  const { data, refetch } = useReadContract({
-    address: chamberAddress,
-    abi: chamberAbi,
-    functionName: 'getDirectorOperator',
-    args: tokenId !== undefined ? [tokenId] : undefined,
-    query: {
-      enabled: !!chamberAddress && tokenId !== undefined,
-      staleTime: 0,
-      retry: false,
-    },
-  })
-
-  const operator = data as `0x${string}` | undefined
-  const isSet = !!operator && operator !== zeroAddress
-
-  return { operator, isSet, refetch }
+  const { liveOperator, isLive, refetch } = useDirectorSession(chamberAddress, tokenId)
+  return { operator: liveOperator, isSet: isLive, refetch }
 }
 
 /**
@@ -1005,24 +1076,30 @@ export function useIsContractAccount(account: `0x${string}` | undefined) {
 
 /**
  * Register or clear the session key for a contract-owned membership NFT.
- * Pass `address(0)` to clear. Never consults ERC-1271.
+ * Clear with `operator = address(0)`, `expiry = 0`, `scope = 0`.
+ * Non-zero operator requires a future expiry and a non-zero scope.
  */
 export function useSetDirectorOperator(chamberAddress: `0x${string}` | undefined) {
   const { writeContractAsync, data: hash, isPending, error } = useWriteContract()
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
 
-  const setDirectorOperator = async (tokenId: bigint, operator: `0x${string}`) => {
+  const setDirectorOperator = async (
+    tokenId: bigint,
+    operator: `0x${string}`,
+    expiry: bigint,
+    scope: number,
+  ) => {
     if (!chamberAddress) return
     return writeContractAsync({
       address: chamberAddress,
       abi: chamberAbi,
       functionName: 'setDirectorOperator',
-      args: [tokenId, operator],
+      args: [tokenId, operator, expiry, scope],
     })
   }
 
   const clearDirectorOperator = async (tokenId: bigint) => {
-    return setDirectorOperator(tokenId, zeroAddress)
+    return setDirectorOperator(tokenId, zeroAddress, 0n, 0)
   }
 
   return { setDirectorOperator, clearDirectorOperator, isPending, isConfirming, isSuccess, error, hash }

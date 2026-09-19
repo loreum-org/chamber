@@ -258,6 +258,8 @@ export const chamberAbi = [
     inputs: [
       { name: 'tokenId', type: 'uint256' },
       { name: 'operator', type: 'address' },
+      { name: 'expiry', type: 'uint256' },
+      { name: 'scope', type: 'uint32' },
     ],
     outputs: [],
     stateMutability: 'nonpayable',
@@ -267,6 +269,33 @@ export const chamberAbi = [
     name: 'getDirectorOperator',
     inputs: [{ name: 'tokenId', type: 'uint256' }],
     outputs: [{ name: 'operator', type: 'address' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'getDirectorOperatorScope',
+    inputs: [{ name: 'tokenId', type: 'uint256' }],
+    outputs: [{ name: 'scope', type: 'uint32' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'getDirectorOperatorLiveAt',
+    inputs: [{ name: 'tokenId', type: 'uint256' }],
+    outputs: [{ name: 'liveAt', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'getDirectorSession',
+    inputs: [{ name: 'tokenId', type: 'uint256' }],
+    outputs: [
+      { name: 'sessionOwner', type: 'address' },
+      { name: 'operator', type: 'address' },
+      { name: 'expiry', type: 'uint256' },
+      { name: 'scope', type: 'uint32' },
+      { name: 'liveAt', type: 'uint256' },
+    ],
     stateMutability: 'view',
   },
   {
@@ -582,6 +611,8 @@ export const chamberAbi = [
       { name: 'tokenId', type: 'uint256', indexed: true },
       { name: 'owner', type: 'address', indexed: true },
       { name: 'operator', type: 'address', indexed: true },
+      { name: 'expiry', type: 'uint256', indexed: false },
+      { name: 'scope', type: 'uint32', indexed: false },
     ],
   },
   {

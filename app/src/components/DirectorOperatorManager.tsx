@@ -1,22 +1,38 @@
-import { useEffect, useMemo, useState } from 'react'
-import { useAccount, useReadContract } from 'wagmi'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useAccount, useBlockNumber, useReadContract } from 'wagmi'
 import { getAddress, isAddress, zeroAddress } from 'viem'
 import { FiKey, FiLoader, FiTrash2, FiAlertCircle } from 'react-icons/fi'
 import toast from 'react-hot-toast'
 import { erc721Abi } from '@/contracts/abis'
 import {
-  useDirectorOperator,
+  useDirectorSession,
   useIsContractAccount,
   useSetDirectorOperator,
   useUserNFTs,
   useReceiptRefresh,
 } from '@/hooks'
-import { formatWalletSendError, shortenAddress } from '@/lib/utils'
+import { formatTimestamp, formatWalletSendError, shortenAddress } from '@/lib/utils'
+import {
+  DEFAULT_SESSION_EXPIRY_DAYS,
+  SESSION_EXPIRY_PRESETS,
+  SESSION_SCOPE_BITS,
+  SESSION_SCOPE_UNSCOPED,
+  describeSessionScope,
+  directorSessionStatus,
+  directorSessionStatusLabel,
+  expiryUnixFromDays,
+  isUnscopedSession,
+  isValidSessionExpiry,
+  scopeFromSelectedBits,
+  selectedBitsFromScope,
+  type SessionScopeBitId,
+} from '@/lib/directorSession'
 
 /**
- * Write path for `setDirectorOperator`. Shown only when the connected wallet
- * is `ownerOf(tokenId)` and that owner is a contract (`code.length > 0`).
- * Hidden for EOAs — the protocol rejects that path (no EIP-1271).
+ * Write path for `setDirectorOperator(tokenId, operator, expiry, scope)`.
+ * Shown only when the connected wallet is `ownerOf(tokenId)` and that owner
+ * is a contract (`code.length > 0`). Hidden for EOAs — the protocol rejects
+ * that path (no EIP-1271).
  */
 export function DirectorOperatorManager({
   chamberAddress,
@@ -74,6 +90,10 @@ export function DirectorOperatorManager({
 
   const [selectedId, setSelectedId] = useState('')
   const [operatorInput, setOperatorInput] = useState('')
+  const [expiryDays, setExpiryDays] = useState(DEFAULT_SESSION_EXPIRY_DAYS)
+  const [customExpiry, setCustomExpiry] = useState('')
+  const [unscoped, setUnscoped] = useState(true)
+  const [selectedBits, setSelectedBits] = useState<Set<SessionScopeBitId>>(new Set())
   const [lastWrite, setLastWrite] = useState<'set' | 'clear' | null>(null)
 
   useEffect(() => {
@@ -96,11 +116,36 @@ export function DirectorOperatorManager({
   }, [eligibleTokenIds, preferredTokenId])
 
   const selectedTokenId = selectedId && /^\d+$/.test(selectedId) ? BigInt(selectedId) : undefined
-  const { operator, isSet, refetch: refetchOperator } = useDirectorOperator(
-    chamberAddress,
-    selectedTokenId,
-  )
-  const { setDirectorOperator, isPending, isConfirming, hash } = useSetDirectorOperator(chamberAddress)
+  const session = useDirectorSession(chamberAddress, selectedTokenId)
+  const { data: blockNumber } = useBlockNumber({
+    query: {
+      enabled: selectedTokenId !== undefined,
+      refetchInterval: 4_000,
+    },
+  })
+  const { setDirectorOperator, clearDirectorOperator, isPending, isConfirming, hash } =
+    useSetDirectorOperator(chamberAddress)
+
+  const prefilledToken = useRef('')
+  useEffect(() => {
+    prefilledToken.current = ''
+    setOperatorInput('')
+    setUnscoped(true)
+    setSelectedBits(new Set())
+    setCustomExpiry('')
+    setExpiryDays(DEFAULT_SESSION_EXPIRY_DAYS)
+  }, [selectedTokenId])
+
+  useEffect(() => {
+    const key = selectedTokenId?.toString() ?? ''
+    if (!key || !session.isFetched || prefilledToken.current === key) return
+    prefilledToken.current = key
+    if (session.liveOperator && session.liveOperator !== zeroAddress) {
+      setOperatorInput(session.liveOperator)
+      setUnscoped(isUnscopedSession(session.liveScope))
+      setSelectedBits(selectedBitsFromScope(session.liveScope))
+    }
+  }, [selectedTokenId, session.isFetched, session.liveOperator, session.liveScope])
 
   useReceiptRefresh({
     chamberAddress,
@@ -108,8 +153,7 @@ export function DirectorOperatorManager({
     successMessage: lastWrite === 'clear' ? 'Session key cleared' : 'Session key registered',
     errorMessage: 'Session key update failed',
     onSuccess: () => {
-      void refetchOperator()
-      setOperatorInput('')
+      void session.refetch()
       setLastWrite(null)
     },
   })
@@ -136,19 +180,38 @@ export function DirectorOperatorManager({
   })()
 
   const operatorLooksValid = !!parsedOperator && parsedOperator !== zeroAddress
-  const sameAsCurrent =
-    operatorLooksValid &&
-    !!operator &&
-    parsedOperator.toLowerCase() === operator.toLowerCase()
+  const expiry = customExpiry
+    ? (() => {
+        const ms = new Date(customExpiry).getTime()
+        return Number.isNaN(ms) ? 0n : BigInt(Math.floor(ms / 1000))
+      })()
+    : expiryUnixFromDays(expiryDays)
+  const expiryOk = isValidSessionExpiry(expiry)
+  const scope = scopeFromSelectedBits(selectedBits, unscoped)
+  const scopeOk = scope !== 0
   const busy = isPending || isConfirming
-  const canSet = !busy && operatorLooksValid && !sameAsCurrent && selectedTokenId !== undefined
-  const canClear = !busy && isSet && selectedTokenId !== undefined
+  const canSet =
+    !busy && operatorLooksValid && expiryOk && scopeOk && selectedTokenId !== undefined
+  const canClear = !busy && session.isLive && selectedTokenId !== undefined
+
+  const status = directorSessionStatus({
+    liveOperator: session.liveOperator,
+    rawOperator: session.rawOperator,
+    rawExpiry: session.expiry,
+    liveAt: session.liveAt,
+    blockNumber,
+  })
+  const displayOperator = session.isLive ? session.liveOperator : session.rawOperator
+  const displayScope = session.isLive ? session.liveScope : session.rawScope
+  const displayExpiry = session.expiry
+  const displayLiveAt = session.isLive ? session.liveAt : session.rawLiveAt
 
   const handleSet = async () => {
     if (!selectedTokenId || !parsedOperator || parsedOperator === zeroAddress) return
+    if (!expiryOk || !scopeOk) return
     setLastWrite('set')
     try {
-      await setDirectorOperator(selectedTokenId, parsedOperator)
+      await setDirectorOperator(selectedTokenId, parsedOperator, expiry, scope)
     } catch (err) {
       setLastWrite(null)
       toast.error(formatWalletSendError(err, 'Failed to set session key'))
@@ -159,11 +222,20 @@ export function DirectorOperatorManager({
     if (!selectedTokenId) return
     setLastWrite('clear')
     try {
-      await setDirectorOperator(selectedTokenId, zeroAddress)
+      await clearDirectorOperator(selectedTokenId)
     } catch (err) {
       setLastWrite(null)
       toast.error(formatWalletSendError(err, 'Failed to clear session key'))
     }
+  }
+
+  const toggleBit = (id: SessionScopeBitId) => {
+    setSelectedBits((current) => {
+      const next = new Set(current)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
   }
 
   return (
@@ -174,8 +246,10 @@ export function DirectorOperatorManager({
           <div>
             <p className="font-medium text-sky-100">Session key</p>
             <p className="text-slate-400 text-xs mt-0.5 leading-relaxed">
-              This membership NFT is owned by a contract wallet. Register an operator that can act
-              for it, or clear the key. Chamber never checks ERC-1271.
+              This membership NFT is owned by a contract wallet. Register an operator with a future
+              expiry and a non-zero scope, or clear the key. Chamber never checks ERC-1271. Confirm
+              and execute wait until <span className="font-mono">liveAt</span> (
+              <span className="font-mono">SEATING_DELAY</span>).
             </p>
           </div>
 
@@ -206,14 +280,43 @@ export function DirectorOperatorManager({
             </p>
           )}
 
-          <p className="text-slate-300 text-xs">
-            Current operator:{' '}
-            {isSet && operator ? (
-              <span className="font-mono text-sky-100">{shortenAddress(operator, 6)}</span>
-            ) : (
-              <span className="text-slate-500">none</span>
-            )}
-          </p>
+          <div className="rounded-lg border border-slate-700/50 bg-slate-950/40 px-3 py-2 space-y-1.5 text-xs">
+            <p className="text-slate-300 font-medium">Current session</p>
+            <p className="text-slate-400">
+              Operator:{' '}
+              {displayOperator && displayOperator !== zeroAddress ? (
+                <span className="font-mono text-sky-100">{shortenAddress(displayOperator, 6)}</span>
+              ) : (
+                <span className="text-slate-500">none</span>
+              )}
+            </p>
+            <p className="text-slate-400">
+              Expiry:{' '}
+              {displayExpiry > 0n ? (
+                <span className="text-sky-100">{formatTimestamp(displayExpiry)}</span>
+              ) : (
+                <span className="text-slate-500">—</span>
+              )}
+            </p>
+            <p className="text-slate-400">
+              Scope:{' '}
+              <span className="text-sky-100">{describeSessionScope(displayScope)}</span>
+              {displayScope !== 0 && (
+                <span className="font-mono text-slate-500"> ({displayScope === SESSION_SCOPE_UNSCOPED ? 'max uint32' : `0x${displayScope.toString(16)}`})</span>
+              )}
+            </p>
+            <p className="text-slate-400">
+              liveAt:{' '}
+              {displayLiveAt > 0n ? (
+                <span className="font-mono text-sky-100">block {displayLiveAt.toString()}</span>
+              ) : (
+                <span className="text-slate-500">—</span>
+              )}
+            </p>
+            <p className="text-slate-300">
+              Status: {directorSessionStatusLabel(status, session.liveAt, blockNumber)}
+            </p>
+          </div>
 
           <div>
             <label className="block text-slate-300 text-xs font-medium mb-1.5" htmlFor="session-key-operator">
@@ -234,6 +337,98 @@ export function DirectorOperatorManager({
               <div className="flex items-start gap-1.5 mt-1.5 text-red-400 text-xs">
                 <FiAlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" aria-hidden />
                 Enter a non-zero address to register a session key.
+              </div>
+            )}
+          </div>
+
+          <div>
+            <p className="block text-slate-300 text-xs font-medium mb-1.5">Expiry</p>
+            <div className="flex flex-wrap gap-2">
+              {SESSION_EXPIRY_PRESETS.map((days) => (
+                <button
+                  key={days}
+                  type="button"
+                  onClick={() => {
+                    setExpiryDays(days)
+                    setCustomExpiry('')
+                  }}
+                  disabled={busy}
+                  className={`btn py-1.5 px-3 text-xs ${
+                    !customExpiry && expiryDays === days ? 'btn-primary' : 'btn-secondary'
+                  }`}
+                >
+                  {days} days
+                </button>
+              ))}
+            </div>
+            <label className="block text-slate-500 text-xs mt-2 mb-1" htmlFor="session-key-expiry">
+              Or a specific local time (must be in the future; expiry 0 is rejected)
+            </label>
+            <input
+              id="session-key-expiry"
+              type="datetime-local"
+              className="input py-2 text-sm"
+              value={customExpiry}
+              onChange={(e) => setCustomExpiry(e.target.value)}
+              disabled={busy}
+            />
+            <p className="text-slate-500 text-xs mt-1.5">
+              Sets expiry to {formatTimestamp(expiry)} (unix {expiry.toString()}).
+              {!expiryOk && (
+                <span className="text-red-400"> Must be a future unix timestamp.</span>
+              )}
+            </p>
+          </div>
+
+          <div>
+            <p className="block text-slate-300 text-xs font-medium mb-1.5">Scope</p>
+            <div className="flex flex-wrap gap-2 mb-2">
+              <button
+                type="button"
+                onClick={() => setUnscoped(true)}
+                disabled={busy}
+                className={`btn py-1.5 px-3 text-xs ${unscoped ? 'btn-primary' : 'btn-secondary'}`}
+              >
+                Unscoped (all actions)
+              </button>
+              <button
+                type="button"
+                onClick={() => setUnscoped(false)}
+                disabled={busy}
+                className={`btn py-1.5 px-3 text-xs ${!unscoped ? 'btn-primary' : 'btn-secondary'}`}
+              >
+                Custom bitmask
+              </button>
+            </div>
+            {unscoped ? (
+              <p className="text-slate-500 text-xs">
+                Explicit <span className="font-mono">SESSION_SCOPE_UNSCOPED</span> ({SESSION_SCOPE_UNSCOPED}).
+                Scope 0 is rejected and is not a silent default.
+              </p>
+            ) : (
+              <div className="space-y-1.5">
+                {SESSION_SCOPE_BITS.map(({ id, label, detail, bit }) => (
+                  <label key={id} className="flex items-start gap-2 text-xs text-slate-300">
+                    <input
+                      type="checkbox"
+                      className="mt-0.5"
+                      checked={selectedBits.has(id)}
+                      onChange={() => toggleBit(id)}
+                      disabled={busy}
+                    />
+                    <span>
+                      <span className="font-medium">{label}</span>
+                      <span className="font-mono text-slate-500"> 1&lt;&lt;{Math.log2(bit)}</span>
+                      <span className="block text-slate-500">{detail}</span>
+                    </span>
+                  </label>
+                ))}
+                {!scopeOk && (
+                  <div className="flex items-start gap-1.5 text-red-400">
+                    <FiAlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" aria-hidden />
+                    Select at least one action. Scope 0 is rejected on-chain.
+                  </div>
+                )}
               </div>
             )}
           </div>

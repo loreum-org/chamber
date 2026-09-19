@@ -35,7 +35,13 @@ export function DirectorCallerStatus({
         <div>
           {isOwner ? (
             <>
-              Connected wallet is the owner of {member}.
+              Connected wallet is the <span className="font-semibold">NFT owner</span> of {member}.
+              {sessionOperator ? (
+                <>
+                  {' '}
+                  Session key {shortenAddress(sessionOperator)}.
+                </>
+              ) : null}
             </>
           ) : (
             <>
