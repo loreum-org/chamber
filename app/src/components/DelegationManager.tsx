@@ -19,7 +19,6 @@ import { useQueryClient } from '@tanstack/react-query'
 import {
   useDelegate,
   useUndelegate,
-  useChamberEventRefresh,
   useSimulateDelegate,
   useSimulateUndelegate,
   useUserNFTs,
@@ -80,9 +79,6 @@ export default function DelegationManager({
   const { delegate, isPending: isDelegating, isConfirming: isDelegateConfirming } = useDelegate(chamberAddress)
   const { undelegate, isPending: isUndelegating, isConfirming: isUndelegateConfirming } = useUndelegate(chamberAddress)
   const shareDecimals = useShareDecimals(chamberAddress)
-
-  // Watch for delegation events and auto-refresh when transactions are mined
-  useChamberEventRefresh(chamberAddress)
 
   const invalidateNftImagesForChamber = () => {
     const needle = chamberAddress.toLowerCase()

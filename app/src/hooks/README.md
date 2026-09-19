@@ -9,7 +9,7 @@ A low-level hook that tracks transaction status and provides callbacks for succe
 ### Features
 
 - ✅ Tracks transaction status: `idle`, `pending`, `confirming`, `success`, `error`
-- ✅ Automatic event listeners using wagmi's `useWaitForTransactionReceipt` and `useWatchPendingTransactions`
+- ✅ Receipt tracking via wagmi's `useWaitForTransactionReceipt` (no pending-tx or event polling)
 - ✅ Toast notifications on success/error
 - ✅ Customizable callbacks for success and error
 - ✅ Auto-reset option

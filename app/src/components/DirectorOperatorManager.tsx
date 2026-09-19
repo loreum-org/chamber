@@ -120,7 +120,8 @@ export function DirectorOperatorManager({
   const { data: blockNumber } = useBlockNumber({
     query: {
       enabled: selectedTokenId !== undefined,
-      refetchInterval: 4_000,
+      // Seating/session maturity only needs coarse block height; hidden tabs pause.
+      refetchInterval: 60_000,
     },
   })
   const { setDirectorOperator, clearDirectorOperator, isPending, isConfirming, hash } =

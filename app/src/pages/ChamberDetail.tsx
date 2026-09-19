@@ -29,7 +29,6 @@ import {
   useMembershipTokenOwners,
   useDelegations,
   useSeatUpdate,
-  useChamberEventRefresh,
   useChambersByAsset,
   useParentChamber,
   useChildChambers,
@@ -166,9 +165,6 @@ function ChamberDetailContent({ chamberAddress }: { chamberAddress: `0x${string}
     functionName: 'symbol',
     query: { enabled: !!chamberInfo.assetToken },
   })
-  
-  // Watch for contract events and auto-refresh data when transactions are mined
-  useChamberEventRefresh(chamberAddress)
   
   // ETH balance of chamber
   const { data: ethBalance } = useBalance({

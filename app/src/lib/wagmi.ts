@@ -34,6 +34,9 @@ export const isMainnetConfigured =
   isConfiguredAddress(mainnetDeploymentAddresses.registry)
 
 // Use the chain ID from deployments.json so that localhost accurately matches Anvil forks (dev only)
+/** Receipt/block polling cadence. One Ethereum slot; viem's 4s default quadrupled RPC load. */
+const POLLING_INTERVAL_MS = 12_000
+
 export const LOCAL_CHAIN_ID = localDeployments.chainId || 31337
 
 const alchemyApiKey = getAlchemyApiKeyFromEnv()
@@ -41,7 +44,8 @@ const alchemyApiKey = getAlchemyApiKeyFromEnv()
 /** Public RPC fallbacks when `VITE_ALCHEMY_API_KEY` is unset or rate-limited (CSP allowlisted). */
 const PUBLIC_RPC: Record<number, string> = {
   [mainnet.id]: 'https://eth.llamarpc.com',
-  [sepolia.id]: 'https://sepolia.drpc.org',
+  // sepolia.drpc.org now rejects free-tier Sepolia ("chain is not available on free plan").
+  [sepolia.id]: 'https://ethereum-sepolia-rpc.publicnode.com',
   [base.id]: 'https://mainnet.base.org',
   [arbitrum.id]: 'https://arb1.arbitrum.io/rpc',
 }
@@ -102,6 +106,7 @@ export const config = productionApp
         projectId: walletConnectProjectId,
         chains: [mainnet, sepolia],
         ssr: false,
+        pollingInterval: POLLING_INTERVAL_MS,
         transports: {
           [mainnet.id]: chainTransport(mainnet.id, PUBLIC_RPC[mainnet.id]),
           [sepolia.id]: chainTransport(sepolia.id, PUBLIC_RPC[sepolia.id]),
@@ -112,6 +117,7 @@ export const config = productionApp
         projectId: walletConnectProjectId,
         chains: [sepolia],
         ssr: false,
+        pollingInterval: POLLING_INTERVAL_MS,
         transports: {
           [sepolia.id]: chainTransport(sepolia.id, PUBLIC_RPC[sepolia.id]),
         },
@@ -122,6 +128,7 @@ export const config = productionApp
         projectId: walletConnectProjectId,
         chains: [mainnet, sepolia, base, arbitrum, localhost],
         ssr: false,
+        pollingInterval: POLLING_INTERVAL_MS,
         transports: {
           [mainnet.id]: chainTransport(mainnet.id, PUBLIC_RPC[mainnet.id]),
           [sepolia.id]: chainTransport(sepolia.id, PUBLIC_RPC[sepolia.id]),
@@ -135,6 +142,7 @@ export const config = productionApp
         projectId: walletConnectProjectId,
         chains: [sepolia, base, arbitrum, localhost],
         ssr: false,
+        pollingInterval: POLLING_INTERVAL_MS,
         transports: {
           [sepolia.id]: chainTransport(sepolia.id, PUBLIC_RPC[sepolia.id]),
           [base.id]: chainTransport(base.id, PUBLIC_RPC[base.id]),

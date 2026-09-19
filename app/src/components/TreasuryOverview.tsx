@@ -23,7 +23,6 @@ import {
   useTokenAllowance, 
   useTokenApprove,
   useTokenBalance,
-  useChamberEvents,
   useSimulateDeposit,
   useSimulateWithdraw,
 } from '@/hooks'
@@ -118,14 +117,6 @@ export default function TreasuryOverview({ chamberAddress, chamberInfo, userBala
     functionName: 'convertToAssets',
     args: withdrawableShares !== undefined ? [withdrawableShares] : undefined,
     query: { enabled: withdrawableShares !== undefined },
-  })
-
-  // Watch for vault events and refresh data when transactions are mined
-  useChamberEvents(chamberAddress, {
-    onVaultEvent: () => {
-      refetchTokenBalance()
-      refetchAllowance()
-    },
   })
 
   // Refetch allowance after approval succeeds
