@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useWaitForTransactionReceipt } from 'wagmi'
 import { type Hash } from 'viem'
 import toast from 'react-hot-toast'
-import { invalidateChamberQueries } from './useChamberEvents'
+import { invalidateChamberQueries } from './invalidateChamberQueries'
 
 export type QueueWriteKind =
   | 'submit'
@@ -119,7 +119,7 @@ export function queueWriteErrorMessage(kind: QueueWriteKind): string {
 
 /**
  * Watch a sent tx hash until the receipt lands, then refetch chamber reads.
- * Event watches stay as a fast path; this receipt path is the source of truth.
+ * There are no live event watches; this receipt path is how reads refresh after a write.
  */
 export function useReceiptRefresh(options: {
   chamberAddress: `0x${string}` | undefined

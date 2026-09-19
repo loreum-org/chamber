@@ -31,7 +31,6 @@ import {
   useCancelTransaction,
   useTransactionConfirmation,
   useTransactionCancelConfirmation,
-  useChamberEvents,
   useReceiptRefresh,
   useSeatUpdate,
   useUpdateSeats,
@@ -488,16 +487,6 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
       })),
     ),
     query: { enabled: transactionCount > 0 && ownedTokenIdsStable.length > 0 },
-  })
-
-  // Event watches are a fast path only. Receipt + refetch below is the source of truth.
-  useChamberEvents(chamberAddress, {
-    onTransactionEvent: () => {
-      refetchTransactions()
-    },
-    onBoardEvent: () => {
-      refetchSeatUpdate()
-    },
   })
 
   const startQueueWrite = (kind: QueueWriteKind) => {
