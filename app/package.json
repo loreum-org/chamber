@@ -9,6 +9,7 @@
     "build": "tsc && vite build",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "test": "vitest run",
     "preview": "vite preview",
     "test:discovery": "npx --yes tsx --tsconfig tsconfig.json scripts/verify-chamber-discovery.ts && npx --yes tsx --tsconfig tsconfig.json scripts/verify-sepolia-discovery.ts && npx --yes tsx --tsconfig tsconfig.json scripts/verify-chamber-route-gate.ts",
     "test:mainnet-addresses": "npx --yes tsx --tsconfig tsconfig.json scripts/verify-mainnet-addresses.ts"

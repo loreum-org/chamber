@@ -53,6 +53,45 @@ async function fetchLlamaPricesBatches(coinIds: string[]): Promise<Record<string
   return merged
 }
 
+export function chainSupportsSpotUsdPricing(chainId: number): boolean {
+  return LLAMA_CHAIN_BY_ALCHEMY_CHAIN[chainId] != null
+}
+
+export type SpotUsdPrices = {
+  /** USD price per lower-cased token address; missing key = unpriced. */
+  tokens: Record<string, number>
+  /** Gas-token (native) price via wrapped-native spot, when available. */
+  native: number | null
+}
+
+/**
+ * Spot USD prices for a set of token addresses on a chain (#260 transaction
+ * valuation). Uses the same public DefiLlama Coins feed as the portfolio.
+ */
+export async function fetchSpotUsdPrices(
+  chainId: number,
+  tokenAddresses: readonly Address[],
+): Promise<SpotUsdPrices> {
+  const llamaChain = LLAMA_CHAIN_BY_ALCHEMY_CHAIN[chainId]
+  if (!llamaChain) return { tokens: {}, native: null }
+
+  const weth = WRAPPED_NATIVE_BY_LLAMA_CHAIN[llamaChain]
+  const wanted = tokenAddresses.map((a) => a.toLowerCase())
+  const coinIds = [...new Set([`${llamaChain}:${weth.toLowerCase()}`, ...wanted.map((a) => `${llamaChain}:${a}`)])]
+  const priceMap = await fetchLlamaPricesBatches(coinIds)
+
+  const tokens: Record<string, number> = {}
+  for (const addr of wanted) {
+    const p = priceMap[`${llamaChain}:${addr}`]?.price
+    if (p != null && Number.isFinite(p)) tokens[addr] = p
+  }
+  const nativePx = priceMap[`${llamaChain}:${weth.toLowerCase()}`]?.price
+  return {
+    tokens,
+    native: nativePx != null && Number.isFinite(nativePx) ? nativePx : null,
+  }
+}
+
 export async function computePortfolioUsd(
   portfolio: ChamberPortfolio,
   alchemyChainId: number

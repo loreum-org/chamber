@@ -60,6 +60,10 @@ const { nonce } = await op.submitTransaction({
 await op.confirm(2n, nonce)
 await op.execute(1n, nonce, '0x')
 
+await op.undelegate(1n, 10n ** 18n)
+await op.revokeConfirmation(2n, nonce)
+await op.cancelTransaction(1n, nonce)
+
 const live = await op.getDirectorOperatorState(1n)
 // live.operator / live.expiry / live.scope / live.liveAt / live.status
 await op.setDirectorOperator(1n, '0x…') // defaults: 30-day expiry, SESSION_SCOPE_UNSCOPED
