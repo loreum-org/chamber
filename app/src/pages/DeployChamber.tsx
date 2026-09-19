@@ -12,6 +12,7 @@ import {
   getContractAddresses,
   getNetworkName,
   isNonZeroAddress,
+  LOCAL_CHAIN_ID,
 } from '@/lib/wagmi'
 import { addRecentChamber } from '@/lib/recentChambers'
 import { factoryAbi, registryAbi } from '@/contracts/abis'
@@ -19,6 +20,9 @@ import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { erc20Abi, erc721Abi } from '@/contracts'
 import SeatTheBoard from '@/components/SeatTheBoard'
 import toast from 'react-hot-toast'
+
+type MembershipPath = 'existing' | 'need-collection'
+const GETTING_STARTED_HREF = '/docs'
 
 type Step = 'form' | 'review' | 'deploying' | 'success'
 
