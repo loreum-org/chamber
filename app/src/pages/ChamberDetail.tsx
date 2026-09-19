@@ -47,6 +47,7 @@ import ChamberAssetsAlchemy from '@/components/ChamberAssetsAlchemy'
 import { NftRetryableImage } from '@/components/NftRetryableImage'
 import { ChamberRouteGate } from '@/components/ChamberRouteGate'
 import { addRecentChamber } from '@/lib/recentChambers'
+import { implMismatchBannerCopy } from '@/lib/implSource'
 import { getBlockExplorerAddressUrl, shortenAddress } from '@/lib/utils'
 import type { SeatUpdate } from '@/types'
 
@@ -215,8 +216,10 @@ function ChamberDetailContent({ chamberAddress }: { chamberAddress: `0x${string}
   }
 
   const registryImplementation = implSync.registryImplementation
+  const implSourceLabel = implSync.implSourceLabel
+  const implBannerCopy = implSourceLabel ? implMismatchBannerCopy(implSourceLabel) : undefined
   const showImplMismatch =
-    implSync.implMismatch && !implSync.isLoading && !!registryImplementation
+    implSync.implMismatch && !implSync.isLoading && !!registryImplementation && !!implBannerCopy
 
   return (
     <div className="space-y-6">
@@ -244,7 +247,7 @@ function ChamberDetailContent({ chamberAddress }: { chamberAddress: `0x${string}
           </div>
         </motion.div>
       )}
-      {showImplMismatch && registryImplementation && (
+      {showImplMismatch && registryImplementation && implBannerCopy && (
         <motion.div
           initial={{ opacity: 0, y: -6 }}
           animate={{ opacity: 1, y: 0 }}
@@ -254,9 +257,9 @@ function ChamberDetailContent({ chamberAddress }: { chamberAddress: `0x${string}
           <div className="flex items-start gap-3">
             <FiAlertTriangle className="w-5 h-5 shrink-0 text-amber-400 mt-0.5" aria-hidden />
             <div className="space-y-1.5">
-              <p className="font-medium text-amber-100">New Chamber implementation available on the Registry</p>
+              <p className="font-medium text-amber-100">{implBannerCopy.title}</p>
               <p className="text-amber-100/85 leading-relaxed">
-                The Registry’s default implementation is{' '}
+                {implBannerCopy.defaultImplLead}{' '}
                 <span className="font-mono tabular-nums">
                   v{implSync.registryImplementationVersionLabel ?? '—'}
                 </span>{' '}
@@ -266,7 +269,7 @@ function ChamberDetailContent({ chamberAddress }: { chamberAddress: `0x${string}
                   {chamberVersionTag === '…' ? '—' : chamberVersionTag}
                 </span>
                 . Directors can
-                upgrade this proxy via the Chamber’s upgrade flow so it aligns with the Registry.
+                upgrade this proxy via the Chamber’s upgrade flow so it {implBannerCopy.alignClause}.
               </p>
               <p className="mt-1.5">
                 <Link
@@ -283,7 +286,7 @@ function ChamberDetailContent({ chamberAddress }: { chamberAddress: `0x${string}
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 text-accent-400 hover:text-accent-300 font-medium"
                 >
-                  View Registry <FiExternalLink className="w-3.5 h-3.5" aria-hidden />
+                  {implBannerCopy.viewLabel} <FiExternalLink className="w-3.5 h-3.5" aria-hidden />
                 </a>
               )}
               {directorGate.canAct ? (
