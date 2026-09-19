@@ -12,6 +12,7 @@ import {
   getContractAddresses,
   getNetworkName,
   isNonZeroAddress,
+  LOCAL_CHAIN_ID,
 } from '@/lib/wagmi'
 import { addRecentChamber } from '@/lib/recentChambers'
 import { factoryAbi, registryAbi } from '@/contracts/abis'
@@ -24,6 +25,11 @@ type Step = 'form' | 'review' | 'deploying' | 'success'
 
 const CREATE_TARGET_MISSING =
   'No Factory or Registry is configured on this network. Switch to a supported chain to deploy.'
+
+type MembershipPath = 'existing' | 'need-collection'
+
+/** In-app getting-started guide (Docs.tsx route is `/docs/*`). */
+const GETTING_STARTED_HREF = '/docs/introduction/getting-started'
 
 function quorumForSeats(seats: number) {
   return 1 + Math.floor((seats * 51) / 100)

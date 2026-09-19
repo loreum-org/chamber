@@ -3,8 +3,26 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAccount, useChainId, useReadContracts, useSwitchChain } from 'wagmi'
 import { formatUnits, isAddress } from 'viem'
-import { FiLayers, FiPlus, FiAlertTriangle, FiUser, FiBriefcase, FiShield, FiArrowRight } from 'react-icons/fi'
-import { useHasValidConfig, useMyChambers, useOrganizationsByNFT, useShareDecimals } from '@/hooks'
+import { useChainModal, useConnectModal } from '@rainbow-me/rainbowkit'
+import {
+  FiLayers,
+  FiPlus,
+  FiAlertTriangle,
+  FiUser,
+  FiBriefcase,
+  FiShield,
+  FiArrowRight,
+  FiRefreshCw,
+  FiLoader,
+} from 'react-icons/fi'
+import {
+  useHasValidConfig,
+  useMyChambers,
+  useOrganizationsByNFT,
+  useShareDecimals,
+  useConnectedChainImplementationVersion,
+} from '@/hooks'
+import { formatChamberVersionTag } from '@/lib/utils'
 import { erc721Abi } from '@/contracts'
 import {
   getNetworkName,
