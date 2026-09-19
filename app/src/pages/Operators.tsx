@@ -445,7 +445,8 @@ function SeatOperatorCard({
   onWrite: () => void
 }) {
   const { data: blockNumber } = useBlockNumber({
-    query: { enabled: seat.isLive, refetchInterval: 4_000 },
+    // Session liveness only needs coarse block height (one poll per seat card); hidden tabs pause.
+    query: { enabled: seat.isLive, refetchInterval: 60_000 },
   })
   const cardChainId = useChainId()
   const ownerContract = useIsContractAccount(seat.owner)

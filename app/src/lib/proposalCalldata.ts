@@ -56,7 +56,7 @@ export function proposalCalldataMatchesHash(
   return keccak256(calldata).toLowerCase() === dataHash.toLowerCase()
 }
 
-export type ProposalCalldataSource = 'local' | 'onchain' | 'event' | 'metadata'
+export type ProposalCalldataSource = 'local' | 'onchain' | 'event' | 'metadata' | 'indexer'
 
 export type ResolvedProposalCalldata = {
   calldata: `0x${string}`

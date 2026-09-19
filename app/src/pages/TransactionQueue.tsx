@@ -32,6 +32,7 @@ import {
   useTransactionConfirmation,
   useTransactionCancelConfirmation,
   useReceiptRefresh,
+  useIndexedProposals,
   useSeatUpdate,
   useUpdateSeats,
   useExecuteSeatsUpdate,
@@ -71,6 +72,8 @@ import {
   computeQueueTxStatus,
 } from '@/lib/chamberGovernance'
 import type { TransactionQueueItem } from '@/types'
+import type { IndexedProposalVote } from '@/hooks/useIndexedProposals'
+import { IndexerBehindError } from '@/lib/indexer'
 import {
   createProposalMetadataURI,
   getProposalMetadata,
@@ -111,6 +114,16 @@ function tokenHasLiveConfirmation(
   if (directorIndex < 0) return false
   const row = rows[txId * directorTokenIds.length + directorIndex]
   return row?.status === 'success' && row.result === true
+}
+
+function indexedTokenHasLiveConfirmation(
+  txId: number,
+  tokenId: bigint | undefined,
+  directorTokenIds: readonly bigint[],
+  votes: readonly IndexedProposalVote[] | undefined,
+): boolean {
+  if (tokenId === undefined || !votes || !directorTokenIds.includes(tokenId)) return false
+  return votes.some((v) => v.confirmed && v.tokenId === tokenId && v.nonce === BigInt(txId))
 }
 
 function queueHeaderCta(needsYourConfirmation: number, readyToExecute: number): string {
@@ -304,9 +317,15 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
     cancelConfirmations?: number
     metadataURI?: string
     leftoverTokenId?: bigint
+    indexedCalldata?: `0x${string}`
   }
 
   const [transactions, setTransactions] = useState<QueueTx[]>([])
+
+  // Proposal state comes from chamber-indexer. The per-proposal RPC reads below
+  // only run on chains without an indexer (e.g. local Anvil).
+  const indexed = useIndexedProposals(chamberAddress)
+  const rpcQueue = !indexed.enabled
   
   const chamberInfo = useChamberInfo(chamberAddress)
   const implSync = useChamberRegistryImplementationSync(chamberAddress)
@@ -384,7 +403,7 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
       args: [BigInt(id)],
     })) as readonly { address: `0x${string}`; abi: typeof chamberAbi; functionName: 'getTransaction'; args: [bigint] }[],
     query: {
-      enabled: transactionCount > 0,
+      enabled: rpcQueue && transactionCount > 0,
     },
   })
 
@@ -396,7 +415,7 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
       args: [BigInt(id)],
     })) as readonly { address: `0x${string}`; abi: typeof chamberAbi; functionName: 'getCancelled'; args: [bigint] }[],
     query: {
-      enabled: transactionCount > 0,
+      enabled: rpcQueue && transactionCount > 0,
     },
   })
 
@@ -408,7 +427,7 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
       args: [BigInt(id)],
     })) as readonly { address: `0x${string}`; abi: typeof chamberAbi; functionName: 'getCancelConfirmations'; args: [bigint] }[],
     query: {
-      enabled: transactionCount > 0,
+      enabled: rpcQueue && transactionCount > 0,
     },
   })
 
@@ -420,7 +439,7 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
       args: [BigInt(id)],
     })) as readonly { address: `0x${string}`; abi: typeof chamberAbi; functionName: 'getTransactionMetadata'; args: [bigint] }[],
     query: {
-      enabled: transactionCount > 0,
+      enabled: rpcQueue && transactionCount > 0,
     },
   })
 
@@ -442,7 +461,7 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
       functionName: 'getTransactionRequiredQuorum' as const,
       args: [BigInt(id)] as const,
     })),
-    query: { enabled: transactionCount > 0, retry: false },
+    query: { enabled: rpcQueue && transactionCount > 0, retry: false },
   })
 
   const { data: expiredData } = useReadContracts({
@@ -452,7 +471,7 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
       functionName: 'isTransactionExpired' as const,
       args: [BigInt(id)] as const,
     })),
-    query: { enabled: transactionCount > 0, retry: false },
+    query: { enabled: rpcQueue && transactionCount > 0, retry: false },
   })
 
   const { data: deadlineData } = useReadContracts({
@@ -462,7 +481,7 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
       functionName: 'getTransactionDeadline' as const,
       args: [BigInt(id)] as const,
     })),
-    query: { enabled: transactionCount > 0, retry: false },
+    query: { enabled: rpcQueue && transactionCount > 0, retry: false },
   })
 
   const { data: liveConfirmData } = useReadContracts({
@@ -474,7 +493,7 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
         args: [tokenId, BigInt(id)] as const,
       })),
     ),
-    query: { enabled: transactionCount > 0 && directorTokenIds.length > 0 },
+    query: { enabled: rpcQueue && transactionCount > 0 && directorTokenIds.length > 0 },
   })
 
   const { data: leftoverConfirmData } = useReadContracts({
@@ -486,7 +505,7 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
         args: [tokenId, BigInt(id)] as const,
       })),
     ),
-    query: { enabled: transactionCount > 0 && ownedTokenIdsStable.length > 0 },
+    query: { enabled: rpcQueue && transactionCount > 0 && ownedTokenIdsStable.length > 0 },
   })
 
   const startQueueWrite = (kind: QueueWriteKind) => {
@@ -533,6 +552,63 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
   })
 
   useEffect(() => {
+    if (!rpcQueue) {
+      if (!indexed.proposals) return
+      const liveQuorum = chamberInfo.quorum || 1
+      const directorSet = new Set(directorTokenIds.map((id) => id.toString()))
+      const confirmedBy = new Map<string, Set<string>>()
+      for (const v of indexed.votes ?? []) {
+        if (!v.confirmed) continue
+        const key = v.nonce.toString()
+        const set = confirmedBy.get(key) ?? new Set<string>()
+        set.add(v.tokenId.toString())
+        confirmedBy.set(key, set)
+      }
+      const nowSec = BigInt(Math.floor(Date.now() / 1000))
+
+      setTransactions(
+        indexed.proposals.map((p) => {
+          const confirmers = confirmedBy.get(p.nonce.toString()) ?? new Set<string>()
+          const liveConfirmations =
+            directorSet.size > 0
+              ? [...confirmers].filter((id) => directorSet.has(id)).length
+              : p.confirmations
+          const required = requiredExecuteConfirmations(
+            p.requiredQuorum !== undefined ? Number(p.requiredQuorum) : undefined,
+            liveQuorum,
+          )
+          // Same rule as Wallet.isTransactionExpired: deadline != 0 && now > deadline.
+          const expired = !!p.deadline && p.deadline !== 0n && nowSec > p.deadline
+          const leftoverTokenId = ownedTokenIdsStable.find((id) => confirmers.has(id.toString()))
+          const status = computeQueueTxStatus({
+            executed: p.executed,
+            cancelled: p.cancelled,
+            expired,
+            liveConfirmations,
+            requiredConfirmations: required,
+          })
+          return {
+            id: Number(p.nonce),
+            executed: p.executed,
+            confirmations: p.confirmations,
+            liveConfirmations,
+            requiredConfirmations: required,
+            target: p.target,
+            value: p.value,
+            dataHash: p.dataHash,
+            deadline: p.deadline,
+            expired,
+            status,
+            cancelled: p.cancelled,
+            cancelConfirmations: p.cancelConfirmations,
+            metadataURI: p.metadataURI,
+            leftoverTokenId,
+            indexedCalldata: p.data,
+          }
+        }),
+      )
+      return
+    }
     if (transactionsData) {
       const cancelledList: boolean[] = []
       cancelledData?.forEach((r: { status: string; result?: unknown }, i: number) => {
@@ -632,6 +708,9 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
       setTransactions(txs)
     }
   }, [
+    rpcQueue,
+    indexed.proposals,
+    indexed.votes,
     transactionsData,
     cancelledData,
     cancelConfirmationsData,
@@ -670,7 +749,9 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
   const pendingNeedingYou = canAct
     ? pendingTransactions.filter((tx) =>
         tx.leftoverTokenId === undefined &&
-        !tokenHasLiveConfirmation(tx.id, userTokenId, directorTokenIds, liveConfirmData),
+        !(rpcQueue
+          ? tokenHasLiveConfirmation(tx.id, userTokenId, directorTokenIds, liveConfirmData)
+          : indexedTokenHasLiveConfirmation(tx.id, userTokenId, directorTokenIds, indexed.votes)),
       ).length
     : 0
   const needsYourConfirmation = pendingNeedingYou + (seatNeedsYourConfirmation ? 1 : 0)
@@ -815,6 +896,15 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
           </details>
         </div>
       </motion.div>
+
+      {!rpcQueue && indexed.isError && !(indexed.error instanceof IndexerBehindError) && (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-200">
+          Proposals could not be loaded from the indexer. The list below may be empty or out of date.{' '}
+          <button type="button" className="underline" onClick={() => void indexed.refetch()}>
+            Retry
+          </button>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex gap-1 p-1 bg-slate-900/80 rounded-xl border border-slate-700/50">
@@ -1157,7 +1247,7 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
 
 // Transaction Card Component
 interface TransactionCardProps extends QueueWriteReporters {
-  transaction: TransactionQueueItem & { cancelled?: boolean; cancelConfirmations?: number; metadataURI?: string; leftoverTokenId?: bigint }
+  transaction: TransactionQueueItem & { cancelled?: boolean; cancelConfirmations?: number; metadataURI?: string; leftoverTokenId?: bigint; indexedCalldata?: `0x${string}` }
   chamberAddress: `0x${string}`
   quorum: number
   userTokenId?: bigint
@@ -1219,13 +1309,15 @@ function TransactionCard({
     transaction.id,
     transaction.dataHash,
     metadataCalldata,
+    transaction.indexedCalldata,
   )
   const { data: onchainStoredCalldata } = useReadContract({
     address: chamberAddress,
     abi: chamberAbi,
     functionName: 'getTransactionCalldata',
     args: [BigInt(transaction.id)],
-    query: { enabled: hasProposalCalldata(transaction.dataHash), retry: false },
+    // With indexed calldata the row needs no chain read to display or execute.
+    query: { enabled: hasProposalCalldata(transaction.dataHash) && !transaction.indexedCalldata, retry: false },
   })
   const hasOnchainPreimage =
     (typeof onchainStoredCalldata === 'string' && onchainStoredCalldata !== '0x') ||
@@ -1531,7 +1623,9 @@ function TransactionCard({
                       ? 'onchain submit event'
                       : resolvedCalldata.source === 'metadata'
                         ? 'proposal metadata'
-                        : 'this browser'}
+                        : resolvedCalldata.source === 'indexer'
+                          ? 'chamber indexer'
+                          : 'this browser'}
                   — review before executing.
                 </p>
               )}
