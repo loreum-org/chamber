@@ -6,6 +6,7 @@ import { alchemySupportsChain, getAlchemyApiKeyFromEnv, getAlchemyV2RpcUrl } fro
 import { ZERO_ADDRESS, isNonZeroAddress } from '@/lib/address'
 import { sepoliaDeploymentAddresses } from '@/lib/sepoliaDeployments'
 import { mainnetDeploymentAddresses } from '@/lib/mainnetDeployments'
+import { getNetworkName as networkNameFromId, pickPreferredSupportedChainId } from '@/lib/supportedChain'
 
 export { isNonZeroAddress, ZERO_ADDRESS }
 
