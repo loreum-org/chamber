@@ -51,39 +51,39 @@ export const registryAbi = [
     "name": "createChamber",
     "inputs": [
       {
-        "name": "erc20Token",
+        "name": "",
         "type": "address",
         "internalType": "address"
       },
       {
-        "name": "erc721Token",
+        "name": "",
         "type": "address",
         "internalType": "address"
       },
       {
-        "name": "seats",
+        "name": "",
         "type": "uint256",
         "internalType": "uint256"
       },
       {
-        "name": "name",
+        "name": "",
         "type": "string",
         "internalType": "string"
       },
       {
-        "name": "symbol",
+        "name": "",
         "type": "string",
         "internalType": "string"
       }
     ],
     "outputs": [
       {
-        "name": "chamber",
+        "name": "",
         "type": "address",
         "internalType": "address payable"
       }
     ],
-    "stateMutability": "nonpayable"
+    "stateMutability": "pure"
   },
   {
     "type": "function",
@@ -703,6 +703,11 @@ export const registryAbi = [
   },
   {
     "type": "error",
+    "name": "CreateDisabled",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "InvalidInitialization",
     "inputs": []
   },
@@ -932,6 +937,16 @@ export const factoryAbi = [
   },
   {
     "type": "error",
+    "name": "NotChamberImplementation",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NotContract",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "OwnableInvalidOwner",
     "inputs": [
       {
@@ -982,6 +997,97 @@ export const chamberAbi = [
         "name": "",
         "type": "uint256",
         "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "SESSION_SCOPE_CANCEL",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint32",
+        "internalType": "uint32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "SESSION_SCOPE_CONFIRM",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint32",
+        "internalType": "uint32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "SESSION_SCOPE_EXECUTE",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint32",
+        "internalType": "uint32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "SESSION_SCOPE_REVOKE",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint32",
+        "internalType": "uint32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "SESSION_SCOPE_SUBMIT",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint32",
+        "internalType": "uint32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "SESSION_SCOPE_UNSCOPED",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint32",
+        "internalType": "uint32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "SESSION_SCOPE_UPDATE_SEATS",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint32",
+        "internalType": "uint32"
       }
     ],
     "stateMutability": "view"
@@ -1110,6 +1216,19 @@ export const chamberAbi = [
       },
       {
         "name": "transactionId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "cleanupInertSeat",
+    "inputs": [
+      {
+        "name": "tokenId",
         "type": "uint256",
         "internalType": "uint256"
       }
@@ -1449,6 +1568,83 @@ export const chamberAbi = [
   },
   {
     "type": "function",
+    "name": "getDirectorOperatorLiveAt",
+    "inputs": [
+      {
+        "name": "tokenId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getDirectorOperatorScope",
+    "inputs": [
+      {
+        "name": "tokenId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint32",
+        "internalType": "uint32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getDirectorSession",
+    "inputs": [
+      {
+        "name": "tokenId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "sessionOwner",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "operator",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "expiry",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "scope",
+        "type": "uint32",
+        "internalType": "uint32"
+      },
+      {
+        "name": "liveAt",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "getDirectors",
     "inputs": [],
     "outputs": [
@@ -1547,6 +1743,19 @@ export const chamberAbi = [
   {
     "type": "function",
     "name": "getQuorum",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getReachableDirectorCount",
     "inputs": [],
     "outputs": [
       {
@@ -2135,6 +2344,24 @@ export const chamberAbi = [
   },
   {
     "type": "function",
+    "name": "recoverSeats",
+    "inputs": [
+      {
+        "name": "tokenId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "newSeats",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "redeem",
     "inputs": [
       {
@@ -2193,6 +2420,16 @@ export const chamberAbi = [
         "name": "operator",
         "type": "address",
         "internalType": "address"
+      },
+      {
+        "name": "expiry",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "scope",
+        "type": "uint32",
+        "internalType": "uint32"
       }
     ],
     "outputs": [],
@@ -2370,6 +2607,19 @@ export const chamberAbi = [
       }
     ],
     "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "syncSeating",
+    "inputs": [
+      {
+        "name": "tokenId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
   },
   {
     "type": "function",
@@ -2705,6 +2955,18 @@ export const chamberAbi = [
         "type": "address",
         "indexed": true,
         "internalType": "address"
+      },
+      {
+        "name": "expiry",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "scope",
+        "type": "uint32",
+        "indexed": false,
+        "internalType": "uint32"
       }
     ],
     "anonymous": false
@@ -2740,6 +3002,19 @@ export const chamberAbi = [
       },
       {
         "name": "nonce",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "InertSeatCleaned",
+    "inputs": [
+      {
+        "name": "tokenId",
         "type": "uint256",
         "indexed": true,
         "internalType": "uint256"
@@ -2863,6 +3138,31 @@ export const chamberAbi = [
         "name": "tokenId",
         "type": "uint256",
         "indexed": true,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "SeatsRecovered",
+    "inputs": [
+      {
+        "name": "tokenId",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "previousSeats",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "newSeats",
+        "type": "uint256",
+        "indexed": false,
         "internalType": "uint256"
       }
     ],
@@ -3395,6 +3695,16 @@ export const chamberAbi = [
   },
   {
     "type": "error",
+    "name": "InvalidSessionExpiry",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidSessionScope",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "InvalidTarget",
     "inputs": []
   },
@@ -3458,6 +3768,16 @@ export const chamberAbi = [
         "internalType": "address"
       }
     ]
+  },
+  {
+    "type": "error",
+    "name": "SeatNotInert",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "SeatRecoveryUnavailable",
+    "inputs": []
   },
   {
     "type": "error",
