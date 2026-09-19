@@ -19,7 +19,6 @@ import {
   FiHash,
   FiUsers,
   FiX,
-  FiChevronDown,
 } from 'react-icons/fi'
 import toast from 'react-hot-toast'
 import {
@@ -81,11 +80,12 @@ import {
   setProposalMetadata,
 } from '@/lib/proposalMetadata'
 import {
-  decodeProposalAction,
   normalizeCalldataHex,
   proposalCalldataMatchesHash,
   setStoredProposalCalldata,
 } from '@/lib/proposalCalldata'
+import { DecodedTxSummary, TxSimulationPanel } from '@/components/TransactionDecoded'
+import type { SimResult } from '@/lib/txSimulation'
 import type { SeatUpdate } from '@/types'
 
 type TabType = 'queue' | 'history' | 'new'
@@ -775,12 +775,13 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
             <p className="text-slate-400 mt-1">
               Submit, confirm, and execute stay locked until you seat the board. Hold a membership NFT and delegate shares to it.
             </p>
-            <Link
-              to={`/chamber/${chamberAddress}/delegation`}
+            <SeatTheBoardLink
+              chamberAddress={chamberAddress}
+              nftToken={chamberInfo.nftToken}
               className="text-accent-400 text-sm hover:underline mt-2 inline-block"
             >
               Seat the board →
-            </Link>
+            </SeatTheBoardLink>
             <Link
               to="/docs/introduction/getting-started"
               className="text-accent-400 text-sm hover:underline mt-2 ml-4 inline-block"
@@ -919,6 +920,7 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
                     leftoverTokenId={tx.leftoverTokenId}
                     paused={chamberInfo.paused}
                     chainId={chainId}
+                    chamberName={chamberInfo.name}
                     {...writeReporters}
                   />
                 ))}
@@ -942,6 +944,7 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
                     leftoverTokenId={tx.leftoverTokenId}
                     paused={chamberInfo.paused}
                     chainId={chainId}
+                    chamberName={chamberInfo.name}
                     {...writeReporters}
                   />
                 ))}
@@ -965,6 +968,7 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
                     leftoverTokenId={tx.leftoverTokenId}
                     paused={chamberInfo.paused}
                     chainId={chainId}
+                    chamberName={chamberInfo.name}
                     {...writeReporters}
                   />
                 ))}
@@ -982,12 +986,13 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
                     <p className="text-slate-500 mb-6 max-w-sm mx-auto">
                       There are no directors, so the queue cannot submit, confirm, or execute. Hold a membership NFT and delegate shares to it.
                     </p>
-                    <Link
-                      to={`/chamber/${chamberAddress}/delegation`}
+                    <SeatTheBoardLink
+                      chamberAddress={chamberAddress}
+                      nftToken={chamberInfo.nftToken}
                       className="btn btn-primary inline-flex"
                     >
                       Seat the board
-                    </Link>
+                    </SeatTheBoardLink>
                     <p className="mt-4">
                       <Link
                         to="/docs/introduction/getting-started"
@@ -1058,6 +1063,7 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
                     leftoverTokenId={tx.leftoverTokenId}
                     paused={chamberInfo.paused}
                     chainId={chainId}
+                    chamberName={chamberInfo.name}
                     {...writeReporters}
                   />
                 ))}
@@ -1082,6 +1088,7 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
                     leftoverTokenId={tx.leftoverTokenId}
                     paused={chamberInfo.paused}
                     chainId={chainId}
+                    chamberName={chamberInfo.name}
                     {...writeReporters}
                   />
                 ))}
@@ -1189,6 +1196,7 @@ interface TransactionCardProps extends QueueWriteReporters {
   leftoverTokenId?: bigint
   paused?: boolean
   chainId: number
+  chamberName?: string
 }
 
 function TransactionCard({
@@ -1199,6 +1207,7 @@ function TransactionCard({
   leftoverTokenId,
   paused,
   chainId,
+  chamberName,
   onWriteStart,
   onWriteSent,
   onWriteClear,
@@ -1211,6 +1220,17 @@ function TransactionCard({
   const isExecuting = isExecutePending || isExecuteWaiting
   const isRevoking = isRevokePending || isRevokeWaiting
   const isCancelling = isCancelPending || isCancelWaiting
+  const { address: userAddress } = useAccount()
+  // Simulation gate (#260): a reverted simulation blocks Confirm/Execute until
+  // a re-run passes. Keyed per action so a pending→ready transition resets it.
+  const [simBlocked, setSimBlocked] = useState<{ confirm?: string; execute?: string }>({})
+  const resetSimulationGate = () => setSimBlocked({})
+  const onSimulationResult = (mode: 'confirm' | 'execute') => (result: SimResult | null) => {
+    setSimBlocked((prev) => ({
+      ...prev,
+      [mode]: result && result.status !== 'passed' ? result.reason : undefined,
+    }))
+  }
   const cardWriteKind: QueueWriteKind | undefined = isConfirming
     ? 'confirm'
     : isExecuting
@@ -1259,6 +1279,7 @@ function TransactionCard({
   useEffect(() => {
     setExecuteCalldata('0x')
     setCalldataTouched(false)
+    resetSimulationGate()
   }, [transaction.id])
 
   useEffect(() => {
@@ -1394,6 +1415,22 @@ function TransactionCard({
   const riskLevel = proposalMeta?.riskLevel || risk.level
   const riskSummary = proposalMeta?.riskSummary || risk.summary
 
+  // #260: calldata for the decoded view — resolved preimage wins; otherwise a
+  // locally known preimage (execute textarea / metadata) when it matches the hash.
+  const decodedSummaryCalldata = (() => {
+    if (resolvedCalldata) return resolvedCalldata.calldata
+    if (hasData) {
+      if (executeCalldata && executeCalldata !== '0x' && proposalCalldataMatchesHash(executeCalldata as `0x${string}`, transaction.dataHash)) {
+        return normalizeCalldataHex(executeCalldata) ?? undefined
+      }
+      if (metadataCalldata && proposalCalldataMatchesHash(metadataCalldata as `0x${string}`, transaction.dataHash)) {
+        return normalizeCalldataHex(metadataCalldata) ?? undefined
+      }
+    }
+    return undefined
+  })()
+  const simulationMode: 'confirm' | 'execute' = transaction.status === 'ready' ? 'execute' : 'confirm'
+
   const isCancelled = transaction.cancelled === true
   const isExpired = transaction.status === 'expired' || transaction.expired === true
   const liveConfirmations = transaction.liveConfirmations ?? transaction.confirmations
@@ -1498,6 +1535,21 @@ function TransactionCard({
               </div>
             </div>
           )}
+
+          {/* #260: human-readable decoded view (counterparty ENS/label, USD value,
+              expandable raw calldata). */}
+          {!isCancelled && (
+            <DecodedTxSummary
+              chainId={chainId}
+              chamberAddress={chamberAddress}
+              chamberName={chamberName}
+              target={transaction.target}
+              value={transaction.value}
+              calldata={decodedSummaryCalldata}
+              dataHash={hasData ? transaction.dataHash : undefined}
+              functionNameHint={proposalMeta?.functionName}
+            />
+          )}
           <div className="flex items-center gap-4 text-sm text-slate-400">
             <span className="flex items-center gap-1">
               <FiDollarSign className="w-3 h-3" />
@@ -1591,6 +1643,23 @@ function TransactionCard({
             </div>
           )}
 
+          {/* #260: simulation gate — before/after state diff; a revert blocks
+              Confirm/Execute with the readable reason. */}
+          {!transaction.executed && !isCancelled && !isExpired && userTokenId !== undefined && (
+            <TxSimulationPanel
+              key={`${simulationMode}-${transaction.id}`}
+              chamberAddress={chamberAddress}
+              txId={transaction.id}
+              mode={simulationMode}
+              target={transaction.target}
+              value={transaction.value}
+              calldata={simulationMode === 'execute' ? executeCalldata : '0x'}
+              userAddress={userAddress}
+              userTokenId={userTokenId}
+              onResult={onSimulationResult(simulationMode)}
+            />
+          )}
+
           {/* Progress bar */}
           {!transaction.executed && !isCancelled && (
             <div className="mt-3 h-1.5 bg-slate-800 rounded-full overflow-hidden">
@@ -1651,15 +1720,16 @@ function TransactionCard({
             {userTokenId !== undefined && !isExpired && transaction.status !== 'ready' && (
               <button
                 onClick={handleConfirm}
-                disabled={isConfirming || userHasConfirmed}
+                disabled={isConfirming || userHasConfirmed || !!simBlocked.confirm}
                 className="btn btn-secondary py-2 px-3"
+                title={simBlocked.confirm ?? undefined}
               >
                 {isConfirming ? (
                   <FiLoader className="w-4 h-4 animate-spin" />
                 ) : (
                   <>
                     <FiCheck className="w-4 h-4" />
-                    Confirm
+                    {simBlocked.confirm ? 'Confirm blocked' : 'Confirm'}
                   </>
                 )}
               </button>
@@ -1667,16 +1737,16 @@ function TransactionCard({
             {userTokenId !== undefined && !isExpired && transaction.status === 'ready' && (
               <button
                 onClick={handleExecute}
-                disabled={isExecuting || executeBlockedByPause}
+                disabled={isExecuting || executeBlockedByPause || !!simBlocked.execute}
                 className="btn btn-primary py-2 px-3"
-                title={executeBlockedByPause ? 'Chamber is paused' : undefined}
+                title={executeBlockedByPause ? 'Chamber is paused' : (simBlocked.execute ?? undefined)}
               >
                 {isExecuting ? (
                   <FiLoader className="w-4 h-4 animate-spin" />
                 ) : (
                   <>
                     <FiPlay className="w-4 h-4" />
-                    Execute
+                    {simBlocked.execute ? 'Execute blocked' : 'Execute'}
                   </>
                 )}
               </button>
