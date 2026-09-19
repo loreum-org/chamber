@@ -565,7 +565,9 @@ export function useCreateChamberWithStatus(
     name: string,
     symbol: string
   ) => {
-    if (!createAddress) return
+    if (!createAddress) {
+      throw new Error('No Factory or Registry is configured on this network')
+    }
     try {
       transactionStatus.reset()
       const txHash = await writeContract({
