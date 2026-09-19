@@ -22,6 +22,8 @@ export const CHAMBER_ERROR_MESSAGES = {
   AssetAmountMismatch: 'Fee-on-transfer or rebasing tokens are not supported',
   EnforcedPause: 'This chamber is paused',
   TransactionExpired: 'This transaction has expired',
+  InvalidSessionExpiry: 'Session expiry must be a future unix timestamp (0 is rejected)',
+  InvalidSessionScope: 'Session scope 0 is rejected; use SESSION_SCOPE_UNSCOPED for full access',
   ERC20InsufficientAllowance: 'Token approval required',
   ERC20InsufficientBalance: 'Insufficient token balance',
 } as const
