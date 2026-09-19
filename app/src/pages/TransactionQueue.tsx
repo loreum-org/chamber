@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { useParams, Link, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAccount, useReadContracts, useChainId, useReadContract } from 'wagmi'
-import { formatEther, isAddress, encodeFunctionData, parseAbi, parseEther, parseUnits } from 'viem'
+import { formatEther, isAddress, encodeFunctionData, parseAbi, parseEther, parseUnits, type Abi } from 'viem'
 import {
   FiArrowLeft,
   FiPlus,
@@ -56,7 +56,6 @@ import {
 } from '@/lib/utils'
 import { ChamberRouteGate } from '@/components/ChamberRouteGate'
 import { DirectorCallerStatus } from '@/components/DirectorCallerStatus'
-import { SeatTheBoardLink } from '@/components/SeatTheBoard'
 import {
   UPGRADE_SELECTOR,
   PAUSE_SELECTOR,
@@ -80,12 +79,9 @@ import {
   setProposalMetadata,
 } from '@/lib/proposalMetadata'
 import {
-  normalizeCalldataHex,
   proposalCalldataMatchesHash,
   setStoredProposalCalldata,
 } from '@/lib/proposalCalldata'
-import { DecodedTxSummary, TxSimulationPanel } from '@/components/TransactionDecoded'
-import type { SimResult } from '@/lib/txSimulation'
 import type { SeatUpdate } from '@/types'
 
 type TabType = 'queue' | 'history' | 'new'
@@ -204,7 +200,7 @@ function classifyTransactionRisk(chamberAddress: `0x${string}`, target: `0x${str
     return {
       level: 'high' as RiskLevel,
       label: 'Invalid: Chamber self-call',
-      summary: 'Proposals reject Chamber self-calls except upgrades. Use Board changes for seat changes.',
+      summary: 'The wallet queue rejects Chamber self-calls except upgrades. Use the Board seats panel for seat changes.',
     }
   }
 
@@ -249,7 +245,7 @@ function classifyTransactionRiskFromDataHash(
       level: 'high' as RiskLevel,
       label: 'Invalid: Chamber self-call',
       summary:
-        'Proposals reject Chamber self-calls except upgrades. Use Board changes for seat changes.',
+        'The wallet queue rejects Chamber self-calls except upgrades. Use the Board seats panel for seat changes.',
     }
   }
 
@@ -258,7 +254,7 @@ function classifyTransactionRiskFromDataHash(
       level: 'high' as RiskLevel,
       label: 'High risk: Chamber self-call',
       summary:
-        'Calls this Chamber from Treasury proposals. Verify calldata matches the intended action (e.g. upgrade) before approving.',
+        'Calls this Chamber from the treasury queue. Verify calldata matches the intended action (e.g. upgrade) before approving.',
     }
   }
 
@@ -342,13 +338,7 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
             registryVersionLabel: implSync.registryImplementationVersionLabel,
           } as const)
         : undefined,
-    [
-      upgradeProposalIntent,
-      implSync.implMismatch,
-      implSync.registryImplementation,
-      implSync.chamberVersionLabel,
-      implSync.registryImplementationVersionLabel,
-    ],
+    [upgradeProposalIntent, implSync.implMismatch, implSync.registryImplementation, implSync.chamberVersionLabel, implSync.registryImplementationVersionLabel],
   )
 
   const upgradeProposalHandledRef = useRef(false)
@@ -362,8 +352,7 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
     upgradeProposalHandledRef.current = true
 
     if (!registryUpgradeDraft?.newImplementation) {
-      const sourceLabel = implSync.implSourceLabel || 'Registry'
-      toast(`This chamber already matches the ${sourceLabel}'s default implementation.`, { duration: 4500 })
+      toast('This chamber already matches the Registry’s default implementation.', { duration: 4500 })
       setSearchParams(
         (prev) => {
           const next = new URLSearchParams(prev)
@@ -379,7 +368,6 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
   }, [
     upgradeProposalIntent,
     implSync.isLoading,
-    implSync.implSourceLabel,
     registryUpgradeDraft?.newImplementation,
     registryUpgradeDraft,
     setSearchParams,
@@ -775,13 +763,12 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
             <p className="text-slate-400 mt-1">
               Submit, confirm, and execute stay locked until you seat the board. Hold a membership NFT and delegate shares to it.
             </p>
-            <SeatTheBoardLink
-              chamberAddress={chamberAddress}
-              nftToken={chamberInfo.nftToken}
+            <Link
+              to={`/chamber/${chamberAddress}/delegation`}
               className="text-accent-400 text-sm hover:underline mt-2 inline-block"
             >
               Seat the board →
-            </SeatTheBoardLink>
+            </Link>
             <Link
               to="/docs/introduction/getting-started"
               className="text-accent-400 text-sm hover:underline mt-2 ml-4 inline-block"
@@ -920,7 +907,6 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
                     leftoverTokenId={tx.leftoverTokenId}
                     paused={chamberInfo.paused}
                     chainId={chainId}
-                    chamberName={chamberInfo.name}
                     {...writeReporters}
                   />
                 ))}
@@ -944,7 +930,6 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
                     leftoverTokenId={tx.leftoverTokenId}
                     paused={chamberInfo.paused}
                     chainId={chainId}
-                    chamberName={chamberInfo.name}
                     {...writeReporters}
                   />
                 ))}
@@ -968,7 +953,6 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
                     leftoverTokenId={tx.leftoverTokenId}
                     paused={chamberInfo.paused}
                     chainId={chainId}
-                    chamberName={chamberInfo.name}
                     {...writeReporters}
                   />
                 ))}
@@ -986,13 +970,12 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
                     <p className="text-slate-500 mb-6 max-w-sm mx-auto">
                       There are no directors, so the queue cannot submit, confirm, or execute. Hold a membership NFT and delegate shares to it.
                     </p>
-                    <SeatTheBoardLink
-                      chamberAddress={chamberAddress}
-                      nftToken={chamberInfo.nftToken}
+                    <Link
+                      to={`/chamber/${chamberAddress}/delegation`}
                       className="btn btn-primary inline-flex"
                     >
                       Seat the board
-                    </SeatTheBoardLink>
+                    </Link>
                     <p className="mt-4">
                       <Link
                         to="/docs/introduction/getting-started"
@@ -1063,7 +1046,6 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
                     leftoverTokenId={tx.leftoverTokenId}
                     paused={chamberInfo.paused}
                     chainId={chainId}
-                    chamberName={chamberInfo.name}
                     {...writeReporters}
                   />
                 ))}
@@ -1088,7 +1070,6 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
                     leftoverTokenId={tx.leftoverTokenId}
                     paused={chamberInfo.paused}
                     chainId={chainId}
-                    chamberName={chamberInfo.name}
                     {...writeReporters}
                   />
                 ))}
@@ -1123,11 +1104,9 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
                 userTokenId={userTokenId}
                 nextTransactionId={transactionCount}
                 currentSeats={chamberInfo.seats ?? 5}
-                quorum={chamberInfo.quorum ?? 1}
                 hasSeatProposal={hasSeatProposal}
                 boardEmpty={boardEmpty}
                 registryUpgradeDraft={registryUpgradeDraft}
-                implSync={implSync}
                 {...writeReporters}
               />
             ) : (
@@ -1196,7 +1175,6 @@ interface TransactionCardProps extends QueueWriteReporters {
   leftoverTokenId?: bigint
   paused?: boolean
   chainId: number
-  chamberName?: string
 }
 
 function TransactionCard({
@@ -1207,7 +1185,6 @@ function TransactionCard({
   leftoverTokenId,
   paused,
   chainId,
-  chamberName,
   onWriteStart,
   onWriteSent,
   onWriteClear,
@@ -1220,17 +1197,6 @@ function TransactionCard({
   const isExecuting = isExecutePending || isExecuteWaiting
   const isRevoking = isRevokePending || isRevokeWaiting
   const isCancelling = isCancelPending || isCancelWaiting
-  const { address: userAddress } = useAccount()
-  // Simulation gate (#260): a reverted simulation blocks Confirm/Execute until
-  // a re-run passes. Keyed per action so a pending→ready transition resets it.
-  const [simBlocked, setSimBlocked] = useState<{ confirm?: string; execute?: string }>({})
-  const resetSimulationGate = () => setSimBlocked({})
-  const onSimulationResult = (mode: 'confirm' | 'execute') => (result: SimResult | null) => {
-    setSimBlocked((prev) => ({
-      ...prev,
-      [mode]: result && result.status !== 'passed' ? result.reason : undefined,
-    }))
-  }
   const cardWriteKind: QueueWriteKind | undefined = isConfirming
     ? 'confirm'
     : isExecuting
@@ -1279,7 +1245,6 @@ function TransactionCard({
   useEffect(() => {
     setExecuteCalldata('0x')
     setCalldataTouched(false)
-    resetSimulationGate()
   }, [transaction.id])
 
   useEffect(() => {
@@ -1415,22 +1380,6 @@ function TransactionCard({
   const riskLevel = proposalMeta?.riskLevel || risk.level
   const riskSummary = proposalMeta?.riskSummary || risk.summary
 
-  // #260: calldata for the decoded view — resolved preimage wins; otherwise a
-  // locally known preimage (execute textarea / metadata) when it matches the hash.
-  const decodedSummaryCalldata = (() => {
-    if (resolvedCalldata) return resolvedCalldata.calldata
-    if (hasData) {
-      if (executeCalldata && executeCalldata !== '0x' && proposalCalldataMatchesHash(executeCalldata as `0x${string}`, transaction.dataHash)) {
-        return normalizeCalldataHex(executeCalldata) ?? undefined
-      }
-      if (metadataCalldata && proposalCalldataMatchesHash(metadataCalldata as `0x${string}`, transaction.dataHash)) {
-        return normalizeCalldataHex(metadataCalldata) ?? undefined
-      }
-    }
-    return undefined
-  })()
-  const simulationMode: 'confirm' | 'execute' = transaction.status === 'ready' ? 'execute' : 'confirm'
-
   const isCancelled = transaction.cancelled === true
   const isExpired = transaction.status === 'expired' || transaction.expired === true
   const liveConfirmations = transaction.liveConfirmations ?? transaction.confirmations
@@ -1535,21 +1484,6 @@ function TransactionCard({
               </div>
             </div>
           )}
-
-          {/* #260: human-readable decoded view (counterparty ENS/label, USD value,
-              expandable raw calldata). */}
-          {!isCancelled && (
-            <DecodedTxSummary
-              chainId={chainId}
-              chamberAddress={chamberAddress}
-              chamberName={chamberName}
-              target={transaction.target}
-              value={transaction.value}
-              calldata={decodedSummaryCalldata}
-              dataHash={hasData ? transaction.dataHash : undefined}
-              functionNameHint={proposalMeta?.functionName}
-            />
-          )}
           <div className="flex items-center gap-4 text-sm text-slate-400">
             <span className="flex items-center gap-1">
               <FiDollarSign className="w-3 h-3" />
@@ -1643,23 +1577,6 @@ function TransactionCard({
             </div>
           )}
 
-          {/* #260: simulation gate — before/after state diff; a revert blocks
-              Confirm/Execute with the readable reason. */}
-          {!transaction.executed && !isCancelled && !isExpired && userTokenId !== undefined && (
-            <TxSimulationPanel
-              key={`${simulationMode}-${transaction.id}`}
-              chamberAddress={chamberAddress}
-              txId={transaction.id}
-              mode={simulationMode}
-              target={transaction.target}
-              value={transaction.value}
-              calldata={simulationMode === 'execute' ? executeCalldata : '0x'}
-              userAddress={userAddress}
-              userTokenId={userTokenId}
-              onResult={onSimulationResult(simulationMode)}
-            />
-          )}
-
           {/* Progress bar */}
           {!transaction.executed && !isCancelled && (
             <div className="mt-3 h-1.5 bg-slate-800 rounded-full overflow-hidden">
@@ -1720,16 +1637,15 @@ function TransactionCard({
             {userTokenId !== undefined && !isExpired && transaction.status !== 'ready' && (
               <button
                 onClick={handleConfirm}
-                disabled={isConfirming || userHasConfirmed || !!simBlocked.confirm}
+                disabled={isConfirming || userHasConfirmed}
                 className="btn btn-secondary py-2 px-3"
-                title={simBlocked.confirm ?? undefined}
               >
                 {isConfirming ? (
                   <FiLoader className="w-4 h-4 animate-spin" />
                 ) : (
                   <>
                     <FiCheck className="w-4 h-4" />
-                    {simBlocked.confirm ? 'Confirm blocked' : 'Confirm'}
+                    Confirm
                   </>
                 )}
               </button>
@@ -1737,16 +1653,16 @@ function TransactionCard({
             {userTokenId !== undefined && !isExpired && transaction.status === 'ready' && (
               <button
                 onClick={handleExecute}
-                disabled={isExecuting || executeBlockedByPause || !!simBlocked.execute}
+                disabled={isExecuting || executeBlockedByPause}
                 className="btn btn-primary py-2 px-3"
-                title={executeBlockedByPause ? 'Chamber is paused' : (simBlocked.execute ?? undefined)}
+                title={executeBlockedByPause ? 'Chamber is paused' : undefined}
               >
                 {isExecuting ? (
                   <FiLoader className="w-4 h-4 animate-spin" />
                 ) : (
                   <>
                     <FiPlay className="w-4 h-4" />
-                    {simBlocked.execute ? 'Execute blocked' : 'Execute'}
+                    Execute
                   </>
                 )}
               </button>
@@ -2135,7 +2051,6 @@ interface NewTransactionFormProps extends QueueWriteReporters {
   userTokenId?: bigint
   nextTransactionId: number
   currentSeats: number
-  quorum: number
   hasSeatProposal: boolean
   boardEmpty: boolean
   registryUpgradeDraft?: {
@@ -2143,7 +2058,6 @@ interface NewTransactionFormProps extends QueueWriteReporters {
     chamberVersionLabel?: string
     registryVersionLabel?: string
   }
-  implSync: ReturnType<typeof useChamberRegistryImplementationSync>
 }
 
 // Helper to get placeholder text for different parameter types
@@ -2227,11 +2141,9 @@ function NewTransactionForm({
   userTokenId,
   nextTransactionId,
   currentSeats,
-  quorum,
   hasSeatProposal,
   boardEmpty,
   registryUpgradeDraft,
-  implSync,
   onWriteStart,
   onWriteSent,
   onWriteClear,
@@ -2298,8 +2210,7 @@ function NewTransactionForm({
 
     const regV = registryUpgradeDraft.registryVersionLabel
     const curV = registryUpgradeDraft.chamberVersionLabel
-    const sourceLabel = implSync.implSourceLabel || 'Registry'
-    setTitle(`Upgrade Chamber to ${sourceLabel} implementation${regV ? ` v${regV}` : ''}`)
+    setTitle(`Upgrade Chamber to Registry implementation${regV ? ` v${regV}` : ''}`)
     setDescription(
       `Multisig: upgradeImplementation(${impl}, 0x). Current proxy implementation VERSION reports ${curV ?? 'unknown'}. Confirm audit status and migrations before approving; init calldata left empty.`,
     )
@@ -2310,7 +2221,6 @@ function NewTransactionForm({
     registryUpgradeDraft?.registryVersionLabel,
     registryUpgradeDraft?.chamberVersionLabel,
     registryUpgradeDraft,
-    implSync.implSourceLabel,
   ])
 
   // Parse function signature when it changes
@@ -2364,12 +2274,12 @@ function NewTransactionForm({
       const hasAllParams = parsedFunction.params.every((_, index) => paramValues[`param${index}`]?.trim())
       
       if (hasAllParams || parsedFunction.params.length === 0) {
-        // parseAbi is valid; functionName is dynamic from the user-entered signature.
+        // parseAbi returns a fully validated ABI; cast needed for dynamic function names
         const encoded = encodeFunctionData({
-          abi,
+          abi: abi as Abi,
           functionName: parsedFunction.name,
           args,
-        } as Parameters<typeof encodeFunctionData>[0])
+        })
         setEncodedData(encoded)
         setData(encoded)
       } else {
@@ -2385,13 +2295,13 @@ function NewTransactionForm({
     e.preventDefault()
 
     if (userTokenId === undefined) {
-      toast.error('You must be a director to submit proposals')
+      toast.error('You must be a director to submit transactions')
       return
     }
 
     if (proposalType === 'seats') {
       if (hasSeatProposal) {
-        toast.error('A board change is already active. Support or execute it from Proposals.')
+        toast.error('A board seat proposal is already active. Support or execute it from the queue.')
         return
       }
       const n = Number(seatDraft)
@@ -2416,7 +2326,7 @@ function NewTransactionForm({
       } catch (err) {
         console.error(err)
         onWriteClear()
-        toast.error(formatWalletSendError(err, 'Board change failed'))
+        toast.error(formatWalletSendError(err, 'Board proposal failed'))
       }
       return
     }
@@ -2457,7 +2367,7 @@ function NewTransactionForm({
           args: [target as `0x${string}`, parsedTokenAmount],
         })
         if (!isAllowedChamberSelfCall(chamberAddress, tokenAddress, txData)) {
-          toast.error('Chamber self-calls are only allowed for upgrades. Use Board changes for seat changes.')
+          toast.error('Chamber self-calls are only allowed for upgrades. Use the Board seats panel for seat changes.')
           return
         }
         // Target becomes token address
@@ -2492,7 +2402,7 @@ function NewTransactionForm({
       }
 
       if (!isAllowedChamberSelfCall(chamberAddress, target, txData)) {
-        toast.error('Chamber self-calls are only allowed for upgrades. Use Board changes for seat changes.')
+        toast.error('Chamber self-calls are only allowed for upgrades. Use the Board seats panel for seat changes.')
         return
       }
 
@@ -2547,7 +2457,7 @@ function NewTransactionForm({
         </div>
         <div>
           <h3 className="font-heading font-semibold text-slate-100">New Proposal</h3>
-          <p className="text-slate-500 text-xs">Create a treasury proposal or board change</p>
+          <p className="text-slate-500 text-xs">Create a treasury, contract, or board proposal</p>
         </div>
       </div>
 
@@ -2556,13 +2466,13 @@ function NewTransactionForm({
           {
             id: 'transaction',
             icon: FiDollarSign,
-            title: 'Treasury proposals',
+            title: 'Treasury / contract proposal',
             description: 'Submit a wallet transaction for director confirmation.',
           },
           {
             id: 'seats',
             icon: FiUsers,
-            title: 'Board changes',
+            title: 'Board seat change',
             description: 'Use the Chamber native seat proposal and timelock flow.',
           },
         ].map((type) => {
@@ -2599,9 +2509,9 @@ function NewTransactionForm({
               <div className="flex items-start gap-3">
                 <FiUsers className="w-5 h-5 text-accent-400 mt-0.5" />
                 <div>
-                  <h4 className="font-medium text-slate-100 text-sm">Board changes</h4>
+                  <h4 className="font-medium text-slate-100 text-sm">Board Proposal</h4>
                   <p className="text-slate-400 text-xs mt-1">
-                    Directors propose and support seat changes directly. {quorum} of {currentSeats} directors must confirm. Execution then unlocks after the 7-day timelock. The proposer can cancel anytime; any current director can cancel after 14 days.
+                    Directors propose and support seat changes directly. Once quorum is reached, execution unlocks after the 7-day timelock. The proposer can cancel anytime; any current director can cancel after 14 days.
                   </p>
                 </div>
               </div>
@@ -2609,7 +2519,7 @@ function NewTransactionForm({
 
             {hasSeatProposal && (
               <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 text-sm text-amber-300">
-                A board change is already active. Return to Proposals to support or execute it.
+                A board seat proposal is already active. Return to the queue to support or execute it.
               </div>
             )}
 
@@ -2646,17 +2556,17 @@ function NewTransactionForm({
           <>
             {registryUpgradeDraft && (
               <div className="rounded-xl border border-accent-400/35 bg-accent-500/[0.08] px-4 py-3 text-sm text-slate-100/95">
-                <p className="font-medium text-accent-300 mb-1">Prefilled {implSync.implSourceLabel || 'Registry'} upgrade proposal</p>
+                <p className="font-medium text-accent-300 mb-1">Prefilled Registry upgrade proposal</p>
                 <p className="text-slate-400 text-xs leading-relaxed">
                   Target is this Chamber. Calldata invokes <span className="font-mono">upgradeImplementation</span> using
-                  the {implSync.implSourceLabel || 'Registry'}'s default implementation{' '}
+                  the Registry’s default implementation{' '}
                   <span className="font-mono text-slate-300">
                     {shortenAddress(registryUpgradeDraft.newImplementation, 6)}
                   </span>
                   {registryUpgradeDraft.registryVersionLabel
                     ? ` (VERSION ${registryUpgradeDraft.registryVersionLabel})`
                     : ''}
-                  . Other directors still need to confirm — {quorum} of {currentSeats} directors must confirm — before execution.
+                  . Other directors still need to confirm until quorum before execution.
                 </p>
                 <p className="mt-2">
                   <Link
@@ -2948,7 +2858,7 @@ function NewTransactionForm({
           ) : (
             <>
               <FiSend className="w-4 h-4" />
-              {proposalType === 'seats' ? 'Create board change' : 'Submit proposal'}
+              {proposalType === 'seats' ? 'Create Board Proposal' : 'Submit Transaction'}
             </>
           )}
         </button>
@@ -2956,3 +2866,4 @@ function NewTransactionForm({
     </div>
   )
 }
+
