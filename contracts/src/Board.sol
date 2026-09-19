@@ -150,9 +150,12 @@ abstract contract Board is ReentrancyGuardTransientUpgradeable {
 
     function _syncTrackedDelegations(
         mapping(address => mapping(uint256 => uint256)) storage holderDelegation,
+        mapping(address => uint256) storage totalHolderDelegations,
         mapping(address => EnumerableSet.UintSet) storage holderDelegatedTokenIds,
         address holder
     ) internal {
-        BoardLib.syncTrackedDelegations(_getBoardStorage(), holderDelegation, holderDelegatedTokenIds, holder);
+        BoardLib.syncTrackedDelegations(
+            _getBoardStorage(), holderDelegation, totalHolderDelegations, holderDelegatedTokenIds, holder
+        );
     }
 }
