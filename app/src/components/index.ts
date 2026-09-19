@@ -5,8 +5,5 @@ export { default as BoardVisualization } from './BoardVisualization'
 export { default as TreasuryOverview } from './TreasuryOverview'
 export { default as DelegationManager } from './DelegationManager'
 export { default as SeatTheBoard, SeatTheBoardLink } from './SeatTheBoard'
-=======
-export { default as SeatTheBoard } from './SeatTheBoard'
 export { DirectorCallerStatus } from './DirectorCallerStatus'
 export { DirectorOperatorManager } from './DirectorOperatorManager'
->>>>>>> 6b6cf28 (fix(app): sync session-key ABI and write UI to M04 4-arg setter)
