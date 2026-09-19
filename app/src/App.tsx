@@ -1,7 +1,23 @@
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
+import { useAccount, useConnections } from 'wagmi'
 import Layout from '@/components/Layout'
 import { Dashboard, DeployChamber, ChamberDetail, TransactionQueue, Docs, DirectorProfile, Migrate, Operators, OperatorWizard, Compliance } from '@/pages'
+
+/**
+ * `/` shows the Dashboard for connected wallets and sends everyone else to
+ * `/deploy`. Before wagmi's auto-reconnect starts, status is 'disconnected'
+ * even for returning users; their persisted connection is still in the store,
+ * so only redirect once there is no connection left to restore.
+ */
+function HomeRoute() {
+  const { status } = useAccount()
+  const connections = useConnections()
+  if (status === 'disconnected' && connections.length === 0) {
+    return <Navigate to="/deploy" replace />
+  }
+  return <Dashboard />
+}
 
 function App() {
   return (
@@ -31,7 +47,7 @@ function App() {
       />
       <Routes>
         <Route path="/" element={<Layout />}>
-          <Route index element={<Dashboard />} />
+          <Route index element={<HomeRoute />} />
           <Route path="deploy" element={<DeployChamber />} />
           <Route path="chamber/:address" element={<ChamberDetail />} />
           <Route path="chamber/:address/:tab" element={<ChamberDetail />} />
