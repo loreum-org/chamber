@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ChevronRight, Layers, Shield, Cpu, TrendingUp, ShieldAlert, Search, Radio, Scale, Eye, Network } from 'lucide-react';
 import Footer from './Footer.tsx';
+import { useSeo } from './seo';
 
 const FadeIn = ({ children, delay = 0, className = "" }: { children: React.ReactNode, delay?: number, className?: string }) => (
   <motion.div
