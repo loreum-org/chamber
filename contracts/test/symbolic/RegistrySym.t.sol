@@ -3,14 +3,18 @@ pragma solidity ^0.8.30;
 
 import {Test} from "forge-std/Test.sol";
 import {SymTest} from "halmos-cheatcodes/SymTest.sol";
+import {Registry} from "src/Registry.sol";
+import {Chamber} from "src/Chamber.sol";
+import {MockERC20} from "test/mock/MockERC20.sol";
+import {MockERC721} from "test/mock/MockERC721.sol";
+import {DeployRegistry} from "test/utils/DeployRegistry.sol";
 
-/// @dev Test-local copy of Registry initialize / impl pointer / create validation.
-///      `new Registry()` in `src/` is rewritten to `vm.deployCode` (Halmos-unsupported).
-///      Role names match Registry: DEFAULT_ADMIN_ROLE is 0x00, ADMIN_ROLE is keccak256("ADMIN_ROLE").
-contract RegistryPointerHarness {
-    error ZeroAddress();
-    error InvalidSeats();
-    error NotAdmin();
+/// @notice Symbolic verification of Registry access control. Create is disabled (PMN-M03 A).
+contract RegistrySymTest is Test, SymTest {
+    Registry internal registry;
+    Chamber internal alternateImpl;
+    MockERC20 internal token;
+    MockERC721 internal nft;
 
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
     bytes32 public constant DEFAULT_ADMIN_ROLE = bytes32(0);
@@ -30,10 +34,10 @@ contract RegistryPointerHarness {
         _admin = admin;
     }
 
-    function hasRole(bytes32 role, address account) public view returns (bool) {
-        if (account != _admin || account == address(0)) return false;
-        return role == DEFAULT_ADMIN_ROLE || role == ADMIN_ROLE;
-    }
+    /// @dev Valid seats still cannot create; Factory is the Ethereum create path
+    function symbolicCreateChamberValidSeats() public {
+        uint256 seats = svm.createUint(5, "seats");
+        vm.assume(seats >= 1 && seats <= 20);
 
     function setChamberImplementation(address newImplementation) external {
         if (!hasRole(ADMIN_ROLE, msg.sender)) revert NotAdmin();
@@ -42,50 +46,15 @@ contract RegistryPointerHarness {
         implementation = newImplementation;
     }
 
-    function createChamber(address erc20Token, address erc721Token, uint256 seats, string memory, string memory)
-        external
-        view
-    {
-        if (erc20Token == address(0) || erc721Token == address(0)) revert ZeroAddress();
-        if (seats == 0 || seats > 20) revert InvalidSeats();
-        if (implementation == address(0)) revert ZeroAddress();
+        (bool success,) = address(registry).call(
+            abi.encodeCall(Registry.createChamber, (address(token), address(nft), seats, "Chamber", "CHMB"))
+        );
+
+        assertFalse(success);
+        assertEq(registry.getChamberCount(), countBefore);
     }
 
-    function getChamberCount() external view returns (uint256) {
-        return chamberCount;
-    }
-}
-
-/// @notice Symbolic verification of Registry access control (deprecated create path)
-contract RegistrySymTest is Test, SymTest {
-    RegistryPointerHarness internal registry;
-
-    address internal constant ADMIN = address(0xA11CE);
-    address internal constant IMPL = address(0xB0B);
-
-    function setUp() public {
-        registry = new RegistryPointerHarness();
-        registry.initialize(IMPL, ADMIN);
-    }
-
-    /// @dev initialize stores the intended implementation and grants admin roles
-    function symbolicInitializeStoresAdminAndImpl() public {
-        address nextAdmin = svm.createAddress("nextAdmin");
-        address nextImpl = svm.createAddress("nextImpl");
-        vm.assume(nextAdmin != address(0) && nextImpl != address(0));
-        vm.assume(nextAdmin != nextImpl);
-
-        RegistryPointerHarness fresh = new RegistryPointerHarness();
-        fresh.initialize(nextImpl, nextAdmin);
-
-        assertEq(fresh.implementation(), nextImpl);
-        assertEq(fresh.proxyAdmin(), nextAdmin);
-        assertTrue(fresh.hasRole(fresh.DEFAULT_ADMIN_ROLE(), nextAdmin));
-        assertTrue(fresh.hasRole(fresh.ADMIN_ROLE(), nextAdmin));
-        assertEq(fresh.getChamberCount(), 0);
-    }
-
-    /// @dev Zero or excessive seat counts cannot create a chamber
+    /// @dev Invalid seats also revert (create is unconditionally disabled)
     function symbolicCreateChamberInvalidSeatsReverts() public {
         uint256 seats = svm.createUint256("seats");
         vm.assume(seats == 0 || seats > 20);
@@ -129,7 +98,7 @@ contract RegistrySymTest is Test, SymTest {
         assertEq(registry.implementation(), IMPL);
     }
 
-    /// @dev Admin can update the implementation pointer used for future chamber deploys
+    /// @dev Admin can update the leftover implementation pointer (unused after create disable)
     function symbolicSetImplementationAdminUpdates() public {
         address next = svm.createAddress("nextImpl");
         vm.assume(next != address(0) && next != IMPL);
@@ -140,10 +109,19 @@ contract RegistrySymTest is Test, SymTest {
         assertEq(registry.implementation(), next);
     }
 
-    /// @dev Same-address setChamberImplementation is a no-op
-    function symbolicSetImplementationSameAddressNoOp() public {
-        vm.prank(ADMIN);
-        registry.setChamberImplementation(IMPL);
-        assertEq(registry.implementation(), IMPL);
+    /// @dev Create cannot register an asset in the leftover index
+    function symbolicCreateChamberRegistersAsset() public {
+        uint256 seats = svm.createUint(5, "seats");
+        vm.assume(seats >= 1 && seats <= 20);
+
+        assertEq(registry.getAssets().length, 0);
+
+        (bool success,) = address(registry).call(
+            abi.encodeCall(Registry.createChamber, (address(token), address(nft), seats, "Chamber", "CHMB"))
+        );
+
+        assertFalse(success);
+        assertEq(registry.getAssets().length, 0);
+        assertEq(registry.getChambersByAsset(address(token)).length, 0);
     }
 }
