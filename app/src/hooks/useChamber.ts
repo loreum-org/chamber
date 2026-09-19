@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useReadContract, useReadContracts, useWriteContract, useWaitForTransactionReceipt, useSimulateContract, useAccount, useBlockNumber, usePublicClient, useChainId } from 'wagmi'
 import { isAddress, zeroAddress } from 'viem'
 import { chamberAbi, erc20Abi, erc721Abi } from '@/contracts/abis'
-import { chamberVersionBytes32ToLabel } from '@/lib/utils'
+import { chamberVersionBytes32ToLabel, resolveTokenDecimals } from '@/lib/utils'
 import { isSeatingMature } from '@/lib/chamberGovernance'
 import { getAlchemyApiKeyFromEnv } from '@/lib/alchemy'
 import { listOwnedErc721TokenIds } from '@/lib/ownedErc721'
@@ -272,6 +272,20 @@ export function useChamberBalance(chamberAddress: `0x${string}` | undefined, acc
   })
 
   return { balance: balance as bigint | undefined, refetch }
+}
+
+/**
+ * Chamber share-token decimals (ERC-4626: asset.decimals() + _decimalsOffset()).
+ * Do not use raw asset decimals for share amounts.
+ */
+export function useShareDecimals(chamberAddress: `0x${string}` | undefined): number {
+  const { data } = useReadContract({
+    address: chamberAddress,
+    abi: erc20Abi,
+    functionName: 'decimals',
+    query: { enabled: !!chamberAddress },
+  })
+  return resolveTokenDecimals(data)
 }
 
 export function useBoardMembers(chamberAddress: `0x${string}` | undefined, count: number = 20) {

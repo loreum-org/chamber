@@ -24,6 +24,7 @@ import {
   useSimulateUndelegate,
   useUserNFTs,
   useNftTokenImage,
+  useShareDecimals,
 } from '@/hooks'
 import { NftRetryableImage } from '@/components/NftRetryableImage'
 import type { BoardMember } from '@/types'
@@ -78,6 +79,7 @@ export default function DelegationManager({
 
   const { delegate, isPending: isDelegating, isConfirming: isDelegateConfirming } = useDelegate(chamberAddress)
   const { undelegate, isPending: isUndelegating, isConfirming: isUndelegateConfirming } = useUndelegate(chamberAddress)
+  const shareDecimals = useShareDecimals(chamberAddress)
 
   // Watch for delegation events and auto-refresh when transactions are mined
   useChamberEventRefresh(chamberAddress)
@@ -105,19 +107,19 @@ export default function DelegationManager({
   // Parse amounts for simulation
   const delegateAmountBigInt = useMemo(() => {
     try {
-      return delegateAmount ? parseUnits(delegateAmount, 18) : undefined
+      return delegateAmount ? parseUnits(delegateAmount, shareDecimals) : undefined
     } catch {
       return undefined
     }
-  }, [delegateAmount])
+  }, [delegateAmount, shareDecimals])
 
   const undelegateAmountBigInt = useMemo(() => {
     try {
-      return undelegateAmount ? parseUnits(undelegateAmount, 18) : undefined
+      return undelegateAmount ? parseUnits(undelegateAmount, shareDecimals) : undefined
     } catch {
       return undefined
     }
-  }, [undelegateAmount])
+  }, [undelegateAmount, shareDecimals])
 
   // Simulate transactions to catch errors before user submits
   const { 
@@ -219,7 +221,7 @@ export default function DelegationManager({
   const handleDelegate = async () => {
     if (!delegateTokenId || !delegateAmount) return
     try {
-      await delegate(BigInt(delegateTokenId), parseUnits(delegateAmount, 18))
+      await delegate(BigInt(delegateTokenId), parseUnits(delegateAmount, shareDecimals))
       toast.success('Delegation submitted!')
       invalidateNftImagesForChamber()
       setDelegateTokenId('')
@@ -233,7 +235,7 @@ export default function DelegationManager({
   const handleUndelegate = async () => {
     if (!undelegateTokenId || !undelegateAmount) return
     try {
-      await undelegate(BigInt(undelegateTokenId), parseUnits(undelegateAmount, 18))
+      await undelegate(BigInt(undelegateTokenId), parseUnits(undelegateAmount, shareDecimals))
       toast.success('Undelegation submitted!')
       invalidateNftImagesForChamber()
       setUndelegateTokenId('')
@@ -285,7 +287,7 @@ export default function DelegationManager({
           <div className="text-slate-500 text-xs mb-1.5">Total Balance</div>
           <div className="font-heading text-xl font-bold text-slate-100">
             {userBalance !== undefined
-              ? parseFloat(formatUnits(userBalance, 18)).toFixed(4)
+              ? parseFloat(formatUnits(userBalance, shareDecimals)).toFixed(4)
               : '0.0000'}
             {vaultSymbol && <span className="text-lg text-slate-400 ml-1">{vaultSymbol}</span>}
           </div>
@@ -299,7 +301,7 @@ export default function DelegationManager({
         >
           <div className="text-slate-500 text-xs mb-1.5">Delegated</div>
           <div className="font-heading text-xl font-bold gradient-text">
-            {parseFloat(formatUnits(totalDelegated, 18)).toFixed(4)}
+            {parseFloat(formatUnits(totalDelegated, shareDecimals)).toFixed(4)}
             {vaultSymbol && <span className="text-lg text-slate-400 ml-1">{vaultSymbol}</span>}
           </div>
         </motion.div>
@@ -312,7 +314,7 @@ export default function DelegationManager({
         >
           <div className="text-slate-500 text-xs mb-1.5">Available</div>
           <div className="font-heading text-xl font-bold text-emerald-400">
-            {parseFloat(formatUnits(availableBalance, 18)).toFixed(4)}
+            {parseFloat(formatUnits(availableBalance, shareDecimals)).toFixed(4)}
             {vaultSymbol && <span className="text-lg text-slate-400 ml-1">{vaultSymbol}</span>}
           </div>
         </motion.div>
@@ -392,7 +394,7 @@ export default function DelegationManager({
                   step="any"
                 />
                 <button
-                  onClick={() => setDelegateAmount(formatUnits(availableBalance, 18))}
+                  onClick={() => setDelegateAmount(formatUnits(availableBalance, shareDecimals))}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-accent-400 hover:text-accent-300 text-sm font-medium"
                 >
                   MAX
@@ -490,7 +492,7 @@ export default function DelegationManager({
                 <option value="">Select delegated member...</option>
                 {delegations.map((d) => (
                   <option key={d.tokenId.toString()} value={d.tokenId.toString()}>
-                    #{d.tokenId.toString()} - {parseFloat(formatUnits(d.amount, 18)).toFixed(4)} {vaultSymbol || ''} delegated
+                    #{d.tokenId.toString()} - {parseFloat(formatUnits(d.amount, shareDecimals)).toFixed(4)} {vaultSymbol || ''} delegated
                   </option>
                 ))}
               </select>
@@ -513,7 +515,7 @@ export default function DelegationManager({
                 <button
                   onClick={() => {
                     const del = delegations.find(d => d.tokenId.toString() === undelegateTokenId)
-                    if (del) setUndelegateAmount(formatUnits(del.amount, 18))
+                    if (del) setUndelegateAmount(formatUnits(del.amount, shareDecimals))
                   }}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-accent-400 hover:text-accent-300 text-sm font-medium"
                 >
@@ -600,7 +602,7 @@ export default function DelegationManager({
                   </div>
                   <div className="text-right">
                     <div className="font-mono text-slate-100">
-                      {parseFloat(formatUnits(delegation.amount, 18)).toFixed(4)}
+                      {parseFloat(formatUnits(delegation.amount, shareDecimals)).toFixed(4)}
                       {vaultSymbol && <span className="text-slate-400 ml-1">{vaultSymbol}</span>}
                     </div>
                     <div className="text-slate-500 text-xs">delegated</div>
