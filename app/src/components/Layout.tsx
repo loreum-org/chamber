@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Outlet, Link, useLocation } from 'react-router-dom'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { motion, AnimatePresence } from 'framer-motion'
-import { FiHome, FiGithub, FiBook, FiPlus, FiMenu, FiX, FiUsers } from 'react-icons/fi'
+import { FiHome, FiGithub, FiBook, FiPlus, FiMenu, FiX, FiUsers, FiShield } from 'react-icons/fi'
 import { useAccount, useWriteContract } from 'wagmi'
 import { sepolia } from 'wagmi/chains'
 import { simulateContract } from 'wagmi/actions'
@@ -16,6 +16,7 @@ const navItems = [
   { path: '/', label: 'My Chambers', icon: FiHome },
   { path: '/operators', label: 'Operators', icon: FiUsers },
   { path: '/deploy', label: 'Deploy Chamber', icon: FiPlus },
+  { path: '/compliance', label: 'Compliance', icon: FiShield },
   { path: '/docs', label: 'Docs', icon: FiBook },
 ]
 

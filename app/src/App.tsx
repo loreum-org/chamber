@@ -1,7 +1,7 @@
 import { Routes, Route } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import Layout from '@/components/Layout'
-import { Dashboard, DeployChamber, ChamberDetail, TransactionQueue, Docs, DirectorProfile, Migrate, Operators, OperatorWizard } from '@/pages'
+import { Dashboard, DeployChamber, ChamberDetail, TransactionQueue, Docs, DirectorProfile, Migrate, Operators, OperatorWizard, Compliance } from '@/pages'
 
 function App() {
   return (
@@ -37,6 +37,7 @@ function App() {
           <Route path="chamber/:address/:tab" element={<ChamberDetail />} />
           <Route path="chamber/:address/transactions" element={<TransactionQueue />} />
           <Route path="chamber/:address/director/:tokenId" element={<DirectorProfile />} />
+          <Route path="compliance" element={<Compliance />} />
           <Route path="docs" element={<Docs />} />
           <Route path="docs/*" element={<Docs />} />
           <Route path="migrate" element={<Migrate />} />
