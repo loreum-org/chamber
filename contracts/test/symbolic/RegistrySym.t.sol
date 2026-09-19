@@ -16,22 +16,13 @@ contract RegistrySymTest is Test, SymTest {
     MockERC20 internal token;
     MockERC721 internal nft;
 
-    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
-    bytes32 public constant DEFAULT_ADMIN_ROLE = bytes32(0);
+    address internal constant ADMIN = address(0xA11CE);
 
-    address public implementation;
-    address public proxyAdmin;
-    uint256 public chamberCount;
-    address private _admin;
-    bool private _initialized;
-
-    function initialize(address impl, address admin) external {
-        if (_initialized) revert("already initialized");
-        if (admin == address(0) || impl == address(0)) revert ZeroAddress();
-        _initialized = true;
-        implementation = impl;
-        proxyAdmin = admin;
-        _admin = admin;
+    function setUp() public {
+        token = new MockERC20("Test Token", "TEST", 1000000e18);
+        nft = new MockERC721("Mock NFT", "MNFT");
+        alternateImpl = new Chamber();
+        registry = DeployRegistry.deploy(ADMIN);
     }
 
     /// @dev Valid seats still cannot create; Factory is the Ethereum create path
@@ -39,12 +30,7 @@ contract RegistrySymTest is Test, SymTest {
         uint256 seats = svm.createUint(5, "seats");
         vm.assume(seats >= 1 && seats <= 20);
 
-    function setChamberImplementation(address newImplementation) external {
-        if (!hasRole(ADMIN_ROLE, msg.sender)) revert NotAdmin();
-        if (newImplementation == address(0)) revert ZeroAddress();
-        if (implementation == newImplementation) return;
-        implementation = newImplementation;
-    }
+        uint256 countBefore = registry.getChamberCount();
 
         (bool success,) = address(registry).call(
             abi.encodeCall(Registry.createChamber, (address(token), address(nft), seats, "Chamber", "CHMB"))
@@ -62,12 +48,12 @@ contract RegistrySymTest is Test, SymTest {
         uint256 countBefore = registry.getChamberCount();
 
         (bool success,) = address(registry).call(
-            abi.encodeCall(RegistryPointerHarness.createChamber, (address(0x1), address(0x2), seats, "C", "C"))
+            abi.encodeCall(Registry.createChamber, (address(0x1), address(0x2), seats, "C", "C"))
         );
 
         assertFalse(success);
         assertEq(registry.getChamberCount(), countBefore);
-        assertEq(registry.implementation(), IMPL);
+        assertEq(registry.implementation(), address(alternateImpl));
     }
 
     /// @dev Zero token addresses cannot create a chamber
@@ -78,7 +64,7 @@ contract RegistrySymTest is Test, SymTest {
 
         uint256 countBefore = registry.getChamberCount();
         (bool success,) =
-            address(registry).call(abi.encodeCall(RegistryPointerHarness.createChamber, (erc20, erc721, 3, "C", "C")));
+            address(registry).call(abi.encodeCall(Registry.createChamber, (erc20, erc721, 3, "C", "C")));
         assertFalse(success);
         assertEq(registry.getChamberCount(), countBefore);
     }
@@ -88,20 +74,20 @@ contract RegistrySymTest is Test, SymTest {
         address caller = svm.createAddress("caller");
         address next = svm.createAddress("nextImpl");
         vm.assume(caller != ADMIN);
-        vm.assume(next != address(0));
+        vm.assume(next != address(0) && next != address(alternateImpl));
         vm.assume(!registry.hasRole(registry.ADMIN_ROLE(), caller));
 
         vm.prank(caller);
-        (bool success,) = address(registry).call(abi.encodeCall(RegistryPointerHarness.setChamberImplementation, (next)));
+        (bool success,) = address(registry).call(abi.encodeCall(Registry.setChamberImplementation, (next)));
 
         assertFalse(success);
-        assertEq(registry.implementation(), IMPL);
+        assertEq(registry.implementation(), address(alternateImpl));
     }
 
     /// @dev Admin can update the leftover implementation pointer (unused after create disable)
     function symbolicSetImplementationAdminUpdates() public {
         address next = svm.createAddress("nextImpl");
-        vm.assume(next != address(0) && next != IMPL);
+        vm.assume(next != address(0) && next != address(alternateImpl));
 
         vm.prank(ADMIN);
         registry.setChamberImplementation(next);

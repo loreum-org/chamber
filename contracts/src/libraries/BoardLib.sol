@@ -708,9 +708,8 @@ library BoardLib {
     function syncTrackedDelegations(
         BoardTypes.BoardStorage storage $b,
         mapping(address => mapping(uint256 => uint256)) storage holderDelegation,
-        mapping(
-            address => EnumerableSet.UintSet
-        ) storage holderDelegatedTokenIds,
+        mapping(address => uint256) storage totalHolderDelegations,
+        mapping(address => EnumerableSet.UintSet) storage holderDelegatedTokenIds,
         address holder
     ) external {
         EnumerableSet.UintSet storage tracked = holderDelegatedTokenIds[holder];
