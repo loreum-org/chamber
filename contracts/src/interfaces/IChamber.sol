@@ -133,9 +133,19 @@ interface IChamber is IERC4626, IBoard, IWallet {
 
     /**
      * @notice Top-seat tokenIds that can still authorize (`ownerOf` succeeds, owner is not the chamber).
-     * @dev Denominator for {getQuorum} (PMN-M01). Does not compact leaderboard rank (#210).
+     * @dev Denominator for {getQuorum} (PMN-M01). Does not compact leaderboard rank; use
+     *      {cleanupInertSeat} to drop a burned id (PMN-M02 B).
      */
     function getReachableDirectorCount() external view returns (uint256);
+
+    /**
+     * @notice Removes a burned membership `tokenId` from the leaderboard (PMN-M02 Solution B).
+     * @dev Permissionless. `ownerOf` must revert (or otherwise fail). `refreshSeating` on a later
+     *      delegate/undelegate does not put the id back while it stays inert. Reminting the same
+     *      `tokenId` is not required. Live tokens revert {IBoard.SeatNotInert}.
+     * @param tokenId Membership token to drop from the top set
+     */
+    function cleanupInertSeat(uint256 tokenId) external;
 
     /**
      * @notice Updates the number of seats
@@ -280,6 +290,12 @@ interface IChamber is IERC4626, IBoard, IWallet {
      * @param newSeats Seat count after recovery
      */
     event SeatsRecovered(uint256 indexed tokenId, uint256 previousSeats, uint256 newSeats);
+
+    /**
+     * @notice Emitted when a burned / `ownerOf`-failing tokenId is dropped from the board.
+     * @param tokenId Membership token removed from the leaderboard
+     */
+    event InertSeatCleaned(uint256 indexed tokenId);
 
     /// Errors
     /// @notice Thrown when there is insufficient delegated amount

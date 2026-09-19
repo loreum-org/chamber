@@ -51,6 +51,13 @@ functions, and `revokeConfirmation` (which is owner-authorized, not seat-gated)
 when the revoke bit is set or the key is unscoped. Unscoped is an explicit
 owner choice, not a silent default.
 
+Confirm and cancel bits count toward execute only while `ownerOf` succeeds
+and the recorded controller still matches (PMN-H01 A, PMN-M02 A). Burned
+tokens are skipped. A control change to an owner with no live session key
+drops the prior bits. `cleanupInertSeat(tokenId)` drops a burned id from the
+top set; later `refreshSeating` does not put it back while it stays inert
+(PMN-M02 Solution B).
+
 The owner may still act as itself (no expiry, scope, or post-set delay). The
 owner clears the key by calling `setDirectorOperator(tokenId, address(0), 0, 0)`
 and may do so immediately, including during the post-set delay. The owner
