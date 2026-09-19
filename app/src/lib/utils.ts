@@ -24,6 +24,16 @@ export function chamberVersionBytes32ToLabel(value: Hex | undefined): string | u
   }
 }
 
+/** `1.1.8` → `v1.1.8`. Loading / missing stay placeholders — never invent a version. */
+export function formatChamberVersionTag(
+  label: string | undefined,
+  isLoading = false,
+): string {
+  if (isLoading) return '…'
+  if (label == null || label === '') return '—'
+  return label.startsWith('v') ? label : `v${label}`
+}
+
 export function addressFromEip1967ImplementationSlot(slotValue: Hex | undefined): `0x${string}` | undefined {
   if (!slotValue || slotValue === '0x' || slotValue === `0x${'0'.repeat(64)}`) return undefined
   try {
