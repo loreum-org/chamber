@@ -81,25 +81,30 @@ The app will be available at `http://localhost:5173`
 npm run build
 ```
 
-### Sepolia wallet smoke (Playwright + MetaMask)
+### CI / local checks
 
-Short wallet-UI smoke on **Sepolia (11155111)**: load the app, connect via the RainbowKit modal + MetaMask (Dappwright), stay on Sepolia, then open a known chamber by address (or assert connected **My chambers**). This is not a submit / confirm / execute cycle.
-
-`scripts/verify-sepolia-discovery.ts` stays the RPC-only discovery check (`npm run test:discovery`). This script is the wallet layer on top of that.
-
-| Variable | Required to run | Notes |
-| --- | --- | --- |
-| `E2E_SEPOLIA_PRIVATE_KEY` or `SEPOLIA_PRIVATE_KEY` | yes | Throwaway account. **Never commit.** Fund it with Sepolia ETH (faucet) before a real run. |
-| `PLAYWRIGHT_BASE_URL` | no | Defaults to `https://app.loreum.org`. |
-| `PLAYWRIGHT_SEPOLIA_CHAMBER` | no | Chamber to open. Default is a known Sepolia chamber from Factory `0x43aA92c8A26392f21F63cdA88B6BaB5031C40550` / discovery. |
+These match `.github/workflows/app.yml` (`App CI`). From `app/`:
 
 ```bash
-cd app
-# Skips with exit 0 when neither key env is set (default CI stays green)
-npm run test:e2e:sepolia
+npm ci
+npm run lint
+npm run typecheck          # tsc --noEmit (build also runs tsc before vite)
+npm test                   # Vitest unit smoke
+npm run build              # tsc && vite build
+npm run test:discovery     # offline indexer/getLogs + route-gate checks + live Sepolia RPC
 ```
 
-You may put the key in `app/.env` (gitignored); the runner loads it without overriding already-set environment variables. Do not put it in the repo, commit messages, or Playwright artifacts.
+`npm run typecheck` is the explicit typecheck CI uses. `npm run build` already runs `tsc && vite build`, so a green build also implies types pass.
+
+`test:discovery` uses public Sepolia RPC (no keys). Playwright Sepolia e2e is not part of this workflow (see #179 / #182).
+
+From `packages/operator/`:
+
+```bash
+npm ci
+npm run typecheck
+npm test
+```
 
 ## Project Structure
 
