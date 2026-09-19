@@ -11,7 +11,8 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "test:discovery": "npx --yes tsx --tsconfig tsconfig.json scripts/verify-chamber-discovery.ts && npx --yes tsx --tsconfig tsconfig.json scripts/verify-sepolia-discovery.ts && npx --yes tsx --tsconfig tsconfig.json scripts/verify-chamber-route-gate.ts",
-    "test:mainnet-addresses": "npx --yes tsx --tsconfig tsconfig.json scripts/verify-mainnet-addresses.ts"
+    "test:mainnet-addresses": "npx --yes tsx --tsconfig tsconfig.json scripts/verify-mainnet-addresses.ts",
+    "test": "vitest run"
   },
   "dependencies": {
     "@rainbow-me/rainbowkit": "^2.1.0",
