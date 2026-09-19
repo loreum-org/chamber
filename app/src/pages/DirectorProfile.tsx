@@ -111,7 +111,7 @@ function ActivityRow({ action, nonce, detail, href }: {
   href?: string
 }) {
   const config = {
-    submitted: { icon: FiSend, label: 'Submitted', color: 'text-blue-400', bg: 'bg-blue-500/10' },
+    submitted: { icon: FiSend, label: 'Submitted', color: 'text-accent-400', bg: 'bg-accent-500/10' },
     confirmed: { icon: FiCheckCircle, label: 'Confirmed', color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
     executed: { icon: FiPlay, label: 'Executed', color: 'text-accent-400', bg: 'bg-accent-500/10' },
     cancelled: { icon: FiXCircle, label: 'Cancelled', color: 'text-red-400', bg: 'bg-red-500/10' },
