@@ -66,8 +66,8 @@ library MainnetLoreHandoff {
      *         or `transferOwnership`. Chamber address stays zero until Factory exists (CREATE).
      */
     function deployFactoryLinked(address factoryAdmin) internal returns (Deployment memory d) {
-        d.boardLib = address(new BoardLib());
-        d.walletLib = address(new WalletLib());
+        d.boardLib = vm.deployCode("out/BoardLib.sol/BoardLib.json");
+        d.walletLib = vm.deployCode("out/WalletLib.sol/WalletLib.json");
         d.chamberImplementation = _deployLinkedChamber(d.boardLib, d.walletLib);
         d.factory = new Factory(d.chamberImplementation, factoryAdmin);
     }
@@ -78,8 +78,8 @@ library MainnetLoreHandoff {
      *      (`DeployFactory.s.sol`) auto-deploys libs; this mirrors that pairing for a fork dry-run.
      */
     function deployFactoryAndChamberLinked(address factoryAdmin) internal returns (Deployment memory d) {
-        d.boardLib = address(new BoardLib());
-        d.walletLib = address(new WalletLib());
+        d.boardLib = vm.deployCode("out/BoardLib.sol/BoardLib.json");
+        d.walletLib = vm.deployCode("out/WalletLib.sol/WalletLib.json");
         d.chamberImplementation = _deployLinkedChamber(d.boardLib, d.walletLib);
         d.factory = new Factory(d.chamberImplementation, factoryAdmin);
         d.chamber = payable(d.factory.createChamber(LORE, MEMBERSHIP_NFT, SEATS, NAME, SYMBOL));
