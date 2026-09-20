@@ -22,34 +22,36 @@ export default {
           900: '#0f172a',
           950: '#020617',
         },
-        // Primary accent — restrained institutional blue (trust / clarity)
+        // Primary accent — Chamber Purple (Chamber Design System v1.0 / DESIGN.md)
+        // Interactive + governance weight only. Dark-theme scale keyed to
+        // primary #4A2F8F (controls), #7C5CD6 (hover), #A685F5 (links/text).
         accent: {
-          50: '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          300: '#93c5fd',
-          400: '#60a5fa',
-          500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8',
-          800: '#1e40af',
-          900: '#1e3a8a',
-          950: '#172554',
+          50: '#f5f2fb',
+          100: '#ebe5f3',
+          200: '#dcd5ee',
+          300: '#c3a8ff',
+          400: '#a685f5',
+          500: '#7c5cd6',
+          600: '#4a2f8f',
+          700: '#3b2473',
+          800: '#2e1c5c',
+          900: '#221445',
+          950: '#160c2e',
         },
       },
       fontFamily: {
         heading: ['"IBM Plex Sans"', 'Inter', 'system-ui', 'sans-serif'],
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        mono: ['JetBrains Mono', 'Menlo', 'monospace'],
+        sans: ['"IBM Plex Sans"', 'Inter', 'system-ui', 'sans-serif'],
+        mono: ['"IBM Plex Mono"', '"JetBrains Mono"', 'Menlo', 'monospace'],
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
         'gradient-conic': 'conic-gradient(var(--tw-gradient-stops))',
-        'gradient-accent': 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+        'gradient-accent': 'linear-gradient(135deg, #4a2f8f 0%, #3b2473 100%)',
         'gradient-dark': 'linear-gradient(180deg, #151d2e 0%, #0b0f17 100%)',
-        // Very subtle depth — no purple / neon spots
+        // Very subtle depth — purple wash only, no neon spots
         'mesh-gradient':
-          'radial-gradient(at 18% 12%, rgba(37, 99, 235, 0.07) 0px, transparent 45%), radial-gradient(at 92% 8%, rgba(37, 99, 235, 0.05) 0px, transparent 42%), radial-gradient(at 50% 88%, rgba(15, 23, 42, 0.5) 0px, transparent 55%)',
+          'radial-gradient(at 18% 12%, rgba(74, 47, 143, 0.10) 0px, transparent 45%), radial-gradient(at 92% 8%, rgba(124, 92, 214, 0.06) 0px, transparent 42%), radial-gradient(at 50% 88%, rgba(15, 23, 42, 0.5) 0px, transparent 55%)',
       },
       boxShadow: {
         soft: '0 1px 2px rgba(0, 0, 0, 0.35), 0 4px 16px rgba(0, 0, 0, 0.22)',
