@@ -24,7 +24,7 @@ const chamberAppUrl =
 
 function App() {
   useSeo(
-    'Loreum — Chamber: onchain governance for DAOs',
+    'Loreum — Chamber: onchain governance',
     'Factory-deployed ERC-4626 vault, liquid-delegated ranked board, and quorum wallet — onchain and verifiable by your community.',
     '/',
   );
@@ -98,7 +98,7 @@ function App() {
             transition={{ duration: 0.8, delay: 0.4 }}
             className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-12 font-light leading-relaxed break-words"
           >
-            Loreum Chamber is protocol infrastructure for real DAOs: a
+            Loreum Chamber is protocol infrastructure for onchain governance: a
             factory-deployed ERC-4626 vault, a liquid-delegated ranked board of
             membership NFTs, and a
             <span className="text-space-accent"> quorum wallet</span> — onchain
@@ -179,7 +179,7 @@ function App() {
               group of persons under common control — retains effective control.
             </p>
             <p className="text-lg md:text-xl text-gray-400 font-light leading-relaxed break-words">
-              Most "DAOs" do not meet that bar. Founder multisigs, offchain Discord votes, opaque
+              Most onchain governance today does not meet that bar. Founder multisigs, offchain Discord votes, opaque
               admin keys, and concentrated voting power all fail the test — leaving protocols
               stuck in regulatory limbo, exposed to enforcement risk, and unable to mature.
             </p>

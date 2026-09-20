@@ -156,7 +156,7 @@ function Whitepaper() {
 
               <h3 className="text-2xl font-display mb-4 mt-10 text-white">1.2 Chamber as protocol response</h3>
               <p className="text-gray-300 leading-relaxed mb-4">
-                Decentralized Autonomous Organizations (DAOs) have emerged as a paradigm for collective decision-making
+                Onchain governance has emerged as a paradigm for collective decision-making
                 in blockchain ecosystems. However, many stacks remain ill-suited to the CLARITY bar: static membership,
                 offchain voting with onchain rubber-stamping, or agent-hostile signature models. Chamber addresses
                 these limitations with a flexible, agent-centric governance framework built on Ethereum where the
