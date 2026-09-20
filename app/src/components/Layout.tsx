@@ -120,7 +120,7 @@ export default function Layout() {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-3 group">
-              <img src="https://cdn.loreum.org/logos/white.svg" alt="Chamber Logo" className="w-10 h-10 object-contain transition-all" />
+              <img src="https://cdn.loreum.org/logos/white.svg" alt="Loreum logo" className="w-10 h-10 object-contain transition-all" />
             </Link>
 
             {/* Desktop Navigation */}
@@ -272,7 +272,7 @@ export default function Layout() {
               </nav>
 
               <div className="p-4 border-t border-slate-800 text-xs text-slate-600">
-                Chamber · Decentralized Governance
+                Loreum · Decentralized Governance
               </div>
             </motion.div>
           </>
@@ -291,8 +291,8 @@ export default function Layout() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3 text-slate-500 text-sm">
-              <img src="https://cdn.loreum.org/logos/white.svg" alt="Chamber Logo" className="w-6 h-6 object-contain opacity-80" />
-              <span className="font-medium">Chamber</span>
+              <img src="https://cdn.loreum.org/logos/white.svg" alt="Loreum logo" className="w-6 h-6 object-contain opacity-80" />
+              <span className="font-medium">Loreum</span>
               <span className="text-slate-700">|</span>
               <span>Decentralized Governance</span>
             </div>
@@ -313,7 +313,7 @@ export default function Layout() {
             </div>
           </div>
           <p className="mt-4 max-w-4xl text-xs leading-relaxed text-slate-600">
-            Chamber is non-custodial governance software. It is not legal, tax, investment, broker, dealer, exchange, or custodial advice.
+            Loreum is non-custodial governance software. It is not legal, tax, investment, broker, dealer, exchange, or custodial advice.
             Regulatory treatment depends on facts, jurisdiction, and final agency rules.
           </p>
         </div>
