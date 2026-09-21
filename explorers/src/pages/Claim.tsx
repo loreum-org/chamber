@@ -17,6 +17,7 @@ import {
   StatTile,
   StatRow,
   Button,
+  TransactionStatus,
 } from '@/components/ui'
 
 /**
@@ -348,9 +349,10 @@ export function Claim() {
                       size="lg"
                       onClick={handleClaim}
                       className="w-full"
-                      disabled={!isActionable}
+                      disabled={!isActionable || writePending}
+                      loading={writePending}
                     >
-                      Claim {quantity} Explorer{quantity > 1 ? 's' : ''}
+                      {writePending ? 'Confirming...' : `Claim ${quantity} Explorer${quantity > 1 ? 's' : ''}`}
                     </Button>
                   </div>
                 )}
@@ -390,101 +392,20 @@ export function Claim() {
                   </Callout>
                 )}
 
-                {/* Pending */}
-                {pageState === 'pending' && (
-                  <Callout variant="warn" title="Transaction pending">
-                    <span>Confirm the transaction in your wallet.</span>
-                    {explorerTxUrl && (
-                      <div className="mt-2">
-                        <a
-                          href={explorerTxUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-accent-300 underline underline-offset-2 hover:text-accent-200 break-all"
-                        >
-                          View on Etherscan →
-                        </a>
-                      </div>
-                    )}
-                  </Callout>
-                )}
-
-                {/* Confirming */}
-                {pageState === 'confirming' && (
-                  <Callout variant="warn" title="Waiting for confirmation">
-                    <span>Your transaction is being confirmed on-chain…</span>
-                    {explorerTxUrl && (
-                      <div className="mt-2">
-                        <a
-                          href={explorerTxUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-accent-300 underline underline-offset-2 hover:text-accent-200 break-all"
-                        >
-                          View on Etherscan →
-                        </a>
-                      </div>
-                    )}
-                  </Callout>
-                )}
-
-                {/* Confirmed */}
-                {pageState === 'confirmed' && (
-                  <Callout variant="ok" title="Claim successful!">
-                    <span>
-                      You claimed {quantity} Explorer{quantity > 1 ? 's' : ''}
-                      {claimedTokenIds.length > 0 && (
-                        <> (Token{claimedTokenIds.length > 1 ? 's' : ''} #{claimedTokenIds.map(id => id.toString()).join(', ')})</>
-                      )}
-                      . They appear in your gallery without refreshing.
-                    </span>
-                    <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
-                      <Link
-                        to="/gallery"
-                        className="inline-flex items-center gap-1 text-sm font-medium text-accent-300 underline underline-offset-2 hover:text-accent-200"
-                      >
-                        View my Explorers →
-                      </Link>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setClaimedTokenIds([])
-                          setQuantity(1)
-                        }}
-                      >
-                        Claim more
-                      </Button>
-                    </div>
-                  </Callout>
-                )}
-
-                {/* Rejected */}
-                {pageState === 'rejected' && (
-                  <Callout variant="bad" title="Transaction rejected">
-                    <span>
-                      You rejected the transaction. Your quantity selection is preserved.
-                    </span>
-                    <div className="mt-3">
-                      <Button size="sm" onClick={handleTryAgain}>
-                        Try again
-                      </Button>
-                    </div>
-                  </Callout>
-                )}
-
-                {/* Failed */}
-                {pageState === 'failed' && (
-                  <Callout variant="bad" title="Transaction failed">
-                    <span>
-                      The transaction failed. Your quantity selection is preserved — you can try again.
-                    </span>
-                    <div className="mt-3">
-                      <Button size="sm" onClick={handleTryAgain}>
-                        Try again
-                      </Button>
-                    </div>
-                  </Callout>
+                {/* Transaction Status */}
+                {(pageState === 'pending' || pageState === 'confirming' || pageState === 'confirmed' || pageState === 'rejected' || pageState === 'failed') && (
+                  <TransactionStatus
+                    step={pageState === 'rejected' ? 'failed' : pageState}
+                    txHash={hash}
+                    explorerUrl={explorerTxUrl}
+                    quantity={quantity}
+                    tokenIds={claimedTokenIds}
+                    onTryAgain={handleTryAgain}
+                    onClaimMore={() => {
+                      setClaimedTokenIds([])
+                      setQuantity(1)
+                    }}
+                  />
                 )}
 
                 {/* Price changed */}
