@@ -51,7 +51,6 @@ export function Claim() {
   const [lastMintCost, setLastMintCost] = useState<bigint | undefined>(undefined)
   const [priceChanged, setPriceChanged] = useState(false)
   const [claimedTokenIds, setClaimedTokenIds] = useState<bigint[]>([])
-  const [transactionInitiated, setTransactionInitiated] = useState(false)
 
   // Track mintCost changes for price-changed detection
   useEffect(() => {
@@ -120,19 +119,22 @@ export function Claim() {
 
   let pageState: PageState
 
+  // Only show transaction status if there's actually a transaction
+  const hasTransaction = hash !== undefined || writePending
+
   if (!isConnected) {
     pageState = 'disconnected'
   } else if (isWrongNetwork) {
     pageState = 'wrong_network'
-  } else if (transactionInitiated && isSuccess && claimedTokenIds.length > 0) {
+  } else if (hasTransaction && isSuccess && claimedTokenIds.length > 0) {
     pageState = 'confirmed'
-  } else if (transactionInitiated && isConfirming) {
+  } else if (hasTransaction && isConfirming) {
     pageState = 'confirming'
-  } else if (transactionInitiated && writePending) {
+  } else if (hasTransaction && writePending) {
     pageState = 'pending'
   } else if (priceChanged) {
     pageState = 'price_changed'
-  } else if (transactionInitiated && claimError) {
+  } else if (hasTransaction && claimError) {
     if (claimError === 'user_rejected') {
       pageState = 'rejected'
     } else {
@@ -160,7 +162,6 @@ export function Claim() {
       : undefined
 
   const handleClaim = async () => {
-    setTransactionInitiated(true)
     try {
       await claim(quantity)
     } catch {
@@ -406,7 +407,6 @@ export function Claim() {
                     onClaimMore={() => {
                       setClaimedTokenIds([])
                       setQuantity(1)
-                      setTransactionInitiated(false)
                     }}
                   />
                 )}
