@@ -1,0 +1,111 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Copied verbatim from app/src/index.css — token register for explorers/.
+   Do not import across apps; re-copy when app/ tokens change. */
+
+@layer base {
+  body {
+    @apply bg-[#0b0f17] text-slate-200 font-sans antialiased;
+    background-color: #0b0f17;
+    background-image:
+      radial-gradient(ellipse 120% 80% at 50% -30%, rgba(37, 99, 235, 0.09), transparent 55%),
+      radial-gradient(ellipse 70% 50% at 100% 100%, rgba(15, 23, 42, 0.85), transparent 50%),
+      linear-gradient(180deg, rgba(15, 23, 42, 0.35) 0%, transparent 40%);
+    min-height: 100vh;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  ::selection {
+    @apply bg-accent-600/35 text-white;
+  }
+
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer components {
+  .panel {
+    @apply bg-slate-900/55 backdrop-blur-xl border border-slate-700/40 rounded-xl shadow-soft;
+    box-shadow:
+      0 4px 24px rgba(0, 0, 0, 0.35),
+      0 0 0 1px rgba(148, 163, 184, 0.06),
+      inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  }
+
+  .panel-primary {
+    @apply bg-slate-900/60 backdrop-blur-xl border border-accent-600/20 rounded-xl;
+    box-shadow:
+      0 4px 24px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  }
+
+  .btn {
+    @apply px-5 py-2.5 font-medium rounded-lg transition-all duration-200 flex items-center gap-2 justify-center text-sm;
+  }
+
+  .btn-primary {
+    @apply bg-accent-600 text-white hover:bg-accent-500 active:bg-accent-700 shadow-sm border border-accent-500/30;
+  }
+
+  .btn-secondary {
+    @apply bg-slate-900/80 text-slate-100 border border-slate-600/50 hover:border-slate-500 hover:bg-slate-800/90;
+  }
+
+  .btn-ghost {
+    @apply text-slate-400 hover:text-accent-400 hover:bg-slate-800/60;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium;
+  }
+
+  .badge-primary {
+    @apply bg-accent-950/80 text-accent-300 border border-accent-700/35;
+  }
+
+  .badge-success {
+    @apply bg-emerald-950/50 text-emerald-400 border border-emerald-700/35;
+  }
+
+  .badge-pending {
+    @apply bg-amber-950/40 text-amber-400 border border-amber-700/35;
+  }
+
+  .badge-danger {
+    @apply bg-red-950/40 text-red-400 border border-red-700/35;
+  }
+
+  .badge-muted {
+    @apply bg-slate-800/80 text-slate-400 border border-slate-600/40;
+  }
+}
+
+@layer utilities {
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.04) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s linear infinite;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
