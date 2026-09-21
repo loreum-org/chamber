@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 
 /**
  * Reusable NFT art container for the showcase redesign (#307).
@@ -46,6 +46,14 @@ export function ArtFrame({
   const [loaded, setLoaded] = useState(false)
   const [errored, setErrored] = useState(false)
   const showImage = Boolean(src) && !errored
+
+  // Reset load/error state when the source changes so a reused instance
+  // (e.g. token-detail prev/next, a rotating featured wall) doesn't keep the
+  // previous image's stale "loaded"/"errored" flags.
+  useEffect(() => {
+    setLoaded(false)
+    setErrored(false)
+  }, [src])
 
   return (
     <div
