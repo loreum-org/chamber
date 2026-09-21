@@ -50,7 +50,7 @@ function App() {
           <span className="text-2xl font-display tracking-wider">LOREUM</span>
         </div>
         <div className="hidden md:flex items-center gap-8 font-light tracking-wide text-sm">
-          <a href="#clarity" className="hover:text-space-accent transition-colors">CLARITY</a>
+          <a href="#governance" className="hover:text-space-accent transition-colors">GOVERNANCE</a>
           <a href="#mission" className="hover:text-space-accent transition-colors">MISSION</a>
           <a href="#technology" className="hover:text-space-accent transition-colors">TECHNOLOGY</a>
           <a href="#governance" className="hover:text-space-accent transition-colors">GOVERNANCE</a>
@@ -155,29 +155,28 @@ function App() {
         </div>
       </section>
 
-      {/* The CLARITY Mandate — Problem Section */}
-      <section id="clarity" className="relative z-10 py-32 px-4 sm:px-6 border-b border-white/5 w-full min-w-0 box-border">
+      {/* The Governance Imperative — Problem Section */}
+      <section id="governance" className="relative z-10 py-32 px-4 sm:px-6 border-b border-white/5 w-full min-w-0 box-border">
         <div className="max-w-7xl mx-auto w-full min-w-0 px-1 sm:px-0">
           <FadeIn className="mb-20 max-w-4xl">
             <div className="mb-6 inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-amber-300/30 bg-amber-300/10 text-amber-200 text-xs tracking-[0.2em]">
               <Scale className="w-3 h-3" />
-              THE CLARITY MANDATE
+              THE GOVERNANCE IMPERATIVE
             </div>
             <h2 className="text-3xl sm:text-4xl md:text-6xl font-display mb-8 leading-tight break-words text-balance">
               Governance is no longer<br />
               <span className="text-gradient">optional infrastructure.</span>
             </h2>
             <p className="text-lg md:text-xl text-gray-400 font-light leading-relaxed mb-6 break-words">
-              Under the U.S. <span className="text-white">Digital Asset Market CLARITY Act of 2025</span> (H.R. 3633, § 104),
-              a digital asset can only graduate out of securities oversight when its blockchain
-              system is governed by a <span className="text-space-accent">Decentralized Governance System</span>:
-              a transparent, rules-based process for forming consensus where no person — and no
-              group of persons under common control — retains effective control.
+              As blockchain ecosystems mature, the gap between <span className="text-white">nominal decentralization</span> and{" "}
+              <span className="text-space-accent">credible decentralized governance</span> has become the defining challenge.
+              A system is truly decentralized only when no person — and no group of persons under common control — retains
+              effective control over consensus, treasury, or upgrades.
             </p>
             <p className="text-lg md:text-xl text-gray-400 font-light leading-relaxed break-words">
               Most onchain governance today does not meet that bar. Founder multisigs, offchain Discord votes, opaque
-              admin keys, and concentrated voting power all fail the test — leaving protocols
-              stuck in regulatory limbo, exposed to enforcement risk, and unable to mature.
+              admin keys, and concentrated voting power all create residual control risk — leaving protocols vulnerable
+              to capture, unable to credibly claim decentralization, and exposed to regulatory uncertainty.
             </p>
           </FadeIn>
 
@@ -185,21 +184,21 @@ function App() {
             {[
               {
                 icon: <Eye className="w-7 h-7 text-amber-300" />,
-                tag: "§ 104(c)(2)(D)",
+                tag: "PRINCIPLE 01",
                 title: "Transparent & Programmatic",
-                desc: "The Act requires a system that operates and enforces decisions solely from pre-established, transparent rules encoded in source code. Chamber executes proposal, vote, and treasury transfer through published onchain contracts — not Discord polls or hidden admin keys.",
+                desc: "Governance must operate and enforce decisions solely from pre-established, transparent rules encoded in source code. Chamber executes proposals, votes, and treasury transfers through published onchain contracts — not Discord polls or hidden admin keys.",
                 glow: "bg-amber-400/10"
               },
               {
                 icon: <Shield className="w-7 h-7 text-purple-300" />,
-                tag: "§ 104(c)(2)(E)",
+                tag: "PRINCIPLE 02",
                 title: "No Unilateral Control",
-                desc: "The Act targets concentrated voting power. Chamber ships liquid delegation to a ranked board of membership NFTs and quorum-gated execution — so treasury and upgrades move through those onchain rules, not admin keys.",
+                desc: "True decentralization requires dispersing voting power and execution authority. Chamber ships liquid delegation to a ranked board of membership NFTs and quorum-gated execution — so treasury and upgrades move through onchain rules, not admin keys.",
                 glow: "bg-purple-500/10"
               },
               {
                 icon: <Network className="w-7 h-7 text-emerald-300" />,
-                tag: "§ 104(c)(2)(F–G)",
+                tag: "PRINCIPLE 03",
                 title: "Distributed & Impartial",
                 desc: "Authority must be distributed and the system impartial. Chamber seats directors from liquid delegation to membership NFTs. Director actions require the NFT owner as msg.sender, or a session key the contract owner registered; a quorum of directors then executes.",
                 glow: "bg-emerald-500/10"
@@ -230,15 +229,12 @@ function App() {
           <FadeIn delay={0.4} className="mt-16 max-w-4xl">
             <div className="p-6 md:p-8 border border-white/10 rounded-xl bg-space-800/30 backdrop-blur-sm">
               <p className="text-sm md:text-base text-gray-400 font-light leading-relaxed">
-                <span className="text-white font-mono text-xs tracking-widest">DEFINITION · CLARITY ACT § 104 </span>
+                <span className="text-white font-mono text-xs tracking-widest">DECENTRALIZED GOVERNANCE DEFINED</span>
                 <br />
                 <span className="italic text-gray-300">
-                  "The term 'decentralized governance system' means, with respect to a blockchain
-                  system, any transparent, rules-based system permitting persons to form consensus
-                  or reach agreement in the development, provision, publication, management, or
-                  administration of such blockchain system, where participation is not limited to,
-                  or under the effective control of, any person or group of persons under common
-                  control."
+                  A decentralized governance system is a transparent, rules-based process for forming consensus
+                  in the development, management, or administration of a blockchain system, where participation
+                  is open and no person or coordinated group retains effective control.
                 </span>
               </p>
             </div>

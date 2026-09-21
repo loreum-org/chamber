@@ -156,7 +156,7 @@ export function Home() {
       <section>
         <SectionHeading
           eyebrow="What you're collecting"
-          title="An on-chain collectible, not a promise"
+          title="Loreum DAO membership"
           align="center"
         />
         <div className="mt-10 grid gap-5 sm:grid-cols-3">
