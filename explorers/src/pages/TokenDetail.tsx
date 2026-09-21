@@ -261,7 +261,7 @@ function TokenDetailBody({
           <div>
             <div className="eyebrow mb-2">
               <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
-              On-chain collectible
+              Loreum DAO membership
             </div>
             <h1 className="font-display text-display-sm font-semibold text-slate-50">
               {meta.status === 'loading' ? (
