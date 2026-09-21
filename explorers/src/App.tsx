@@ -4,6 +4,7 @@ import { Home } from './pages/Home'
 import { Claim } from './pages/Claim'
 import { Gallery } from './pages/Gallery'
 import { TokenDetail } from './pages/TokenDetail'
+import { Story } from './pages/Story'
 import { NotFound } from './pages/NotFound'
 
 export function App() {
@@ -15,6 +16,7 @@ export function App() {
           <Route path="/claim" element={<Claim />} />
           <Route path="/gallery" element={<Gallery />} />
           <Route path="/token/:id" element={<TokenDetail />} />
+          <Route path="/story" element={<Story />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Shell>

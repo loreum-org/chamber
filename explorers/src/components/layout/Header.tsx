@@ -17,6 +17,7 @@ function getNetworkChipProps(chainId: number, chainName: string): { state: Netwo
 
 const NAV = [
   { to: '/', label: 'Home', end: true },
+  { to: '/story', label: 'Story', end: false },
   { to: '/claim', label: 'Claim', end: false },
   { to: '/gallery', label: 'My Explorers', end: false },
 ]
