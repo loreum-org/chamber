@@ -18,7 +18,7 @@ function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 grid md:grid-cols-4 gap-12 mb-16 w-full min-w-0 box-border">
         <div className="col-span-1 md:col-span-2">
           <div className="flex items-center gap-2 mb-6">
-            <img src="/logo.svg" alt="Loreum Logo" className="w-6 h-6" />
+            <img src="https://cdn.loreum.org/logos/white.svg" alt="Loreum Logo" className="w-6 h-6" />
             <span className="text-2xl font-display tracking-wider">LOREUM</span>
           </div>
           <p className="text-gray-500 max-w-xs font-light">

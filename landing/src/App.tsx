@@ -24,8 +24,8 @@ const chamberAppUrl =
 
 function App() {
   useSeo(
-    'Loreum — Chamber: onchain governance',
-    'Factory-deployed ERC-4626 vault, liquid-delegated ranked board, and quorum wallet — onchain and verifiable by your community.',
+    'Loreum — Decentralized Governance System',
+    'Loreum is a governance platform where communities elect leaders, vote on proposals, and make decisions transparently onchain.',
     '/',
   );
 
@@ -46,7 +46,7 @@ function App() {
       {/* Navigation */}
       <nav className="relative z-50 flex items-center justify-between gap-4 px-4 sm:px-8 py-6 max-w-7xl mx-auto w-full min-w-0 box-border">
         <div className="flex items-center gap-2">
-          <img src="/logo.svg" alt="Loreum Logo" className="w-8 h-8" />
+          <img src="https://cdn.loreum.org/logos/white.svg" alt="Loreum Logo" className="w-8 h-8" />
           <span className="text-2xl font-display tracking-wider">LOREUM</span>
         </div>
         <div className="hidden md:flex items-center gap-8 font-light tracking-wide text-sm">

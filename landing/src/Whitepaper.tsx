@@ -40,7 +40,7 @@ function Whitepaper() {
       {/* Navigation */}
       <nav className="relative z-50 flex items-center justify-between px-8 py-6 max-w-7xl mx-auto">
         <Link to="/" className="flex items-center gap-2">
-          <img src="/logo.svg" alt="Loreum Logo" className="w-8 h-8" />
+          <img src="https://cdn.loreum.org/logos/white.svg" alt="Loreum Logo" className="w-8 h-8" />
           <span className="text-2xl font-display tracking-wider">LOREUM</span>
         </Link>
         <div className="flex items-center gap-6">
@@ -847,7 +847,7 @@ Node: 4 × uint256 = 4 storage slots (optimal for linked list operations)`}
       <footer className="relative z-10 bg-space-900 pt-20 pb-10 border-t border-white/10 mt-32">
         <div className="max-w-7xl mx-auto px-6 text-center">
           <div className="flex items-center justify-center gap-2 mb-6">
-            <img src="/logo.svg" alt="Loreum Logo" className="w-6 h-6" />
+            <img src="https://cdn.loreum.org/logos/white.svg" alt="Loreum Logo" className="w-6 h-6" />
             <span className="text-2xl font-display tracking-wider">LOREUM</span>
           </div>
           <p className="text-gray-500 text-sm">
