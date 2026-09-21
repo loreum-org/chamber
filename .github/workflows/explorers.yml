@@ -1,0 +1,43 @@
+name: Explorers CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'explorers/**'
+      - '.github/workflows/explorers.yml'
+  pull_request:
+    paths:
+      - 'explorers/**'
+      - '.github/workflows/explorers.yml'
+
+jobs:
+  explorers:
+    name: Lint, types, test, build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: explorers
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+          cache-dependency-path: explorers/package-lock.json
+
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build
+        run: npm run build

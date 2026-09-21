@@ -103,6 +103,21 @@ That run reads board + quorum, delegates, then `submitTransaction` / `confirm` /
 
 Library / CLI details: [`packages/operator/README.md`](./packages/operator/README.md).
 
+## Explorers
+
+The `explorers/` app is a standalone Vite + React SPA for browsing the Loreum NFT collection. It shares design tokens with `app/` (copied, never imported) and connects to Ethereum mainnet and Sepolia only.
+
+```bash
+cd explorers
+cp .env.example .env   # fill in VITE_WALLETCONNECT_PROJECT_ID
+npm install
+npm run dev
+```
+
+Routes: `/` (home), `/gallery`, `/token/:id`, 404. Shell: header (Loreum wordmark, RainbowKit wallet connect, network chip), footer. The LoreumNFT ABI is vendored in `src/abi/loreumNft.ts` (typed `as const` for viem).
+
+CI runs independently from `app/` — see `.github/workflows/explorers.yml`.
+
 ## License
 
 MIT License

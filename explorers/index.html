@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Loreum Explorers</title>
+    <meta name="description" content="Explore the Loreum NFT collection — gallery, token details, and on-chain provenance." />
+    <meta http-equiv="Content-Security-Policy" content="
+      default-src 'self';
+      script-src 'self';
+      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+      font-src 'self' https://fonts.gstatic.com;
+      img-src 'self' data: https: http:
+        https://cdn.loreum.org https://ipfs.loreum.org;
+      connect-src 'self'
+        https: http:
+        wss://*.walletconnect.com wss://*.walletconnect.org https://*.walletconnect.com https://*.walletconnect.org
+        https://api.web3modal.org https://*.web3modal.org
+        https://*.infura.io https://*.alchemy.com https://*.ankr.com https://*.drpc.org
+        https://cloudflare-eth.com https://eth.llamarpc.com
+        https://rpc.sepolia.org
+        https://ipfs.io https://*.ipfs.io https://cloudflare-ipfs.com https://ipfs.loreum.org;
+      frame-src 'none';
+      frame-ancestors 'none';
+      object-src 'none';
+      base-uri 'self';
+    " />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
