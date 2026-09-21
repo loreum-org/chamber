@@ -1,25 +1,35 @@
+import { Link } from 'react-router-dom'
 import { useAccount, useChainId, useSwitchChain } from 'wagmi'
 import { useConnectModal } from '@rainbow-me/rainbowkit'
-import { Link } from 'react-router-dom'
-import { mainnet, sepolia } from '@/wagmi'
-import { useMyTokens, useTokenMetadata, useMyAllowance } from '@/hooks'
-import { Button, Panel, TokenCard, Skeleton, Callout } from '@/components/ui'
-import type { TokenTrait } from '@/components/ui'
+import { useMyTokens, useMyAllowance, useTokenMetadata, useCollection } from '@/hooks'
 import { ipfsToGatewayUrl } from '@/lib/ipfs'
+import { mainnet, sepolia } from '@/wagmi'
+import {
+  ArtFrame,
+  SectionHeading,
+  StatTile,
+  StatRow,
+  Button,
+  Callout,
+  Skeleton,
+  buttonClass,
+} from '@/components/ui'
 
 const SUPPORTED_CHAINS = [mainnet.id, sepolia.id] as const
 
 /**
- * Gallery page — the connected wallet's own Explorers.
- * Route: /gallery. Nav label: "My Explorers".
+ * /gallery — "My Explorers" collection wall (#310).
+ *
+ * Wallet-scoped: shows only the connected wallet's tokens. No full-collection
+ * enumeration (that would need an indexer). Uses the new design system:
+ * ArtFrame cards with hover glow, StatRow holdings summary, SectionHeading.
  *
  * States:
- *  - Disconnected → short explanation + Connect
- *  - Wrong network → named state + Switch
- *  - Loading → Skeleton cards
- *  - Empty → "No Explorers in this wallet yet." + Claim one
- *  - Metadata unresolved → Card with token id; traits pending; Retry
- *  - After a claim → new tokens appear without manual refresh (wagmi invalidation)
+ *  - Disconnected → connect CTA
+ *  - Wrong network → switch CTA
+ *  - Loading → skeleton wall
+ *  - Empty → inviting "no Explorers yet" + Claim CTA
+ *  - Populated → responsive grid of ArtFrame cards linking to /token/:id
  */
 export function Gallery() {
   const { isConnected } = useAccount()
@@ -27,177 +37,217 @@ export function Gallery() {
   const { switchChain } = useSwitchChain()
   const { openConnectModal } = useConnectModal()
 
-  const isWrongNetwork = isConnected && !SUPPORTED_CHAINS.includes(chainId as typeof SUPPORTED_CHAINS[number])
+  const isWrongNetwork =
+    isConnected && !SUPPORTED_CHAINS.includes(chainId as (typeof SUPPORTED_CHAINS)[number])
 
-  // Disconnected state
+  // Disconnected
   if (!isConnected) {
     return (
-      <div className="space-y-6">
-        <GalleryHeader disconnected />
-        <Callout variant="info" title="Connect your wallet">
-          Connect your wallet to view your Loreum Explorers and manage your tokens.
-        </Callout>
-        <Button onClick={openConnectModal}>Connect Wallet</Button>
+      <div className="space-y-8">
+        <SectionHeading
+          eyebrow="Your collection"
+          title="My Explorers"
+          description="Connect your wallet to view your Loreum Explorer NFTs."
+        />
+        <div className="glass p-8 text-center">
+          <p className="text-slate-400 mb-5">
+            Your personal collection of Loreum Explorer NFTs lives on-chain.
+            Connect your wallet to see them here.
+          </p>
+          <Button size="lg" onClick={openConnectModal}>
+            Connect Wallet
+          </Button>
+        </div>
       </div>
     )
   }
 
-  // Wrong network state
+  // Wrong network
   if (isWrongNetwork) {
     return (
-      <div className="space-y-6">
-        <GalleryHeader disconnected />
+      <div className="space-y-8">
+        <SectionHeading
+          eyebrow="Your collection"
+          title="My Explorers"
+          description="Switch to a supported network to view your Explorers."
+        />
         <Callout variant="warn" title="Unsupported network">
-          Switch to Ethereum mainnet or Sepolia to view your Explorers.
+          <span>Explorers are on Ethereum mainnet and Sepolia testnet. Switch your wallet to continue.</span>
+          <div className="mt-3">
+            <Button size="sm" onClick={() => switchChain?.({ chainId: mainnet.id })}>
+              Switch to Ethereum
+            </Button>
+          </div>
         </Callout>
-        <Button onClick={() => switchChain?.({ chainId: mainnet.id })}>
-          Switch to Mainnet
-        </Button>
       </div>
     )
   }
 
   // Connected on supported chain
-  return (
-    <div className="space-y-6">
-      <GalleryContent />
-    </div>
-  )
-}
-
-function GalleryHeader({ disconnected = false }: { disconnected?: boolean }) {
-  return (
-    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-      <div>
-        <h1 className="font-heading text-2xl font-semibold text-slate-100">
-          My Explorers
-        </h1>
-        {disconnected && (
-          <p className="text-sm text-slate-400 mt-1">
-            Your personal collection of Loreum Explorer NFTs.
-          </p>
-        )}
-      </div>
-      <Link to="/" className="text-sm text-slate-400 hover:text-accent-400 transition-colors">
-        ← Back to home
-      </Link>
-    </div>
-  )
+  return <GalleryContent />
 }
 
 function GalleryContent() {
   const { data: myTokensData, isLoading: tokensLoading } = useMyTokens()
   const { data: allowanceData } = useMyAllowance()
+  const { data: collection } = useCollection()
+
   const tokens = myTokensData?.tokens
   const claimable = allowanceData?.claimable
-
   const heldCount = tokens?.length ?? 0
 
+  const claimableNum = claimable !== undefined ? Number(claimable) : 0
+  const canClaimMore = claimableNum > 0
+
   return (
-    <>
-      <GalleryHeader />
+    <div className="space-y-10">
+      {/* ── Header + holdings summary ──────────────────────────── */}
+      <div>
+        <SectionHeading
+          eyebrow="Your collection"
+          title="My Explorers"
+          description="Tokens you hold in this wallet. Each Explorer is minted on-chain with art stored on IPFS."
+          action={
+            canClaimMore ? (
+              <Link to="/claim" className={buttonClass('primary', 'sm', 'px-5')}>
+                Claim more
+              </Link>
+            ) : undefined
+          }
+        />
 
-      {/* Stats header */}
-      <Panel className="flex flex-wrap items-center gap-x-6 gap-y-2">
-        <div>
-          <span className="text-sm text-slate-400">Held</span>
-          <span className="ml-2 font-semibold text-slate-100">
-            {tokensLoading ? '—' : heldCount}
-          </span>
+        {/* Holdings stats */}
+        <div className="mt-6">
+          <StatRow className="max-w-md">
+            <StatTile
+              label="Held"
+              value={tokensLoading ? undefined : heldCount.toString()}
+              loading={tokensLoading}
+            />
+            <StatTile
+              label="Claimable"
+              value={claimable !== undefined ? claimable.toString() : undefined}
+              loading={claimable === undefined}
+              sub={
+                collection.maxMint !== undefined
+                  ? `Max ${collection.maxMint.toString()} per wallet`
+                  : undefined
+              }
+            />
+          </StatRow>
         </div>
-        <div>
-          <span className="text-sm text-slate-400">Remaining claim</span>
-          <span className="ml-2 font-semibold text-slate-100">
-            {claimable !== undefined ? claimable.toString() : '—'}
-          </span>
-        </div>
-        {claimable !== undefined && claimable > 0n && (
-          <Link
-            to="/"
-            className="ml-auto text-sm text-accent-400 hover:text-accent-300 transition-colors"
-          >
-            Claim one →
-          </Link>
-        )}
-      </Panel>
+      </div>
 
-      {/* Loading state */}
-      {tokensLoading && <SkeletonGrid />}
+      {/* ── Loading state ──────────────────────────────────────── */}
+      {tokensLoading && <SkeletonWall />}
 
-      {/* Empty state */}
+      {/* ── Empty state ────────────────────────────────────────── */}
       {!tokensLoading && tokens !== undefined && tokens.length === 0 && (
-        <Callout variant="info" title="No Explorers in this wallet yet.">
-          <span>Claim your first Explorer to get started. </span>
-          <Link to="/" className="text-accent-300 hover:text-accent-200 underline">
-            Claim one
-          </Link>
-        </Callout>
+        <div className="glass p-10 text-center">
+          <div className="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-2xl bg-accent-600/10 text-accent-400">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-8 w-8">
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <circle cx="8.5" cy="8.5" r="1.5" />
+              <path d="m21 15-5-5L5 21" strokeLinejoin="round" />
+            </svg>
+          </div>
+          <h3 className="font-display text-xl font-semibold text-slate-100">
+            No Explorers yet
+          </h3>
+          <p className="mt-2 max-w-sm mx-auto text-sm text-slate-400">
+            This wallet doesn't hold any Explorers. Claim your first one — they're minted
+            directly from the contract with art on IPFS.
+          </p>
+          <div className="mt-6">
+            <Link to="/claim" className={buttonClass('primary', 'lg', 'px-7')}>
+              Claim an Explorer
+            </Link>
+          </div>
+        </div>
       )}
 
-      {/* Token grid */}
+      {/* ── Populated wall ─────────────────────────────────────── */}
       {!tokensLoading && tokens !== undefined && tokens.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {tokens.map((tokenId) => (
-            <TokenCardWithMetadata key={tokenId.toString()} tokenId={tokenId} />
+            <GalleryCard key={tokenId.toString()} tokenId={tokenId} />
           ))}
         </div>
       )}
-    </>
-  )
-}
-
-function SkeletonGrid() {
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-      {Array.from({ length: 8 }).map((_, i) => (
-        <div key={i} className="rounded-xl overflow-hidden border border-slate-700/40 bg-slate-900/55">
-          <Skeleton className="aspect-square" />
-          <div className="p-3 space-y-2">
-            <Skeleton className="h-4 w-3/4" />
-            <Skeleton className="h-3 w-1/3" />
-            <Skeleton className="h-3 w-1/2" />
-          </div>
-        </div>
-      ))}
     </div>
   )
 }
 
-function TokenCardWithMetadata({ tokenId }: { tokenId: bigint }) {
+/** Gallery card — ArtFrame with hover overlay showing name + id. */
+function GalleryCard({ tokenId }: { tokenId: bigint }) {
   const { data: meta } = useTokenMetadata(tokenId)
-
-  // Convert ipfs:// image URI to gateway URL for display
-  const imageSrc = meta.image
-    ? meta.image.startsWith('ipfs://')
-      ? ipfsToGatewayUrl(meta.image)
-      : meta.image
-    : undefined
-
-  // Build traits — only when metadata is resolved and attributes exist.
-  // undefined traits (metadata unresolved) → TokenCard shows "Traits loading".
-  let traits: TokenTrait[] | undefined
-  if (meta.status === 'resolved' && meta.attributes !== undefined) {
-    traits = meta.attributes
-      .filter((a) => a.trait_type !== undefined && a.value !== undefined && a.value !== null)
-      .map((a) => ({
-        name: String(a.trait_type),
-        value: String(a.value),
-      }))
-  }
-  // When status is 'loading' or 'unresolved', traits stays undefined
-  // → TokenCard renders the dashed "Traits loading" chip (never a guessed value)
-
+  const image = meta.image ? ipfsToGatewayUrl(meta.image) : null
   const displayName = meta.status === 'resolved' && meta.name
     ? meta.name
     : `Explorer #${tokenId.toString()}`
 
   return (
-    <TokenCard
-      name={displayName}
-      tokenId={tokenId.toString()}
-      image={imageSrc}
-      traits={traits}
-      href={`/token/${tokenId.toString()}`}
-    />
+    <Link
+      to={`/token/${tokenId.toString()}`}
+      className="group block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/60"
+    >
+      <ArtFrame src={image} alt={displayName} aspect="square" hover>
+        {/* Hover overlay — name + id */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 bg-gradient-to-t from-black/70 to-transparent p-3 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+          <span className="truncate text-sm font-semibold text-white">
+            {displayName}
+          </span>
+          <span className="font-mono text-[11px] text-slate-300">
+            #{tokenId.toString()}
+          </span>
+        </div>
+
+        {/* Trait hint — only when resolved, max 2 traits */}
+        {meta.status === 'resolved' && meta.attributes !== undefined && meta.attributes.length > 0 && (
+          <div className="pointer-events-none absolute inset-x-0 top-0 flex flex-wrap gap-1 p-2 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+            {meta.attributes
+              .filter((a) => a.trait_type !== undefined && a.value !== undefined && a.value !== null)
+              .slice(0, 2)
+              .map((a) => (
+                <span
+                  key={String(a.trait_type)}
+                  className="rounded-full bg-black/50 backdrop-blur-sm px-2 py-0.5 text-[10px] text-slate-200"
+                >
+                  {String(a.trait_type)} · {String(a.value)}
+                </span>
+              ))}
+          </div>
+        )}
+      </ArtFrame>
+
+      {/* Card footer — always visible */}
+      <div className="mt-2 px-0.5">
+        <div className="truncate text-sm font-medium text-slate-200 group-hover:text-slate-100">
+          {displayName}
+        </div>
+        <div className="font-mono text-[11px] text-slate-500">
+          #{tokenId.toString()}
+        </div>
+      </div>
+    </Link>
+  )
+}
+
+/** Skeleton wall — 8 placeholder cards matching the grid layout. */
+function SkeletonWall() {
+  return (
+    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+      {Array.from({ length: 8 }).map((_, i) => (
+        <div key={i}>
+          <ArtFrame aspect="square">
+            <div aria-hidden className="shimmer absolute inset-0 bg-slate-800/50" />
+          </ArtFrame>
+          <div className="mt-2 space-y-1.5 px-0.5">
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-3 w-1/3" />
+          </div>
+        </div>
+      ))}
+    </div>
   )
 }
