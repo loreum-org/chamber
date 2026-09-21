@@ -37,6 +37,41 @@ export function Header() {
   // Close the mobile drawer whenever the route changes.
   useEffect(() => setOpen(false), [location.pathname])
 
+  // Replace RainbowKit avatar with Loreum logo
+  useEffect(() => {
+    const replaceAvatar = () => {
+      // Find RainbowKit avatar elements
+      const avatarElements = document.querySelectorAll('[class*="rk-avatar"], [class*="Avatar"]')
+      avatarElements.forEach((el) => {
+        // Clear existing content
+        el.innerHTML = ''
+        // Add Loreum logo
+        const img = document.createElement('img')
+        img.src = 'https://cdn.loreum.org/logos/white.svg'
+        img.alt = 'Loreum'
+        img.style.width = '100%'
+        img.style.height = '100%'
+        img.style.objectFit = 'contain'
+        el.appendChild(img)
+      })
+    }
+
+    // Watch for modal to open
+    const observer = new MutationObserver(() => {
+      replaceAvatar()
+    })
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+    })
+
+    // Initial replacement
+    replaceAvatar()
+
+    return () => observer.disconnect()
+  }, [])
+
   return (
     <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-void/70 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
