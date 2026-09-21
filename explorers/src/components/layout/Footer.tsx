@@ -74,7 +74,7 @@ export function Footer() {
 
         <div className="mt-12 border-t border-white/[0.05] pt-6">
           <p className="text-xs text-slate-600">
-            © {new Date().getFullYear()} Loreum. On-chain governance infrastructure.
+            © {new Date().getFullYear()} Loreum DAO LLC. On-chain governance infrastructure.
           </p>
         </div>
       </div>
