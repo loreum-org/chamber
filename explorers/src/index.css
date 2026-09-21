@@ -166,6 +166,37 @@
     -webkit-mask-image: linear-gradient(180deg, #000 60%, transparent 100%);
     mask-image: linear-gradient(180deg, #000 60%, transparent 100%);
   }
+
+  /* ── RainbowKit theme overrides ──────────────────────────────── */
+  /* Match the modal to the dark stellar theme */
+  [data-rk] {
+    --rk-colors-accentColor: #2563eb;
+    --rk-colors-accentColorForeground: #ffffff;
+    --rk-colors-actionButtonBorder: rgba(255, 255, 255, 0.08);
+    --rk-colors-actionButtonSecondaryBackground: rgba(255, 255, 255, 0.04);
+    --rk-colors-closeButton: rgba(255, 255, 255, 0.7);
+    --rk-colors-closeButtonBackground: rgba(255, 255, 255, 0.06);
+    --rk-colors-connectionIndicator: #22c55e;
+    --rk-colors-connectButtonBackground: #1e293b;
+    --rk-colors-connectButtonBackgroundError: #dc2626;
+    --rk-colors-connectButtonInnerColor: #f1f5f9;
+    --rk-colors-connectButtonTextColor: #f1f5f9;
+    --rk-colors-modalBackground: #0f172a;
+    --rk-colors-modalBackdrop: rgba(0, 0, 0, 0.7);
+    --rk-colors-modalBorder: rgba(255, 255, 255, 0.06);
+    --rk-colors-modalText: #f1f5f9;
+    --rk-colors-modalTextDim: #94a3b8;
+    --rk-colors-modalTextSecondary: #cbd5e1;
+    --rk-colors-profileAction: rgba(255, 255, 255, 0.04);
+    --rk-colors-profileActionHover: rgba(255, 255, 255, 0.08);
+    --rk-colors-profileForeground: #f1f5f9;
+    --rk-colors-selectedOptionBorder: rgba(37, 99, 235, 0.4);
+  }
+
+  /* RainbowKit modal backdrop blur */
+  [data-rk] .rk-modal-overlay {
+    backdrop-filter: blur(8px);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

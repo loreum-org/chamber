@@ -18,11 +18,16 @@ root.render(
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider
+          appInfo={{
+            appName: 'Loreum Explorers',
+            learnMoreUrl: 'https://loreum.org',
+          }}
           theme={darkTheme({
             accentColor: '#2563eb',
             accentColorForeground: '#ffffff',
             borderRadius: 'large',
             overlayBlur: 'small',
+            fontStack: 'system',
           })}
         >
           <App />

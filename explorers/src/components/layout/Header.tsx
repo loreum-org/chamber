@@ -69,7 +69,87 @@ export function Header() {
           <span className="hidden sm:inline">
             <NetworkChip state={state} label={label} />
           </span>
-          <ConnectButton showBalance={false} chainStatus="icon" accountStatus="avatar" />
+          <ConnectButton.Custom>
+            {({
+              account,
+              chain,
+              openAccountModal,
+              openChainModal,
+              openConnectModal,
+              mounted,
+            }) => {
+              const connected = mounted && account && chain
+
+              return (
+                <div
+                  {...(!connected && {
+                    'aria-hidden': true,
+                    style: {
+                      opacity: 0,
+                      pointerEvents: 'none',
+                      userSelect: 'none',
+                    },
+                  })}
+                >
+                  {(() => {
+                    if (!connected) {
+                      return (
+                        <button
+                          onClick={openConnectModal}
+                          type="button"
+                          className="inline-flex h-10 items-center gap-2 rounded-lg border border-accent-600/30 bg-accent-600 px-4 text-sm font-medium text-white transition-colors hover:bg-accent-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/60"
+                        >
+                          Connect
+                        </button>
+                      )
+                    }
+
+                    if (chain.unsupported) {
+                      return (
+                        <button
+                          onClick={openChainModal}
+                          type="button"
+                          className="inline-flex h-10 items-center gap-2 rounded-lg border border-red-700/30 bg-red-950/40 px-4 text-sm font-medium text-red-400 transition-colors hover:bg-red-950/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/60"
+                        >
+                          Wrong network
+                        </button>
+                      )
+                    }
+
+                    return (
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={openChainModal}
+                          type="button"
+                          className="inline-flex h-10 items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 text-sm font-medium text-slate-300 transition-colors hover:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/60"
+                        >
+                          {chain.hasIcon && chain.iconUrl && (
+                            <img
+                              alt={chain.name ?? 'Chain icon'}
+                              src={chain.iconUrl}
+                              className="h-5 w-5 rounded-full"
+                            />
+                          )}
+                        </button>
+                        <button
+                          onClick={openAccountModal}
+                          type="button"
+                          className="inline-flex h-10 items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 text-sm font-medium text-slate-100 transition-colors hover:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/60"
+                        >
+                          {account.ensName ?? account.displayName}
+                          {account.displayBalance && (
+                            <span className="text-xs text-slate-400">
+                              ({account.displayBalance})
+                            </span>
+                          )}
+                        </button>
+                      </div>
+                    )
+                  })()}
+                </div>
+              )
+            }}
+          </ConnectButton.Custom>
           {/* Mobile menu toggle */}
           <button
             type="button"
