@@ -23,7 +23,7 @@ function Footer() {
           </div>
           <p className="text-gray-500 max-w-xs font-light">
             The Chamber Protocol — infrastructure for credibly neutral, agent-driven
-            Decentralized Governance Systems in the CLARITY era.
+            Decentralized Governance Systems for the onchain era.
           </p>
         </div>
 

@@ -71,7 +71,7 @@ function Team() {
           <span className="text-2xl font-display tracking-wider">LOREUM</span>
         </Link>
         <div className="hidden md:flex items-center gap-8 font-light tracking-wide text-sm">
-          <a href="/#clarity" className="hover:text-space-accent transition-colors">CLARITY</a>
+          <a href="/#governance" className="hover:text-space-accent transition-colors">GOVERNANCE</a>
           <a href="/#mission" className="hover:text-space-accent transition-colors">MISSION</a>
           <a href="/#technology" className="hover:text-space-accent transition-colors">TECHNOLOGY</a>
           <a href="/#governance" className="hover:text-space-accent transition-colors">GOVERNANCE</a>
