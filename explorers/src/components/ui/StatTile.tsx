@@ -23,7 +23,7 @@ export function StatTile({ label, value, sub, loading = false, className = '' }:
       {loading ? (
         <div className="shimmer mt-2 h-7 w-20 rounded-md bg-slate-800/60" aria-hidden />
       ) : (
-        <div className="mt-1 font-display text-2xl font-semibold tabular-nums text-slate-100 sm:text-[1.75rem]">
+        <div className="mt-1 font-display text-xl font-semibold tabular-nums text-slate-100 sm:text-[1.75rem]">
           {value}
         </div>
       )}
@@ -36,7 +36,7 @@ export function StatTile({ label, value, sub, loading = false, className = '' }:
 export function StatRow({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
     <div
-      className={`grid grid-cols-3 gap-px overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02] [&>*]:px-4 [&>*]:py-4 sm:[&>*]:px-5 ${className}`}
+      className={`grid grid-cols-3 gap-px overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02] [&>*]:px-3 [&>*]:py-3.5 sm:[&>*]:px-5 sm:[&>*]:py-4 ${className}`}
     >
       {children}
     </div>

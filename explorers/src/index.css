@@ -19,6 +19,10 @@
       linear-gradient(180deg, #070b12 0%, #05070d 55%);
     background-attachment: fixed;
     min-height: 100vh;
+    /* Full-bleed hero sections break out to 100vw via `.bleed`; clip (not
+       hidden — keeps the sticky header working) prevents the scrollbar-width
+       horizontal overflow the quality floor forbids. */
+    overflow-x: clip;
   }
 
   html {
