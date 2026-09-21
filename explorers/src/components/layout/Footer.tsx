@@ -19,12 +19,11 @@ export function Footer() {
           {/* Brand */}
           <div className="max-w-xs">
             <div className="flex items-center gap-2.5">
-              <span
-                aria-hidden
-                className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-accent text-sm font-bold text-white"
-              >
-                L
-              </span>
+              <img
+                src="https://cdn.loreum.org/logos/white.svg"
+                alt="Loreum"
+                className="h-8 w-8"
+              />
               <span className="font-display text-lg font-semibold tracking-tight text-slate-100">
                 Explorers
               </span>
