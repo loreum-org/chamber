@@ -166,23 +166,33 @@ export function Story() {
           </div>
 
           {/* CTA */}
-          <div className="mt-16 animate-fade-up">
-            <div className="rounded-lg border border-accent-500/30 bg-accent-500/10 p-8 text-center">
-              <h3 className="font-display text-2xl font-semibold text-slate-100">
-                Claim Your Seat
-              </h3>
-              <p className="mt-3 text-slate-300">
-                The Loreum Explorer is your membership in the Loreum DAO ecosystem.
-              </p>
-              <a
-                href="/claim"
-                className="mt-6 inline-flex items-center gap-2 rounded-lg bg-accent-500 px-6 py-3 font-medium text-white transition-colors hover:bg-accent-600"
-              >
-                Claim an Explorer
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </a>
+          <div className="mt-20 animate-fade-up">
+            <div className="relative overflow-hidden rounded-3xl border border-white/[0.08] bg-gradient-to-br from-slate-900/60 to-slate-800/40 p-12 text-center backdrop-blur-2xl">
+              {/* Aurora glow effect */}
+              <div className="pointer-events-none absolute inset-0 -z-10 animate-[rotate_20s_linear_infinite]">
+                <div className="absolute left-1/2 top-1/2 h-[200%] w-[200%] -translate-x-1/2 -translate-y-1/2 bg-[conic-gradient(from_0deg_at_50%_50%,transparent_0deg,rgba(92,141,246,0.15)_60deg,transparent_120deg,rgba(166,133,245,0.15)_240deg,transparent_300deg)]" />
+              </div>
+              <div className="absolute inset-px -z-10 rounded-[23px] bg-gradient-to-br from-slate-900/95 to-slate-800/85" />
+
+              <div className="relative z-10">
+                <h3 className="font-display text-4xl font-semibold leading-tight tracking-tight text-transparent sm:text-5xl" style={{ backgroundImage: 'linear-gradient(135deg, #ffffff 0%, #e2e8f0 50%, #cbd5e1 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text' }}>
+                  Claim Your Seat
+                </h3>
+                <p className="mx-auto mt-4 max-w-lg text-lg leading-relaxed text-slate-400">
+                  The Loreum Explorer is your membership in the Loreum DAO ecosystem — 
+                  a seat in the Chamber, a voice in governance.
+                </p>
+                <a
+                  href="/claim"
+                  className="group relative mt-10 inline-flex items-center gap-3 overflow-hidden rounded-full border border-white/10 bg-gradient-to-br from-blue-500 to-blue-600 px-10 py-4 font-display text-lg font-medium text-white shadow-[0_10px_30px_-5px_rgba(92,141,246,0.5),0_0_40px_rgba(92,141,246,0.3)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_15px_40px_-5px_rgba(92,141,246,0.6),0_0_60px_rgba(92,141,246,0.4)]"
+                >
+                  <span className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                  <span className="relative">Claim an Explorer</span>
+                  <svg className="relative h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M12 5l7 7-7 7" />
+                  </svg>
+                </a>
+              </div>
             </div>
           </div>
         </div>
