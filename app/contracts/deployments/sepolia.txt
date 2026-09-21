@@ -46,3 +46,15 @@
     mint                    mint(address) — permissionless faucet
     tx                      0xcf89667cc168e26528c4eac61122450bdc0653851b44ba00c9561035ca4de241
 
+  Sepolia - LoreumNFT (Explorers)
+  ====================================================================
+  LoreumNFT (Explorers)     0x69e41faF363A6Be4Cde76268315F48Ef0034C8b8
+    name/symbol             Blackholes / HOLES
+    base URI                ipfs://QmdmSzXAHnQW2ufFp9eApwb1HQQkrZAAnZqtzfb9bbXVqn/
+    MAX_SUPPLY              100
+    MAX_MINT                100
+    mintCost                0.0001 ETH
+    royaltyFraction         500 (5%)
+    owner                   0x2e0049b05217290087BA613290BaCC761d7adD04 (EOA)
+    source                  loreum-org/loreum-nft scripts/deployments.ts (sepolia)
+
