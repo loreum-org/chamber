@@ -24,8 +24,8 @@ const chamberAppUrl =
 
 function App() {
   useSeo(
-    'Loreum — Chamber: onchain governance',
-    'Factory-deployed ERC-4626 vault, liquid-delegated ranked board, and quorum wallet — onchain and verifiable by your community.',
+    'Loreum — Decentralized Governance System',
+    'Loreum is a governance platform where communities elect leaders, vote on proposals, and make decisions transparently onchain.',
     '/',
   );
 
