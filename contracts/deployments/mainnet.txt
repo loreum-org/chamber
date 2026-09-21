@@ -8,13 +8,21 @@
   Live tokens already on Ethereum (not Chamber / Factory)
   ====================================================================
   LORE (erc20)              0x7756D245527F5f8925A537be509BF54feb2FdC99
-  Membership NFT            0xB99DEdbDe082B8Be86f06449f2fC7b9FED044E15
+  LoreumNFT (Explorers)     0xB99DEdbDe082B8Be86f06449f2fC7b9FED044E15
+    name/symbol             Loreum Explorers / LOREUM
+    base URI                ipfs://QmcTBMUiaDQTCt3KT3JLadwKMcBGKTYtiuhopTUafo1h9L/
+    MAX_SUPPLY              10000
+    MAX_MINT                100
+    mintCost                0.05 ETH
+    royaltyFraction         500 (5%)
+    owner                   0x5d45A213B2B6259F0b3c116a8907B56AB5E22095 (Safe)
+    source                  loreum-org/loreum-nft scripts/deployments.ts (mainnet)
   Team Safe (LORE owner)    0x5d45A213B2B6259F0b3c116a8907B56AB5E22095
 
   createChamber args (after Factory exists)
   ====================================================================
   erc20Token                LORE (above)
-  erc721Token               Membership NFT (above)
+  erc721Token               LoreumNFT (Explorers) (above)
   seats                     5
   name                      Chamber LORE
   symbol                    cLORE
