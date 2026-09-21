@@ -197,6 +197,31 @@
   [data-rk] .rk-modal-overlay {
     backdrop-filter: blur(8px);
   }
+
+  /* Replace user avatar with Loreum logo */
+  [data-rk] img[alt="Avatar"],
+  [data-rk] img[alt="avatar"] {
+    display: none !important;
+  }
+
+  [data-rk] [class*="rk-avatar"],
+  [data-rk] [class*="Avatar"] {
+    position: relative !important;
+    background: transparent !important;
+  }
+
+  [data-rk] [class*="rk-avatar"]::before,
+  [data-rk] [class*="Avatar"]::before {
+    content: '' !important;
+    position: absolute !important;
+    inset: 0 !important;
+    background-image: url('https://cdn.loreum.org/logos/white.svg') !important;
+    background-size: 60% !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+    background-color: rgba(37, 99, 235, 0.1) !important;
+    border-radius: 50% !important;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
