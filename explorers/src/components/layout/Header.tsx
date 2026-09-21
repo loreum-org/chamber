@@ -42,12 +42,11 @@ export function Header() {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         {/* Wordmark */}
         <NavLink to="/" className="flex items-center gap-2.5">
-          <span
-            aria-hidden
-            className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-accent text-sm font-bold text-white shadow-[0_8px_20px_-8px_rgba(37,99,235,0.9)]"
-          >
-            L
-          </span>
+          <img
+            src="https://cdn.loreum.org/logos/white.svg"
+            alt="Loreum"
+            className="h-8 w-8"
+          />
           <span className="flex items-baseline gap-1.5">
             <span className="font-display text-lg font-semibold tracking-tight text-slate-100">
               Explorers
