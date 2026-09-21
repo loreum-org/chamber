@@ -2,10 +2,10 @@ import { useEffect } from 'react'
 
 export const SITE_URL = 'https://loreum.org'
 
-export const DEFAULT_TITLE = 'Loreum — Chamber: onchain governance for DAOs'
+export const DEFAULT_TITLE = 'Loreum — Chamber: Transparent governance you can trust'
 
 export const DEFAULT_DESCRIPTION =
-  'Loreum Chamber: onchain governance for DAOs — factory-deployed ERC-4626 vault, liquid-delegated ranked board, and quorum wallet.'
+  'Elect a board, vote on proposals, and watch every decision happen in real time. Transparent governance you can trust.'
 
 function setMeta(attr: 'name' | 'property', key: string, content: string) {
   let el = document.head.querySelector<HTMLMetaElement>(`meta[${attr}="${key}"]`)
