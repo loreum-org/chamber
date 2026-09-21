@@ -84,6 +84,26 @@ export const loreumNftAbi = [
     outputs: [{ type: 'uint256' }],
   },
   {
+    type: 'function',
+    name: 'tokenOfOwnerByIndex',
+    stateMutability: 'view',
+    inputs: [
+      { name: 'owner', type: 'address' },
+      { name: 'index', type: 'uint256' },
+    ],
+    outputs: [{ type: 'uint256' }],
+  },
+  {
+    type: 'function',
+    name: 'mint',
+    stateMutability: 'payable',
+    inputs: [
+      { name: 'to', type: 'address' },
+      { name: 'quantity', type: 'uint256' },
+    ],
+    outputs: [],
+  },
+  {
     type: 'event',
     name: 'Transfer',
     inputs: [
