@@ -105,7 +105,12 @@ export function Home() {
           {/* Hero art */}
           <div className="animate-fade-up [animation-delay:120ms]">
             <div className="mx-auto w-full max-w-sm lg:max-w-none">
-              {heroTokenId !== undefined ? (
+              {isLoading || totalSupply === undefined ? (
+                // Collection still loading — neutral skeleton, not the empty state.
+                <ArtFrame aspect="square" className="shadow-glow">
+                  <div aria-hidden className="shimmer absolute inset-0 bg-slate-800/50" />
+                </ArtFrame>
+              ) : heroTokenId !== undefined ? (
                 <HeroArt tokenId={heroTokenId} />
               ) : (
                 <ArtFrame aspect="square" className="shadow-glow">
