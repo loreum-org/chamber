@@ -2,7 +2,6 @@ import { Link } from 'react-router-dom'
 
 /**
  * Home page — landing for the Explorers app.
- * Stub: no feature logic (that's #293).
  */
 export function Home() {
   return (
@@ -18,6 +17,18 @@ export function Home() {
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <Link
+          to="/claim"
+          className="panel-primary p-6 transition-shadow duration-200 hover:shadow-card-hover"
+        >
+          <h2 className="font-heading text-lg font-semibold text-slate-100">
+            Claim
+          </h2>
+          <p className="mt-2 text-sm text-slate-400">
+            Mint your Loreum Explorer NFTs.
+          </p>
+        </Link>
+
         <Link
           to="/gallery"
           className="panel p-6 transition-shadow duration-200 hover:shadow-card-hover"
