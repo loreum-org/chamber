@@ -20,4 +20,15 @@ export default defineConfig({
   define: {
     global: 'globalThis',
   },
+  server: {
+    headers: {
+      // frame-ancestors is ignored in <meta>; send it as a response header.
+      'Content-Security-Policy': "frame-ancestors 'none'",
+    },
+  },
+  preview: {
+    headers: {
+      'Content-Security-Policy': "frame-ancestors 'none'",
+    },
+  },
 })
