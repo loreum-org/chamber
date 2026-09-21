@@ -4,6 +4,7 @@
  */
 
 const IPFS_GATEWAYS = [
+  'https://ipfs.loreum.org/ipfs/',
   'https://cloudflare-ipfs.com/ipfs/',
   'https://ipfs.io/ipfs/',
   'https://dweb.link/ipfs/',
