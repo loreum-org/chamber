@@ -67,7 +67,7 @@ function Team() {
       {/* Navigation */}
       <nav className="relative z-50 flex items-center justify-between gap-4 px-4 sm:px-8 py-6 max-w-7xl mx-auto w-full min-w-0 box-border">
         <Link to="/" className="flex items-center gap-2">
-          <img src="/logo.svg" alt="Loreum Logo" className="w-8 h-8" />
+          <img src="https://cdn.loreum.org/logos/white.svg" alt="Loreum Logo" className="w-8 h-8" />
           <span className="text-2xl font-display tracking-wider">LOREUM</span>
         </Link>
         <div className="hidden md:flex items-center gap-8 font-light tracking-wide text-sm">
