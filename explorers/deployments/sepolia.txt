@@ -1,0 +1,60 @@
+  
+  
+  May 2nd, 2026 - Sepolia
+  ====================================================================
+  DeployRegistry
+  ====================================================================
+  Depoloyer                 0x0C6F86b338417B3b7FCB9B344DECC51d072919c9
+  ADMIN                     0x5d45A213B2B6259F0b3c116a8907B56AB5E22095
+  Registry (proxy)          0x7AECf59eAD4B054A58bD42Af8704d381FdD9E821
+  Registry implementation   0x541d07F340FC66BDb6F368AB01d28f2B6b4e1310
+  Chamber implementation    0xa5eFB91e1817CF863cd9Db65d13834b50B1bFE8B
+
+  Aug 26, 2026 - Sepolia (Factory path, library extraction)
+  ====================================================================
+  DeployFactory
+  ====================================================================
+  Deployer                  0x0C6F86b338417B3b7FCB9B344DECC51d072919c9
+  ADMIN                     0x5d45A213B2B6259F0b3c116a8907B56AB5E22095
+  Factory                   0x43aA92c8A26392f21F63cdA88B6BaB5031C40550
+  Chamber implementation    0xd441f1FDad2d3a447d2621DE4DE8b5738e02d39c
+  BoardLib                  0xC3E0Fe4e89e01ca69e384bd61DA78a5a6379762D
+  WalletLib                 0x0320284b176657bb5048CF586DEef530F4B2499a
+
+  Etherscan verify
+  ====================================================================
+  Factory                   https://sepolia.etherscan.io/address/0x43aA92c8A26392f21F63cdA88B6BaB5031C40550#code
+  Chamber implementation    https://sepolia.etherscan.io/address/0xd441f1FDad2d3a447d2621DE4DE8b5738e02d39c#code
+  BoardLib                  https://sepolia.etherscan.io/address/0xC3E0Fe4e89e01ca69e384bd61DA78a5a6379762D#code
+  WalletLib                 https://sepolia.etherscan.io/address/0x0320284b176657bb5048CF586DEef530F4B2499a#code
+
+  Re-run (from contracts/): make verify-sepolia-factory
+  Requires ETHERSCAN_API_KEY and SEPOLIA_RPC_URL (see foundry.toml).
+  Print commands only: PRINT_ONLY=1 make verify-sepolia-factory
+
+  May 2, 2026 - Sepolia (demo tokens; broadcast MockERC20.s.sol / MockERC721.s.sol)
+  ====================================================================
+  DeploySepoliaMocks
+  ====================================================================
+  Deployer                  0x0C6F86b338417B3b7FCB9B344DECC51d072919c9
+  MockERC20 (demo)          0x486D69BcAF1E07e4F90edDA9fA7e09De50CD01a2
+    name/symbol             Loreum / LORE
+    mint                    mint(address,uint256) — permissionless faucet
+    tx                      0x074ab130c86cc668d6a69748a187e12a956fc78ac3a5b6ebf2351a3b27db70c1
+  MockERC721 (membership)   0x03CBb0Bb72aeB043b0dc8B299FaCFe77f9159688
+    name/symbol             Loreum / EXPLORERS
+    mint                    mint(address) — permissionless faucet
+    tx                      0xcf89667cc168e26528c4eac61122450bdc0653851b44ba00c9561035ca4de241
+
+  Sepolia - LoreumNFT (Explorers)
+  ====================================================================
+  LoreumNFT (Explorers)     0x69e41faF363A6Be4Cde76268315F48Ef0034C8b8
+    name/symbol             Blackholes / HOLES
+    base URI                ipfs://QmdmSzXAHnQW2ufFp9eApwb1HQQkrZAAnZqtzfb9bbXVqn/
+    MAX_SUPPLY              100
+    MAX_MINT                100
+    mintCost                0.0001 ETH
+    royaltyFraction         500 (5%)
+    owner                   0x2e0049b05217290087BA613290BaCC761d7adD04 (EOA)
+    source                  loreum-org/loreum-nft scripts/deployments.ts (sepolia)
+

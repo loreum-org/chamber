@@ -1,7 +1,10 @@
 /**
  * LoreumNFT (Explorers) contract addresses.
- * Parsed at build time from contracts/deployments/{mainnet,sepolia}.txt
- * using Vite's ?raw import (same pattern as app/src/lib/sepoliaDeployments.ts).
+ * Parsed at build time from deployments/{mainnet,sepolia}.txt using Vite's
+ * ?raw import. Those files are committed snapshots of
+ * app/contracts/deployments/, refreshed by scripts/sync-deployments.mjs
+ * (prebuild/predev) whenever the contracts source of truth is available —
+ * Railway builds only explorers/, so the snapshots must stay in git.
  *
  * Env vars override parsed values:
  *   VITE_LOREUM_NFT_MAINNET — mainnet address
@@ -9,8 +12,8 @@
  */
 
 import { getAddress, isAddress } from 'viem'
-import mainnetTxt from '../../../app/contracts/deployments/mainnet.txt?raw'
-import sepoliaTxt from '../../../app/contracts/deployments/sepolia.txt?raw'
+import mainnetTxt from '../../deployments/mainnet.txt?raw'
+import sepoliaTxt from '../../deployments/sepolia.txt?raw'
 
 /** Chain IDs — kept local to avoid importing wagmi in pure-data modules. */
 export const CHAIN_IDS = {
