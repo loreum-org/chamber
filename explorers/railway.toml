@@ -1,0 +1,13 @@
+# Railway: set service root directory to `explorers/` in the dashboard.
+# Separate project from app/ — do NOT share env vars or project ID.
+[build]
+builder = "NIXPACKS"
+buildCommand = "npm run build"
+
+[deploy]
+startCommand = "npx --yes serve dist -s -l ${PORT:-4173}"
+restartPolicyType = "ON_FAILURE"
+
+[deploy.healthcheck]
+path = "/"
+timeout = 300
