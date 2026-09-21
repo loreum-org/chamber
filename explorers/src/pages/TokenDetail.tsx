@@ -2,9 +2,10 @@ import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useChainId, useSwitchChain, useReadContract, useEnsName } from 'wagmi'
 import { mainnet, sepolia } from '@/wagmi'
 import { getLoreumNftAddress } from '@/lib/addresses'
+import { isBeyondSupply } from '@/lib/beyondSupply'
+import { ipfsToGatewayUrl } from '@/lib/ipfs'
 import { loreumNftAbi } from '@/abi'
 import { useTokenMetadata, useCollection } from '@/hooks'
-import { ipfsToGatewayUrl } from '@/lib/ipfs'
 import {
   ArtFrame,
   SectionHeading,
@@ -98,8 +99,8 @@ function TokenDetailContent({ tokenId }: { tokenId: bigint }) {
   const { data: collection, isLoading: collectionLoading } = useCollection()
   const totalSupply = collection.totalSupply
 
-  // Token existence checks
-  const beyondSupply = totalSupply !== undefined && tokenId >= totalSupply
+  // Token existence checks. LoreumNFT ids are 1..N when totalSupply is N.
+  const beyondSupply = isBeyondSupply(tokenId, totalSupply)
   const isNonexistent = !ownerLoading && (ownerError || beyondSupply)
 
   // Loading
