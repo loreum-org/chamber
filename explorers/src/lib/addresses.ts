@@ -1,14 +1,16 @@
 /**
  * LoreumNFT (Explorers) contract addresses.
- * Source: contracts/deployments/mainnet.txt and contracts/deployments/sepolia.txt
+ * Parsed at build time from contracts/deployments/{mainnet,sepolia}.txt
+ * using Vite's ?raw import (same pattern as app/src/lib/sepoliaDeployments.ts).
  *
- * Env vars override defaults:
+ * Env vars override parsed values:
  *   VITE_LOREUM_NFT_MAINNET — mainnet address
  *   VITE_LOREUM_NFT_SEPOLIA — sepolia address
  */
 
-const DEFAULT_MAINNET = '0xB99DEdbDe082B8Be86f06449f2fC7b9FED044E15' as const
-const DEFAULT_SEPOLIA = '0x69e41faF363A6Be4Cde76268315F48Ef0034C8b8' as const
+import { getAddress, isAddress } from 'viem'
+import mainnetTxt from '../../../app/contracts/deployments/mainnet.txt?raw'
+import sepoliaTxt from '../../../app/contracts/deployments/sepolia.txt?raw'
 
 /** Chain IDs — kept local to avoid importing wagmi in pure-data modules. */
 export const CHAIN_IDS = {
@@ -16,9 +18,32 @@ export const CHAIN_IDS = {
   SEPOLIA: 11155111,
 } as const
 
-export const LOREUM_NFT_ADDRESS: Record<number, `0x${string}`> = {
-  [CHAIN_IDS.MAINNET]: (import.meta.env.VITE_LOREUM_NFT_MAINNET || DEFAULT_MAINNET) as `0x${string}`,
-  [CHAIN_IDS.SEPOLIA]: (import.meta.env.VITE_LOREUM_NFT_SEPOLIA || DEFAULT_SEPOLIA) as `0x${string}`,
+const LOREUM_NFT_LABEL = /^LoreumNFT\s*\(Explorers\)\s+(0x[a-fA-F0-9]{40})\s*$/i
+
+/** Extract the LoreumNFT (Explorers) address from a deployment .txt file. Last match wins. */
+export function parseLoreumNftAddress(text: string): `0x${string}` | undefined {
+  let found: `0x${string}` | undefined
+  for (const line of text.split(/\r?\n/)) {
+    const match = line.trim().match(LOREUM_NFT_LABEL)
+    if (!match?.[1]) continue
+    if (!isAddress(match[1])) continue
+    found = getAddress(match[1])
+  }
+  return found
+}
+
+const PARSED_MAINNET = parseLoreumNftAddress(mainnetTxt)
+const PARSED_SEPOLIA = parseLoreumNftAddress(sepoliaTxt)
+
+/**
+ * chainId → LoreumNFT address.
+ * Env vars override parsed values; undefined for unsupported chains.
+ */
+export const LOREUM_NFT_ADDRESS: Record<number, `0x${string}` | undefined> = {
+  [CHAIN_IDS.MAINNET]:
+    (import.meta.env.VITE_LOREUM_NFT_MAINNET as `0x${string}` | undefined) || PARSED_MAINNET,
+  [CHAIN_IDS.SEPOLIA]:
+    (import.meta.env.VITE_LOREUM_NFT_SEPOLIA as `0x${string}` | undefined) || PARSED_SEPOLIA,
 }
 
 export function getLoreumNftAddress(chainId: number): `0x${string}` | undefined {
