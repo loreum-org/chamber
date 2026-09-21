@@ -3,8 +3,10 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAccount, useChainId, useReadContracts, useSwitchChain } from 'wagmi'
 import { formatUnits, isAddress } from 'viem'
-import { FiLayers, FiPlus, FiAlertTriangle, FiUser, FiBriefcase, FiShield, FiArrowRight } from 'react-icons/fi'
-import { useHasValidConfig, useMyChambers, useOrganizationsByNFT, useShareDecimals } from '@/hooks'
+import { useChainModal, useConnectModal } from '@rainbow-me/rainbowkit'
+import { FiLayers, FiPlus, FiAlertTriangle, FiUser, FiBriefcase, FiShield, FiArrowRight, FiRefreshCw, FiLoader } from 'react-icons/fi'
+import { useHasValidConfig, useMyChambers, useOrganizationsByNFT, useShareDecimals, useConnectedChainImplementationVersion } from '@/hooks'
+import { formatChamberVersionTag } from '@/lib/utils'
 import { erc721Abi } from '@/contracts'
 import {
   getNetworkName,
@@ -185,18 +187,15 @@ export default function Dashboard() {
           <div className="flex items-center gap-3 min-w-0">
             <img
               src="https://cdn.loreum.org/logos/white.svg"
-              alt="Chamber Logo"
+              alt="Loreum logo"
               className="w-11 h-11 shrink-0 object-contain"
             />
             <div className="min-w-0">
-              <p className="text-slate-500 text-[10px] font-semibold uppercase tracking-wider leading-none mb-1">
-                Governance
-              </p>
               <h1 className="font-heading text-xl sm:text-2xl font-bold text-slate-100 tracking-tight leading-tight">
-                Chamber
+                Loreum
               </h1>
               <p className="text-slate-500 text-xs sm:text-sm mt-0.5 leading-snug">
-                Your chambers, not a global directory.
+                Board-governed treasuries you direct or hold shares in.
               </p>
             </div>
           </div>

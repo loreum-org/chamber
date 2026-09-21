@@ -3,7 +3,8 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useWaitForTransactionReceipt } from 'wagmi'
 import { type Hash } from 'viem'
 import toast from 'react-hot-toast'
-import { invalidateChamberQueries } from './useChamberEvents'
+import { invalidateChamberQueries } from './invalidateChamberQueries'
+import { requireIndexerBlock } from '@/lib/indexer'
 
 export type QueueWriteKind =
   | 'submit'
@@ -119,7 +120,7 @@ export function queueWriteErrorMessage(kind: QueueWriteKind): string {
 
 /**
  * Watch a sent tx hash until the receipt lands, then refetch chamber reads.
- * Event watches stay as a fast path; this receipt path is the source of truth.
+ * There are no live event watches; this receipt path is how reads refresh after a write.
  */
 export function useReceiptRefresh(options: {
   chamberAddress: `0x${string}` | undefined
@@ -145,6 +146,7 @@ export function useReceiptRefresh(options: {
     isSuccess,
     isError,
     error,
+    data: receipt,
   } = useWaitForTransactionReceipt({
     hash,
     query: { enabled: !!hash },
@@ -155,6 +157,7 @@ export function useReceiptRefresh(options: {
 
     if (isSuccess) {
       handledRef.current = hash
+      if (chamberAddress && receipt) requireIndexerBlock(chamberAddress, receipt.blockNumber)
       invalidateChamberQueries(queryClient, chamberAddress)
       toast.success(successMessage)
       onSuccessRef.current?.()
@@ -171,7 +174,7 @@ export function useReceiptRefresh(options: {
       toast.error(errorMessage)
       onErrorRef.current?.(err)
     }
-  }, [hash, isSuccess, isError, error, chamberAddress, queryClient, successMessage, errorMessage])
+  }, [hash, isSuccess, isError, error, receipt, chamberAddress, queryClient, successMessage, errorMessage])
 
   return { isConfirming, isSuccess, isError, error }
 }

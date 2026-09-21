@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import Footer from './Footer.tsx';
+import { useSeo } from './seo';
 
 const FadeIn = ({ children, delay = 0, className = "" }: { children: React.ReactNode, delay?: number, className?: string }) => (
   <motion.div
@@ -36,6 +37,14 @@ const founders = [
     photo: '/team/daniel-lynch.jpg',
     xUrl: 'https://x.com/DLYNCH27',
     xHandle: '@DLYNCH27',
+  },
+  {
+    name: 'Hurricane',
+    role: 'Co-founder',
+    blurb: 'Hurricane leads strategic relations and partnerships.',
+    photo: '/team/hurricane.jpg',
+    xUrl: 'https://x.com/hurricaneloreum',
+    xHandle: '@hurricaneloreum',
   },
 ];
 
@@ -91,7 +100,7 @@ function Team() {
             </p>
           </FadeIn>
 
-          <div className="grid md:grid-cols-2 gap-8 max-w-5xl">
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl">
             {founders.map((founder, i) => (
               <FadeIn key={founder.name} delay={i * 0.15} className="group relative">
                 <article className="relative h-full p-8 bg-space-800/40 backdrop-blur-md border border-white/10 rounded-xl overflow-hidden group-hover:border-white/20 transition-all duration-500 hover:translate-y-[-4px] hover:shadow-2xl">

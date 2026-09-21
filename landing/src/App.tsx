@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ChevronRight, Layers, Shield, Cpu, TrendingUp, ShieldAlert, Search, Radio, Scale, Eye, Network } from 'lucide-react';
 import Footer from './Footer.tsx';
+import { useSeo } from './seo';
 
 const FadeIn = ({ children, delay = 0, className = "" }: { children: React.ReactNode, delay?: number, className?: string }) => (
   <motion.div
@@ -23,7 +24,7 @@ const chamberAppUrl =
 
 function App() {
   useSeo(
-    'Loreum — Chamber: onchain governance for DAOs',
+    'Loreum — Chamber: onchain governance',
     'Factory-deployed ERC-4626 vault, liquid-delegated ranked board, and quorum wallet — onchain and verifiable by your community.',
     '/',
   );
@@ -97,11 +98,7 @@ function App() {
             transition={{ duration: 0.8, delay: 0.4 }}
             className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-12 font-light leading-relaxed break-words"
           >
-            Loreum Chamber is protocol infrastructure for real DAOs: a
-            factory-deployed ERC-4626 vault, a liquid-delegated ranked board of
-            membership NFTs, and a
-            <span className="text-space-accent"> quorum wallet</span> — onchain
-            and verifiable by your community.
+            Loreum provides onchain governance for protocols: a compliant treasury vault, a ranked board with liquid delegation, and a quorum wallet — all enforced onchain and verifiable by any participant.
           </motion.p>
 
           <motion.div 
@@ -114,7 +111,7 @@ function App() {
               href={chamberAppUrl}
               className="w-full sm:w-auto px-8 py-4 bg-white text-space-900 hover:bg-space-accent transition-colors rounded-none text-sm tracking-widest font-bold flex items-center justify-center gap-2 group"
             >
-              START MISSION
+              START
               <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </a>
             <Link 
@@ -178,7 +175,7 @@ function App() {
               group of persons under common control — retains effective control.
             </p>
             <p className="text-lg md:text-xl text-gray-400 font-light leading-relaxed break-words">
-              Most "DAOs" do not meet that bar. Founder multisigs, offchain Discord votes, opaque
+              Most onchain governance today does not meet that bar. Founder multisigs, offchain Discord votes, opaque
               admin keys, and concentrated voting power all fail the test — leaving protocols
               stuck in regulatory limbo, exposed to enforcement risk, and unable to mature.
             </p>

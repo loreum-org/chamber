@@ -10,6 +10,7 @@ import { listOwnedErc721TokenIds } from '@/lib/ownedErc721'
 import { isOnchainContractBytecode } from '@/lib/address'
 import { asUint32 } from '@/lib/directorSession'
 import type { Transaction, BoardMember, SeatUpdate } from '@/types'
+import { useInvalidateOnReceipt } from './invalidateChamberQueries'
 
 /** Public RPC / long block times: retry eth_call simulation and refresh state after txs. */
 const SLOW_CHAIN_SIMULATE_QUERY = {
@@ -657,7 +658,8 @@ export function useTransactionCancelConfirmation(
 export function useDelegate(chamberAddress: `0x${string}` | undefined) {
   const { address: userAddress } = useAccount()
   const { writeContractAsync, data: hash, isPending, error: writeError } = useWriteContract()
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
+  const { isLoading: isConfirming, isSuccess, data: receipt } = useWaitForTransactionReceipt({ hash })
+  useInvalidateOnReceipt(hash, receipt, chamberAddress, userAddress)
 
   const delegate = async (tokenId: bigint, amount: bigint) => {
     if (!chamberAddress || !userAddress) {
@@ -721,7 +723,8 @@ export function useSimulateDelegate(
 export function useUndelegate(chamberAddress: `0x${string}` | undefined) {
   const { address: userAddress } = useAccount()
   const { writeContractAsync, data: hash, isPending, error: writeError } = useWriteContract()
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
+  const { isLoading: isConfirming, isSuccess, data: receipt } = useWaitForTransactionReceipt({ hash })
+  useInvalidateOnReceipt(hash, receipt, chamberAddress, userAddress)
 
   const undelegate = async (tokenId: bigint, amount: bigint) => {
     if (!chamberAddress || !userAddress) {
@@ -783,7 +786,8 @@ export function useSimulateUndelegate(
 export function useDeposit(chamberAddress: `0x${string}` | undefined) {
   const { address: userAddress } = useAccount()
   const { writeContractAsync, data: hash, isPending, error: writeError } = useWriteContract()
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
+  const { isLoading: isConfirming, isSuccess, data: receipt } = useWaitForTransactionReceipt({ hash })
+  useInvalidateOnReceipt(hash, receipt, chamberAddress, userAddress)
 
   const deposit = async (assets: bigint, receiver: `0x${string}`) => {
     if (!chamberAddress || !userAddress) {
@@ -845,7 +849,8 @@ export function useSimulateDeposit(
 export function useWithdraw(chamberAddress: `0x${string}` | undefined) {
   const { address: userAddress } = useAccount()
   const { writeContractAsync, data: hash, isPending, error: writeError } = useWriteContract()
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
+  const { isLoading: isConfirming, isSuccess, data: receipt } = useWaitForTransactionReceipt({ hash })
+  useInvalidateOnReceipt(hash, receipt, chamberAddress, userAddress)
 
   const withdraw = async (assets: bigint, receiver: `0x${string}`, owner: `0x${string}`) => {
     if (!chamberAddress || !userAddress) {
@@ -1201,7 +1206,8 @@ export function useDirectorActionGate(
   const { data: blockNumber } = useBlockNumber({
     query: {
       enabled: !!chamberAddress && tokenId !== undefined,
-      refetchInterval: 4_000,
+      // Seating/session maturity only needs coarse block height; hidden tabs pause.
+      refetchInterval: 60_000,
     },
   })
 

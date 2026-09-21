@@ -140,3 +140,89 @@ export async function fetchIndexerMyChambers(
   }
   return parseIndexerMyChambers(json)
 }
+
+/** Indexer head from Ponder `_meta.status` (one network per deployment). */
+export type IndexerHead = { number: bigint; timestamp: bigint; ready: boolean }
+
+export function parseIndexerHead(status: unknown): IndexerHead | undefined {
+  if (!status || typeof status !== 'object') return undefined
+  for (const network of Object.values(status as Record<string, unknown>)) {
+    const row = network as { ready?: unknown; block?: { number?: unknown; timestamp?: unknown } } | null
+    const number = row?.block?.number
+    const timestamp = row?.block?.timestamp
+    if (number === undefined || number === null) continue
+    return {
+      number: BigInt(number as number | string),
+      timestamp: BigInt((timestamp ?? 0) as number | string),
+      ready: row?.ready === true,
+    }
+  }
+  return undefined
+}
+
+/** Thrown when the indexer has not reached a block the app is waiting for. React Query retries it. */
+export class IndexerBehindError extends Error {
+  constructor(readonly head: bigint | undefined, readonly required: bigint) {
+    super(`Indexer at block ${head ?? 'unknown'}, waiting for ${required}`)
+    this.name = 'IndexerBehindError'
+  }
+}
+
+/**
+ * After a wallet write lands in block N, reads for that chamber must come from
+ * an indexer at ≥ N or the UI would show pre-write state. Keyed by lowercase chamber.
+ */
+const requiredBlockByChamber = new Map<string, bigint>()
+
+export function requireIndexerBlock(chamber: string, blockNumber: bigint): void {
+  const key = chamber.toLowerCase()
+  const current = requiredBlockByChamber.get(key)
+  if (current === undefined || blockNumber > current) requiredBlockByChamber.set(key, blockNumber)
+}
+
+export function requiredIndexerBlock(chamber: string): bigint | undefined {
+  return requiredBlockByChamber.get(chamber.toLowerCase())
+}
+
+/**
+ * POST a GraphQL query that selects `_meta { status }` alongside its data.
+ * Throws `IndexerBehindError` when `chamber` has a pending write the indexer has not reached.
+ */
+export async function indexerRequest<T>(
+  query: string,
+  variables: Record<string, unknown>,
+  options: { url?: string; chamber?: string } = {},
+): Promise<{ data: T; head: IndexerHead | undefined }> {
+  const url = options.url ?? getIndexerUrl()
+  if (!url) throw new Error('Indexer URL not configured')
+  const res = await fetch(indexerGraphqlUrl(url), {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ query, variables }),
+  })
+  if (!res.ok) throw new Error(`Indexer HTTP ${res.status}`)
+  const json = (await res.json()) as {
+    errors?: { message?: string }[]
+    data?: T & { _meta?: { status?: unknown } }
+  }
+  if (json.errors?.length) throw new Error(json.errors[0]?.message || 'Indexer GraphQL error')
+  if (!json.data) throw new Error('Indexer returned no data')
+
+  const head = parseIndexerHead(json.data._meta?.status)
+  const required = options.chamber ? requiredIndexerBlock(options.chamber) : undefined
+  if (required !== undefined && (!head || head.number < required)) {
+    throw new IndexerBehindError(head?.number, required)
+  }
+  return { data: json.data, head }
+}
+
+/** React Query retry policy: keep polling while the indexer catches up to a write, else retry twice. */
+export function indexerRetry(failureCount: number, error: unknown): boolean {
+  if (error instanceof IndexerBehindError) return failureCount < 40
+  return failureCount < 2
+}
+
+export function indexerRetryDelay(failureCount: number, error: unknown): number {
+  if (error instanceof IndexerBehindError) return 1500
+  return Math.min(1000 * 2 ** failureCount, 8000)
+}

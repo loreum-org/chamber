@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Link, useParams } from 'react-router-dom';
 import Markdown from 'react-markdown';
 import { formatPostDate, getPost, posts } from './posts.ts';
+import { useSeo } from './seo';
 import Footer from './Footer.tsx';
 
 const FadeIn = ({ children, delay = 0, className = "" }: { children: React.ReactNode, delay?: number, className?: string }) => (

@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAccount, useReadContract } from 'wagmi'
 import { isAddress, type Address, zeroAddress } from 'viem'
@@ -279,17 +279,17 @@ export default function Migrate() {
   }, [safeOwners, safeThreshold, seats])
 
   const phaseIndex = phase === 'connect' ? 0 : phase === 'parallel' ? 1 : 2
-  const phases: Phase[] = ['connect', 'parallel', 'handover']
+  const phases = useMemo<Phase[]>(() => ['connect', 'parallel', 'handover'], [])
 
   const goNext = useCallback(() => {
     const nextIdx = Math.min(phaseIndex + 1, 2)
     setPhase(phases[nextIdx])
-  }, [phaseIndex])
+  }, [phaseIndex, phases])
 
   const goPrev = useCallback(() => {
     const prevIdx = Math.max(phaseIndex - 1, 0)
     setPhase(phases[prevIdx])
-  }, [phaseIndex])
+  }, [phaseIndex, phases])
 
   const startParallelRun = useCallback(() => {
     setParallelRun((prev) => ({
@@ -473,8 +473,8 @@ function PhaseConnect({
         </div>
 
         {!isConnected && (
-          <div className="mb-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
-            <p className="text-amber-300 text-sm">Connect your wallet to begin migration.</p>
+          <div className="mb-4 p-3 rounded-lg bg-accent-500/10 border border-accent-500/20">
+            <p className="text-accent-300 text-sm">Connect your wallet to begin migration.</p>
             <div className="mt-3">
               <ConnectButton />
             </div>

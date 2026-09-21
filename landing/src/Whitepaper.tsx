@@ -156,7 +156,7 @@ function Whitepaper() {
 
               <h3 className="text-2xl font-display mb-4 mt-10 text-white">1.2 Chamber as protocol response</h3>
               <p className="text-gray-300 leading-relaxed mb-4">
-                Decentralized Autonomous Organizations (DAOs) have emerged as a paradigm for collective decision-making
+                Onchain governance has emerged as a paradigm for collective decision-making
                 in blockchain ecosystems. However, many stacks remain ill-suited to the CLARITY bar: static membership,
                 offchain voting with onchain rubber-stamping, or agent-hostile signature models. Chamber addresses
                 these limitations with a flexible, agent-centric governance framework built on Ethereum where the
@@ -284,11 +284,103 @@ function Whitepaper() {
             <section className="mb-16">
               <h2 className="text-3xl font-display mb-6 text-space-accent">3. Delegation Mechanism</h2>
               
-              <h3 className="text-2
+              <h3 className="text-2xl font-display mb-4 mt-8 text-white">3.1 Ranked delegation board (sorted linked list)</h3>
+              <p className="text-gray-300 leading-relaxed mb-4">
+                The Board contract maintains a doubly-linked list of nodes, where each node
+                represents a membership <code className="text-space-accent">tokenId</code> and
+                its total delegated amount. The list is sorted in descending order by delegation
+                amount, giving O(1) access to the top N directors. The list is bounded by{" "}
+                <code className="text-space-accent">MAX_NODES</code> (50): a delegate whose
+                weight does not beat the current list minimum is rejected rather than evicting
+                an existing node, so worst-case gas stays predictable.
+              </p>
 
-... [OUTPUT TRUNCATED - 4,931 chars omitted out of 54,859 total] ...
+              <div className="bg-space-800/40 border border-white/10 rounded-xl p-6 mb-6 backdrop-blur-md">
+                <pre className="text-gray-300 text-sm font-mono overflow-x-auto">
+{`struct Node {
+    uint256 tokenId;
+    uint256 amount;      // Total delegations
+    uint256 next;        // Next node (higher amount)
+    uint256 prev;        // Previous node (lower amount)
+}`}
+                </pre>
+              </div>
 
-/}
+              <p className="text-gray-300 leading-relaxed mb-4">
+                When a holder delegates tokens to a tokenId, the Board contract:
+              </p>
+              <ol className="list-decimal list-inside text-gray-300 space-y-2 mb-4 ml-4">
+                <li>Checks if a node exists for the tokenId</li>
+                <li>If exists, increments the amount and calls <code className="text-space-accent">_reposition()</code></li>
+                <li>
+                  If not, calls <code className="text-space-accent">_insert()</code> to create a
+                  new node — reverting at the{" "}
+                  <code className="text-space-accent">MAX_NODES</code> bound when the new weight
+                  does not beat the list minimum
+                </li>
+                <li>
+                  Insertion and repositioning keep the list sorted by traversing from head;
+                  the reposition logic is circuit-safe against self-links
+                </li>
+              </ol>
+
+              <h3 className="text-2xl font-display mb-4 mt-8 text-white">3.2 Director selection and quorum</h3>
+              <p className="text-gray-300 leading-relaxed mb-4">
+                Directors are selected dynamically: the top N tokenIds (where N = seats) form
+                the board. <code className="text-space-accent">getDirectors()</code> resolves
+                tokenId → address via <code className="text-space-accent">nft.ownerOf(tokenId)</code>.
+                A burned or transferred token resolves to{" "}
+                <code className="text-space-accent">address(0)</code> for that position. A newly
+                seated token — or a control change to an already-seated token — waits{" "}
+                <code className="text-space-accent">SEATING_DELAY</code> (1 block) before its
+                director powers apply.
+              </p>
+
+              <div className="bg-space-800/40 border border-white/10 rounded-xl p-6 mb-6 backdrop-blur-md">
+                <p className="text-gray-300 leading-relaxed mb-2">
+                  <strong className="text-space-accent">Quorum Calculation:</strong>
+                </p>
+                <code className="text-space-accent text-lg font-mono">
+                  quorum = 1 + (n × 51) / 100
+                </code>
+                <p className="text-gray-400 text-sm mt-2">
+                  Exact integer formula (`/` truncates). Live quorum is computed over{" "}
+                  <strong className="text-white font-normal">reachable</strong> authorized
+                  top-seat tokenIds: empty slots and burned / inert ids do not inflate the bar.
+                  This is not a simple majority — one- and two-seat chambers require 100% of
+                  seats. Cancel votes use the same formula: when cancel confirmations reach
+                  quorum the proposal is dead and can no longer be confirmed or executed.
+                </p>
+              </div>
+
+              <h3 className="text-2xl font-display mb-4 mt-8 text-white">3.3 Liquid delegation</h3>
+              <p className="text-gray-300 leading-relaxed mb-4">
+                Unlike traditional governance systems with lockup periods, Chamber allows agents
+                to redelegate or undelegate tokens at any time. However, the Chamber contract
+                enforces that an agent cannot transfer tokens if doing so would reduce its
+                balance below its total delegated amount:
+              </p>
+
+              <div className="bg-space-800/40 border border-white/10 rounded-xl p-6 mb-6 backdrop-blur-md">
+                <pre className="text-gray-300 text-sm font-mono overflow-x-auto">
+{`function transfer(address to, uint256 value) public override {
+    uint256 ownerBalance = balanceOf(owner);
+    if (ownerBalance - value < totalAgentDelegations[owner]) {
+        revert ExceedsDelegatedAmount();
+    }
+    _transfer(owner, to, value);
+}`}
+                </pre>
+              </div>
+
+              <p className="text-gray-300 leading-relaxed">
+                This constraint ensures that delegated voting power remains backed by actual
+                token balances, preventing double-spending of governance rights.
+              </p>
+            </section>
+          </FadeIn>
+
+          {/* Agent Integration */}
           <FadeIn delay={0.5}>
             <section className="mb-16">
               <h2 className="text-3xl font-display mb-6 text-space-accent">4. Agent Integration</h2>
@@ -302,7 +394,7 @@ function Whitepaper() {
                 agent directors stay research (§4.3); they are not a shipped capability.
               </p>
               
-              <h3 className="text-2xl font-display mb-4 mt-8 text-white">4.1 Live authorization: owner *** session keys</h3>
+              <h3 className="text-2xl font-display mb-4 mt-8 text-white">4.1 Live authorization: owner &amp; session keys</h3>
               <p className="text-gray-300 leading-relaxed mb-4">
                 For a seated <code className="text-space-accent">tokenId</code>, Chamber
                 authorizes <code className="text-space-accent">msg.sender</code> if and only if

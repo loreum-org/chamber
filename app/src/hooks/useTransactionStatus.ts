@@ -1,5 +1,5 @@
 import { useEffect, useCallback, useRef, useState } from 'react'
-import { useWaitForTransactionReceipt, useWatchPendingTransactions, useWriteContract } from 'wagmi'
+import { useWaitForTransactionReceipt, useWriteContract } from 'wagmi'
 import { type Abi, type Hash, type TransactionReceipt } from 'viem'
 import toast from 'react-hot-toast'
 import { chamberAbi, erc20Abi, factoryAbi, registryAbi } from '@/contracts/abis'
@@ -129,15 +129,6 @@ export function useTransactionStatus(
       enabled: !!internalHash,
       retry: 3,
       retryDelay: 2000,
-    },
-  })
-
-  // Watch for pending transactions (optional - helps detect when tx is submitted)
-  useWatchPendingTransactions({
-    onTransactions: (transactions) => {
-      if (internalHash && transactions.includes(internalHash) && status === 'idle') {
-        setStatus('pending')
-      }
     },
   })
 

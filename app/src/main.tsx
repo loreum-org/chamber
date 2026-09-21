@@ -11,7 +11,12 @@ import { chamberWalletTheme, noWalletAvatar } from '@/lib/rainbowTheme'
 import { config } from './lib/wagmi'
 import './index.css'
 
-const queryClient = new QueryClient()
+// Reads are cached for 30s so remounts and focus changes don't refetch every contract view.
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: { staleTime: 30_000, refetchIntervalInBackground: false },
+  },
+})
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
