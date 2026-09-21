@@ -23,7 +23,7 @@ export function StatTile({ label, value, sub, loading = false, className = '' }:
       {loading ? (
         <div className="shimmer mt-2 h-7 w-20 rounded-md bg-slate-800/60" aria-hidden />
       ) : (
-        <div className="mt-1 font-display text-xl font-semibold tabular-nums text-slate-100 sm:text-[1.75rem]">
+        <div className="mt-1 whitespace-nowrap font-display text-xl font-semibold tabular-nums text-slate-100 sm:text-[1.75rem]">
           {value}
         </div>
       )}
@@ -34,9 +34,11 @@ export function StatTile({ label, value, sub, loading = false, className = '' }:
 
 /** Row of stat tiles with hairline dividers — the hero's live collection stats. */
 export function StatRow({ children, className = '' }: { children: ReactNode; className?: string }) {
+  const childCount = Array.isArray(children) ? children.length : 1
+  const cols = childCount === 3 ? 'grid-cols-3' : 'grid-cols-2'
   return (
     <div
-      className={`grid grid-cols-3 gap-px overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02] [&>*]:px-3 [&>*]:py-3.5 sm:[&>*]:px-5 sm:[&>*]:py-4 ${className}`}
+      className={`grid ${cols} gap-px overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02] [&>*]:px-3 [&>*]:py-3.5 sm:[&>*]:px-5 sm:[&>*]:py-4 ${className}`}
     >
       {children}
     </div>
