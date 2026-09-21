@@ -21,7 +21,8 @@ root.render(
           theme={darkTheme({
             accentColor: '#2563eb',
             accentColorForeground: '#ffffff',
-            borderRadius: 'medium',
+            borderRadius: 'large',
+            overlayBlur: 'small',
           })}
         >
           <App />

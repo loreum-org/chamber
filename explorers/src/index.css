@@ -2,17 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Copied verbatim from app/src/index.css — token register for explorers/.
-   Do not import across apps; re-copy when app/ tokens change. */
+/* Explorers showcase system. The slate/accent tokens stay aligned with app/,
+   but this is the public collection page, not the operator console — so the
+   surfaces run deeper and the hero carries a cinematic aurora. The legacy
+   legacy panel, button and badge classes are kept intact so every route keeps
+   rendering while the surface redesigns land one PR at a time. */
 
 @layer base {
   body {
-    @apply bg-[#0b0f17] text-slate-200 font-sans antialiased;
-    background-color: #0b0f17;
+    @apply bg-void text-slate-200 font-sans antialiased;
+    background-color: #05070d;
     background-image:
-      radial-gradient(ellipse 120% 80% at 50% -30%, rgba(37, 99, 235, 0.09), transparent 55%),
-      radial-gradient(ellipse 70% 50% at 100% 100%, rgba(15, 23, 42, 0.85), transparent 50%),
-      linear-gradient(180deg, rgba(15, 23, 42, 0.35) 0%, transparent 40%);
+      radial-gradient(75% 55% at 12% -8%, rgba(37, 99, 235, 0.14), transparent 60%),
+      radial-gradient(55% 45% at 92% 0%, rgba(129, 140, 248, 0.10), transparent 55%),
+      radial-gradient(80% 60% at 50% 116%, rgba(56, 189, 248, 0.07), transparent 60%),
+      linear-gradient(180deg, #070b12 0%, #05070d 55%);
+    background-attachment: fixed;
     min-height: 100vh;
   }
 
@@ -31,6 +36,7 @@
 }
 
 @layer components {
+  /* ── Surfaces ──────────────────────────────────────────────── */
   .panel {
     @apply bg-slate-900/55 backdrop-blur-xl border border-slate-700/40 rounded-xl shadow-soft;
     box-shadow:
@@ -46,12 +52,36 @@
       inset 0 1px 0 rgba(255, 255, 255, 0.03);
   }
 
+  /* Elevated glass card for showcase surfaces (hero widgets, feature cards). */
+  .glass {
+    @apply bg-slate-900/40 backdrop-blur-2xl border border-white/[0.06] rounded-2xl;
+    box-shadow:
+      0 24px 70px -30px rgba(0, 0, 0, 0.8),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  /* ── Art frame ─────────────────────────────────────────────── */
+  /* Reusable NFT art container: deep matte well + hairline ring, hover glow. */
+  .art-frame {
+    @apply relative overflow-hidden rounded-2xl bg-slate-950/60 ring-1 ring-white/[0.06];
+    box-shadow: 0 24px 70px -30px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  }
+  .art-frame-hover {
+    @apply transition-all duration-300;
+  }
+  .art-frame-hover:hover {
+    @apply ring-accent-500/30;
+    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.25), 0 28px 80px -30px rgba(37, 99, 235, 0.4);
+  }
+
+  /* ── Buttons ───────────────────────────────────────────────── */
   .btn {
-    @apply px-5 py-2.5 font-medium rounded-lg transition-all duration-200 flex items-center gap-2 justify-center text-sm;
+    @apply px-5 py-2.5 font-medium rounded-lg transition-all duration-200 inline-flex items-center gap-2 justify-center text-sm;
   }
 
   .btn-primary {
-    @apply bg-accent-600 text-white hover:bg-accent-500 active:bg-accent-700 shadow-sm border border-accent-500/30;
+    @apply bg-accent-600 text-white hover:bg-accent-500 active:bg-accent-700 border border-accent-500/30;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.12) inset, 0 10px 30px -12px rgba(37, 99, 235, 0.7);
   }
 
   .btn-secondary {
@@ -62,28 +92,48 @@
     @apply text-slate-400 hover:text-accent-400 hover:bg-slate-800/60;
   }
 
+  /* ── Badges ────────────────────────────────────────────────── */
   .badge {
     @apply inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium;
   }
-
   .badge-primary {
     @apply bg-accent-950/80 text-accent-300 border border-accent-700/35;
   }
-
   .badge-success {
     @apply bg-emerald-950/50 text-emerald-400 border border-emerald-700/35;
   }
-
   .badge-pending {
     @apply bg-amber-950/40 text-amber-400 border border-amber-700/35;
   }
-
   .badge-danger {
     @apply bg-red-950/40 text-red-400 border border-red-700/35;
   }
-
   .badge-muted {
     @apply bg-slate-800/80 text-slate-400 border border-slate-600/40;
+  }
+
+  /* ── Showcase primitives ───────────────────────────────────── */
+  /* Uppercase tracked label above a section title. */
+  .eyebrow {
+    @apply inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-eyebrow text-accent-300/90;
+  }
+
+  /* Gradient clip-text for display headings. */
+  .display-gradient {
+    @apply bg-text-gradient bg-clip-text text-transparent;
+  }
+
+  /* Header nav link. */
+  .nav-link {
+    @apply relative text-sm font-medium text-slate-400 transition-colors duration-200 hover:text-slate-100;
+  }
+  .nav-link-active {
+    @apply text-slate-100;
+  }
+
+  /* Small pill for meta/traits/chips. */
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1 text-xs text-slate-300;
   }
 }
 
@@ -92,15 +142,32 @@
     background: linear-gradient(
       90deg,
       transparent 0%,
-      rgba(255, 255, 255, 0.04) 50%,
+      rgba(255, 255, 255, 0.05) 50%,
       transparent 100%
     );
     background-size: 200% 100%;
     animation: shimmer 2s linear infinite;
   }
+
+  /* Full-bleed breakout: lets a hero span the viewport width from inside a
+     max-width container (used by hero sections in the surface PRs). */
+  .bleed {
+    width: 100vw;
+    margin-left: 50%;
+    transform: translateX(-50%);
+  }
+
+  /* Fine mask that fades a full-bleed element's edges into the page. */
+  .mask-fade-b {
+    -webkit-mask-image: linear-gradient(180deg, #000 60%, transparent 100%);
+    mask-image: linear-gradient(180deg, #000 60%, transparent 100%);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
   *,
   *::before,
   *::after {

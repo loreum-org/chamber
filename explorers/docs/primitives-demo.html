@@ -3,224 +3,126 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Explorers primitives — token-verified</title>
+<title>Explorers primitives — showcase system</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script>
-tailwind.config = {
-  theme: {
-    extend: {
-      colors: {
-        slate: {
-          50:'#f8fafc',100:'#f1f5f9',200:'#e2e8f0',300:'#cbd5e1',400:'#94a3b8',
-          500:'#64748b',600:'#475569',700:'#334155',800:'#1e293b',850:'#172033',
-          900:'#0f172a',950:'#020617',
+  // Mirror of explorers/tailwind.config.js (kept in sync by hand — this is a
+  // static reference page, not part of the app build).
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          slate: {50:'#f8fafc',100:'#f1f5f9',200:'#e2e8f0',300:'#cbd5e1',400:'#94a3b8',500:'#64748b',600:'#475569',700:'#334155',800:'#1e293b',850:'#172033',900:'#0f172a',950:'#020617'},
+          accent: {50:'#eff6ff',100:'#dbeafe',200:'#bfdbfe',300:'#93c5fd',400:'#60a5fa',500:'#3b82f6',600:'#2563eb',700:'#1d4ed8',800:'#1e40af',900:'#1e3a8a',950:'#172554'},
+          void: {DEFAULT:'#05070d',900:'#070b12',800:'#0b1120'},
         },
-        accent: {
-          50:'#eff6ff',100:'#dbeafe',200:'#bfdbfe',300:'#93c5fd',400:'#60a5fa',
-          500:'#3b82f6',600:'#2563eb',700:'#1d4ed8',800:'#1e40af',900:'#1e3a8a',950:'#172554',
+        fontFamily: {
+          display: ['"Space Grotesk"','Inter','system-ui','sans-serif'],
+          sans: ['Inter','system-ui','sans-serif'],
+          mono: ['"JetBrains Mono"','Menlo','monospace'],
         },
-      },
-      fontFamily: {
-        heading: ['"IBM Plex Sans"','Inter','system-ui','sans-serif'],
-        sans: ['Inter','system-ui','sans-serif'],
-        mono: ['JetBrains Mono','Menlo','monospace'],
+        letterSpacing: { eyebrow: '0.22em' },
       },
     },
-  },
-}
+  }
 </script>
 <style>
-  body { background: #0b0f17; color: #e2e8f0; font-family: 'Inter', system-ui, sans-serif; }
-  .panel {
-    background: rgba(15,23,42,.55);
-    backdrop-filter: blur(24px);
-    border: 1px solid rgba(51,65,85,.4);
-    border-radius: 12px;
-    box-shadow: 0 4px 24px rgba(0,0,0,.35), 0 0 0 1px rgba(148,163,184,.06), inset 0 1px 0 rgba(255,255,255,.03);
+  body {
+    background-color:#05070d;
+    background-image:
+      radial-gradient(75% 55% at 12% -8%, rgba(37,99,235,.14), transparent 60%),
+      radial-gradient(55% 45% at 92% 0%, rgba(129,140,248,.10), transparent 55%),
+      radial-gradient(80% 60% at 50% 116%, rgba(56,189,248,.07), transparent 60%),
+      linear-gradient(180deg,#070b12 0%,#05070d 55%);
+    background-attachment:fixed; color:#e2e8f0; font-family:'Inter',system-ui,sans-serif;
   }
-  .shimmer {
-    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,.04) 50%, transparent 100%);
-    background-size: 200% 100%;
-    animation: shimmer 2s linear infinite;
-  }
-  @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
-  .diff-tag { font: 600 10px/1 'Inter'; letter-spacing: .08em; text-transform: uppercase; }
+  .panel{background:rgba(15,23,42,.55);backdrop-filter:blur(24px);border:1px solid rgba(51,65,85,.4);border-radius:.75rem;box-shadow:0 4px 24px rgba(0,0,0,.35),0 0 0 1px rgba(148,163,184,.06),inset 0 1px 0 rgba(255,255,255,.03)}
+  .glass{background:rgba(15,23,42,.4);backdrop-filter:blur(32px);border:1px solid rgba(255,255,255,.06);border-radius:1rem;box-shadow:0 24px 70px -30px rgba(0,0,0,.8),inset 0 1px 0 rgba(255,255,255,.05)}
+  .art-frame{position:relative;overflow:hidden;border-radius:1rem;background:rgba(2,6,23,.6);box-shadow:0 24px 70px -30px rgba(0,0,0,.85),inset 0 1px 0 rgba(255,255,255,.04);outline:1px solid rgba(255,255,255,.06);outline-offset:-1px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;font-weight:500;border-radius:.5rem;padding:.625rem 1.25rem;font-size:.875rem;transition:all .2s}
+  .btn-primary{background:#2563eb;color:#fff;border:1px solid rgba(59,130,246,.3);box-shadow:0 1px 0 rgba(255,255,255,.12) inset,0 10px 30px -12px rgba(37,99,235,.7)}
+  .btn-secondary{background:rgba(15,23,42,.8);color:#f1f5f9;border:1px solid rgba(71,85,105,.5)}
+  .btn-ghost{color:#94a3b8}
+  .eyebrow{display:inline-flex;align-items:center;gap:.5rem;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.22em;color:rgba(147,197,253,.9)}
+  .display-gradient{background:linear-gradient(100deg,#f8fafc 0%,#bfdbfe 45%,#93c5fd 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .chip{display:inline-flex;align-items:center;gap:.375rem;border-radius:9999px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);padding:.25rem .75rem;font-size:.75rem;color:#cbd5e1}
+  .badge{display:inline-flex;align-items:center;padding:.25rem .625rem;border-radius:.375rem;font-size:.75rem;font-weight:500}
+  .swatch{height:56px;border-radius:.5rem;border:1px solid rgba(255,255,255,.06)}
 </style>
 </head>
 <body class="min-h-screen">
-<div class="max-w-6xl mx-auto px-5 py-10">
+  <div class="mx-auto max-w-5xl px-6 py-16 space-y-16">
 
-  <h1 class="text-2xl font-semibold text-slate-100 mb-1">Explorers primitives — token-verified</h1>
-  <p class="text-slate-400 text-sm max-w-2xl mb-10">
-    Every value below is resolved against <code class="text-accent-300 font-mono text-xs">app/tailwind.config.js</code>,
-    <code class="text-accent-300 font-mono text-xs">app/src/index.css</code>, and
-    <code class="text-accent-300 font-mono text-xs">app/src/lib/rainbowTheme.ts</code>.
-    Where the design mock diverged, the repo wins. Diffs are tagged inline.
-  </p>
+    <header>
+      <div class="eyebrow mb-3">Loreum Explorers · Design system</div>
+      <h1 class="font-display text-5xl font-semibold tracking-tight">
+        <span class="display-gradient">Showcase primitives</span>
+      </h1>
+      <p class="mt-3 max-w-2xl text-slate-400">
+        The bold, art-forward system for the public Explorers collection page.
+        Dark and cinematic — deeper than app/'s operator console, still Loreum
+        blue, never neon-DeFi. Reference for issue #307.
+      </p>
+    </header>
 
-  <!-- 1. Buttons -->
-  <section class="mb-12">
-    <h2 class="diff-tag text-slate-500 mb-3">01 · Button</h2>
-    <div class="flex flex-wrap items-center gap-3">
-      <button class="inline-flex items-center justify-center gap-2 h-10 px-4 text-sm font-medium rounded-lg bg-accent-600 text-white hover:bg-accent-500 active:bg-accent-700 shadow-sm border border-accent-500/30 transition-all duration-200">
-        Claim 2 Explorers
-      </button>
-      <button class="inline-flex items-center justify-center gap-2 h-12 px-5 text-[15px] font-medium rounded-lg bg-accent-600 text-white hover:bg-accent-500 active:bg-accent-700 shadow-sm border border-accent-500/30 transition-all duration-200">
-        Claim 2 Explorers <span class="text-xs opacity-70">(lg)</span>
-      </button>
-      <button class="inline-flex items-center justify-center gap-2 h-10 px-4 text-sm font-medium rounded-lg text-slate-400 hover:text-accent-400 hover:bg-slate-800/60 transition-all duration-200">
-        View my Explorers
-      </button>
-      <button disabled class="inline-flex items-center justify-center gap-2 h-10 px-4 text-sm font-medium rounded-lg bg-accent-600 text-white opacity-45 cursor-not-allowed transition-all duration-200">
-        Confirming…
-      </button>
-    </div>
-    <div class="mt-3 flex flex-wrap gap-2">
-      <span class="diff-tag px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">DIFF</span>
-      <span class="text-xs text-slate-400">Primary hover: mock → <code class="text-accent-300">#1d4ed8</code> (darker) · repo → <code class="text-accent-300">#3b82f6</code> (lighter, accent-500). Ghost: mock had 1px slate border · repo has none (text-slate-400 only). Motion: mock 150ms · repo <code class="text-accent-300">duration-200</code>.</span>
-    </div>
-  </section>
+    <!-- Type scale -->
+    <section class="space-y-4">
+      <div class="eyebrow">Type · Space Grotesk display</div>
+      <div class="font-display text-6xl font-semibold tracking-tight">Explore the collection</div>
+      <div class="font-display text-3xl font-semibold tracking-tight text-slate-100">Section heading</div>
+      <p class="max-w-xl text-slate-400">Body copy in Inter. Addresses and token ids in <span class="font-mono text-slate-300">JetBrains Mono · #1024 · 0x1234…abcd</span>.</p>
+    </section>
 
-  <!-- 2. Panel -->
-  <section class="mb-12">
-    <h2 class="diff-tag text-slate-500 mb-3">02 · Panel</h2>
-    <div class="panel p-5 max-w-md">
-      <h3 class="text-base font-semibold text-slate-100 mb-1">Claim Explorers</h3>
-      <p class="text-slate-400 text-[13px] mb-4">You can mint up to 97 more from this wallet.</p>
-      <div class="flex justify-between items-center text-[13px] py-2.5 border-t border-slate-700/40">
-        <span class="text-slate-400">Price each</span>
-        <span class="text-slate-200 tabular-nums">0.05 ETH</span>
+    <!-- Colors -->
+    <section class="space-y-4">
+      <div class="eyebrow">Palette</div>
+      <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div><div class="swatch" style="background:#05070d"></div><div class="mt-1.5 text-xs text-slate-500">void · #05070d</div></div>
+        <div><div class="swatch" style="background:#0f172a"></div><div class="mt-1.5 text-xs text-slate-500">slate-900</div></div>
+        <div><div class="swatch" style="background:#2563eb"></div><div class="mt-1.5 text-xs text-slate-500">accent-600</div></div>
+        <div><div class="swatch" style="background:linear-gradient(135deg,#2563eb,#1d4ed8)"></div><div class="mt-1.5 text-xs text-slate-500">gradient-accent</div></div>
       </div>
-      <div class="flex justify-between items-center text-[13px] py-2.5 border-t border-slate-700/40">
-        <span class="text-slate-400">Total</span>
-        <span class="text-lg font-semibold text-slate-100 tabular-nums">0.10 ETH</span>
-      </div>
-    </div>
-    <div class="mt-3 flex flex-wrap gap-2">
-      <span class="diff-tag px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">DIFF</span>
-      <span class="text-xs text-slate-400">Mock: flat <code class="text-accent-300">rgba(15,23,42,.55)</code> + 1px border + 12px radius · Repo <code class="text-accent-300">.panel</code>: adds <code class="text-accent-300">backdrop-blur-xl</code> + <code class="text-accent-300">shadow-soft</code> + inset highlight. Repo wins.</span>
-    </div>
-  </section>
+    </section>
 
-  <!-- 3. Stats strip + Progress bar -->
-  <section class="mb-12">
-    <h2 class="diff-tag text-slate-500 mb-3">03 · Stats strip + Progress bar</h2>
-    <div class="grid grid-cols-3 border border-slate-700/40 rounded-xl overflow-hidden divide-x divide-slate-700/40 max-w-lg">
-      <div class="px-4 py-3"><div class="text-xs text-slate-400">Minted</div><div class="mt-0.5 text-lg font-semibold text-slate-100 tabular-nums">1,284</div></div>
-      <div class="px-4 py-3"><div class="text-xs text-slate-400">Price</div><div class="mt-0.5 text-lg font-semibold text-slate-100 tabular-nums">0.05 ETH</div></div>
-      <div class="px-4 py-3"><div class="text-xs text-slate-400">Per wallet</div><div class="mt-0.5 text-lg font-semibold text-slate-100 tabular-nums">100</div></div>
-    </div>
-    <div class="mt-4 max-w-lg">
-      <div class="h-1.5 rounded-full bg-slate-500/15 overflow-hidden">
-        <div class="h-full rounded-full bg-accent-600" style="width:12.8%"></div>
+    <!-- Buttons + chips + badges -->
+    <section class="space-y-4">
+      <div class="eyebrow">Actions & meta</div>
+      <div class="flex flex-wrap items-center gap-3">
+        <button class="btn btn-primary">Claim an Explorer</button>
+        <button class="btn btn-secondary">My Explorers</button>
+        <button class="btn btn-ghost">View on Etherscan</button>
       </div>
-      <div class="flex justify-between text-xs text-slate-500 mt-1.5 tabular-nums">
-        <span>1,284 of 10,000 minted</span><span>8,716 left</span>
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="chip">Background · Nebula</span>
+        <span class="chip">Rarity · Rare</span>
+        <span class="badge" style="background:rgba(6,78,59,.5);color:#34d399;border:1px solid rgba(4,120,87,.35)">Minted</span>
+        <span class="badge" style="background:rgba(69,26,3,.4);color:#fbbf24;border:1px solid rgba(180,83,9,.35)">Pending</span>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- 4. Stepper -->
-  <section class="mb-12">
-    <h2 class="diff-tag text-slate-500 mb-3">04 · Stepper</h2>
-    <div class="inline-flex items-stretch h-10 border border-slate-700/40 rounded-lg overflow-hidden">
-      <button class="w-10 grid place-items-center text-lg text-slate-200 hover:bg-slate-800/60">−</button>
-      <div class="w-12 text-center text-sm font-semibold tabular-nums text-slate-100 border-x border-slate-700/40 leading-10">2</div>
-      <button class="w-10 grid place-items-center text-lg text-slate-200 hover:bg-slate-800/60">+</button>
-    </div>
-  </section>
-
-  <!-- 5. Callouts -->
-  <section class="mb-12">
-    <h2 class="diff-tag text-slate-500 mb-3">05 · Callouts (4 variants)</h2>
-    <div class="grid md:grid-cols-2 gap-3 max-w-2xl">
-      <div class="rounded-lg border border-amber-700/35 bg-amber-950/40 px-3.5 py-3 text-[13px]">
-        <b class="block font-semibold mb-0.5 text-amber-400">You're on Base</b>
-        <span class="text-slate-300">Explorers are on Ethereum. Switch networks to claim.</span>
-      </div>
-      <div class="rounded-lg border border-accent-700/35 bg-accent-950/80 px-3.5 py-3 text-[13px]">
-        <b class="block font-semibold mb-0.5 text-accent-300">This wallet has used all 100 mints</b>
-        <span class="text-slate-300">The limit counts lifetime mints, so tokens you've transferred away still count.</span>
-      </div>
-      <div class="rounded-lg border border-red-700/35 bg-red-950/40 px-3.5 py-3 text-[13px]">
-        <b class="block font-semibold mb-0.5 text-red-400">The claim didn't go through</b>
-        <span class="text-slate-300">The transaction reverted. Your ETH wasn't spent beyond gas. Try again.</span>
-      </div>
-      <div class="rounded-lg border border-emerald-700/35 bg-emerald-950/50 px-3.5 py-3 text-[13px]">
-        <b class="block font-semibold mb-0.5 text-emerald-400">You claimed 2 Explorers</b>
-        <span class="text-slate-300">#1285 and #1286 are in your wallet.</span>
-      </div>
-    </div>
-    <div class="mt-3 flex flex-wrap gap-2">
-      <span class="diff-tag px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">DIFF</span>
-      <span class="text-xs text-slate-400">Mock used <code class="text-accent-300">*-500</code> title colours on <code class="text-accent-300">*-soft</code> backgrounds · Repo <code class="text-accent-300">.badge-*</code> classes use <code class="text-accent-300">*-400</code> text on <code class="text-accent-300">*-950/*</code> tint with <code class="text-accent-300">*-700/35</code> border. Repo wins (WCAG AA verified).</span>
-    </div>
-  </section>
-
-  <!-- 6. Network chip -->
-  <section class="mb-12">
-    <h2 class="diff-tag text-slate-500 mb-3">06 · Network chip</h2>
-    <div class="flex flex-wrap gap-3">
-      <span class="inline-flex items-center gap-1.5 rounded-full border border-slate-700/40 px-2.5 py-1 text-xs text-slate-400">
-        <span class="w-[7px] h-[7px] rounded-full bg-emerald-400"></span>Ethereum
-      </span>
-      <span class="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-xs text-amber-400">
-        <span class="w-[7px] h-[7px] rounded-full bg-amber-400"></span>Test network · Sepolia
-      </span>
-      <span class="inline-flex items-center gap-1.5 rounded-full border border-slate-700/40 px-2.5 py-1 text-xs text-slate-400">
-        <span class="w-[7px] h-[7px] rounded-full bg-red-400"></span>Unsupported
-      </span>
-    </div>
-  </section>
-
-  <!-- 7. Token card -->
-  <section class="mb-12">
-    <h2 class="diff-tag text-slate-500 mb-3">07 · Token card</h2>
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl">
-      <div class="block bg-slate-900/55 border border-slate-700/40 rounded-xl overflow-hidden">
-        <div class="aspect-square" style="background:radial-gradient(circle at 30% 30%,#3b82f6,#0f172a 70%)"></div>
-        <div class="p-3">
-          <div class="font-semibold text-slate-100">Explorer</div>
-          <div class="font-mono text-xs text-slate-500 mt-0.5">#12</div>
-          <div class="flex flex-wrap gap-1.5 mt-2.5">
-            <span class="text-[11px] px-2 py-0.5 rounded-md bg-slate-500/10 text-slate-400">Terrain · Ridge</span>
-            <span class="text-[11px] px-2 py-0.5 rounded-md bg-slate-500/10 text-slate-400">Era · First</span>
-          </div>
+    <!-- Art frame + stat row -->
+    <section class="space-y-4">
+      <div class="eyebrow">Art frame & live stats</div>
+      <div class="grid gap-6 sm:grid-cols-[220px_1fr] sm:items-center">
+        <div class="art-frame aspect-square">
+          <div class="absolute inset-0" style="background:linear-gradient(135deg,#1e3a8a,#0b1120 60%,#172554)"></div>
+          <div class="absolute inset-x-0 bottom-0 p-3 text-sm font-semibold text-white" style="background:linear-gradient(0deg,rgba(0,0,0,.6),transparent)">Explorer #1024</div>
+        </div>
+        <div class="glass grid grid-cols-3 gap-px overflow-hidden rounded-2xl p-0 [&>*]:px-5 [&>*]:py-4">
+          <div><div class="text-[11px] font-semibold uppercase tracking-eyebrow text-slate-500">Minted</div><div class="mt-1 font-display text-2xl font-semibold tabular-nums">2,481 / 10,000</div></div>
+          <div><div class="text-[11px] font-semibold uppercase tracking-eyebrow text-slate-500">Price</div><div class="mt-1 font-display text-2xl font-semibold tabular-nums">0.05 ETH</div></div>
+          <div><div class="text-[11px] font-semibold uppercase tracking-eyebrow text-slate-500">Chain</div><div class="mt-1 font-display text-2xl font-semibold">Ethereum</div></div>
         </div>
       </div>
-      <div class="block bg-slate-900/55 border border-slate-700/40 rounded-xl overflow-hidden">
-        <div class="aspect-square bg-slate-500/5"></div>
-        <div class="p-3">
-          <div class="font-semibold text-slate-400">Explorer</div>
-          <div class="font-mono text-xs text-slate-500 mt-0.5">#1286</div>
-          <div class="flex flex-wrap gap-1.5 mt-2.5">
-            <span class="text-[11px] px-2 py-0.5 rounded-md border border-dashed border-slate-500/30 text-slate-500">Traits loading</span>
-          </div>
-        </div>
-      </div>
-      <div class="block bg-slate-900/55 border border-slate-700/40 rounded-xl overflow-hidden">
-        <div class="aspect-square grid place-items-center"><div class="shimmer rounded-lg bg-slate-800/60 w-3/5 h-3/5"></div></div>
-        <div class="p-3">
-          <div class="shimmer rounded h-3.5 w-3/4"></div>
-          <div class="shimmer rounded h-2.5 w-1/3 mt-2"></div>
-        </div>
-      </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- 8. Skeleton -->
-  <section class="mb-12">
-    <h2 class="diff-tag text-slate-500 mb-3">08 · Skeleton</h2>
-    <div class="max-w-sm space-y-2">
-      <div class="shimmer rounded-md bg-slate-800/60 h-3.5 w-3/5"></div>
-      <div class="shimmer rounded-md bg-slate-800/60 h-3.5 w-full"></div>
-      <div class="shimmer rounded-md bg-slate-800/60 h-3.5 w-2/3"></div>
-    </div>
-  </section>
-
-</div>
+    <p class="border-t border-white/5 pt-6 text-xs text-slate-600">
+      Static reference only. Source of truth is <span class="font-mono">explorers/tailwind.config.js</span> +
+      <span class="font-mono">explorers/src/index.css</span>. Values here are copied by hand.
+    </p>
+  </div>
 </body>
 </html>
