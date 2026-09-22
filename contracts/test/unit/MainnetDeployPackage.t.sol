@@ -36,8 +36,36 @@ contract MainnetDeployPackageTest is Test {
         assertTrue(_containsInsensitive(raw, _hexNoPrefix(MainnetLoreHandoff.TEAM_SAFE)), "team Safe");
         assertTrue(_contains(raw, "NOT DEPLOYED"), "template must say not deployed");
         assertTrue(_contains(raw, "Do not treat TBD as live"), "template must say TBD is not live");
-        assertTrue(_contains(raw, "#210"), "must cite remaining PMN-M02 blocker");
-        assertTrue(_contains(raw, "#211"), "must cite remaining PMN-M03 blocker");
+        assertTrue(_contains(raw, "#210"), "must cite merged PMN-M02");
+        assertTrue(_contains(raw, "#211"), "must cite merged PMN-M03");
+        assertTrue(_contains(raw, "#224"), "must cite PMN-M02 PR");
+        assertTrue(_contains(raw, "#225"), "must cite PMN-M03 PR");
+        assertFalse(_contains(raw, "broadcast still blocked"), "review blockers must not remain open");
+    }
+
+    function test_explorersMainnetTxtMatchesContractsCopy() public view {
+        assertEq(
+            vm.readFile("deployments/mainnet.txt"),
+            vm.readFile("../explorers/deployments/mainnet.txt"),
+            "keep contracts/ and explorers/ mainnet.txt copies identical"
+        );
+    }
+
+    function test_mainnetTxtRemainingChecklistIsChadOnly() public view {
+        string memory raw = vm.readFile("deployments/mainnet.txt");
+        assertTrue(_contains(raw, "Agents stop here"), "checklist must tell agents to stop");
+        assertTrue(_contains(raw, "[x] PMN-M02 (#210) / PMN-M03 (#211) fixed on main via #224 / #225"));
+        assertTrue(_contains(raw, "[x] PRs #213 (1.1.7 eviction) and #206 (Halmos harness) merged"));
+        assertTrue(_contains(raw, "[x] Verified deploy package on main via #214"));
+        assertTrue(_contains(raw, "[ ] DeployMainnetFactory broadcast on chain id 1"));
+        assertTrue(_contains(raw, "[ ] Paste Factory, Chamber implementation, BoardLib, WalletLib from receipt"));
+        assertTrue(_contains(raw, "[ ] make verify-mainnet-factory"));
+        assertTrue(_contains(raw, "[ ] CreateMainnetLoreChamber broadcast"));
+        assertTrue(_contains(raw, "[ ] Paste Chamber (proxy) from that receipt"));
+        assertTrue(_contains(raw, "[ ] App: VITE_MAINNET_FACTORY only after verify"));
+        assertTrue(_contains(raw, "[ ] Safe transferOwnership"));
+        assertFalse(_contains(raw, "[ ] PMN-M02"), "PMN-M02 must be checked");
+        assertFalse(_contains(raw, "[ ] PRs #213"), "#213 / #206 must be checked");
     }
 
     function test_mainnetTxtDoesNotTreatSepoliaFactoryAsMainnetFactory() public view {
@@ -62,14 +90,31 @@ contract MainnetDeployPackageTest is Test {
         assertFalse(_contains(factory, ".transferOwnership("), "DeployMainnetFactory must not call transferOwnership");
         assertFalse(_contains(create, ".transferOwnership("), "CreateMainnetLoreChamber must not call transferOwnership");
         assertTrue(_contains(guard, "MAINNET_DEPLOY_UNBLOCKED"), "broadcast gate missing");
+        assertTrue(_contains(guard, "Chad-only"), "gate must stay Chad-only after review blockers merged");
+        assertFalse(_contains(guard, "blocked on #210 and #211 until accepted"), "guard must not claim #210/#211 still open");
         assertTrue(_contains(create, "refuseSepoliaFactory"), "create must refuse Sepolia Factory");
     }
 
     function test_printScriptRefusesBroadcastFlag() public view {
         string memory raw = vm.readFile("script/print-mainnet-factory-deploy.sh");
         assertTrue(_contains(raw, "never broadcasts"), "print script must refuse --broadcast");
-        assertTrue(_contains(raw, "#210"), "print script must cite remaining blockers");
-        assertTrue(_contains(raw, "#211"), "print script must cite remaining blockers");
+        assertTrue(_contains(raw, "Agents stop here"), "print script must tell agents to stop");
+        assertTrue(_contains(raw, "#210"), "print script must cite merged PMN-M02");
+        assertTrue(_contains(raw, "#211"), "print script must cite merged PMN-M03");
+        assertTrue(_contains(raw, "Chad-only"), "print script must mark remaining work Chad-only");
+        assertFalse(_contains(raw, "Deploy remains blocked"), "print script must not claim deploy is blocked");
+    }
+
+    function test_verifiedDeployDocIsChadRunbook() public view {
+        string memory raw = vm.readFile("docs/mainnet-verified-deploy.md");
+        assertTrue(_contains(raw, "Agents stop here"), "runbook must have an agents-stop line");
+        assertTrue(_contains(raw, "Chad only"), "runbook must mark broadcast Chad-only");
+        assertTrue(_contains(raw, "#224"), "runbook must cite merged PMN-M02");
+        assertTrue(_contains(raw, "#225"), "runbook must cite merged PMN-M03");
+        assertTrue(_contains(raw, "#213"), "runbook must cite merged #213");
+        assertTrue(_contains(raw, "#206"), "runbook must cite merged #206");
+        assertFalse(_contains(raw, "Deploy remains blocked"), "runbook must not claim open mediums block deploy");
+        assertFalse(_contains(raw, "are open and unmerged"), "runbook must not mark #213/#206 open");
     }
 
     function test_createParamsMatchChamberScriptMainnet() public pure {

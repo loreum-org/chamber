@@ -57,8 +57,8 @@ forge script script/RehearseMainnetLoreHandoff.s.sol:RehearseMainnetLoreHandoff 
 
 The script reverts if you pass `--broadcast` / `--resume`.
 
-Human-run verified deploy (print / verify / gated broadcast scripts, TBD address file):
-[`mainnet-verified-deploy.md`](./mainnet-verified-deploy.md). **Deploy remains blocked** on open mediums [PMN-M02 (#210)](https://github.com/loreum-org/chamber/issues/210) and [PMN-M03 (#211)](https://github.com/loreum-org/chamber/issues/211). H01 (#208), M01 (#209), and M04 (#212) are on `main`. Safe `transferOwnership` is human-only.
+Chad broadcast runbook (print / verify / gated scripts, TBD address file):
+[`mainnet-verified-deploy.md`](./mainnet-verified-deploy.md). Review blockers are on `main` (#220 / #223 / #224 / #225 / #226 / #213 / #206 / #214). Remaining work is Chad-only broadcast / verify / paste / app env / Safe. Agents stop at rehearsal. Safe `transferOwnership` is human-only.
 
 ## Success
 
@@ -83,8 +83,9 @@ The test also checks vault asset / NFT / seats, empty board, and `ProxyAdmin.own
 | **Board seating** | Create leaves an empty board. `seats = 5` → quorum 3. Seating needs membership NFT holders + LORE deposits + `SEATING_DELAY`. Not required to prove Ownable handoff. |
 | **Ownable vs 2-step** | Mainnet LORE ABI is single-step Ownable (`owner` / `transferOwnership` / `renounceOwnership`; no `pendingOwner`). Chamber does not need `acceptOwnership`. |
 | **CCA sequencing** | Still undecided. This fork does not claim a production order vs CCA. |
-| **PMN-H01 (#208)** | Fixed on `main` via #220. Does not block this package. |
+| **PMN-H01 (#208)** | Fixed on `main` via #220. |
 | **PMN-M01 (#209) / PMN-M04 (#212)** | Fixed on `main` via #223 / #226. Quorum is over reachable authorized directors; session keys have expiry, scope, and set delay. |
-| **#210 / #211** | Open mediums (inert seats; Factory/Registry create pointer). **Blocks live broadcast.** Do not claim deploy is unblocked. |
-| **#213 / #206** | Open PRs (1.1.7 eviction fix; Halmos harness). Unmerged. |
-| **Verified package** | `make print-mainnet-factory-deploy` / `make verify-mainnet-factory`. Paste addresses into `deployments/mainnet.txt` only from a chain-id-1 receipt. |
+| **PMN-M02 (#210) / PMN-M03 (#211)** | Fixed on `main` via #224 / #225. Factory is the only Ethereum create path; inert seated NFTs skip flags and drop rank. |
+| **#213 / #206** | Merged (1.1.9 eviction hot-path; Halmos harness, not a full proof). |
+| **Verified package (#214)** | `make print-mainnet-factory-deploy` / `make verify-mainnet-factory`. Paste addresses into `deployments/mainnet.txt` only from a chain-id-1 receipt. Agents stop before `MAINNET_DEPLOY_UNBLOCKED=1`. |
+| **#188** | Stays open until Chad broadcasts, pastes verified addresses, and wires app env. |

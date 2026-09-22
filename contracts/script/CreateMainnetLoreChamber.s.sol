@@ -13,7 +13,8 @@ import {MainnetDeployGuard} from "script/MainnetDeployGuard.sol";
  *         Does **not** call `LORE.transferOwnership` (Safe / human-only).
  *
  * Requires `FACTORY` (the chain-id-1 Factory from the DeployMainnetFactory receipt).
- * Broadcast gated on `MAINNET_DEPLOY_UNBLOCKED=1`. See `docs/mainnet-verified-deploy.md`.
+ * Broadcast gated on `MAINNET_DEPLOY_UNBLOCKED=1` (Chad only).
+ * See `docs/mainnet-verified-deploy.md`.
  */
 contract CreateMainnetLoreChamber is Script {
     function run() external {
