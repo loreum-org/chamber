@@ -120,7 +120,7 @@ export function queueWriteErrorMessage(kind: QueueWriteKind): string {
 
 /**
  * Watch a sent tx hash until the receipt lands, then refetch chamber reads.
- * There are no live event watches; this receipt path is how reads refresh after a write.
+ * Cross-actor confirms/executes are handled by `useChamberLiveUpdates`, not here.
  */
 export function useReceiptRefresh(options: {
   chamberAddress: `0x${string}` | undefined
