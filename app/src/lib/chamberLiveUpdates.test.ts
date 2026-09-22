@@ -3,6 +3,7 @@ import {
   CHAMBER_LIVE_POLL_MS,
   LOCAL_WS_URL,
   chainOffersWebsocketTransport,
+  getChamberWebsocketUrl,
   planLocalChainTransports,
   planRemoteChainTransports,
   resolveChamberLiveUpdateMode,
@@ -43,6 +44,32 @@ describe('planLocalChainTransports', () => {
       { kind: 'http', url: 'http://127.0.0.1:8545' },
       { kind: 'webSocket', url: LOCAL_WS_URL },
     ])
+  })
+})
+
+describe('getChamberWebsocketUrl', () => {
+  it('returns Anvil WS for the local chain and Alchemy WSS when keyed', () => {
+    expect(
+      getChamberWebsocketUrl({
+        chainId: LOCAL,
+        alchemyApiKey: undefined,
+        localChainId: LOCAL,
+      }),
+    ).toBe(LOCAL_WS_URL)
+    expect(
+      getChamberWebsocketUrl({
+        chainId: SEPOLIA,
+        alchemyApiKey: KEY,
+        localChainId: LOCAL,
+      }),
+    ).toBe(`wss://eth-sepolia.g.alchemy.com/v2/${KEY}`)
+    expect(
+      getChamberWebsocketUrl({
+        chainId: SEPOLIA,
+        alchemyApiKey: undefined,
+        localChainId: LOCAL,
+      }),
+    ).toBeUndefined()
   })
 })
 

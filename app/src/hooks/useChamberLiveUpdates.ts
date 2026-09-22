@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
+import { createPublicClient, webSocket } from 'viem'
 import { useChainId, usePublicClient } from 'wagmi'
 import { invalidateChamberQueries } from './invalidateChamberQueries'
 import { requireIndexerBlock } from '@/lib/indexer'
 import {
   CHAMBER_LIVE_POLL_MS,
+  getChamberWebsocketUrl,
   resolveChamberLiveUpdateMode,
 } from '@/lib/chamberLiveUpdates'
-import { chainHasWebsocketTransport } from '@/lib/wagmi'
+import { getAlchemyApiKeyFromEnv } from '@/lib/alchemy'
+import { LOCAL_CHAIN_ID } from '@/lib/wagmi'
 
 function useDocumentVisible(): boolean {
   const [visible, setVisible] = useState(() =>
@@ -26,9 +29,9 @@ function useDocumentVisible(): boolean {
 /**
  * One shared live-update path for an open chamber (mounted from ChamberRouteGate).
  *
- * WebSocket: a single `watchEvent` / `eth_subscribe` on the chamber, then
- * `invalidateChamberQueries`. `poll: false` so a dropped socket cannot fall
- * back to per-block `eth_getLogs` (the #274 burn).
+ * WebSocket: a dedicated `webSocket` client + `watchEvent({ poll: false })` so
+ * the subscribe is real `eth_subscribe` and cannot fall back to per-block
+ * `eth_getLogs` (the #274 burn). Logs call `invalidateChamberQueries`.
  *
  * No WS: one visible-tab invalidate every 60s. Hidden tabs stay idle.
  */
@@ -43,15 +46,27 @@ export function useChamberLiveUpdates(chamberAddress: `0x${string}` | undefined)
     setSubscribeFailed(false)
   }, [chamberAddress, chainId])
 
+  const wsUrl = getChamberWebsocketUrl({
+    chainId,
+    alchemyApiKey: getAlchemyApiKeyFromEnv(),
+    localChainId: LOCAL_CHAIN_ID,
+  })
+
   const mode = resolveChamberLiveUpdateMode({
     tabVisible,
-    websocketAvailable: chainHasWebsocketTransport(chainId) && !subscribeFailed,
+    websocketAvailable: !!wsUrl && !subscribeFailed,
   })
 
   useEffect(() => {
-    if (!chamberAddress || !publicClient || mode !== 'websocket') return
+    const chain = publicClient?.chain
+    if (!chamberAddress || !chain || !wsUrl || mode !== 'websocket') return
 
-    const unwatch = publicClient.watchEvent({
+    const client = createPublicClient({
+      chain,
+      transport: webSocket(wsUrl),
+    })
+
+    const unwatch = client.watchEvent({
       address: chamberAddress,
       poll: false,
       onLogs(logs) {
@@ -72,7 +87,7 @@ export function useChamberLiveUpdates(chamberAddress: `0x${string}` | undefined)
     return () => {
       unwatch()
     }
-  }, [chamberAddress, mode, publicClient, queryClient])
+  }, [chamberAddress, mode, publicClient, queryClient, wsUrl])
 
   useEffect(() => {
     if (!chamberAddress || mode !== 'poll') return

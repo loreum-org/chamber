@@ -44,13 +44,22 @@ export function planLocalChainTransports(httpUrl: string): PlannedRpcTransport[]
   ]
 }
 
+export function getChamberWebsocketUrl(input: {
+  chainId: number
+  alchemyApiKey: string | undefined
+  localChainId: number
+}): string | undefined {
+  if (input.chainId === input.localChainId) return LOCAL_WS_URL
+  if (!input.alchemyApiKey) return undefined
+  return getAlchemyWssUrl(input.chainId, input.alchemyApiKey) ?? undefined
+}
+
 export function chainOffersWebsocketTransport(input: {
   chainId: number
   alchemyApiKey: string | undefined
   localChainId: number
 }): boolean {
-  if (input.chainId === input.localChainId) return true
-  return Boolean(input.alchemyApiKey && alchemySupportsChain(input.chainId))
+  return getChamberWebsocketUrl(input) !== undefined
 }
 
 export function resolveChamberLiveUpdateMode(input: {
