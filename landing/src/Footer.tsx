@@ -22,8 +22,9 @@ function Footer() {
             <span className="text-2xl font-display tracking-wider">LOREUM</span>
           </div>
           <p className="text-gray-500 max-w-xs font-light">
-            The Chamber Protocol — infrastructure for credibly neutral, agent-driven
-            Decentralized Governance Systems for the onchain era.
+            Loreum — enterprise treasury infrastructure. Chambers are corporate
+            entities onchain: an elected board, a treasury vault, and quorum
+            governance, enforced by contract code.
           </p>
         </div>
 

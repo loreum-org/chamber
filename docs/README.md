@@ -1,8 +1,8 @@
-# Chamber Documentation
+# Loreum Documentation
 
 ## Overview
 
-Chamber is a smart contract system that combines ERC4626 vault functionality with NFT-based governance and multisig transaction management. It enables token-weighted voting through delegation to NFT token IDs, creating a flexible governance framework for managing assets.
+Loreum is enterprise treasury infrastructure for organizations. The core contract, the **Chamber**, combines ERC4626 vault functionality with NFT-based governance and multisig transaction management. It enables token-weighted voting through delegation to NFT token IDs, creating a flexible governance framework for managing assets.
 
 ## Key Features
 
@@ -33,7 +33,7 @@ Chamber is a smart contract system that combines ERC4626 vault functionality wit
    - Implements quorum-based approval system
 
 4. **Registry** (`src/Registry.sol`)
-   - Factory contract for deploying Chamber instances
+   - Historical factory and enumerable index. Create today uses **Factory**; Registry remains in-repo as legacy — not the product default.
    - Uses minimal proxy pattern (Clones) for gas-efficient deployment
    - Tracks all deployed chambers
 
@@ -55,15 +55,15 @@ forge install
 
 ### Deployment
 
-1. Deploy Registry:
+1. Deploy the Factory (the live deploy path):
 ```solidity
-Registry registry = new Registry();
-registry.initialize(chamberImplementation, admin);
+Factory factory = new Factory();
+factory.setImplementation(chamberImplementation);
 ```
 
 2. Create a Chamber:
 ```solidity
-address chamber = registry.createChamber(
+address chamber = factory.createChamber(
     erc20Token,
     erc721Token,
     seats,      // 1-20
