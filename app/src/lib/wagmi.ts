@@ -1,8 +1,15 @@
 import { getDefaultConfig } from '@rainbow-me/rainbowkit'
-import { fallback, http } from 'wagmi'
+import { fallback, http, webSocket } from 'wagmi'
 import { mainnet, sepolia, base, arbitrum, Chain } from 'wagmi/chains'
+import type { Transport } from 'viem'
 import localDeployments from '@/contracts/deployments.json'
-import { alchemySupportsChain, getAlchemyApiKeyFromEnv, getAlchemyV2RpcUrl } from '@/lib/alchemy'
+import { getAlchemyApiKeyFromEnv } from '@/lib/alchemy'
+import {
+  chainOffersWebsocketTransport,
+  planLocalChainTransports,
+  planRemoteChainTransports,
+  type PlannedRpcTransport,
+} from '@/lib/chamberLiveUpdates'
 import { ZERO_ADDRESS, isNonZeroAddress } from '@/lib/address'
 import { sepoliaDeploymentAddresses } from '@/lib/sepoliaDeployments'
 import { mainnetDeploymentAddresses } from '@/lib/mainnetDeployments'
@@ -50,15 +57,38 @@ const PUBLIC_RPC: Record<number, string> = {
   [arbitrum.id]: 'https://arb1.arbitrum.io/rpc',
 }
 
-function chainTransport(chainId: number, publicUrl: string) {
-  if (alchemyApiKey && alchemySupportsChain(chainId)) {
-    const alchemyUrl = getAlchemyV2RpcUrl(chainId, alchemyApiKey)
-    if (alchemyUrl) {
-      // Alchemy returns plain-text 429 bodies when quota is exceeded; fall back to public RPC.
-      return fallback([http(alchemyUrl), http(publicUrl)])
+function transportFromPlan(entry: PlannedRpcTransport): Transport {
+  switch (entry.kind) {
+    case 'http':
+      return http(entry.url)
+    case 'webSocket':
+      return webSocket(entry.url)
+    default: {
+      const _exhaustive: never = entry.kind
+      return _exhaustive
     }
   }
-  return http(publicUrl)
+}
+
+function transportsFromPlan(plan: PlannedRpcTransport[]): Transport {
+  const transports = plan.map(transportFromPlan)
+  if (transports.length === 1) return transports[0]!
+  return fallback(transports)
+}
+
+function chainTransport(chainId: number, publicUrl: string) {
+  return transportsFromPlan(
+    planRemoteChainTransports({ chainId, publicUrl, alchemyApiKey }),
+  )
+}
+
+/** True when this chain's wagmi transport includes a WebSocket for `eth_subscribe`. */
+export function chainHasWebsocketTransport(chainId: number): boolean {
+  return chainOffersWebsocketTransport({
+    chainId,
+    alchemyApiKey,
+    localChainId: LOCAL_CHAIN_ID,
+  })
 }
 
 // Define localhost chain explicitly with correct chain ID (not offered in production builds)
@@ -134,7 +164,9 @@ export const config = productionApp
           [sepolia.id]: chainTransport(sepolia.id, PUBLIC_RPC[sepolia.id]),
           [base.id]: chainTransport(base.id, PUBLIC_RPC[base.id]),
           [arbitrum.id]: chainTransport(arbitrum.id, PUBLIC_RPC[arbitrum.id]),
-          [localhost.id]: http(localhost.rpcUrls.default.http[0]),
+          [localhost.id]: transportsFromPlan(
+            planLocalChainTransports(localhost.rpcUrls.default.http[0]),
+          ),
         },
       })
     : getDefaultConfig({
@@ -147,7 +179,9 @@ export const config = productionApp
           [sepolia.id]: chainTransport(sepolia.id, PUBLIC_RPC[sepolia.id]),
           [base.id]: chainTransport(base.id, PUBLIC_RPC[base.id]),
           [arbitrum.id]: chainTransport(arbitrum.id, PUBLIC_RPC[arbitrum.id]),
-          [localhost.id]: http(localhost.rpcUrls.default.http[0]),
+          [localhost.id]: transportsFromPlan(
+            planLocalChainTransports(localhost.rpcUrls.default.http[0]),
+          ),
         },
       })
 

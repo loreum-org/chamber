@@ -4,8 +4,9 @@ import { requireIndexerBlock } from '@/lib/indexer'
 
 /**
  * Invalidate every cached read that mentions this chamber. Called after a wallet
- * write's receipt lands (`useReceiptRefresh`, `useInvalidateOnReceipt`). There are no live event watches:
- * they polled RPC filters every block per open tab and exhausted the Alchemy quota.
+ * write's receipt lands (`useReceiptRefresh`, `useInvalidateOnReceipt`) and from
+ * the single shared `useChamberLiveUpdates` hook (one WS subscribe, or a 60s
+ * visible-tab poll — never per-component `eth_getLogs` watches).
  */
 export function invalidateChamberQueries(
   queryClient: QueryClient,

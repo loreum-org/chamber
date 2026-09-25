@@ -4,6 +4,7 @@ import { useAccount, useChainId, useSwitchChain } from 'wagmi'
 import { isAddress } from 'viem'
 import { useChainModal, useConnectModal } from '@rainbow-me/rainbowkit'
 import { FiAlertTriangle, FiLoader, FiRefreshCw } from 'react-icons/fi'
+import { useChamberLiveUpdates } from '@/hooks/useChamberLiveUpdates'
 import { useChamberRouteDecision } from '@/hooks/useChamberRouteGate'
 import {
   getNetworkName,
@@ -178,6 +179,7 @@ export function ChamberRouteGate({
   const validAddress = !!address && isAddress(address)
   const chamberAddr = validAddress ? (address as `0x${string}`) : undefined
   const decision = useChamberRouteDecision(chamberAddr)
+  useChamberLiveUpdates(decision.status === 'ready' ? chamberAddr : undefined)
 
   if (!validAddress || decision.status === 'invalid-address') {
     return <InvalidChamberAddress />

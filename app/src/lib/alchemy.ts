@@ -34,6 +34,13 @@ export function getAlchemyV2RpcUrl(chainId: number, apiKey: string): string | nu
   return `https://${net}.g.alchemy.com/v2/${apiKey}`
 }
 
+/** Alchemy JSON-RPC WebSocket (`eth_subscribe`). Same key as `getAlchemyV2RpcUrl`. */
+export function getAlchemyWssUrl(chainId: number, apiKey: string): string | null {
+  const net = CHAIN_ALCHEMY_NETWORK[chainId]
+  if (!net || !apiKey) return null
+  return `wss://${net}.g.alchemy.com/v2/${apiKey}`
+}
+
 export function getAlchemyNftV3BaseUrl(chainId: number, apiKey: string): string | null {
   const net = CHAIN_ALCHEMY_NETWORK[chainId]
   if (!net || !apiKey) return null
