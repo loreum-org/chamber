@@ -16,8 +16,8 @@ import {MainnetDeployGuard} from "script/MainnetDeployGuard.sol";
  *   forge script script/DeployMainnetFactory.s.sol:DeployMainnetFactory \
  *     --fork-url "$MAINNET_RPC_URL" -vvv
  *
- * Live broadcast is gated on `MAINNET_DEPLOY_UNBLOCKED=1` after #210 and #211
- * are accepted or fixed. See `docs/mainnet-verified-deploy.md`. Dry-run addresses are not live.
+ * Live broadcast is gated on `MAINNET_DEPLOY_UNBLOCKED=1` (Chad only).
+ * See `docs/mainnet-verified-deploy.md`. Dry-run addresses are not live.
  */
 contract DeployMainnetFactory is Script {
     function run() external {

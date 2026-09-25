@@ -24,8 +24,9 @@ NFT="0xB99DEdbDe082B8Be86f06449f2fC7b9FED044E15"
 cat <<EOF
 # Ethereum mainnet verified deploy package (print only)
 # =====================================================
-# Deploy remains blocked on open mediums #210 and #211 until accepted or fixed.
-# H01/M01/M04 are on main. PRs #213 and #206 are unmerged.
+# Review blockers are merged (#210/#224, #211/#225, #213, #206, #214).
+# Remaining work is Chad-only broadcast / verify / paste / app env / Safe.
+# Agents stop here: do not set MAINNET_DEPLOY_UNBLOCKED=1 for a live send.
 # This Make target / script does not pass --broadcast.
 # Safe transferOwnership is human-only — not in these scripts.
 #
@@ -33,7 +34,7 @@ cat <<EOF
 #   MAINNET_RPC_URL or ETH_RPC_URL     Ethereum archive/full RPC
 #   ETHERSCAN_API_KEY                  Etherscan v2 key (foundry.toml [etherscan].mainnet)
 #   account / keystore                 Foundry --account (or --private-key locally)
-# After #210 and #211 are accepted or fixed ONLY:
+# Chad only (live chain-id-1 send):
 #   MAINNET_DEPLOY_UNBLOCKED=1
 #
 # Order: Factory (+ libs + Chamber impl) → verify → createChamber → paste Chamber.
@@ -49,7 +50,9 @@ make rehearse-mainnet-lore-handoff
 forge script script/DeployMainnetFactory.s.sol:DeployMainnetFactory \\
   --fork-url "\$MAINNET_RPC_URL" -vvv
 
-# 2) Human broadcast — only after #210 and #211 accepted or fixed
+# Agents stop here. Steps 2–6 are Chad only.
+
+# 2) Chad broadcast — MAINNET_DEPLOY_UNBLOCKED=1 for a real chain-id-1 send
 #    ADMIN defaults to team Safe ${ADMIN}
 # export MAINNET_DEPLOY_UNBLOCKED=1
 # export ADMIN=${ADMIN}
