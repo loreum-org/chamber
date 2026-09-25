@@ -1,4 +1,4 @@
-# Loreum Chamber
+# Loreum
 
 Loreum is enterprise treasury infrastructure for organizations. Chambers function as corporate entities with an elected board of directors who oversee fiduciary operations and approve transactions through multi-signature governance.
 

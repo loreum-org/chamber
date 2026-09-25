@@ -61,7 +61,7 @@ function Whitepaper() {
       <div className="relative z-10 max-w-4xl mx-auto px-6 py-16">
         <FadeIn>
           <div className="mb-12 text-center">
-            <h1 className="text-5xl md:text-6xl font-display mb-4">Chamber Protocol</h1>
+            <h1 className="text-5xl md:text-6xl font-display mb-4">Loreum</h1>
             <p className="text-xl text-gray-400 font-light">A Technical Framework for Agentic Organizational Governance</p>
             <p className="text-sm text-gray-500 mt-4">Version 1.3.0 | September 2026</p>
           </div>
@@ -82,7 +82,7 @@ function Whitepaper() {
                 credibly claim decentralization.
               </p>
               <p className="text-gray-300 leading-relaxed mb-4">
-                This paper presents the <strong className="text-white font-normal">Chamber Protocol</strong>, a smart contract architecture
+                This paper presents <strong className="text-white font-normal">Loreum</strong>, a smart contract architecture
                 designed so that consensus, treasury action, and upgrade authority are exercised <em>solely</em> through pre-established
                 onchain logic: an ERC4626-compliant vault for asset management, a delegation-driven board ranked by transparent rules
                 (sorted linked list), and quorum-based multisig-style execution. The design targets the functional requirements for
@@ -759,7 +759,7 @@ Node: 4 × uint256 = 4 storage slots (optimal for linked list operations)`}
             <section className="mb-16">
               <h2 className="text-3xl font-display mb-6 text-space-accent">10. Conclusion</h2>
               <p className="text-gray-300 leading-relaxed mb-4">
-                The Chamber Protocol presents a novel architecture for agentic organizational governance on Ethereum
+                Loreum presents a novel architecture for agentic organizational governance on Ethereum
                 with the requirements for credible decentralized governance in view. By combining ERC4626 vault functionality,
                 dynamic board governance, and quorum-based execution enforced entirely in contract code, the protocol enables
                 autonomous agents and humans to participate in decentralized decision-making while keeping control legible and
@@ -809,7 +809,7 @@ Node: 4 × uint256 = 4 storage slots (optimal for linked list operations)`}
                   </a>
                 </p>
                 <p>
-                  [5] Chamber Protocol Source Code. <em>GitHub Repository</em>.
+                  [5] Loreum Source Code. <em>GitHub Repository</em>.
                   <a href="https://github.com/loreum-org/chamber" className="text-space-accent hover:underline ml-1">
                     https://github.com/loreum-org/chamber
                   </a>
