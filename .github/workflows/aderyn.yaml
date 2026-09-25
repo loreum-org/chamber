@@ -1,0 +1,34 @@
+name: Aderyn Security Analysis
+
+on:
+  push:
+    paths:
+      - 'contracts/**'
+      - '.github/workflows/aderyn.yaml'
+  pull_request:
+    paths:
+      - 'contracts/**'
+      - '.github/workflows/aderyn.yaml'
+
+jobs:
+  aderyn:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: contracts
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Build contracts
+        run: forge build
+
+      - name: Aderyn Check
+        uses: Cyfrin/aderyn-ci@v0
+        with:
+          fail-on: high

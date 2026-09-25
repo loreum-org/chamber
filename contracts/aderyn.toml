@@ -1,0 +1,18 @@
+# Aderyn project configuration
+# https://aderyn.cyfrin.io/project-configuration
+#
+# Baseline established from initial scan (4 High, 14 Low).
+# Issues acknowledged in the baseline are excluded here so CI
+# only fails on *new* findings.
+
+[status]
+# Only flag new issues beyond the baseline
+# High issues in baseline (acknowledged, tracked separately):
+#   H-1: Contract locks Ether without withdraw function (Chamber.sol)
+#   H-2: Incorrect ERC721 interface (Chamber.sol transferFrom)
+#   H-3: Reentrancy: State change after external call (3 instances)
+#   H-4: Unsafe Casting of integers (14 instances)
+
+[exclude]
+# Exclude test files from analysis
+paths = ["test/**", "script/**"]
