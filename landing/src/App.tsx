@@ -50,7 +50,7 @@ function App() {
           <span className="text-2xl font-display tracking-wider">LOREUM</span>
         </div>
         <div className="hidden md:flex items-center gap-8 font-light tracking-wide text-sm">
-          <a href="#governance" className="hover:text-space-accent transition-colors">GOVERNANCE</a>
+          <a href="#imperative" className="hover:text-space-accent transition-colors">IMPERATIVE</a>
           <a href="#mission" className="hover:text-space-accent transition-colors">MISSION</a>
           <a href="#technology" className="hover:text-space-accent transition-colors">TECHNOLOGY</a>
           <a href="#governance" className="hover:text-space-accent transition-colors">GOVERNANCE</a>
@@ -156,7 +156,7 @@ function App() {
       </section>
 
       {/* The Governance Imperative — Problem Section */}
-      <section id="governance" className="relative z-10 py-32 px-4 sm:px-6 border-b border-white/5 w-full min-w-0 box-border">
+      <section id="imperative" className="relative z-10 py-32 px-4 sm:px-6 border-b border-white/5 w-full min-w-0 box-border">
         <div className="max-w-7xl mx-auto w-full min-w-0 px-1 sm:px-0">
           <FadeIn className="mb-20 max-w-4xl">
             <div className="mb-6 inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-amber-300/30 bg-amber-300/10 text-amber-200 text-xs tracking-[0.2em]">
