@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Indexer states · Loreum app mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap">
+<link rel="stylesheet" href="assets/app.css">
+<style>
+  /* Narrow screens: let the top bar and long chips wrap instead of pushing the page sideways */
+  @media (max-width: 640px) {
+    .top-inner { height: auto; min-height: 56px; flex-wrap: wrap; padding-top: 8px; padding-bottom: 8px; }
+    .top-right { flex-wrap: wrap; }
+    .fresh { white-space: normal; }
+  }
+  .src { font-family: var(--mono); font-size: 11px; color: var(--t4); white-space: nowrap; }
+  /* Mid widths: the nav shrinks and scrolls inside the top bar instead of widening the page */
+  .top-inner > .row { flex-wrap: nowrap; min-width: 0; flex: 1 1 auto; }
+  .nav { min-width: 0; }
+  @media (min-width: 641px) { .top-right { flex: none; } }
+  /* Phones: keep the authority chain on one line; values ellipsize and inline addresses drop */
+  @media (max-width: 640px) {
+    .auth { flex-wrap: nowrap; }
+    .auth .node { flex: 1 1 0; min-width: 0; }
+    .auth .k { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .auth .v .mono { display: none; }
+  }
+  /* Keep single-column grids from growing to fit wide children (timelines, tables) */
+  .grid > * { min-width: 0; }
+  @media (max-width: 1000px) { .main-side { grid-template-columns: minmax(0, 1fr); } }
+  section.blk { margin-top: 28px; }
+  section.blk > .between { margin-bottom: 12px; }
+  .lede { color: var(--t2); max-width: 780px; }
+
+  /* Extra chip state: waiting for the indexer to reach your transaction's block */
+  .fresh.wait { color: var(--info); border-color: rgba(125, 211, 252, 0.3); }
+  .fresh.wait i { background: var(--info); }
+
+  /* Chip spec list */
+  .chipspec { list-style: none; margin: 0; padding: 0; }
+  .chipspec > li { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; align-items: start; padding: 12px 0; border-top: 1px solid rgba(148, 163, 184, 0.08); }
+  .chipspec .fresh { white-space: normal; max-width: 100%; }
+  .chipspec > li:first-child { border-top: 0; padding-top: 0; }
+  .chipspec .when { font-size: 12.5px; color: var(--t3); }
+
+  /* Head clock diagram */
+  .clock { display: grid; grid-template-columns: minmax(0, 1fr) 28px minmax(0, 1fr) 28px minmax(0, 1fr); align-items: stretch; }
+  .clock .arrow { display: grid; place-items: center; color: var(--a400); font-family: var(--mono); }
+  .clock .inset .big { font-size: 20px; font-weight: 300; font-variant-numeric: tabular-nums; margin-top: 2px; }
+  @media (max-width: 860px) { .clock { grid-template-columns: 1fr; } .clock .arrow { height: 22px; transform: rotate(90deg); } }
+
+  /* State previews */
+  .frame { border: 1px solid var(--line-strong); border-radius: var(--r); overflow: hidden; background: var(--bg); }
+  .frame + .frame { margin-top: 18px; }
+  .frame-h { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 14px; background: var(--s2); border-bottom: 1px solid var(--line-strong); }
+  .frame-h h3 { font-size: 14px; }
+  .frame .top { position: static; backdrop-filter: none; }
+  .frame .top-inner { height: 52px; }
+  .frame .page { padding: 16px 16px 20px; }
+  .frame .ch-head { margin-bottom: 12px; }
+  .frame .ch-icon { width: 36px; height: 36px; }
+  .frame h1 { font-size: 19px; }
+  .frame .tabs { margin-bottom: 14px; }
+  .frame-body { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 0; }
+  .frame-body > .behave { border-left: 1px solid var(--line-strong); background: var(--s1); padding: 16px; font-size: 13px; color: var(--t2); }
+  .behave ul { margin: 8px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+  .frame-body > * { min-width: 0; }
+  @media (max-width: 1000px) { .frame-body { grid-template-columns: minmax(0, 1fr); } .frame-body > .behave { border-left: 0; border-top: 1px solid var(--line-strong); } }
+  @media (max-width: 640px) { .frame .top-inner { height: auto; } }
+
+  .asof { font-family: var(--mono); font-size: 11px; color: var(--t4); margin-top: 8px; }
+  .asof.warn { color: var(--warn); }
+  .asof.bad { color: var(--bad); }
+  .stale .stat { background: repeating-linear-gradient(135deg, var(--s2) 0 10px, rgba(34, 42, 60, 0.55) 10px 20px); }
+  .stale .stat .v { color: var(--t3); }
+
+  .att { list-style: none; margin: 0; padding: 0; }
+  .att > li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 12px 0; border-top: 1px solid var(--line); }
+  .att > li:first-child { border-top: 0; padding-top: 0; }
+  .att .t { font-weight: 600; }
+  .att .m { font-size: 12.5px; color: var(--t3); margin-top: 3px; }
+  .att .acts { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; max-width: 260px; }
+  .att .acts .row { justify-content: flex-end; }
+  .why { font-size: 12px; color: var(--t3); text-align: right; }
+  .why.bad { color: #fecaca; }
+  @media (max-width: 640px) { .att > li { grid-template-columns: 1fr; } .att .acts { align-items: flex-start; max-width: none; } .att .acts .row { justify-content: flex-start; } .why { text-align: left; } }
+
+  .empty { text-align: center; padding: 34px 18px; }
+  .empty p { max-width: 520px; margin: 8px auto 0; color: var(--t2); }
+
+  /* Popover mock */
+  .pop { background: var(--s3); border: 1px solid var(--line-strong); border-radius: var(--r); padding: 14px; max-width: 380px; }
+  .pop .kv { font-size: 12.5px; }
+
+  /* Matrix */
+  table.mx td { font-size: 12.5px; }
+  table.mx td:first-child { color: var(--t1); font-weight: 600; white-space: nowrap; }
+  table.mx td.w { color: var(--t3); min-width: 240px; }
+</style>
+</head>
+<body>
+<div class="mock-bar">
+  <span><b>MOCKUP</b> · Loreum app · Indexer freshness states (component sheet) · state as of Mar 16, 2027 14:20 UTC</span>
+  <span><a href="index.html">All mockups</a> · <a href="_mock-data.md">Mock data</a></span>
+</div>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="row" style="gap:18px">
+      <a class="brand" href="index.html"><span class="brand-mark">L</span><span>Loreum</span></a>
+      <nav class="nav" aria-label="Main">
+        <a href="app-overview.html" class="on">My Chambers</a>
+        <a href="app-session-keys.html">Operators</a>
+        <a href="#">Deploy Chamber</a>
+        <a href="#">Compliance</a>
+        <a href="app-migrate.html">Migrate from Safe</a>
+        <a href="#">Docs</a>
+      </nav>
+    </div>
+    <div class="top-right">
+      <span class="chain"><i></i>Ethereum</span>
+      <span class="fresh" title="All data on this page comes from chamber-indexer"><i></i>Indexed 24 s ago · #27,184,300</span>
+      <span class="wallet"><span class="avatar"></span>lena.eth</span>
+    </div>
+  </div>
+</header>
+
+<main class="page">
+  <div class="between" style="align-items:flex-start;margin-bottom:6px">
+    <div>
+      <div class="upper">Component sheet · applies to every app page</div>
+      <h1 style="margin-top:6px">Indexer freshness states</h1>
+      <p class="lede" style="margin-top:8px">Every number in the app comes from chamber-indexer. This sheet defines how the app knows whether that data is current, what the freshness chip says, and how pages behave when the indexer is healthy, lagging, or stalled or unreachable. In none of these states does the app fall back to reading the chain for display.</p>
+    </div>
+    <div class="row">
+      <span class="badge acc">I-10</span><span class="badge">I-19</span><span class="badge">I-21</span><span class="badge">I-3</span>
+    </div>
+  </div>
+
+  <!-- Why -->
+  <section class="blk" aria-labelledby="why-h">
+    <div class="card">
+      <div class="card-h">
+        <h2 id="why-h">Why this exists <span class="note">1</span></h2>
+        <span class="badge bad">Incident · Sep 2026</span>
+      </div>
+      <div class="grid g2">
+        <div class="stack">
+          <p style="color:var(--t2)">On <b>Sep 20, 2026 at 21:21 UTC</b> the production indexer stopped advancing. For <b>6.5 days</b> it kept answering queries and kept reporting <code>ready: true</code>, while it fell <b class="num">46,768 blocks</b> behind Sepolia (<span class="num">11,746,692</span> vs <span class="num">11,793,460</span>). The app had no freshness UI, so app.loreum.org's queue quietly hid proposals that had already executed. Nobody noticed.</p>
+          <p style="color:var(--t2)">The same month, display-time RPC polling (17 event watchers per Chamber page, a pending-transaction watcher and 4-second block polling) used up the entire Alchemy compute quota. Falling back to RPC when the indexer misbehaves isn't an option.</p>
+          <div class="inset">
+            <div class="upper" style="margin-bottom:6px">Rules</div>
+            <ol class="ol" style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--t2)">
+              <li>Freshness is the age of the last indexed block, measured against the clock. The <code>ready</code> flag is ignored.</li>
+              <li>When data is old, show it with its age. Never blank a page that has data, and never refill it from RPC.</li>
+              <li>Pause writes whose decision depends on current state. Keep protective actions available. Transaction-time simulation still runs via RPC.</li>
+            </ol>
+          </div>
+        </div>
+        <div class="inset deep">
+          <div class="between" style="margin-bottom:6px"><span class="upper">Sepolia, Sep 20–27, 2026</span><span class="src">block height</span></div>
+          <svg viewBox="0 0 600 190" role="img" aria-label="Chart: the Sepolia chain head rose from about 11,740,000 to 11,793,460 between Sep 20 and Sep 27, 2026. The indexer stayed at block 11,746,692 from Sep 20 21:21 UTC and kept reporting ready: true, ending 46,768 blocks behind." style="width:100%;height:auto;display:block">
+            <line x1="40" y1="160" x2="584" y2="160" style="stroke:var(--line-strong)" />
+            <g style="fill:var(--t4);font:10px var(--mono)">
+              <text x="40" y="178" text-anchor="middle">Sep 20</text>
+              <text x="112" y="178" text-anchor="middle">21</text>
+              <text x="184" y="178" text-anchor="middle">22</text>
+              <text x="256" y="178" text-anchor="middle">23</text>
+              <text x="328" y="178" text-anchor="middle">24</text>
+              <text x="400" y="178" text-anchor="middle">25</text>
+              <text x="472" y="178" text-anchor="middle">26</text>
+              <text x="544" y="178" text-anchor="middle">27</text>
+            </g>
+            <line x1="104" y1="22" x2="104" y2="160" style="stroke:var(--t4);stroke-dasharray:3 4" />
+            <text x="110" y="30" style="fill:var(--t3);font:10.5px var(--sans)">Sep 20 21:21 UTC · last indexed block</text>
+            <polyline points="40,159.3 572,27.8" style="fill:none;stroke:var(--info);stroke-width:2" />
+            <polyline points="40,159.3 104,143.5" style="fill:none;stroke:var(--ok);stroke-width:2" />
+            <polyline points="104,143.5 572,143.5" style="fill:none;stroke:var(--bad);stroke-width:2" />
+            <text x="290" y="86" text-anchor="end" style="fill:var(--info);font:11px var(--sans)">Chain head</text>
+            <text x="566" y="136" text-anchor="end" style="fill:var(--bad);font:11px var(--sans)">Indexer stuck at 11,746,692 · still ready: true</text>
+            <line x1="584" y1="27.8" x2="584" y2="143.5" style="stroke:var(--warn)" />
+            <text x="576" y="84" text-anchor="end" style="fill:var(--warn);font:600 11px var(--mono)">46,768 blocks</text>
+            <text x="576" y="98" text-anchor="end" style="fill:var(--warn);font:11px var(--mono)">6.5 days</text>
+          </svg>
+          <p class="faint" style="font-size:12px;margin-top:6px">Numbers from the chamber repo plan (I-1). The app showed the flat line as current state.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Head clock -->
+  <section class="blk" aria-labelledby="clk-h">
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <h2 id="clk-h">The head clock <span class="note">2</span></h2>
+          <p class="muted" style="font-size:12.5px;margin-top:4px"><code>useIndexerHead(chainId)</code> · one per chain · replaces <code>useBlockNumber</code> for display</p>
+        </div>
+        <span class="badge ok"><span class="dot"></span>Healthy · 2 blocks behind</span>
+      </div>
+
+      <div class="clock">
+        <div class="inset">
+          <div class="upper">From the indexer</div>
+          <div class="big">#27,184,300</div>
+          <div class="muted" style="font-size:12.5px">Block timestamp 14:19:36 UTC</div>
+          <div class="faint mono" style="font-size:11px;margin-top:6px">_meta.status["1"].block</div>
+        </div>
+        <div class="arrow" aria-hidden="true">→</div>
+        <div class="inset">
+          <div class="upper">Reference time</div>
+          <div class="big">14:20:00 UTC</div>
+          <div class="muted" style="font-size:12.5px">Browser clock, corrected by the indexer response's Date header (skew +0.4 s)</div>
+        </div>
+        <div class="arrow" aria-hidden="true">→</div>
+        <div class="inset">
+          <div class="upper">Derived</div>
+          <div class="big">Age 24 s · lag 2</div>
+          <div class="muted" style="font-size:12.5px">Estimated head 27,184,300 + ⌊24 / 12⌋ = <span class="num">27,184,302</span></div>
+        </div>
+      </div>
+
+      <div class="grid g2" style="margin-top:16px">
+        <div>
+          <div class="upper" style="margin-bottom:8px">States</div>
+          <dl class="kv">
+            <dt><span class="badge ok">Healthy</span></dt><dd>Lag ≤ 30 blocks (about 6 min on Ethereum).</dd>
+            <dt><span class="badge warn">Lagging</span></dt><dd>Lag &gt; 30 blocks, and the indexed block is still advancing between polls.</dd>
+            <dt><span class="badge bad">Stalled</span></dt><dd>The indexed block hasn't changed for 5 min of polls, whatever <code>ready</code> says.</dd>
+            <dt><span class="badge bad">Unavailable</span></dt><dd>3 failed requests in a row (network error, HTTP 5xx, GraphQL error), or no indexer is configured for this chain.</dd>
+          </dl>
+        </div>
+        <div>
+          <div class="upper" style="margin-bottom:8px">Also drives</div>
+          <ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:5px;color:var(--t2);font-size:13px">
+            <li>Seat maturity: a seat can act once the indexed head reaches its <code>seatedAt</code>, which the contract stores as the seating block + <code>SEATING_DELAY</code> (1 block).</li>
+            <li>Session key expiry, proposal deadlines and gate op eta countdowns.</li>
+            <li>Countdowns tick with the corrected clock. A status flips to "ready" only when an indexed block's timestamp passes the eta, because that's when execution can succeed.</li>
+          </ul>
+          <div class="raw" style="margin-top:10px">query Head { _meta { status } chamber(id: "1:0x3f1c…a92e") { updatedBlock } }<br>every 15 s while the tab is visible · 0 requests while hidden · 1 on focus</div>
+        </div>
+      </div>
+
+      <div class="upper" style="margin:18px 0 8px">Per chain <span class="note">3</span></div>
+      <div class="tbl-wrap">
+        <table class="t">
+          <thead>
+            <tr><th>Chain</th><th>Chain ID</th><th>Block time</th><th>Lagging when</th><th>Stalled when</th><th>Indexer</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><span class="chain"><i></i>Ethereum</span></td><td class="num">1</td><td>12 s</td><td>&gt; 30 blocks (~6 min)</td><td>No new block for 5 min</td><td><span class="badge ok">Configured</span></td></tr>
+            <tr><td><span class="chain"><i></i>Sepolia</span></td><td class="num">11155111</td><td>12 s</td><td>&gt; 30 blocks (~6 min)</td><td>No new block for 5 min</td><td><span class="badge ok">Configured · staging</span></td></tr>
+            <tr><td><span class="chain base"><i></i>Base</span></td><td class="num">8453</td><td>2 s</td><td>&gt; 6 min behind</td><td>No new block for 5 min</td><td><span class="badge">Not configured</span> <span class="faint" style="font-size:12px">Added only after the Phase 2 gate</span></td></tr>
+            <tr><td><span class="chain arb"><i></i>Arbitrum One</span></td><td class="num">42161</td><td>~0.25 s, variable</td><td>&gt; 6 min behind (time only)</td><td>No new block for 5 min</td><td><span class="badge">Not configured</span> <span class="faint" style="font-size:12px">Added only after the Phase 2 gate</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="faint" style="font-size:12px;margin-top:8px">A chain with no configured indexer shows the Unavailable state and makes zero JSON-RPC display calls. Chains with variable block times measure lag in time only.</p>
+    </div>
+  </section>
+
+  <!-- Freshness chip -->
+  <section class="blk" aria-labelledby="chip-h">
+    <div class="grid main-side">
+      <div class="card">
+        <div class="card-h">
+          <h2 id="chip-h">Freshness chip <span class="note">4</span></h2>
+          <span class="src">top bar · every app page</span>
+        </div>
+        <ul class="chipspec">
+          <li>
+            <div><span class="fresh"><i></i>Indexed 24 s ago · #27,184,300</span></div>
+            <div class="when"><b style="color:var(--ok)">Healthy.</b> Age and block of the data on screen. The age updates every second from the head clock.</div>
+          </li>
+          <li>
+            <div><span class="fresh wait"><i></i>Syncing your change · waiting for #27,184,305</span></div>
+            <div class="when"><b style="color:var(--info)">After your write.</b> Your receipt is in block 27,184,305 and the indexer hasn't reached it. Affected cards hold their previous values, marked as updating.</div>
+          </li>
+          <li>
+            <div><span class="fresh lag"><i></i>Indexing 41 blocks behind · ~8 min</span></div>
+            <div class="when"><b style="color:var(--warn)">Lagging.</b> More than 30 blocks behind and advancing. A banner appears on pages with actions.</div>
+          </li>
+          <li>
+            <div><span class="fresh down"><i></i>Indexer stalled since 14:02 UTC · showing last known state</span></div>
+            <div class="when"><b style="color:var(--bad)">Stalled.</b> No new indexed block for 5 min, even though the indexer reports ready. State-dependent writes pause.</div>
+          </li>
+          <li>
+            <div><span class="fresh down"><i></i>Indexer unreachable since 14:02 UTC · showing last known state</span></div>
+            <div class="when"><b style="color:var(--bad)">Unavailable, with data.</b> 3 failed requests. The page keeps the last response it got, with its time.</div>
+          </li>
+          <li>
+            <div><span class="fresh down"><i></i>Indexer unreachable · nothing to show yet</span></div>
+            <div class="when"><b style="color:var(--bad)">Unavailable, no data.</b> Fresh load with no earlier response. The page shows an empty state, never a guess.</div>
+          </li>
+        </ul>
+      </div>
+
+      <div class="card raised">
+        <div class="card-h"><h2>Chip details</h2><span class="src">opens on click or Enter</span></div>
+        <div class="pop" role="dialog" aria-label="Indexer freshness details">
+          <div class="between" style="margin-bottom:10px">
+            <span class="chain"><i></i>Ethereum</span>
+            <span class="badge ok"><span class="dot"></span>Healthy</span>
+          </div>
+          <dl class="kv">
+            <dt>Source</dt><dd>chamber-indexer (GraphQL)</dd>
+            <dt>Indexed block</dt><dd class="num">27,184,300 · 14:19:36 UTC</dd>
+            <dt>Chain head (est.)</dt><dd class="num">27,184,302</dd>
+            <dt>Lag</dt><dd class="num">2 blocks · 24 s</dd>
+            <dt>Last poll</dt><dd class="num">14:19:58 UTC · next in 13 s</dd>
+            <dt>Display RPC</dt><dd class="num">0 calls this session</dd>
+            <dt>Transaction RPC</dt><dd class="num">3 calls · simulate, send, receipt</dd>
+          </dl>
+          <div class="divider"></div>
+          <div class="row" style="justify-content:space-between">
+            <button type="button" class="btn sm">Refresh now</button>
+            <a href="app-indexer-states.html" style="font-size:12.5px">How freshness works</a>
+          </div>
+        </div>
+        <p class="faint" style="font-size:12px;margin-top:10px">"Refresh now" sends one indexer query. It never reads the chain.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Page behaviour -->
+  <section class="blk" aria-labelledby="pb-h">
+    <div class="between">
+      <div>
+        <h2 id="pb-h">Page behaviour in each state <span class="note">5</span></h2>
+        <p class="muted" style="font-size:12.5px;margin-top:4px">Loreum DAO overview as lena.eth (Explorer #44), Mar 16, 2027 14:20 UTC. Same page, same moment, four indexer states.</p>
+      </div>
+    </div>
+
+    <!-- 1. Healthy -->
+    <div class="frame">
+      <div class="frame-h"><h3>1 · Healthy</h3><span class="badge ok"><span class="dot"></span>2 blocks behind</span></div>
+      <div class="frame-body">
+        <div>
+          <header class="top">
+            <div class="top-inner">
+              <div class="row" style="gap:18px">
+                <a class="brand" href="index.html"><span class="brand-mark">L</span><span>Loreum</span></a>
+                <nav class="nav" aria-label="Main (healthy preview)">
+                  <a href="app-overview.html" class="on">My Chambers</a>
+                  <a href="app-session-keys.html">Operators</a>
+                  <a href="app-migrate.html">Migrate from Safe</a>
+                </nav>
+              </div>
+              <div class="top-right">
+                <span class="fresh"><i></i>Indexed 24 s ago · #27,184,300</span>
+                <span class="wallet"><span class="avatar"></span>lena.eth</span>
+              </div>
+            </div>
+          </header>
+          <div class="page">
+            <div class="ch-head">
+              <div class="ch-title">
+                <div class="ch-icon">LD</div>
+                <div>
+                  <h1>Loreum DAO</h1>
+                  <div class="ch-meta"><span class="chain"><i></i>Ethereum</span><span class="badge acc">v1.2.0</span><span class="badge">5 seats · quorum 3</span></div>
+                </div>
+              </div>
+            </div>
+            <nav class="tabs" aria-label="Chamber (healthy preview)">
+              <a href="app-overview.html" class="on">Overview</a>
+              <a href="app-board.html">Board &amp; delegation</a>
+              <a href="app-queue.html">Queue <span class="badge warn">3</span></a>
+              <a href="app-supply-authority.html">Supply authority</a>
+            </nav>
+            <div class="grid g3">
+              <div class="stat"><div class="upper">Vault total assets</div><div class="v">7,712,450 <small>LORE</small></div><div class="asof">from indexer · #27,184,300</div></div>
+              <div class="stat"><div class="upper">Treasury</div><div class="v">2,410,000 <small>USDC</small></div><div class="asof">from indexer · #27,184,300</div></div>
+              <div class="stat"><div class="upper">Open proposals</div><div class="v">3</div><div class="asof">from indexer · #27,184,300</div></div>
+            </div>
+            <div class="card" style="margin-top:14px">
+              <ol class="att">
+                <li>
+                  <div><div class="t"><span class="badge ok">Ready</span> #46 Fund Q2 grants round: 120,000 USDC to Grants Safe</div><div class="m">3 of 3 confirmations · deadline Apr 12, 2027</div></div>
+                  <div class="acts"><button type="button" class="btn primary sm">Execute #46</button><span class="why">Simulates via RPC first</span></div>
+                </li>
+                <li>
+                  <div><div class="t"><span class="badge bad">High risk</span> #48 Upgrade Chamber implementation to v1.2.1</div><div class="m">1 of 3 confirmations · you haven't confirmed</div></div>
+                  <div class="acts"><a class="btn sm" href="app-proposal.html">Review #48</a></div>
+                </li>
+              </ol>
+            </div>
+          </div>
+        </div>
+        <div class="behave">
+          <b>Behaviour</b>
+          <ul>
+            <li>No banner. Values show their block quietly.</li>
+            <li>Every action is on. Writes simulate against the latest block via RPC, then sign, then wait for the receipt.</li>
+            <li>Polls the indexer every 15 s while visible. Hidden tabs make no requests.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Lagging -->
+    <div class="frame">
+      <div class="frame-h"><h3>2 · Lagging</h3><span class="badge warn">41 blocks behind · catching up</span></div>
+      <div class="frame-body">
+        <div>
+          <header class="top">
+            <div class="top-inner">
+              <div class="row" style="gap:18px">
+                <a class="brand" href="index.html"><span class="brand-mark">L</span><span>Loreum</span></a>
+                <nav class="nav" aria-label="Main (lagging preview)">
+                  <a href="app-overview.html" class="on">My Chambers</a>
+                  <a href="app-session-keys.html">Operators</a>
+                  <a href="app-migrate.html">Migrate from Safe</a>
+                </nav>
+              </div>
+              <div class="top-right">
+                <span class="fresh lag"><i></i>Indexing 41 blocks behind · ~8 min</span>
+                <span class="wallet"><span class="avatar"></span>lena.eth</span>
+              </div>
+            </div>
+          </header>
+          <div class="page">
+            <div class="banner warn" style="margin-bottom:14px">
+              <span class="ic">!</span>
+              <div><b>The indexer is 41 blocks (about 8 min) behind Ethereum.</b> This page shows block 27,184,261 from 14:11 UTC; anything newer isn't here yet. It's catching up at about 37 blocks a minute. You can still act: every write is simulated against the latest block via RPC before you sign.</div>
+            </div>
+            <div class="ch-head">
+              <div class="ch-title">
+                <div class="ch-icon">LD</div>
+                <div>
+                  <h1>Loreum DAO</h1>
+                  <div class="ch-meta"><span class="chain"><i></i>Ethereum</span><span class="badge acc">v1.2.0</span><span class="badge">5 seats · quorum 3</span></div>
+                </div>
+              </div>
+            </div>
+            <nav class="tabs" aria-label="Chamber (lagging preview)">
+              <a href="app-overview.html" class="on">Overview</a>
+              <a href="app-board.html">Board &amp; delegation</a>
+              <a href="app-queue.html">Queue <span class="badge warn">3</span></a>
+              <a href="app-supply-authority.html">Supply authority</a>
+            </nav>
+            <div class="grid g3">
+              <div class="stat"><div class="upper">Vault total assets</div><div class="v">7,712,450 <small>LORE</small></div><div class="asof warn">as of 14:11 UTC · #27,184,261</div></div>
+              <div class="stat"><div class="upper">Treasury</div><div class="v">2,410,000 <small>USDC</small></div><div class="asof warn">as of 14:11 UTC · #27,184,261</div></div>
+              <div class="stat"><div class="upper">Open proposals</div><div class="v">3</div><div class="asof warn">as of 14:11 UTC · #27,184,261</div></div>
+            </div>
+            <div class="card" style="margin-top:14px">
+              <ol class="att">
+                <li>
+                  <div><div class="t"><span class="badge ok">Ready</span> #46 Fund Q2 grants round: 120,000 USDC to Grants Safe</div><div class="m">3 of 3 confirmations as of 14:11 UTC</div></div>
+                  <div class="acts"><button type="button" class="btn primary sm">Execute #46</button><span class="why">The simulation re-checks on-chain state before you sign</span></div>
+                </li>
+                <li>
+                  <div><div class="t"><span class="badge bad">High risk</span> #48 Upgrade Chamber implementation to v1.2.1</div><div class="m">1 of 3 confirmations as of 14:11 UTC</div></div>
+                  <div class="acts"><a class="btn sm" href="app-proposal.html">Review #48</a></div>
+                </li>
+              </ol>
+            </div>
+          </div>
+        </div>
+        <div class="behave">
+          <b>Behaviour</b>
+          <ul>
+            <li>Warning banner on pages with actions. Read-only pages show only the chip.</li>
+            <li>Values keep their normal style, with an amber "as of" time.</li>
+            <li>Actions stay on. Simulation at signing is the safety net.</li>
+            <li>Delegation and seat-change previews say "may be out of date".</li>
+            <li>After a write, the chip shows "Syncing your change" until the indexer reaches your block.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Stalled -->
+    <div class="frame">
+      <div class="frame-h"><h3>3 · Stalled</h3><span class="badge bad">No new block since 14:02 UTC · reports ready: true</span></div>
+      <div class="frame-body">
+        <div>
+          <header class="top">
+            <div class="top-inner">
+              <div class="row" style="gap:18px">
+                <a class="brand" href="index.html"><span class="brand-mark">L</span><span>Loreum</span></a>
+                <nav class="nav" aria-label="Main (stalled preview)">
+                  <a href="app-overview.html" class="on">My Chambers</a>
+                  <a href="app-session-keys.html">Operators</a>
+                  <a href="app-migrate.html">Migrate from Safe</a>
+                </nav>
+              </div>
+              <div class="top-right">
+                <span class="fresh down"><i></i>Indexer stalled since 14:02 UTC · showing last known state</span>
+                <span class="wallet"><span class="avatar"></span>lena.eth</span>
+              </div>
+            </div>
+          </header>
+          <div class="page">
+            <div class="banner bad" style="margin-bottom:14px">
+              <span class="ic">!</span>
+              <div class="stack-sm" style="gap:8px">
+                <div><b>The indexer stopped at block 27,184,212 (14:02 UTC), about 90 blocks ago.</b> It still says it's ready, but no new block has arrived for 18 min. You're seeing the last known state. Actions that depend on current state are paused until it recovers. The app doesn't switch to reading the chain.</div>
+                <div class="row">
+                  <button type="button" class="btn sm">Retry now</button>
+                  <a class="btn ghost sm" href="#">Indexer status</a>
+                  <a class="btn ghost sm" href="#">Incident runbook</a>
+                </div>
+              </div>
+            </div>
+            <div class="ch-head">
+              <div class="ch-title">
+                <div class="ch-icon">LD</div>
+                <div>
+                  <h1>Loreum DAO</h1>
+                  <div class="ch-meta"><span class="chain"><i></i>Ethereum</span><span class="badge acc">v1.2.0</span><span class="badge">5 seats · quorum 3</span></div>
+                </div>
+              </div>
+            </div>
+            <nav class="tabs" aria-label="Chamber (stalled preview)">
+              <a href="app-overview.html" class="on">Overview</a>
+              <a href="app-board.html">Board &amp; delegation</a>
+              <a href="app-queue.html">Queue <span class="badge warn">3</span></a>
+              <a href="app-supply-authority.html">Supply authority</a>
+            </nav>
+            <div class="grid g3 stale">
+              <div class="stat"><div class="upper">Vault total assets</div><div class="v">7,712,450 <small>LORE</small></div><div class="asof bad">last known · 14:02 UTC · #27,184,212</div></div>
+              <div class="stat"><div class="upper">Treasury</div><div class="v">2,410,000 <small>USDC</small></div><div class="asof bad">last known · 14:02 UTC · #27,184,212</div></div>
+              <div class="stat"><div class="upper">Open proposals</div><div class="v">3</div><div class="asof bad">last known · 14:02 UTC · #27,184,212</div></div>
+            </div>
+            <div class="card" style="margin-top:14px">
+              <ol class="att">
+                <li>
+                  <div><div class="t"><span class="badge">Last known: ready</span> #46 Fund Q2 grants round: 120,000 USDC to Grants Safe</div><div class="m">3 of 3 confirmations as of 14:02 UTC</div></div>
+                  <div class="acts"><button type="button" class="btn primary sm" disabled aria-describedby="why46">Execute #46</button><span class="why bad" id="why46">Paused. #46 may have been executed or cancelled since 14:02 UTC.</span></div>
+                </li>
+                <li>
+                  <div><div class="t"><span class="badge bad">High risk</span> #48 Upgrade Chamber implementation to v1.2.1</div><div class="m">1 of 3 confirmations as of 14:02 UTC</div></div>
+                  <div class="acts">
+                    <div class="row"><button type="button" class="btn sm" disabled aria-describedby="why48">Confirm #48</button><button type="button" class="btn danger sm">Vote to cancel #48</button></div>
+                    <span class="why" id="why48">Confirming is paused. Voting to cancel stays on: it's protective, needs a typed confirmation, and is simulated before you sign.</span>
+                  </div>
+                </li>
+                <li>
+                  <div><div class="t"><span class="badge warn">Timelock</span> Gate op #3: mint 250,000 LORE to Vesting</div><div class="m">Ready Mar 19, 14:02 UTC · queued, as of 14:02 UTC</div></div>
+                  <div class="acts"><button type="button" class="btn sm">Export guardian cancel for op #3</button><span class="why">Available: op #3's id can't change, and the guardian signs the cancel in its own Safe.</span></div>
+                </li>
+              </ol>
+            </div>
+          </div>
+        </div>
+        <div class="behave">
+          <b>Behaviour</b>
+          <ul>
+            <li>Red chip and banner on every page. The <code>ready</code> flag is ignored.</li>
+            <li>Values stay visible, hatched, labelled "last known" with their time. Nothing is blanked.</li>
+            <li>State-dependent writes are disabled, each with its reason.</li>
+            <li>Protective actions stay on: revoke a confirmation, vote to cancel, clear a session key, export a guardian cancel.</li>
+            <li>No RPC display reads, no retry storm: one query every 15 s with backoff to 60 s.</li>
+            <li>The staleness monitor pages the team independently of this tab (<code>I-3</code>).</li>
+          </ul>
+          <p class="faint" style="font-size:12px;margin-top:10px">Unreachable with data looks the same, with "unreachable" in the chip and the HTTP error in the banner.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Unavailable, nothing cached -->
+    <div class="frame">
+      <div class="frame-h"><h3>4 · Unavailable on a fresh load</h3><span class="badge bad">HTTP 503 · 3 tries</span></div>
+      <div class="frame-body">
+        <div>
+          <header class="top">
+            <div class="top-inner">
+              <div class="row" style="gap:18px">
+                <a class="brand" href="index.html"><span class="brand-mark">L</span><span>Loreum</span></a>
+              </div>
+              <div class="top-right">
+                <span class="fresh down"><i></i>Indexer unreachable · nothing to show yet</span>
+                <span class="wallet"><span class="avatar"></span>lena.eth</span>
+              </div>
+            </div>
+          </header>
+          <div class="page">
+            <div class="card empty">
+              <h2>Can't load Loreum DAO right now</h2>
+              <p>The Ethereum indexer didn't answer (HTTP 503, 3 tries since 14:19 UTC). The app shows nothing rather than guess, and it won't read the chain to fill the page.</p>
+              <p class="muted" style="font-size:12.5px">Your wallet and any transaction you already sent aren't affected. Sent transactions still confirm; check them in your wallet.</p>
+              <div class="row" style="justify-content:center;margin-top:16px">
+                <button type="button" class="btn primary">Retry now</button>
+                <a class="btn ghost" href="#">Indexer status</a>
+              </div>
+              <p class="faint mono" style="font-size:11.5px;margin-top:14px">Chamber 0x3F1c…A92e · chain 1</p>
+            </div>
+          </div>
+        </div>
+        <div class="behave">
+          <b>Behaviour</b>
+          <ul>
+            <li>No skeletons that spin forever: after 3 failures the page says what happened.</li>
+            <li>No action buttons, because there's no state to act on.</li>
+            <li>Retries back off: 2 s, 4 s, 8 s, then every 60 s while visible.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Write gating matrix -->
+  <section class="blk" aria-labelledby="mx-h">
+    <div class="card">
+      <div class="card-h">
+        <h2 id="mx-h">Which actions stay on <span class="note">6</span></h2>
+        <span class="src">applies to every page</span>
+      </div>
+      <div class="tbl-wrap">
+        <table class="t mx">
+          <thead>
+            <tr><th>Action</th><th>Healthy</th><th>Lagging</th><th>Stalled or unavailable</th><th>Why</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>View pages</td><td><span class="badge ok">Live</span></td><td><span class="badge warn">Live · as-of time</span></td><td><span class="badge bad">Last known</span></td><td class="w">Never blank a page that has data. Never refill it from RPC.</td></tr>
+            <tr><td>Confirm a proposal</td><td><span class="badge ok">On</span></td><td><span class="badge warn">On · warns</span></td><td><span class="badge bad">Paused</span></td><td class="w">Its status or the board may have changed since the last block.</td></tr>
+            <tr><td>Execute a proposal</td><td><span class="badge ok">On</span></td><td><span class="badge warn">On · warns</span></td><td><span class="badge bad">Paused</span></td><td class="w">You'd act on a status you can't see.</td></tr>
+            <tr><td>Submit a proposal</td><td><span class="badge ok">On</span></td><td><span class="badge warn">On · warns</span></td><td><span class="badge bad">Paused</span></td><td class="w">The composer relies on indexed balances, deadlines and the allowlist.</td></tr>
+            <tr><td>Delegate or undelegate</td><td><span class="badge ok">On</span></td><td><span class="badge warn">On · preview stale</span></td><td><span class="badge bad">Paused</span></td><td class="w">The ranking preview would be wrong.</td></tr>
+            <tr><td>Support or execute a seat change</td><td><span class="badge ok">On</span></td><td><span class="badge warn">On · warns</span></td><td><span class="badge bad">Paused</span></td><td class="w">Supporter count and quorum may have moved.</td></tr>
+            <tr><td>Set a session key</td><td><span class="badge ok">On</span></td><td><span class="badge warn">On · warns</span></td><td><span class="badge bad">Paused</span></td><td class="w">Seat ownership may have changed; a key set for a transferred NFT is cleared.</td></tr>
+            <tr><td>Revoke my confirmation</td><td><span class="badge ok">On</span></td><td><span class="badge ok">On</span></td><td><span class="badge ok">On · protective</span></td><td class="w">Only removes your support. Simulated before signing.</td></tr>
+            <tr><td>Vote to cancel a proposal</td><td><span class="badge ok">On</span></td><td><span class="badge ok">On</span></td><td><span class="badge ok">On · protective</span></td><td class="w">Typed confirmation plus simulation. Stops harm; can't cause it.</td></tr>
+            <tr><td>Clear a session key</td><td><span class="badge ok">On</span></td><td><span class="badge ok">On</span></td><td><span class="badge ok">On · protective</span></td><td class="w">Removes authority. Worth doing fast during an incident.</td></tr>
+            <tr><td>Export guardian cancel payload</td><td><span class="badge ok">On</span></td><td><span class="badge ok">On</span></td><td><span class="badge ok">On · protective</span></td><td class="w">Gate op ids never change. The guardian signs in its own Safe.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- After you sign -->
+  <section class="blk" aria-labelledby="as-h">
+    <div class="card">
+      <div class="card-h">
+        <h2 id="as-h">After you sign: the freshness gate <span class="note">7</span></h2>
+        <span class="fresh wait"><i></i>Syncing your change · waiting for #27,184,305</span>
+      </div>
+      <ol class="steps" aria-label="Write lifecycle">
+        <li class="done">Simulate<span class="when">RPC · eth_call · 14:20:05</span></li>
+        <li class="done">Wallet signs, sends<span class="when">wallet RPC</span></li>
+        <li class="done">Receipt<span class="when">RPC · block 27,184,305</span></li>
+        <li class="now">Indexer reaches 27,184,305<span class="when">polling every 1.5 s</span></li>
+        <li>Page updates<span class="when">from indexer</span></li>
+      </ol>
+      <div class="grid g2" style="margin-top:16px">
+        <p class="muted" style="font-size:13px">After the receipt, reads for this Chamber require an indexer head at or past the receipt's block. The gate is keyed by chain and Chamber (<code>1:0x3f1c…a92e</code>), so a write on one chain never blocks another. Cards touched by the write keep their old values, marked "updating", instead of flashing pre-write state.</p>
+        <div class="banner info">
+          <span class="ic">i</span>
+          <div><b>If the indexer doesn't catch up within 60 s:</b> "Confirmed in block 27,184,305. The indexer hasn't reached it yet, so this page may not show it." The receipt is the proof. The app doesn't re-read state from the chain.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="notes">
+    <h3>Design notes</h3>
+    <ol>
+      <li>The Sep 2026 stall is the reason for this sheet. The indexer reported <code>ready: true</code> while it was 46,768 blocks (6.5 days) behind, and the app trusted it (<code>I-1</code>). The same month, display-time RPC polling burned the Alchemy quota, so "fall back to RPC" is ruled out by the standing rule that display reads come only from chamber-indexer (<code>D-9</code> ADR-0002). This page is the UI half of those decisions. The ops half is the staleness monitor and reconcile job (<code>I-3</code>) and the lag alert (<code>I-33</code>).</li>
+      <li>The head clock replaces <code>useBlockNumber</code>, which is RPC, with <code>useIndexerHead(chainId)</code>, built from <code>_meta.status</code> (<code>I-10</code>). Freshness is block age against a skew-corrected clock, not the <code>ready</code> flag. Production still runs Ponder 0.8, which reports <code>ready</code>; in 0.17 the <code>_meta.status</code> rows are <code>{id, block}</code> with no <code>ready</code>, and <code>block</code> can be null for a chain that hasn't started, which shows as Unavailable. The estimated head needs no RPC: indexed block + age ÷ slot time. Seat maturity, key expiry and gate eta countdowns all use this clock (<code>I-13</code>, <code>I-26</code>).</li>
+      <li>The client is chain-aware: one indexer URL per chain (<code>VITE_INDEXER_URLS</code>), head parsing per chain key, and freshness gates keyed <code>chainId:chamber</code>, so the same address on two chains can't collide (<code>I-10</code>, <code>I-5</code>). Base and Arbitrum appear only as "not configured" rows. Spoke indexing waits for the Phase 2 gate (<code>I-23</code>, <code>P-24</code>), and a chain with no indexer shows Unavailable instead of polling RPC.</li>
+      <li>The chip is on every page, in the top bar, next to the chain. It's the one place users learn where numbers come from. The details popover reports display RPC calls (always 0) and transaction RPC calls, the same numbers the CI RPC budget test asserts per route (<code>I-21</code>). "Refresh now" is a single indexer query.</li>
+      <li>The four previews share one layout, so the only differences are the chip, the banner, the as-of labels and the buttons. The fresh-load case has nothing to show, so it gets an empty state with no actions. Healthy stays quiet; the block label is enough. Lagging warns but keeps actions on, because every write simulates at the latest block via RPC (#260) and that catches stale-state mistakes. Stalled pauses decisions that need current state and says why on each button. Freshness polling runs only while the tab is visible, replacing the Alchemy WebSocket and its 60 s invalidate-everything fallback (<code>I-19</code>). The stalled banner links the incident runbook (<code>D-18</code>), because the Chamber keeps working without the app.</li>
+      <li>The rule for pausing: pause an action if a reasonable person could decide differently with current state, and keep it on if it only reduces authority or stops harm. That's why cancel votes, revoking a confirmation, clearing a session key and the guardian cancel export (<code>M-16</code>) stay available during an incident. Those are exactly when they matter.</li>
+      <li>The freshness gate already exists (<code>requireIndexerBlock</code>, <code>IndexerBehindError</code>, 40 retries × 1.5 s in <code>lib/indexer.ts</code>). This design keys it by chain and Chamber (<code>I-10</code>), shows it in the chip, and defines the timeout copy. RPC appears only in the first three steps: simulate, send, receipt.</li>
+    </ol>
+  </section>
+</main>
+<footer class="foot">Mockup only. Addresses marked illustrative are placeholders. Loreum is the protocol; Chamber is the governance contract.</footer>
+</body>
+</html>

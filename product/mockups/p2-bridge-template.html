@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bridge-action template · Loreum app mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap">
+<link rel="stylesheet" href="assets/app.css">
+<style>
+  /* Page-only additions. Tokens come from assets/app.css. */
+  .grid > * { min-width: 0; } /* let single-column grids shrink below table width */
+  table.t .mono { white-space: nowrap; }
+  .fresh .short { display: none; }
+  .crumb { font-size: 12.5px; color: var(--t4); margin-bottom: 10px; }
+  .crumb a { color: var(--t3); }
+  .tpl { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tpl button { font: 400 12.5px/1.2 var(--sans); padding: 7px 11px; border-radius: 8px; border: 1px solid var(--line); background: var(--s2); color: var(--t3); cursor: pointer; }
+  .tpl button:hover { color: var(--t1); background: var(--s3); }
+  .tpl button[aria-pressed="true"] { color: var(--a300); border-color: rgba(124, 92, 214, 0.5); background: var(--a-soft); font-weight: 600; }
+  fieldset.seg { border: 0; margin: 0; padding: 0; min-width: 0; }
+  fieldset.seg legend { padding: 0; margin-bottom: 6px; font-size: 12px; color: var(--t3); font-weight: 600; }
+  .seg-opts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .opt { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--s2); cursor: pointer; }
+  .opt.on { border-color: rgba(124, 92, 214, 0.55); background: var(--a950); }
+  .opt.off { opacity: 0.6; cursor: not-allowed; }
+  .opt input { margin-top: 3px; accent-color: var(--a500); }
+  .opt .t { font-weight: 600; font-size: 13px; }
+  .opt .d { font-size: 12px; color: var(--t3); }
+  .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  .form-grid .full { grid-column: 1 / -1; }
+  .affix { position: relative; }
+  .affix .input { padding-right: 64px; }
+  .affix .sfx { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 12px; color: var(--t4); font-family: var(--mono); }
+  .input[readonly] { background: var(--s2); color: var(--t2); }
+  .locked { display: flex; align-items: center; gap: 8px; }
+  .locked .input { flex: 1 1 auto; min-width: 0; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chips button { font: 400 12px/1.2 var(--mono); padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--s2); color: var(--t3); cursor: pointer; }
+  .chips button[aria-pressed="true"] { color: var(--a300); border-color: rgba(124, 92, 214, 0.5); background: var(--a-soft); }
+  .fee { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; font-size: 13px; }
+  .fee dt { color: var(--t3); }
+  .fee dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; font-family: var(--mono); font-size: 12.5px; color: var(--t2); }
+  .fee .tot { color: var(--t1); font-weight: 600; }
+  .leg-h { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 10px 14px 0; }
+  .legs { display: flex; flex-direction: column; gap: 10px; }
+  .cmp th:first-child, .cmp td:first-child { color: var(--t4); white-space: nowrap; }
+  .cmp td { vertical-align: top; }
+  .cmp .sel { background: rgba(74, 47, 143, 0.08); }
+  .chain-cell { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .chain-cell i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; background: var(--eth); }
+  .chain-cell.base i { background: var(--base); }
+  .chain-cell.arb i { background: var(--arb); }
+  .steps.pending li { min-width: 92px; }
+  .legs .decode dl { grid-template-columns: 172px minmax(0, 1fr); }
+  .legs .decode dt { overflow-wrap: anywhere; }
+  @media (max-width: 720px) {
+    .form-grid, .seg-opts { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 600px) {
+    .legs .decode dl { grid-template-columns: 1fr; }
+    .legs .decode dt { border-bottom: 0; padding-bottom: 0; }
+    .top-right .chain, .top-right .wallet { display: none; }
+    .fresh .long { display: none; }
+    .fresh .short { display: inline; }
+  }
+</style>
+</head>
+<body>
+<div class="mock-bar">
+  <span><b>MOCKUP</b> · Loreum app · Phase 2 preview · Bridge-action template · state as of Sep 21, 2027 11:00 UTC</span>
+  <span><a href="index.html">All mockups</a> · <a href="_mock-data.md">Mock data</a></span>
+</div>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="row" style="gap:18px">
+      <a class="brand" href="index.html"><span class="brand-mark">L</span><span>Loreum</span></a>
+      <nav class="nav" aria-label="Main">
+        <a href="app-overview.html" class="on">My Chambers</a>
+        <a href="app-session-keys.html">Operators</a>
+        <a href="#">Deploy Chamber</a>
+        <a href="#">Compliance</a>
+        <a href="app-migrate.html">Migrate from Safe</a>
+        <a href="#">Docs</a>
+      </nav>
+    </div>
+    <div class="top-right">
+      <span class="chain"><i></i>Ethereum</span>
+      <span class="fresh" title="Per-chain indexer heads from chamber-indexer. Ethereum #28,544,100 (24 s), Base #63,412,871 (19 s). Form data comes from the indexer; RPC runs only when you simulate or submit."><i></i><span class="long">ETH 24 s · Base 19 s</span><span class="short">2 chains · ≤24 s</span></span>
+      <span class="wallet"><span class="avatar"></span>lena.eth</span>
+    </div>
+  </div>
+</header>
+
+<main class="page">
+  <div class="gated-ribbon">
+    <b>Phase 2 preview</b>
+    <span>Gated on the Phase 2 go/no-go (P-7). Bridge templates also wait for the P-31 decision on whether and when to start them. This preview assumes the Across-only route ships first, behind a flag.</span>
+  </div>
+
+  <div class="ch-head">
+    <div class="ch-title">
+      <div class="ch-icon">LD</div>
+      <div>
+        <h1>Loreum DAO</h1>
+        <div class="ch-meta">
+          <span class="chain"><i></i>Ethereum</span>
+          <span class="badge acc">v1.2.0</span>
+          <span class="badge">5 seats · quorum 3</span>
+          <span class="badge info">Home chain · 2 spokes</span>
+          <span class="mono faint">0x3F1c…A92e</span>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <a class="btn" href="app-queue.html">Open queue</a>
+      <a class="btn primary" href="app-proposal.html">New proposal</a>
+    </div>
+  </div>
+
+  <nav class="tabs" aria-label="Chamber">
+    <a href="app-overview.html">Overview</a>
+    <a href="app-board.html">Board &amp; delegation</a>
+    <a href="app-queue.html">Queue <span class="badge warn">2</span></a>
+    <a href="p2-multichain-treasury.html" class="on">Treasury</a>
+    <a href="app-supply-authority.html">Supply authority</a>
+    <a href="app-session-keys.html">Session keys</a>
+    <a href="p2-multichain-treasury.html#spokes">Spokes <span class="badge warn">Preview</span></a>
+  </nav>
+
+  <div class="crumb"><a href="p2-multichain-treasury.html">Treasury</a> / New proposal / Bridge to spoke</div>
+
+  <div class="between" style="margin-bottom:14px">
+    <div>
+      <h2>Move USDC to a spoke</h2>
+      <p class="muted" style="font-size:13px">A proposal on Ethereum that bridges treasury funds to one of this board's spoke Safes.</p>
+    </div>
+    <div class="tpl" role="group" aria-label="Proposal template">
+      <button type="button" aria-pressed="false">Token payment</button>
+      <button type="button" aria-pressed="false">Grant</button>
+      <button type="button" aria-pressed="false">Treasury transfer</button>
+      <button type="button" aria-pressed="false">Custom call</button>
+      <button type="button" aria-pressed="true">Bridge to spoke</button>
+      <button type="button" aria-pressed="false">Spoke action</button>
+    </div>
+  </div>
+
+  <div class="grid main-side">
+    <div class="stack">
+      <div class="card">
+        <div class="card-h">
+          <h2>Bridge template <span class="note">1</span></h2>
+          <span class="badge">Draft · not submitted</span>
+        </div>
+
+        <fieldset class="seg">
+          <legend>Route</legend>
+          <div class="seg-opts">
+            <label class="opt on">
+              <input type="radio" name="route" checked>
+              <span><span class="t">Across SpokePool deposit</span><span class="d" style="display:block">Relayer fills on Base with its own funds. Native USDC. Calls the Ethereum SpokePool directly.</span></span>
+            </label>
+            <label class="opt off">
+              <input type="radio" name="route" disabled>
+              <span><span class="t">OP Standard Bridge</span><span class="d" style="display:block">Canonical route. Not offered yet; see the comparison below.</span></span>
+            </label>
+          </div>
+        </fieldset>
+
+        <div class="form-grid" style="margin-top:16px">
+          <div class="field">
+            <label for="from">From</label>
+            <input class="input" id="from" type="text" value="Loreum DAO Chamber · Ethereum" readonly>
+            <span class="hint num">2,410,000 USDC available (from indexer)</span>
+          </div>
+          <div class="field">
+            <label for="tok">Token</label>
+            <input class="input" id="tok" type="text" value="USDC → USDC (native on Base)" readonly>
+            <span class="hint mono">0xA0b8…eB48 → 0x8335…2913</span>
+          </div>
+          <div class="field">
+            <label for="amt">Amount to send</label>
+            <div class="affix"><input class="input num" id="amt" type="text" inputmode="decimal" value="100,000"><span class="sfx">USDC</span></div>
+            <span class="hint">Pulled from the Chamber on Ethereum when the bundle executes.</span>
+          </div>
+          <div class="field">
+            <label for="minout">Min received on Base <span class="note">2</span></label>
+            <div class="affix"><input class="input num" id="minout" type="text" inputmode="decimal" value="99,900"><span class="sfx">USDC</span></div>
+            <span class="hint">Across fills exactly this amount or not at all. Max fee: 100 USDC (0.10%).</span>
+          </div>
+          <fieldset class="field seg">
+            <legend>Fill deadline <span class="note">3</span></legend>
+            <div class="chips">
+              <button type="button" aria-pressed="false">30 min</button>
+              <button type="button" aria-pressed="true">2 h</button>
+              <button type="button" aria-pressed="false">6 h</button>
+            </div>
+            <span class="hint">Counted from execution, not submission (fillDeadlineOffset 7,200 s). Checked against the SpokePool's fillDeadlineBuffer when you simulate.</span>
+          </fieldset>
+          <fieldset class="field seg">
+            <legend>Proposal deadline on Ethereum</legend>
+            <div class="chips">
+              <button type="button" aria-pressed="false">24 h</button>
+              <button type="button" aria-pressed="false">3 d</button>
+              <button type="button" aria-pressed="true">7 d</button>
+              <button type="button" aria-pressed="false">30 d</button>
+            </div>
+            <span class="hint num">Sep 28, 2027 11:00 UTC. If the board hasn't executed by then, the bundle can't run. Maximum 30 days.</span>
+          </fieldset>
+          <div class="field full">
+            <label for="rcpt">Recipient on Base <span class="note">4</span></label>
+            <div class="locked">
+              <input class="input mono" id="rcpt" type="text" value="Base spoke Safe · 0xBa5e…77a1" readonly>
+              <span class="badge acc">Locked</span>
+            </div>
+            <span class="hint">Bridge templates can only send to this board's registered spoke Safes, taken from the indexer's spoke_config. To pay someone on Base, propose a spoke action after the funds arrive.</span>
+          </div>
+          <div class="field">
+            <label for="msg">Calls on Base</label>
+            <input class="input mono" id="msg" type="text" value="None (message = 0x)" readonly>
+            <span class="hint">Funds only. Nothing runs on Base when the fill lands.</span>
+          </div>
+          <div class="field">
+            <label for="excl">Exclusive relayer</label>
+            <input class="input mono" id="excl" type="text" value="None" readonly>
+            <span class="hint">Any Across relayer can fill.</span>
+          </div>
+          <div class="field full">
+            <label for="ttl">Title (metadata)</label>
+            <input class="input" id="ttl" type="text" value="Move 100,000 USDC to the Base spoke via Across">
+            <span class="hint">Drafting help can fill in these typed fields. Directors confirm the decoded bundle below, not this title.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <h2>Bundle: 3 legs, one execution <span class="note">5</span></h2>
+          <span class="badge">Decoded from calldata</span>
+        </div>
+        <div class="decode" style="margin-bottom:12px">
+          <div class="sum">Bridge <b class="num">100,000 USDC</b> from Ethereum to Base spoke Safe <span class="mono">0xBa5e…77a1</span> via Across. It receives exactly <b class="num">99,900 USDC</b> if filled within 2 h of execution; otherwise the Chamber is refunded on Ethereum.</div>
+        </div>
+        <div class="banner warn" style="margin-bottom:12px">
+          <span class="ic">!</span>
+          <div><b>Funds leave Ethereum.</b> They stay under this board only because the recipient is a registered spoke Safe. After the fill, spending them takes a spoke proposal with its 72 h delay.</div>
+        </div>
+
+        <div class="legs">
+          <div class="decode">
+            <div class="leg-h"><span class="badge">Leg 1 of 3</span><span class="mono faint">nonce #62</span><span class="chain-cell"><i></i>Ethereum</span></div>
+            <div class="sum">Approve Across SpokePool <span class="mono">0x5c7B…35C5</span> to spend exactly <b class="num">100,000 USDC</b> for the Chamber.</div>
+            <dl>
+              <dt>target</dt><dd>USDC 0xA0b8…eB48</dd>
+              <dt>function</dt><dd>approve(address,uint256) · 0x095ea7b3</dd>
+              <dt>spender</dt><dd>Across SpokePool (Ethereum) 0x5c7B…35C5</dd>
+              <dt>amount</dt><dd class="num">100,000.000000 USDC (6 decimals)</dd>
+            </dl>
+          </div>
+
+          <div class="decode">
+            <div class="leg-h"><span class="badge">Leg 2 of 3</span><span class="mono faint">nonce #63</span><span class="chain-cell"><i></i>Ethereum</span><span class="badge info">Cross-chain</span></div>
+            <div class="sum">Deposit <b class="num">100,000 USDC</b> into Across for Base spoke Safe <span class="mono">0xBa5e…77a1</span> on Base (chain 8453).</div>
+            <dl>
+              <dt>target</dt><dd>Across SpokePool (Ethereum) 0x5c7B…35C5</dd>
+              <dt>function</dt><dd>depositNow(bytes32,bytes32,bytes32,bytes32,uint256,uint256,uint256,bytes32,uint32,uint32,bytes)</dd>
+              <dt>depositor</dt><dd>Loreum DAO Chamber 0x3F1c…A92e</dd>
+              <dt>recipient</dt><dd>Base spoke Safe 0xBa5e…77a1</dd>
+              <dt>inputToken</dt><dd>USDC (Ethereum) 0xA0b8…eB48</dd>
+              <dt>outputToken</dt><dd>USDC (Base) 0x8335…2913</dd>
+              <dt>inputAmount</dt><dd class="num">100,000.000000 USDC</dd>
+              <dt>outputAmount</dt><dd class="num">99,900.000000 USDC</dd>
+              <dt>destinationChainId</dt><dd>8453 (Base)</dd>
+              <dt>exclusiveRelayer</dt><dd>0x0000…0000 (none)</dd>
+              <dt>fillDeadlineOffset</dt><dd class="num">7,200 s after execution</dd>
+              <dt>exclusivityParameter</dt><dd>0</dd>
+              <dt>message</dt><dd>0x (empty)</dd>
+            </dl>
+          </div>
+
+          <div class="decode">
+            <div class="leg-h"><span class="badge">Leg 3 of 3</span><span class="mono faint">nonce #64</span><span class="chain-cell"><i></i>Ethereum</span></div>
+            <div class="sum">Revoke the allowance of Across SpokePool <span class="mono">0x5c7B…35C5</span> for the Chamber.</div>
+            <dl>
+              <dt>target</dt><dd>USDC 0xA0b8…eB48</dd>
+              <dt>function</dt><dd>approve(address,uint256) · 0x095ea7b3</dd>
+              <dt>spender</dt><dd>Across SpokePool (Ethereum) 0x5c7B…35C5</dd>
+              <dt>amount</dt><dd>0</dd>
+            </dl>
+          </div>
+        </div>
+
+        <dl class="kv" style="margin-top:14px">
+          <dt>Execute</dt><dd><span class="mono">executeBatchTransactions(tokenId, [62, 63, 64], legCalldata)</span>. One transaction: if any leg reverts, all three revert. Each leg's calldata is checked against its stored hash.</dd>
+          <dt>Integrity</dt><dd>Leg 3's metadata commits to keccak256(target, value, dataHash) for every leg (bundle <span class="mono">0x4be1…7a90</span>). The app checks it against the indexer's proposal rows before it shows "Confirm bundle".</dd>
+          <dt>Guard</dt><dd>The contract doesn't stop a director from executing leg 1 alone. The app hides per-leg Execute for bundle legs, and the watcher alerts on any USDC allowance left open.</dd>
+          <dt>Submit <span class="note">6</span></dt><dd>3 wallet prompts, one per leg, so each keeps its deadline and metadata. Confirm and execute are 1 prompt each.</dd>
+        </dl>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <h2>Why Across for this move <span class="note">7</span></h2>
+          <span class="muted" style="font-size:12.5px">Ethereum → Base, 100,000 USDC</span>
+        </div>
+        <div class="tbl-wrap">
+          <table class="t cmp">
+            <thead><tr><th></th><th class="sel">Across SpokePool (selected)</th><th>OP Standard Bridge (canonical)</th></tr></thead>
+            <tbody>
+              <tr><td>Arrives on Base</td><td class="sel">Usually seconds after execution, when a relayer fills; not guaranteed. Recent fills: 7 s (Base), 12 s (Arbitrum).</td><td>~1–3 min after execution</td></tr>
+              <tr><td>Token received</td><td class="sel">Native USDC</td><td>Bridged USDC (USDbC), which the spoke's Roles allowlist doesn't cover</td></tr>
+              <tr><td>Cost</td><td class="sel num">Up to 100 USDC, fixed at submit (quote now 31.50)</td><td>Ethereum gas only</td></tr>
+              <tr><td>If it goes wrong</td><td class="sel">No fill by the deadline: USDC refunded to the Chamber on Ethereum</td><td>Wrong L2 token: funds bounce back as a 7-day withdrawal that someone must prove and finalize</td></tr>
+              <tr><td>Back to Ethereum</td><td class="sel">Across from the spoke (Roles pair 3)</td><td>7-day withdrawal. Doesn't apply to this outbound move.</td></tr>
+              <tr><td>Who you rely on</td><td class="sel">Across relayers front their own funds, and Across settles with them later. Once filled, the funds are the spoke's.</td><td>Base's own bridge, the same trust as the messenger</td></tr>
+              <tr><td>In the app</td><td class="sel"><span class="badge ok">Available</span></td><td><span class="badge">Not offered yet</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <h2>Delivery tracking <span class="note">8</span></h2>
+          <span class="badge"><span class="dot" style="color:var(--ok)"></span>From indexer</span>
+        </div>
+        <p class="muted" style="font-size:13px;margin-bottom:14px">After execution, this bundle's status appears here and on the proposal card:</p>
+        <ol class="steps pending">
+          <li>Submitted<span class="when">#62–#64</span></li>
+          <li>Confirmed<span class="when">1 of 3 at submit</span></li>
+          <li>Executed<span class="when">on Ethereum</span></li>
+          <li>Deposit seen<span class="when">FundsDeposited</span></li>
+          <li>Filled on Base<span class="when">by exec + 2 h</span></li>
+        </ol>
+        <div class="row" style="margin-top:12px;gap:8px">
+          <span class="upper">Or ends as</span>
+          <span class="badge">Not executed by Sep 28 · nothing moves</span>
+          <span class="badge">No fill within 2 h · refunded to the Chamber</span>
+        </div>
+        <div class="divider"></div>
+        <h3 style="margin-bottom:8px">Recent bridge transfers</h3>
+        <div class="tbl-wrap">
+          <table class="t">
+            <thead><tr><th>Proposal</th><th>To</th><th class="r">Sent</th><th class="r">Received</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr><td>#55 <span class="faint num">Sep 7</span></td><td><span class="chain-cell arb"><i></i>Arbitrum spoke</span></td><td class="r num">95,095</td><td class="r num">95,000</td><td><span class="badge ok">Filled in 12 s</span></td></tr>
+              <tr><td>#52 <span class="faint num">Aug 3</span></td><td><span class="chain-cell base"><i></i>Base spoke</span></td><td class="r num">310,310</td><td class="r num">310,000</td><td><span class="badge ok">Filled in 7 s</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="hint" style="margin-top:10px">While a transfer is pending, the page refetches from the indexer every 15 s with the tab visible. The indexer asks Across for the status of pending rows only. The app makes no RPC calls for this.</p>
+      </div>
+    </div>
+
+    <div class="stack">
+      <div class="card raised">
+        <div class="card-h">
+          <h2>Fee quote <span class="note">2</span></h2>
+          <button class="btn sm" type="button">Refresh quote</button>
+        </div>
+        <p class="mono" style="font-size:11.5px;color:var(--t4)">Fetched from the Across API when you clicked Refresh quote, 11:00:12 UTC. For drafting only; it doesn't bind Across or the board.</p>
+        <dl class="fee" style="margin-top:10px">
+          <dt>Relayer capital and gas</dt><dd>14.20 USDC</dd>
+          <dt>LP fee</dt><dd>17.30 USDC</dd>
+          <dt class="tot">Quote now</dt><dd class="tot">31.50 USDC</dd>
+          <dt>Fee you commit to</dt><dd>100.00 USDC</dd>
+          <dt>Headroom</dt><dd style="color:var(--ok)">68.50 USDC</dd>
+        </dl>
+        <div class="banner warn" style="margin-top:12px">
+          <span class="ic">!</span>
+          <div>The 99,900 USDC output is fixed when you submit. The Chamber can't sign a speed-up, so the fee can't change later. If fees rise above 100 USDC before execution, nobody fills and the USDC is refunded after the deadline. If fees fall, the board still pays 100 USDC.</div>
+        </div>
+      </div>
+
+      <div class="card raised">
+        <div class="card-h">
+          <h2>Simulation <span class="note">9</span></h2>
+          <span class="badge ok">Passed</span>
+        </div>
+        <p class="mono" style="font-size:12px;color:var(--info)">Simulated at block 28,544,104 via RPC just now · 11:00:31 UTC</p>
+        <p class="hint" style="margin-top:4px">3 calls run in order as the Chamber (eth_simulateV1). Base checks used an on-demand Base client.</p>
+        <ul class="checks" style="margin-top:6px">
+          <li><span class="st pass">✓</span><div>All 3 legs succeed in order</div><span></span></li>
+          <li><span class="st pass">✓</span><div>Allowance ends at 0<div class="hint">Leg 3 revokes; nothing is left open</div></div><span></span></li>
+          <li><span class="st pass">✓</span><div>Recipient is a Safe on Base<div class="hint">0xBa5e…77a1 has code · Safe v1.4.1</div></div><span></span></li>
+          <li><span class="st pass">✓</span><div>Recipient is a registered spoke<div class="hint">spoke_config, from indexer</div></div><span></span></li>
+          <li><span class="st pass">✓</span><div>Fill deadline within buffer<div class="hint">7,200 s ≤ SpokePool fillDeadlineBuffer, read via RPC in this run</div></div><span></span></li>
+          <li><span class="st pass">✓</span><div>Deadline within 30 days<div class="hint num">Sep 28, 2027 11:00 UTC</div></div><span></span></li>
+          <li><span class="st wait">!</span><div>Fee can drift before execution<div class="hint num">68.50 USDC headroom today</div></div><span></span></li>
+        </ul>
+        <div class="diff" style="margin-top:12px">
+          <span class="minus">− Chamber USDC   2,410,000 → 2,310,000</span>
+          <span class="plus">+ FundsDeposited   out 99,900 → 8453</span>
+          <span>  SpokePool allowance   0 → 0</span>
+        </div>
+        <p class="hint" style="margin-top:10px">Not simulated: the fill itself. A relayer fills on Base with its own funds after execution.</p>
+        <div class="divider"></div>
+        <span class="upper">You submit as</span>
+        <div class="auth compact" style="margin-top:6px">
+          <div class="node seat"><span class="k">Seat</span><span class="v">Explorer #44</span></div>
+          <div class="node"><span class="k">Owner</span><span class="v">lena.eth · EOA</span></div>
+          <div class="node key"><span class="k">Signed by</span><span class="v">Owner</span></div>
+        </div>
+        <button class="btn primary" type="button" style="width:100%;margin-top:12px">Submit bundle #62–#64 (3 prompts)</button>
+        <div class="row" style="margin-top:8px">
+          <button class="btn" type="button">Re-run simulation</button>
+          <button class="btn ghost" type="button">Save draft</button>
+        </div>
+        <p class="hint" style="margin-top:8px">Submitting counts as your confirmation on each leg. Two more directors need to confirm the bundle before anyone can execute it.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><h2>After this bundle</h2></div>
+        <dl class="kv">
+          <dt><span class="chain-cell"><i></i>Ethereum</span></dt><dd class="num">2,410,000 → 2,310,000 USDC</dd>
+          <dt><span class="chain-cell base"><i></i>Base spoke</span></dt><dd class="num">310,000 → 409,900 USDC</dd>
+        </dl>
+        <p class="hint" style="margin-top:8px">Base shows the result once filled. Queued #61 would take 50,000 of that when it executes.</p>
+      </div>
+    </div>
+  </div>
+
+  <section class="notes">
+    <h3>Design notes</h3>
+    <ol>
+      <li><b>Across first, behind a decision.</b> The route order follows P-10 and the P-11 review note: Across first (native USDC, refunds on expiry, no retryable or fee math), with canonical routes only if approved. Whether any of this starts before the Phase 2 gate is P-31's call, so the ribbon says so. The template calls <code>SpokePool.depositNow</code> directly: Across's own SpokePool source marks ERC-7683 v1 as deprecated, and its quote buffer is 1 hour, so a plain <code>deposit</code> with a draft-time quoteTimestamp would revert after a normal approval period. depositNow stamps the quote time at execution (P-10 research).</li>
+      <li><b>Min received is the real commitment.</b> depositNow fixes outputAmount at submit, and speedUpDeposit needs a depositor signature the Chamber can't give (no ERC-1271, per the P-10 review note). The quote comes from the Across API only when the director drafts or clicks Refresh (P-12, acrossQuote.ts is user-triggered), and the page says plainly that it isn't signed. The fee-drift tradeoff is spelled out both ways.</li>
+      <li><b>Fill deadline is relative to execution.</b> The template uses fillDeadlineOffset, so time spent in approval doesn't eat the fill window. fillDeadlineBuffer is a per-deployment immutable, so the simulation reads it from the SpokePool instead of hardcoding it (P-10 correction a). That read happens only inside the user-triggered simulation, which keeps draft-time RPC at zero.</li>
+      <li><b>Recipient is locked.</b> This proposes an answer to phase 2 open question 2: an allowlist of only this board's registered spoke Safes, read from the indexer's spoke_config. "Move any asset anywhere" isn't a feature. Paying an outside party on Base is a separate spoke action with its own delay.</li>
+      <li><b>Exact approve, deposit, revoke, all atomic.</b> Each nonce is one call, so an ERC-20 bridge needs approve then deposit (P-13). executeBatchTransactions (Chamber.sol:797) makes the three legs atomic. The revoke leg protects against an upgradeable spender pulling less than approved (P-10 threat section). Metadata is director-written and untrusted, so the final leg commits to every leg's hash and the app verifies that commitment against indexer rows (P-13 review note). The UI states that the contract can't enforce bundle-only execution.</li>
+      <li><b>Submission tradeoff.</b> This shows n prompts through the deadline overload (P-28), which keeps the deadline and metadata. The alternative, one prompt through submitBatchTransactions, gives a 30-day default deadline and no metadata (phase 2 open question 3).</li>
+      <li><b>Canonical bridge comparison, honestly.</b> For Ethereum → Base the canonical route delivers in about 1–3 minutes. Its 7-day delay applies only to withdrawals back to Ethereum, which the table says doesn't apply here. The deciding difference is the token: the standard bridge gives bridged USDC, and a wrong L2 token bounces back as a 7-day withdrawal (P-10). No "seconds for everything" claim: Across is fast only because relayers front their own capital.</li>
+      <li><b>Tracking without RPC.</b> Status comes from the indexer's <code>bridge_transfer</code> table. It decodes FundsDeposited from the execute receipt, and a sidecar asks the Across status API only while a row is pending (P-16). The card refetches GraphQL only while a row is pending and the tab is visible (P-17), so idle spokes cost nothing.</li>
+      <li><b>Simulation runs at transaction time only.</b> It runs the bundle in order as the Chamber, plus destination checks through an on-demand Base client that is never registered as a wagmi chain (P-15, P-29). The panel names the block and says it used RPC. The fill itself can't be simulated, and the panel says that too. The #260 decoder is chain-aware and uses 6 decimals for USDC (P-14), and cross-chain targets get the P-30 warning.</li>
+    </ol>
+  </section>
+</main>
+<footer class="foot">Mockup only. Addresses marked illustrative in the mock data are placeholders; token and bridge addresses are shortened public mainnet contracts. Loreum is the protocol; Chamber is the governance contract.</footer>
+</body>
+</html>

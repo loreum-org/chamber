@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trust and status · loreum.org/trust mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bellefair&family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@300;400;600&display=swap">
+<link rel="stylesheet" href="assets/app.css">
+<style>
+/* loreum.org/trust: same family as the landing (space navy, Bellefair
+   headings) but built as a dense, sober status page. app.css is linked only
+   for .mock-bar, .note/.notes and .tbl-wrap. */
+:root {
+  --sp9: #0b0d17; --sp8: #151932; --sp7: #1c2142; --spa: #d0d6f9;
+  --tt1: #ffffff; --tt2: #d6d9e8; --tt3: #9aa0b8; --tt4: #6b7190;
+  --tl: rgba(255, 255, 255, 0.08); --tl2: rgba(255, 255, 255, 0.15);
+  --tok: #34d399; --twarn: #fbbf24; --tbad: #f87171; --tinfo: #7dd3fc;
+  --tdisp: "Bellefair", Georgia, serif;
+  --tsans: Inter, "IBM Plex Sans", system-ui, sans-serif;
+  --tmono: "IBM Plex Mono", Menlo, monospace;
+}
+body.tr { margin: 0; background: var(--sp9); background-image: radial-gradient(900px 500px at 85% -10%, rgba(30, 58, 138, 0.28), transparent 65%), radial-gradient(700px 500px at -10% 40%, rgba(88, 28, 135, 0.14), transparent 60%); background-attachment: fixed; color: var(--tt1); font-family: var(--tsans); font-weight: 400; font-size: 15px; line-height: 1.6; overflow-x: clip; }
+b, strong { font-weight: 600; }
+.tr a { color: var(--spa); text-decoration: none; }
+.tr a:hover { color: #fff; }
+.tr :focus-visible { outline: 2px solid var(--spa); outline-offset: 3px; border-radius: 4px; }
+.tr h1, .tr h2, .tr h3, .tr h4 { margin: 0; font-weight: 400; }
+.tr p { margin: 0; }
+.num { font-variant-numeric: tabular-nums; }
+.t-mono { font-family: var(--tmono); font-size: 0.86em; }
+.t-muted { color: var(--tt3); }
+.t-faint { color: var(--tt4); }
+.t-wrap { max-width: 1240px; margin: 0 auto; padding: 0 24px; }
+
+/* Nav (shared with the landing) */
+.t-nav { position: sticky; top: 0; z-index: 30; background: rgba(11, 13, 23, 0.78); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom: 1px solid var(--tl); }
+.t-nav-in { display: flex; align-items: center; justify-content: space-between; gap: 18px; height: 68px; }
+.t-logo { display: flex; align-items: center; gap: 10px; color: #fff !important; }
+.t-logo svg { width: 26px; height: 26px; }
+.t-logo span { font-family: var(--tdisp); font-size: 22px; letter-spacing: 0.14em; }
+.t-links { display: flex; gap: 26px; font-size: 12.5px; letter-spacing: 0.14em; }
+.t-links a { color: var(--tt2); white-space: nowrap; }
+.t-links a.on { color: #fff; border-bottom: 1px solid var(--spa); padding-bottom: 3px; }
+.t-pill { display: inline-flex; align-items: center; border: 1px solid var(--tl2); padding: 8px 18px; border-radius: 999px; font-size: 12.5px; letter-spacing: 0.14em; color: #fff !important; white-space: nowrap; }
+
+/* Header */
+.t-head { padding: 64px 0 36px; display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 36px; align-items: end; }
+.t-eyebrow { font-family: var(--tmono); font-size: 12px; color: var(--spa); letter-spacing: 0.04em; }
+.t-head h1 { font-family: var(--tdisp); font-size: clamp(2.6rem, 6vw, 4.4rem); line-height: 1; margin-top: 14px !important; }
+.t-head .lede { margin-top: 18px !important; max-width: 38em; color: var(--tt3); font-size: 17px; font-weight: 300; }
+.t-overall { border: 1px solid rgba(52, 211, 153, 0.35); background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(21, 25, 50, 0.7)); border-radius: 16px; padding: 20px 22px; display: grid; gap: 10px; }
+.t-overall .big { display: flex; align-items: center; gap: 12px; font-size: 20px; font-weight: 600; }
+.t-overall .big i { width: 12px; height: 12px; border-radius: 50%; background: var(--tok); box-shadow: 0 0 0 5px rgba(52, 211, 153, 0.18); }
+.t-overall dl { margin: 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 14px; font-size: 13px; }
+.t-overall dt { color: var(--tt4); }
+.t-overall dd { margin: 0; color: var(--tt2); font-family: var(--tmono); font-size: 12.5px; }
+
+/* Layout with section index */
+.t-layout { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 40px; padding-bottom: 40px; }
+.t-toc { position: sticky; top: 92px; align-self: start; display: flex; flex-direction: column; gap: 2px; font-size: 13.5px; }
+.t-toc .h { font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--tt4); margin-bottom: 8px; }
+.t-toc a { color: var(--tt3); padding: 6px 10px; border-left: 1px solid var(--tl); }
+.t-toc a:hover, .t-toc a.on { color: #fff; border-left-color: var(--spa); background: rgba(208, 214, 249, 0.05); }
+.t-main { display: flex; flex-direction: column; gap: 56px; min-width: 0; }
+.t-sec { scroll-margin-top: 90px; }
+.t-sec-h { display: flex; justify-content: space-between; align-items: flex-end; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; padding-bottom: 12px; border-bottom: 1px solid var(--tl); }
+.t-sec-h h2 { font-family: var(--tdisp); font-size: 34px; line-height: 1.1; }
+.t-sec-h p { color: var(--tt3); font-size: 14px; margin-top: 4px !important; max-width: 46em; }
+.t-src { display: inline-flex; align-items: center; gap: 7px; font-family: var(--tmono); font-size: 11.5px; color: var(--tt3); padding: 4px 10px; border-radius: 999px; border: 1px solid var(--tl); white-space: nowrap; }
+.t-src i { width: 6px; height: 6px; border-radius: 50%; background: var(--tok); display: inline-block; }
+
+.t-card { border: 1px solid var(--tl); border-radius: 14px; background: rgba(21, 25, 50, 0.6); padding: 20px; }
+.t-grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.t-lbl { font-size: 10.5px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--tt4); font-weight: 600; }
+.t-tag { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 5px; font-size: 11px; font-weight: 600; border: 1px solid var(--tl2); color: var(--tt2); background: rgba(255, 255, 255, 0.04); white-space: nowrap; }
+.t-tag.ok { color: var(--tok); border-color: rgba(52, 211, 153, 0.35); background: rgba(16, 185, 129, 0.1); }
+.t-tag.warn { color: var(--twarn); border-color: rgba(251, 191, 36, 0.35); background: rgba(245, 158, 11, 0.1); }
+.t-tag.bad { color: var(--tbad); border-color: rgba(248, 113, 113, 0.35); background: rgba(239, 68, 68, 0.1); }
+.t-tag.info { color: var(--tinfo); border-color: rgba(125, 211, 252, 0.35); background: rgba(56, 189, 248, 0.08); }
+.t-tag.real { color: #c7d2fe; border-color: rgba(165, 180, 252, 0.35); background: rgba(99, 102, 241, 0.1); }
+.t-tag.ill { color: var(--tt3); border-style: dashed; }
+.t-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; background: currentColor; flex: none; }
+
+/* Status components */
+.t-comp { list-style: none; margin: 0; padding: 0; border: 1px solid var(--tl); border-radius: 14px; overflow: hidden; }
+.t-comp li { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.6fr) 118px; gap: 16px; align-items: center; padding: 14px 18px; background: rgba(21, 25, 50, 0.5); }
+.t-comp li > .t-tag { justify-self: end; }
+.t-comp li + li { border-top: 1px solid var(--tl); }
+.t-comp .nm { font-weight: 600; font-size: 14.5px; }
+.t-comp .nm small { display: block; font-weight: 400; font-size: 12px; color: var(--tt4); }
+.t-comp .dt { font-size: 13px; color: var(--tt3); font-family: var(--tmono); overflow-wrap: anywhere; }
+.t-comp li.off { background: rgba(21, 25, 50, 0.25); }
+.t-hist { margin-top: 16px; padding: 18px; border: 1px solid var(--tl); border-radius: 14px; background: rgba(21, 25, 50, 0.5); }
+.t-hist-h { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 13px; }
+.t-bars { display: flex; gap: 2px; height: 34px; margin-top: 12px; align-items: stretch; }
+.t-bars i { flex: 1 1 0; min-width: 0; border-radius: 2px; background: rgba(52, 211, 153, 0.7); display: block; }
+.t-bars i.w { background: var(--twarn); }
+.t-bars-f { display: flex; justify-content: space-between; margin-top: 8px; font-size: 11.5px; color: var(--tt4); font-family: var(--tmono); }
+.t-thr { margin-top: 14px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; font-size: 12.5px; color: var(--tt3); }
+.t-thr div { padding: 10px 12px; border-radius: 10px; border: 1px solid var(--tl); background: rgba(11, 13, 23, 0.45); }
+.t-thr b { display: flex; align-items: center; gap: 7px; color: var(--tt1); font-size: 13px; margin-bottom: 2px; }
+
+/* Powers */
+.t-powers { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.t-powers .t-card h3 { font-family: var(--tsans); font-size: 12px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; display: flex; align-items: center; gap: 8px; }
+.t-powers ul { list-style: none; margin: 14px 0 0; padding: 0; display: flex; flex-direction: column; }
+.t-powers li { padding: 12px 0; border-top: 1px solid var(--tl); display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 10px; }
+.t-powers li .mk { font-family: var(--tmono); font-size: 10.5px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding-top: 3px; }
+.t-powers .cant .mk { color: var(--tok); }
+.t-powers .can .mk { color: var(--twarn); }
+.t-powers li b { font-size: 14.5px; font-weight: 600; display: block; }
+.t-powers li span.how { display: block; font-size: 13px; color: var(--tt3); margin-top: 2px; }
+.t-powers .cant { border-color: rgba(52, 211, 153, 0.25); }
+.t-powers .can { border-color: rgba(251, 191, 36, 0.22); }
+
+/* Authority chain, trust-page variant */
+.t-auth { display: flex; flex-wrap: wrap; gap: 0; }
+.t-auth .n { position: relative; flex: 1 1 160px; min-width: 0; padding: 12px 14px 12px 22px; background: rgba(11, 13, 23, 0.65); border: 1px solid var(--tl2); display: flex; flex-direction: column; gap: 2px; }
+.t-auth .n:first-child { border-radius: 10px 0 0 10px; padding-left: 14px; }
+.t-auth .n:last-child { border-radius: 0 10px 10px 0; }
+.t-auth .n + .n { border-left: 0; }
+.t-auth .n + .n::before { content: ""; position: absolute; left: -6px; top: 50%; width: 10px; height: 10px; margin-top: -5px; background: #0e1122; border-top: 1px solid var(--spa); border-right: 1px solid var(--spa); transform: rotate(45deg); }
+.t-auth .n.core { background: rgba(74, 47, 143, 0.26); border-color: rgba(166, 133, 245, 0.45); }
+.t-auth .n.guard { background: rgba(251, 191, 36, 0.06); border-color: rgba(251, 191, 36, 0.35); }
+.t-auth .k { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--tt4); font-weight: 600; }
+.t-auth .v { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.t-auth .s { font-size: 12px; color: var(--tt3); }
+.t-supply-top { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 1.2fr); gap: 12px; align-items: stretch; }
+.t-guard { display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border-radius: 10px; border: 1px dashed rgba(251, 191, 36, 0.5); background: rgba(251, 191, 36, 0.06); }
+.t-guard .k { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: #fde68a; font-weight: 600; }
+.t-guard .v { font-size: 14px; font-weight: 600; }
+.t-guard .s { font-size: 12px; color: var(--tt3); }
+.t-kv { margin: 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 7px 18px; font-size: 13.5px; }
+.t-kv dt { color: var(--tt4); }
+.t-kv dd { margin: 0; color: var(--tt2); overflow-wrap: anywhere; }
+.t-meter { height: 10px; border-radius: 5px; background: rgba(255, 255, 255, 0.07); overflow: hidden; display: flex; margin-top: 10px; }
+.t-meter span { display: block; height: 100%; }
+.t-meter .ex { background: var(--spa); }
+.t-meter .qd { background: repeating-linear-gradient(135deg, #fbbf24 0 6px, rgba(251, 191, 36, 0.55) 6px 12px); }
+.t-legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--tt3); margin-top: 8px; }
+.t-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+.t-bign { font-family: var(--tdisp); font-size: 38px; line-height: 1; font-variant-numeric: tabular-nums; }
+
+/* Tables */
+table.tt { width: 100%; min-width: 760px; border-collapse: collapse; font-size: 13.5px; }
+table.tt th { text-align: left; padding: 10px 12px; font-size: 10.5px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--tt4); border-bottom: 1px solid var(--tl); white-space: nowrap; }
+table.tt td { padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); vertical-align: top; }
+table.tt tr:last-child td { border-bottom: 0; }
+table.tt td.nm { font-weight: 600; white-space: nowrap; }
+table.tt td.num { white-space: nowrap; }
+table.tt td.nm small { display: block; font-weight: 400; color: var(--tt4); font-size: 11.5px; }
+.t-addr { font-family: var(--tmono); font-size: 12px; color: var(--tt1); user-select: all; -webkit-user-select: all; word-break: break-all; }
+.t-copy { margin-left: 6px; font: 600 11px/1 var(--tsans); padding: 4px 8px; border-radius: 6px; border: 1px solid var(--tl2); background: rgba(255, 255, 255, 0.04); color: var(--tt2); cursor: pointer; vertical-align: 1px; }
+.t-copy:hover { background: rgba(255, 255, 255, 0.1); }
+.t-tblcard { border: 1px solid var(--tl); border-radius: 14px; background: rgba(21, 25, 50, 0.5); overflow: hidden; }
+
+/* Audit and bounty */
+.t-ph { font-family: var(--tmono); font-size: 13px; padding: 10px 12px; border-radius: 8px; border: 1px dashed rgba(251, 191, 36, 0.45); color: #fde68a; background: rgba(251, 191, 36, 0.05); }
+.t-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; font-size: 13.5px; color: var(--tt2); }
+.t-list li { display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: 8px; }
+.t-list li::before { content: "+"; font-family: var(--tmono); color: var(--tok); }
+.t-list.out li::before { content: "\2013"; color: var(--tt4); }
+.t-btn { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 0 16px; border: 1px solid var(--tl2); font: 600 12px/1 var(--tsans); letter-spacing: 0.14em; text-transform: uppercase; color: #fff !important; transition: background 0.2s; white-space: nowrap; }
+.t-btn:hover { background: rgba(255, 255, 255, 0.07); }
+.t-btn.solid { background: #fff; color: var(--sp9) !important; border-color: #fff; }
+.t-btn.solid:hover { background: var(--spa); }
+.t-contact { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 16px; }
+.t-email { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+.t-email code { font-family: var(--tmono); font-size: 18px; color: #fff; padding: 8px 12px; border-radius: 8px; background: rgba(11, 13, 23, 0.7); border: 1px solid var(--tl2); user-select: all; -webkit-user-select: all; }
+
+/* Alerts */
+.t-filter { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.t-filter button { font: 600 12px/1 var(--tsans); padding: 7px 12px; border-radius: 999px; border: 1px solid var(--tl2); background: transparent; color: var(--tt3); cursor: pointer; }
+.t-filter button[aria-pressed="true"] { background: rgba(208, 214, 249, 0.12); color: #fff; border-color: rgba(208, 214, 249, 0.45); }
+.t-feed { list-style: none; margin: 0; padding: 0; border: 1px solid var(--tl); border-radius: 14px; overflow: hidden; }
+.t-feed li { display: grid; grid-template-columns: 118px minmax(0, 1fr) auto; gap: 16px; padding: 14px 18px; background: rgba(21, 25, 50, 0.5); align-items: start; }
+.t-feed li + li { border-top: 1px solid var(--tl); }
+.t-feed li[hidden] { display: none; }
+.t-feed .when { font-family: var(--tmono); font-size: 12px; color: var(--tt3); }
+.t-feed .what b { display: block; font-size: 14.5px; }
+.t-feed .what span { display: block; font-size: 13px; color: var(--tt3); margin-top: 2px; }
+.t-feed li.steady { background: rgba(21, 25, 50, 0.25); }
+.t-chan { margin-top: 12px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; font-size: 13px; }
+.t-chan div { padding: 12px 14px; border: 1px solid var(--tl); border-radius: 10px; background: rgba(11, 13, 23, 0.4); color: var(--tt3); }
+.t-chan b { display: block; color: var(--tt1); font-size: 13.5px; }
+
+/* Limits */
+.t-limits { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; counter-reset: lim; }
+.t-limits li { padding: 16px 18px; border: 1px solid var(--tl); border-radius: 12px; background: rgba(21, 25, 50, 0.45); font-size: 13.5px; color: var(--tt3); }
+.t-limits li b { display: block; color: var(--tt1); font-size: 14.5px; margin-bottom: 4px; }
+
+/* Footer */
+.t-foot { border-top: 1px solid rgba(255, 255, 255, 0.1); margin-top: 40px; padding: 40px 0 30px; }
+.t-foot-in { display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap; font-size: 13.5px; color: var(--tt3); }
+.t-foot-in nav { display: flex; gap: 20px; flex-wrap: wrap; }
+.t-foot-in nav a { color: var(--tt3); }
+.t-legal { margin-top: 24px; font-size: 12px; letter-spacing: 0.08em; color: var(--tt4); }
+
+@media (max-width: 1060px) {
+  .t-links { display: none; }
+  .t-head { grid-template-columns: minmax(0, 1fr); }
+  .t-layout { grid-template-columns: minmax(0, 1fr); }
+  .t-toc { position: static; flex-direction: row; overflow-x: auto; gap: 6px; padding-bottom: 6px; }
+  .t-toc .h { display: none; }
+  .t-toc a { border: 1px solid var(--tl); border-radius: 999px; padding: 6px 12px; white-space: nowrap; }
+}
+@media (max-width: 760px) {
+  .t-wrap { padding: 0 16px; }
+  .t-head { padding-top: 40px; }
+  .t-grid2, .t-powers, .t-contact, .t-limits, .t-supply-top { grid-template-columns: minmax(0, 1fr); }
+  .t-comp li { grid-template-columns: minmax(0, 1fr) auto; }
+  .t-comp .dt { grid-column: 1 / -1; grid-row: 2; }
+  .t-thr, .t-chan { grid-template-columns: minmax(0, 1fr); }
+  .t-feed li { grid-template-columns: minmax(0, 1fr) auto; }
+  .t-feed .what { grid-column: 1 / -1; grid-row: 2; }
+  .t-auth { flex-direction: column; }
+  .t-auth .n, .t-auth .n:first-child { flex: none; border-radius: 0; padding-left: 14px; }
+  .t-auth .n:first-child { border-radius: 10px 10px 0 0; }
+  .t-auth .n:last-child { border-radius: 0 0 10px 10px; }
+  .t-auth .n + .n { border-left: 1px solid var(--tl2); border-top: 0; }
+  .t-auth .n + .n::before { left: 50%; top: -6px; margin-top: 0; margin-left: -5px; transform: rotate(135deg); }
+  .t-sec-h h2 { font-size: 28px; }
+}
+</style>
+</head>
+<body class="tr">
+<div class="mock-bar">
+  <span><b>MOCKUP</b> · loreum.org/trust · state as of Mar 16, 2027 14:20 UTC</span>
+  <span><a href="index.html">All mockups</a> · <a href="_mock-data.md">Mock data</a></span>
+</div>
+
+<header class="t-nav">
+  <div class="t-wrap t-nav-in">
+    <a class="t-logo" href="eco-landing.html" aria-label="Loreum home">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="13" fill="none" stroke="#d0d6f9" stroke-width="1.2"/><circle cx="16" cy="16" r="5.5" fill="#ffffff"/><circle cx="16" cy="3" r="2" fill="#d0d6f9"/></svg>
+      <span>LOREUM</span>
+    </a>
+    <nav class="t-links" aria-label="Main">
+      <a href="eco-landing.html#how">HOW IT WORKS</a>
+      <a href="eco-landing.html#ai">AI DIRECTORS</a>
+      <a href="eco-landing.html#supply">LORE SUPPLY</a>
+      <a href="eco-trust.html" class="on" aria-current="page">TRUST</a>
+      <a href="eco-explorers.html">EXPLORERS</a>
+      <a href="#">BLOG</a>
+    </nav>
+    <a class="t-pill" href="app-overview.html">OPEN APP</a>
+  </div>
+</header>
+
+<main class="t-wrap">
+  <div class="t-head">
+    <div>
+      <p class="t-eyebrow">loreum.org/trust</p>
+      <h1>Trust and status</h1>
+      <p class="lede">What's deployed, who controls it, and what's happening right now. Every live value on this page comes from chamber-indexer, and the page makes no calls to the chain. If the indexer falls behind, this page says so. <span class="note">1</span></p>
+    </div>
+    <div class="t-overall" role="status" aria-label="Overall status">
+      <span class="big"><i></i>All systems operational</span>
+      <dl>
+        <dt>Indexed</dt><dd>24 s ago · block 27,184,300</dd>
+        <dt>Ethereum head</dt><dd>27,184,302 (2 blocks behind)</dd>
+        <dt>Open alerts</dt><dd>1 · LORE mint op #3 is queued</dd>
+      </dl>
+    </div>
+  </div>
+
+  <div class="t-layout">
+    <nav class="t-toc" aria-label="On this page">
+      <span class="h">On this page</span>
+      <a href="eco-trust.html#status" class="on">System status</a>
+      <a href="eco-trust.html#powers">What the team can do</a>
+      <a href="eco-trust.html#supply">LORE supply</a>
+      <a href="eco-trust.html#contracts">Contracts</a>
+      <a href="eco-trust.html#audit">Audit and bounty</a>
+      <a href="eco-trust.html#report">Report a vulnerability</a>
+      <a href="eco-trust.html#alerts">Alerts</a>
+      <a href="eco-trust.html#limits">Known limits</a>
+    </nav>
+
+    <div class="t-main">
+      <!-- ============ STATUS ============ -->
+      <section id="status" class="t-sec" aria-labelledby="status-h">
+        <div class="t-sec-h">
+          <div><h2 id="status-h">System status <span class="note">2</span></h2><p>The contracts don't depend on any of these services. If one stops, Chambers keep working and you can act from any wallet or Etherscan.</p></div>
+          <span class="t-src"><i></i>Indexed 24 s ago</span>
+        </div>
+        <ul class="t-comp">
+          <li><span class="nm">Ethereum indexer<small>chamber-indexer · mainnet</small></span><span class="dt">head 27,184,302 · indexed 27,184,300 · 2 blocks behind</span><span class="t-tag ok"><span class="t-dot"></span>Operational</span></li>
+          <li><span class="nm">GraphQL API<small>what the app and this page read</small></span><span class="dt">p95 180 ms over the last hour</span><span class="t-tag ok"><span class="t-dot"></span>Operational</span></li>
+          <li><span class="nm">Watcher<small>indexer-driven alerts</small></span><span class="dt">last hourly check 14:00 UTC · weekly heartbeat Mon Mar 15 09:00</span><span class="t-tag ok"><span class="t-dot"></span>Running</span></li>
+          <li><span class="nm">Independent alerts<small>no indexer dependency</small></span><span class="dt">Etherscan and Tenderly rules on LORE, LoreMintGate and the Team Safe</span><span class="t-tag ok"><span class="t-dot"></span>Active</span></li>
+          <li><span class="nm">app.loreum.org<small>Loreum app</small></span><span class="dt">reads from the indexer; talks to the chain only when you sign</span><span class="t-tag ok"><span class="t-dot"></span>Operational</span></li>
+          <li class="off"><span class="nm">Base, Arbitrum<small>spokes</small></span><span class="dt">no spokes exist; multichain is gated on demand</span><span class="t-tag">Not indexed</span></li>
+        </ul>
+        <div class="t-hist">
+          <div class="t-hist-h"><b>Ethereum indexer, last 90 days</b><span class="t-muted">0 outages · 1 lag incident (12 min)</span></div>
+          <div class="t-bars" id="bars" role="img" aria-label="90 days of indexer status: healthy every day except Mar 14, 2027, when it lagged for 12 minutes"></div>
+          <div class="t-bars-f"><span>Dec 17, 2026</span><span>Today</span></div>
+          <div class="t-thr">
+            <div><b><span class="t-dot" style="color:var(--tok)"></span>Healthy</b>30 blocks behind or fewer (about 6 minutes)</div>
+            <div><b><span class="t-dot" style="color:var(--twarn)"></span>Lagging</b>More than 30 blocks behind. Pages show a banner with the lag.</div>
+            <div><b><span class="t-dot" style="color:var(--tbad)"></span>Down</b>API unreachable or head stopped. Pages show the last known state and say since when.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ POWERS ============ -->
+      <section id="powers" class="t-sec" aria-labelledby="powers-h">
+        <div class="t-sec-h">
+          <div><h2 id="powers-h">What the Loreum team can and can't do <span class="note">3</span></h2><p>The team acts through one Safe, 4-of-7, with hardware keys. Each line says what enforces it, so you can check it yourself.</p></div>
+        </div>
+        <div class="t-powers">
+          <div class="t-card cant">
+            <h3><span class="t-dot" style="color:var(--tok)"></span>The team can't</h3>
+            <ul>
+              <li><span class="mk">Can't</span><span><b>Mint LORE</b><span class="how">LORE's owner is LoreMintGate. Only the Loreum DAO Chamber can queue a mint, by board quorum, and each waits 7 days.</span></span></li>
+              <li><span class="mk">Can't</span><span><b>Move funds out of any Chamber</b><span class="how">Only a quorum of that Chamber's seated directors can execute its transactions. Being a Team Safe signer gives no seat.</span></span></li>
+              <li><span class="mk">Can't</span><span><b>Upgrade or pause an existing Chamber</b><span class="how">Each Chamber owns its own ProxyAdmin, so upgrades are that Chamber's own quorum transactions, like Loreum DAO #48.</span></span></li>
+              <li><span class="mk">Can't</span><span><b>Take LORE back from the gate</b><span class="how">Moving LORE's ownership off the gate, renouncing it, or changing the gate's proposer or guardian needs a Chamber proposal, guardian approval and a 30-day wait.</span></span></li>
+              <li><span class="mk">Can't</span><span><b>Seat or remove directors</b><span class="how">Seats follow delegation. The team can only delegate its own LORE, like any holder.</span></span></li>
+            </ul>
+          </div>
+          <div class="t-card can">
+            <h3><span class="t-dot" style="color:var(--twarn)"></span>The team can, in public</h3>
+            <ul>
+              <li><span class="mk">Can</span><span><b>Change what new Chambers are created from</b><span class="how">The Factory's owner is a TimelockController with a 48-hour delay. The Team Safe proposes and executes, so every change is visible for 48 hours first. Existing Chambers aren't affected.</span></span></li>
+              <li><span class="mk">Can</span><span><b>Change the Explorers mint price</b><span class="how">The Team Safe owns the Explorers NFT contract. The mint page re-checks the price right before you sign.</span></span></li>
+              <li><span class="mk">Can</span><span><b>Influence who is seated in Loreum DAO</b><span class="how">The Team Safe is a large LORE holder, and its delegation counts like anyone's. That's why no guardian signer is a team signer.</span></span></li>
+              <li><span class="mk">Can</span><span><b>Run the app, indexer and watcher</b><span class="how">If they stop, contracts keep working. This page and the app show the last known state and say so.</span></span></li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ SUPPLY ============ -->
+      <section id="supply" class="t-sec" aria-labelledby="supply-h">
+        <div class="t-sec-h">
+          <div><h2 id="supply-h">LORE supply authority <span class="note">4</span></h2><p>Who can create LORE, and every gate operation: queued, executed or cancelled.</p></div>
+          <span class="t-src"><i></i>From chamber-indexer · 24 s ago</span>
+        </div>
+        <div class="t-card">
+          <div class="t-supply-top">
+            <div class="t-auth" role="group" aria-label="LORE supply authority chain">
+              <div class="n"><span class="k">Token</span><span class="v">LORE</span><span class="s">Max 100,000,000</span></div>
+              <div class="n core"><span class="k">Owner</span><span class="v">LoreMintGate</span><span class="s">Queue, delay, cap</span></div>
+              <div class="n"><span class="k">Only proposer</span><span class="v">Loreum DAO Chamber</span><span class="s">Board quorum, 3 of 5</span></div>
+            </div>
+            <div class="t-guard"><span class="k">Guardian · can't mint</span><span class="v">Loreum Guardian Safe, 3-of-5</span><span class="s">Can cancel any queued op and must approve exits. Can't mint or propose.</span></div>
+          </div>
+          <div class="t-grid2" style="margin-top:18px">
+            <dl class="t-kv">
+              <dt>Delay</dt><dd>7 days after queueing</dd>
+              <dt>Window</dt><dd>14 days to execute, then it expires</dd>
+              <dt>Cap</dt><dd>1,000,000 LORE per quarter (1% of max supply)</dd>
+              <dt>Exits</dt><dd>Chamber proposal + guardian approval + 30 days</dd>
+              <dt>Guardian signers</dt><dd>Not Team Safe signers, directors or large LORE holders</dd>
+            </dl>
+            <div>
+              <div class="t-lbl">Total supply</div>
+              <div style="margin-top:6px"><span class="t-bign">10,070,000</span> <span class="t-muted">of 100,000,000</span></div>
+              <div class="t-meter" role="img" aria-label="10.07% of max supply minted"><span class="ex" style="width:10.07%"></span></div>
+              <div class="t-lbl" style="margin-top:16px">Q1 2027 budget</div>
+              <div class="t-meter" role="img" aria-label="100,000 executed, 250,000 queued, 650,000 remaining of 1,000,000"><span class="ex" style="width:10%"></span><span class="qd" style="width:25%"></span></div>
+              <div class="t-legend"><span><i style="background:var(--spa)"></i>Executed 100,000</span><span><i style="background:var(--twarn)"></i>Queued 250,000</span><span>Left 650,000</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="t-tblcard" style="margin-top:16px">
+          <div class="tbl-wrap">
+            <table class="tt">
+              <thead><tr><th>Op</th><th>Action</th><th>Queued</th><th>Earliest execution</th><th>Expires</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td class="nm">#3</td>
+                  <td>Mint <b class="num">250,000</b> LORE to Vesting <span class="t-mono t-faint">0x4dE2…9a07</span><br><span class="t-faint" style="font-size:12.5px">Queued by Loreum DAO tx #43. Execution is Loreum DAO tx #47, 2 of 3 confirmed.</span></td>
+                  <td class="num">Mar 12, 14:02</td>
+                  <td class="num">Mar 19, 14:02 UTC<br><span class="t-faint" style="font-size:12px">in 2 d 23 h</span></td>
+                  <td class="num">Apr 2, 14:02</td>
+                  <td><span class="t-tag warn"><span class="t-dot"></span>Queued</span></td>
+                </tr>
+                <tr>
+                  <td class="nm">#2</td>
+                  <td>Mint <b class="num">100,000</b> LORE to Grants Safe <span class="t-mono t-faint">0x2c9F…d810</span><br><span class="t-faint" style="font-size:12.5px">Queued by Loreum DAO tx #36. Minted by tx #40.</span></td>
+                  <td class="num">Feb 19, 09:39</td>
+                  <td class="num">Feb 26, 09:39 UTC</td>
+                  <td class="num">Mar 12, 09:39</td>
+                  <td><span class="t-tag ok"><span class="t-dot"></span>Executed Feb 26, 09:40</span></td>
+                </tr>
+                <tr>
+                  <td class="nm">#1<small>drill</small></td>
+                  <td>Mint <b class="num">1</b> LORE to Grants Safe<br><span class="t-faint" style="font-size:12.5px">Cancel drill: queued by tx #32, cancelled by the Chamber in tx #33.</span></td>
+                  <td class="num">Feb 12, 16:00</td>
+                  <td class="num">&#8212;</td>
+                  <td class="num">&#8212;</td>
+                  <td><span class="t-tag"><span class="t-dot"></span>Cancelled by Chamber · Feb 13</span></td>
+                </tr>
+                <tr>
+                  <td class="nm">#0<small>drill</small></td>
+                  <td>Mint <b class="num">1</b> LORE to Grants Safe<br><span class="t-faint" style="font-size:12.5px">Cancel drill: queued by tx #31, cancelled by the guardian.</span></td>
+                  <td class="num">Feb 10, 15:20</td>
+                  <td class="num">&#8212;</td>
+                  <td class="num">&#8212;</td>
+                  <td><span class="t-tag"><span class="t-dot"></span>Cancelled by guardian · Feb 11</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <p class="t-muted" style="margin-top:12px;font-size:13.5px">Directors and the guardian act on these in the app: <a href="app-supply-authority.html">supply authority</a> · <a href="app-guardian.html">guardian view</a>.</p>
+      </section>
+
+      <!-- ============ CONTRACTS ============ -->
+      <section id="contracts" class="t-sec" aria-labelledby="contracts-h">
+        <div class="t-sec-h">
+          <div><h2 id="contracts-h">Contracts <span class="note">5</span></h2><p>Ethereum mainnet. Addresses come from the published <span class="t-mono">deployments/mainnet.txt</span>. Tags mark which addresses are real today and which are illustrative in this mockup.</p></div>
+          <span class="t-src"><i></i>Owners from chamber-indexer</span>
+        </div>
+        <div class="t-tblcard">
+          <div class="tbl-wrap">
+            <table class="tt">
+              <thead><tr><th>Contract</th><th>Address</th><th>Version</th><th>Controlled by</th><th>Source</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td class="nm">LORE<small>ERC-20</small></td>
+                  <td><span class="t-addr">0x7756D245527F5f8925A537be509BF54feb2FdC99</span><button class="t-copy" type="button" data-copy="0x7756D245527F5f8925A537be509BF54feb2FdC99">Copy</button><br><span class="t-tag real">real</span></td>
+                  <td>Immutable</td>
+                  <td>Owner: LoreMintGate</td>
+                  <td><span class="t-tag ok">Verified</span></td>
+                </tr>
+                <tr>
+                  <td class="nm">LoreMintGate<small>supply authority</small></td>
+                  <td><span class="t-addr">0x6c1D…3F8b</span><br><span class="t-tag ill">illustrative</span></td>
+                  <td>Immutable</td>
+                  <td>Proposer: Loreum DAO Chamber · guardian: Guardian Safe</td>
+                  <td><span class="t-tag ok">Verified</span> <span class="t-tag info">In audit scope</span></td>
+                </tr>
+                <tr>
+                  <td class="nm">Factory<small>creates Chambers</small></td>
+                  <td><span class="t-addr">0x0Fa7…71C2</span><br><span class="t-tag ill">illustrative</span></td>
+                  <td>1.2.0</td>
+                  <td>TimelockController, 48 h · proposer and executor: Team Safe</td>
+                  <td><span class="t-tag ok">Verified</span> <span class="t-tag info">In audit scope</span></td>
+                </tr>
+                <tr>
+                  <td class="nm">Loreum DAO Chamber<small>proxy</small></td>
+                  <td><span class="t-addr">0x3F1c…A92e</span><br><span class="t-tag ill">illustrative</span></td>
+                  <td>Implementation 1.2.0</td>
+                  <td>Its own board, quorum 3 of 5 · ProxyAdmin owned by the Chamber</td>
+                  <td><span class="t-tag ok">Verified</span> <span class="t-tag info">In audit scope</span></td>
+                </tr>
+                <tr>
+                  <td class="nm">Chamber 1.2.0 implementation<small>plus BoardLib, WalletLib</small></td>
+                  <td><span class="t-faint">3 addresses, listed in <span class="t-mono">deployments/mainnet.txt</span></span></td>
+                  <td>1.2.0</td>
+                  <td>No admin; used through each Chamber's proxy</td>
+                  <td><span class="t-tag ok">Verified</span> <span class="t-tag info">In audit scope</span></td>
+                </tr>
+                <tr>
+                  <td class="nm">Team Safe<small>Safe</small></td>
+                  <td><span class="t-addr">0x5d45A213B2B6259F0b3c116a8907B56AB5E22095</span><button class="t-copy" type="button" data-copy="0x5d45A213B2B6259F0b3c116a8907B56AB5E22095">Copy</button><br><span class="t-tag real">real</span></td>
+                  <td>Safe</td>
+                  <td>4-of-7 signers</td>
+                  <td><span class="t-tag">Safe factory</span></td>
+                </tr>
+                <tr>
+                  <td class="nm">Loreum Guardian Safe<small>Safe</small></td>
+                  <td><span class="t-addr">0x9C44…E01d</span><br><span class="t-tag ill">illustrative</span></td>
+                  <td>Safe</td>
+                  <td>3-of-5, no team signers</td>
+                  <td><span class="t-tag">Safe factory</span></td>
+                </tr>
+                <tr>
+                  <td class="nm">Loreum Explorers<small>ERC-721 membership NFT</small></td>
+                  <td><span class="t-addr">0xB99DEdbDe082B8Be86f06449f2fC7b9FED044E15</span><button class="t-copy" type="button" data-copy="0xB99DEdbDe082B8Be86f06449f2fC7b9FED044E15">Copy</button><br><span class="t-tag real">real</span></td>
+                  <td>&#8212;</td>
+                  <td>Owner: Team Safe</td>
+                  <td><span class="t-tag ok">Verified</span></td>
+                </tr>
+                <tr>
+                  <td class="nm">Vesting<small>recipient of op #3</small></td>
+                  <td><span class="t-addr">0x4dE2…9a07</span><br><span class="t-tag ill">illustrative</span></td>
+                  <td>&#8212;</td>
+                  <td>&#8212;</td>
+                  <td><span class="t-tag ok">Verified</span></td>
+                </tr>
+                <tr>
+                  <td class="nm">Grants Safe<small>Safe</small></td>
+                  <td><span class="t-addr">0x2c9F…d810</span><br><span class="t-tag ill">illustrative</span></td>
+                  <td>Safe</td>
+                  <td>3-of-5 signers</td>
+                  <td><span class="t-tag">Safe factory</span></td>
+                </tr>
+                <tr>
+                  <td class="nm">Registry<small>legacy create path</small></td>
+                  <td><span class="t-faint">Not deployed on mainnet</span></td>
+                  <td>&#8212;</td>
+                  <td>Sepolia only. Create Chambers through the Factory.</td>
+                  <td><span class="t-tag">Not for mainnet</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ AUDIT AND BOUNTY ============ -->
+      <section id="audit" class="t-sec" aria-labelledby="audit-h">
+        <div class="t-sec-h">
+          <div><h2 id="audit-h">Audit and bug bounty <span class="note">6</span></h2><p>What was reviewed, what wasn't, and how to get paid for finding what we missed.</p></div>
+        </div>
+        <div class="t-grid2">
+          <div class="t-card" style="display:flex;flex-direction:column;gap:14px">
+            <div class="t-lbl">External audit</div>
+            <div class="t-ph">Audit: [firm] · Jan 2027 · 0 open critical/high (placeholder)</div>
+            <div>
+              <div class="t-lbl" style="margin-bottom:6px">In scope</div>
+              <ul class="t-list"><li>Chamber 1.2.0 implementation, BoardLib, WalletLib</li><li>Factory</li><li>LoreMintGate</li></ul>
+            </div>
+            <div>
+              <div class="t-lbl" style="margin-bottom:6px">Not in scope</div>
+              <ul class="t-list out"><li>LORE token and Explorers NFT, deployed before the audit</li><li>The app, the indexer and the legacy Registry</li></ul>
+            </div>
+            <p class="t-muted" style="font-size:13px">Deployed bytecode matches a build of the commit the auditors reviewed, [commit hash] (placeholder). Earlier internal reviews were done by AI agents and are published separately; they aren't an audit.</p>
+            <div style="display:flex;gap:10px;flex-wrap:wrap"><a class="t-btn" href="#">Read the report</a><a class="t-btn" href="eco-trust.html#limits">Known issues</a></div>
+          </div>
+          <div class="t-card" style="display:flex;flex-direction:column;gap:14px">
+            <div class="t-lbl">Bug bounty</div>
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span class="t-tag ok"><span class="t-dot"></span>Live since Jan 29, 2027</span><span class="t-muted" style="font-size:13px">on [platform] (placeholder)</span></div>
+            <dl class="t-kv">
+              <dt>Top reward</dt><dd>[amount] (placeholder), paid in USDC or ETH from the Team Safe. LORE has no market, so rewards aren't paid in LORE.</dd>
+              <dt>Severity</dt><dd>By impact on funds and on LORE supply</dd>
+            </dl>
+            <div>
+              <div class="t-lbl" style="margin-bottom:6px">In scope</div>
+              <ul class="t-list"><li>Verified mainnet Factory, Chamber implementation, BoardLib, WalletLib</li><li>Loreum DAO Chamber proxy and LoreMintGate</li></ul>
+            </div>
+            <div>
+              <div class="t-lbl" style="margin-bottom:6px">Out of scope</div>
+              <ul class="t-list out"><li>Sepolia, the Registry, and known issues listed below</li><li>App and indexer bugs, unless they put funds at risk</li></ul>
+            </div>
+            <div><a class="t-btn solid" href="#">View the bounty program</a></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ REPORT ============ -->
+      <section id="report" class="t-sec" aria-labelledby="report-h">
+        <div class="t-sec-h">
+          <div><h2 id="report-h">Report a vulnerability <span class="note">7</span></h2><p>From SECURITY.md in loreum-org/chamber.</p></div>
+        </div>
+        <div class="t-contact">
+          <div class="t-card">
+            <div class="t-lbl">Email the security team</div>
+            <div class="t-email"><code>security@loreum.org</code><button class="t-copy" type="button" data-copy="security@loreum.org">Copy</button><span class="t-tag warn">placeholder address</span></div>
+            <p class="t-muted" style="margin-top:12px;font-size:13.5px">Or use GitHub private vulnerability reporting on loreum-org/chamber. Please don't open a public issue or post details until a fix has shipped.</p>
+            <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap"><a class="t-btn" href="#">Report on GitHub</a><a class="t-btn" href="#">Read SECURITY.md</a></div>
+          </div>
+          <div class="t-card">
+            <dl class="t-kv">
+              <dt>First reply</dt><dd>Within 2 business days (target, placeholder)</dd>
+              <dt>Status updates</dt><dd>At least weekly until fixed (target, placeholder)</dd>
+              <dt>Safe harbor</dt><dd>Good-faith research that follows the bounty rules is authorized. We won't take legal action over it.</dd>
+              <dt>Priority</dt><dd>Contracts first. App, indexer and this site are best effort.</dd>
+            </dl>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ ALERTS ============ -->
+      <section id="alerts" class="t-sec" aria-labelledby="alerts-h">
+        <div class="t-sec-h">
+          <div><h2 id="alerts-h">Recent alerts <span class="note">8</span></h2><p>Every LORE mint, gate change, session key and Team Safe change raises an alert. Two independent channels watch the same events.</p></div>
+          <span class="t-src"><i></i>From chamber-indexer</span>
+        </div>
+        <div class="t-filter" role="group" aria-label="Filter alerts">
+          <button type="button" data-f="all" aria-pressed="true">All</button>
+          <button type="button" data-f="supply" aria-pressed="false">Supply</button>
+          <button type="button" data-f="keys" aria-pressed="false">Keys and Safes</button>
+          <button type="button" data-f="indexer" aria-pressed="false">Indexer</button>
+        </div>
+        <ul class="t-feed" id="feed">
+          <li data-k="indexer"><span class="when">Mar 14 · 03:10</span><span class="what"><b>Indexer lag over 30 blocks on Ethereum</b><span>Resolved at 03:22, after 12 minutes. The app showed a lag banner meanwhile.</span></span><span class="t-tag ok">Resolved</span></li>
+          <li data-k="supply"><span class="when">Mar 12 · 14:02</span><span class="what"><b>Gate op #3 queued: mint 250,000 LORE to Vesting</b><span>Queued by Loreum DAO tx #43. Earliest execution Mar 19, 14:02 UTC. Guardian notified.</span></span><span class="t-tag warn">Open</span></li>
+          <li data-k="keys"><span class="when">Mar 9 · 16:55</span><span class="what"><b>Session key set for Explorer #31 (scope 0x35)</b><span>Set by the NFT's owner, Treasury Agent's policy Safe 0x9aB3…40d1, after the board co-signed in Loreum DAO tx #45. Submit, execute, revoke and cancel; expires Mar 30.</span></span><span class="t-tag info">Info</span></li>
+          <li data-k="supply"><span class="when">Feb 26 · 09:40</span><span class="what"><b>LORE total supply +100,000</b><span>Gate op #2 executed, to the Grants Safe.</span></span><span class="t-tag info">Info</span></li>
+          <li data-k="supply"><span class="when">Feb 19 · 09:31</span><span class="what"><b>LORE owner changed: Team Safe to LoreMintGate</b><span>Expected: the planned handoff, at block 27,002,857. The Team Safe has had no mint power since.</span></span><span class="t-tag info">Info</span></li>
+          <li class="steady" data-k="keys"><span class="when">Hourly</span><span class="what"><b>No change: Team Safe threshold is 4-of-7</b><span>Last checked 14:00 UTC.</span></span><span class="t-tag ok">Steady</span></li>
+          <li class="steady" data-k="supply"><span class="when">Hourly</span><span class="what"><b>No change: LORE owner is LoreMintGate</b><span>Last checked 14:00 UTC.</span></span><span class="t-tag ok">Steady</span></li>
+        </ul>
+        <div class="t-chan">
+          <div><b>Indexer watcher</b>Reads chamber-indexer every hour. Opens a GitHub issue labelled <span class="t-mono">lore-mint</span> for each queued mint.</div>
+          <div><b>Independent rules</b>Etherscan and Tenderly watch LORE, the gate and the Team Safe directly, so alerts still fire if the indexer is down.</div>
+          <div><b>Subscribe</b><a href="#">Discord</a> · <a href="#">GitHub issues</a> · <a href="#">RSS</a></div>
+        </div>
+      </section>
+
+      <!-- ============ LIMITS ============ -->
+      <section id="limits" class="t-sec" aria-labelledby="limits-h">
+        <div class="t-sec-h">
+          <div><h2 id="limits-h">Known limits <span class="note">9</span></h2><p>Trade-offs we chose or haven't fixed yet. They're also in the audit's known-issues list.</p></div>
+        </div>
+        <ul class="t-limits">
+          <li><b>No delay on Chamber transactions</b>Once a quorum confirms, any director can execute right away. Watch the queue. LORE mints have their own 7-day delay in the gate.</li>
+          <li><b>Seats can change after 1 block</b>A large new delegation can change the board quickly. Changing the number of seats waits 7 days.</li>
+          <li><b>The guardian can stall mints</b>It can cancel every mint. We accept that risk to liveness rather than letting anyone mint faster.</li>
+          <li><b>Team LORE affects the board</b>The Team Safe holds a large share of LORE, so its delegation affects who is seated in Loreum DAO.</li>
+          <li><b>We run the indexer</b>If it's down or behind, the app and this page show the last known state and say so. Check Etherscan for anything urgent.</li>
+          <li><b>Older contracts are outside the audit</b>LORE and the Explorers NFT were deployed before the audit and are outside its scope.</li>
+        </ul>
+      </section>
+
+      <section class="notes">
+        <h3>Design notes</h3>
+        <ol>
+          <li><b>Indexer-only page.</b> Every live value is read from chamber-indexer through the chain-aware client with a head clock (<code>I-10</code>), and the page makes zero RPC calls (<code>I-21</code>). Static content (addresses from <code>mainnet.txt</code>, audit and bounty text) is published with the page, and each section's source chip says which is which. The overall card shows head, indexed block and lag. When the indexer lags or stops, the page falls back to the lag and down states defined in <code>_mock-data.md</code>, never to RPC.</li>
+          <li><b>Status components and history.</b> The 90-day bar comes from the <code>I-3</code> staleness monitor. The Mar 14 lag incident matches the watcher feed. The Watcher row shows the <code>M-17</code> weekly heartbeat, so a disabled workflow gets noticed. Base and Arbitrum are shown as not indexed because Phase 2 is gated. The p95 latency is a mock value.</li>
+          <li><b>The can/can't lists turn the review's trust model into checkable claims.</b> <code>C-6</code>: the Factory is owned by a TimelockController (48h) with the Team Safe as proposer and executor, since the Factory owner can retarget every future create. <code>M-2</code>: 4-of-7 Safe and an independent 3-of-5 guardian. Each Chamber owns its own ProxyAdmin. The "can" column says plainly that the team's LORE holdings influence seating. Each line is marked with a word ("Can't", "Can") instead of a check mark, which read as "yes" next to "Mint LORE". The exit line names what the gate spec actually gates: moving LORE's ownership, renouncing it, and changing the proposer or guardian.</li>
+          <li><b>Supply authority</b> (<code>M-14</code>/<code>M-15</code>): LORE is owned by LoreMintGate, never directly by the Chamber. The spec's parameters are shown, including dual-control exits (<code>M-3</code>), so the guardian is labelled "can't mint" rather than "cancel only": it also has to approve exits. The ops table matches <code>app-supply-authority.html</code> row for row, including the two 1-LORE cancel drills (#0 guardian cancel, #1 Chamber cancel). Publishing the drills shows both cancel paths were exercised before real mints. Op #3 links to Loreum DAO tx #47, which can't run before the eta. Directors and the guardian are sent to the app screens that act on these ops. The Feb 19 ownership change is in the alert feed, as on <code>app-guardian.html</code>.</li>
+          <li><b>Contracts table.</b> Real addresses (LORE, Explorers, Team Safe) are shown in full, selectable and copyable. Illustrative ones are tagged, per <code>_mock-data.md</code>. The implementation and library addresses aren't in the mock data, so the page points to <code>deployments/mainnet.txt</code> instead of inventing them. There are two libraries (BoardLib, WalletLib) because <code>C-1</code> moves the session-key setter into BoardLib rather than a new SessionLib. Verification badges are mock statuses; they aren't indexer data, so the source chip only claims the owners come from the indexer. The Registry is marked not-for-mainnet (<code>C-9</code>).</li>
+          <li><b>Audit wording is the placeholder line only</b> (<code>C-13</code>; <code>D-6</code>/<code>D-7</code> keep "audited" out of public copy). The scope and out-of-scope lists follow <code>C-12</code>. The page says what the AI-agent reviews were and weren't. The bounty follows <code>C-14</code>/<code>D-19</code>: rewards are in USD or ETH because LORE has no market.</li>
+          <li><b>Disclosure channel from SECURITY.md</b> (<code>D-16</code>). The email is an obvious placeholder that Chad must confirm before launch; the mockup doesn't invent a real contact. It is selectable text with a copy button. Response targets are placeholders too.</li>
+          <li><b>Alerts use two channels.</b> The indexer-driven watcher (<code>M-17</code>, <code>I-33</code>'s <code>lore-mint</code> issues) and the independent Etherscan/Tenderly rules (<code>M-21</code>) watch the same events. Feed entries match the watcher feed in <code>_mock-data.md</code>, including the "no change" checks. The Explorer #31 key entry names the real setter: only the NFT's contract owner can call <code>setDirectorOperator</code>, so the policy Safe executed it after the board co-signed in #45, as <code>app-queue.html</code> records. The filter chips are client-side only.</li>
+          <li><b>Known limits come from the audit brief's known-issues register</b> (<code>C-11</code>, <code>D-13</code>): <code>SEATING_DELAY</code> = 1 block, no execution timelock, guardian liveness risk (<code>M-3</code>) and Team Safe LORE concentration (<code>M-2</code>, <code>M-12</code>). Publishing them is what makes the rest of the page believable.</li>
+        </ol>
+      </section>
+    </div>
+  </div>
+</main>
+
+<footer class="t-foot">
+  <div class="t-wrap">
+    <div class="t-foot-in">
+      <a class="t-logo" href="eco-landing.html"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="13" fill="none" stroke="#d0d6f9" stroke-width="1.2"/><circle cx="16" cy="16" r="5.5" fill="#ffffff"/><circle cx="16" cy="3" r="2" fill="#d0d6f9"/></svg><span>LOREUM</span></a>
+      <nav aria-label="Footer">
+        <a href="eco-landing.html">loreum.org</a>
+        <a href="app-overview.html">Loreum app</a>
+        <a href="eco-explorers.html">Explorers</a>
+        <a href="#">GitHub</a>
+        <a href="#">Blog</a>
+      </nav>
+    </div>
+    <p class="t-legal">&#169; 2027 LOREUM DAO LLC. MOCKUP ONLY: ADDRESSES MARKED ILLUSTRATIVE ARE PLACEHOLDERS.</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+  /* 90-day indexer history: Dec 17, 2026 to Mar 16, 2027, one lag incident on Mar 14 */
+  var bars = document.getElementById('bars');
+  if (bars) {
+    var end = Date.UTC(2027, 2, 16), day = 86400000, i, d, el, lag = Date.UTC(2027, 2, 14);
+    var fmt = { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' };
+    for (i = 89; i >= 0; i--) {
+      d = end - i * day; el = document.createElement('i');
+      var label = new Date(d).toLocaleDateString('en-US', fmt);
+      if (d === lag) { el.className = 'w'; el.title = label + ': lagged over 30 blocks for 12 min'; } else { el.title = label + ': healthy'; }
+      bars.appendChild(el);
+    }
+  }
+  /* Alert filters */
+  var btns = document.querySelectorAll('.t-filter button'), items = document.querySelectorAll('#feed li');
+  Array.prototype.forEach.call(btns, function (b) {
+    b.addEventListener('click', function () {
+      var f = b.getAttribute('data-f');
+      Array.prototype.forEach.call(btns, function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+      Array.prototype.forEach.call(items, function (li) { li.hidden = !(f === 'all' || li.getAttribute('data-k') === f); });
+    });
+  });
+  /* Copy buttons */
+  Array.prototype.forEach.call(document.querySelectorAll('[data-copy]'), function (b) {
+    b.addEventListener('click', function () {
+      var v = b.getAttribute('data-copy');
+      try { navigator.clipboard.writeText(v).then(function () { b.textContent = 'Copied'; setTimeout(function () { b.textContent = 'Copy'; }, 1600); }); } catch (e) { b.textContent = 'Select to copy'; }
+    });
+  });
+  /* Highlight the section in view */
+  var links = document.querySelectorAll('.t-toc a');
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        Array.prototype.forEach.call(links, function (a) { a.classList.toggle('on', a.getAttribute('href') === 'eco-trust.html#' + e.target.id); });
+      });
+    }, { rootMargin: '-30% 0px -60% 0px' });
+    Array.prototype.forEach.call(document.querySelectorAll('.t-sec'), function (s) { io.observe(s); });
+  }
+})();
+</script>
+</body>
+</html>

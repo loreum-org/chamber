@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Overview · Loreum DAO · Loreum app mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap">
+<link rel="stylesheet" href="assets/app.css">
+<style>
+  /* Narrow screens: let the top bar wrap instead of pushing the page sideways */
+  @media (max-width: 640px) {
+    .top-inner { height: auto; min-height: 56px; flex-wrap: wrap; padding-top: 8px; padding-bottom: 8px; }
+    .top-right { flex-wrap: wrap; }
+  }
+  .src { font-family: var(--mono); font-size: 11px; color: var(--t4); white-space: nowrap; }
+  /* Mid widths: the nav shrinks and scrolls inside the top bar instead of widening the page */
+  .top-inner > .row { flex-wrap: nowrap; min-width: 0; flex: 1 1 auto; }
+  .nav { min-width: 0; }
+  @media (min-width: 641px) { .top-right { flex: none; } }
+  /* Phones: keep the authority chain on one line; values ellipsize and inline addresses drop */
+  @media (max-width: 640px) {
+    .auth { flex-wrap: nowrap; }
+    .auth .node { flex: 1 1 0; min-width: 0; }
+    .auth .k { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .auth .v .mono { display: none; }
+  }
+  /* Keep single-column grids from growing to fit wide children (timelines, tables) */
+  .grid > * { min-width: 0; }
+  @media (max-width: 1000px) { .main-side { grid-template-columns: minmax(0, 1fr); } }
+  .stat .k { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+  .stat .v2 { font-size: 15px; font-weight: 300; font-variant-numeric: tabular-nums; color: var(--t2); }
+
+  /* Needs your attention */
+  .att { list-style: none; margin: 0; padding: 0; }
+  .att > li { display: grid; grid-template-columns: 104px minmax(0, 1fr) auto; gap: 14px; align-items: start; padding: 14px 0; border-top: 1px solid var(--line); }
+  .att > li:first-child { border-top: 0; padding-top: 2px; }
+  .att .t { font-weight: 600; color: var(--t1); }
+  .att .m { font-size: 12.5px; color: var(--t3); margin-top: 4px; display: flex; gap: 8px 12px; flex-wrap: wrap; align-items: center; }
+  .att .x { font-size: 12.5px; color: var(--t3); margin-top: 6px; }
+  .att .x.warn { color: #fde68a; }
+  .att .acts { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+  @media (max-width: 720px) {
+    .att > li { grid-template-columns: 1fr; gap: 8px; }
+    .att .acts { justify-content: flex-start; }
+  }
+
+  /* Authority chain: a smaller variant for lists */
+  .auth.mini .node { padding: 4px 9px; flex: 1 1 0; }
+  .auth.mini .k { font-size: 9.5px; }
+  .auth.mini .v { font-size: 12px; }
+  .auth.mini .v.mono { font-size: 11.5px; }
+
+  /* Activity feed */
+  .feed { list-style: none; margin: 0; padding: 0; }
+  .feed > li { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 12px; padding: 11px 0; border-top: 1px solid rgba(148, 163, 184, 0.08); font-size: 13px; }
+  .feed > li:first-child { border-top: 0; padding-top: 0; }
+  .feed .when { font-family: var(--mono); font-size: 11.5px; color: var(--t3); line-height: 1.35; }
+  .feed .when span { display: block; color: var(--t4); font-size: 10.5px; }
+  .feed .what { color: var(--t2); }
+  .feed .auth { margin-top: 6px; max-width: 460px; }
+  @media (max-width: 480px) { .feed > li { grid-template-columns: 1fr; gap: 4px; } }
+
+  /* Board summary */
+  .seat { padding: 10px 0; border-top: 1px solid rgba(148, 163, 184, 0.08); }
+  .seat:first-of-type { border-top: 0; }
+  .seat .hd { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; margin-bottom: 6px; font-size: 12.5px; }
+  .you { color: var(--a300); font-weight: 600; }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--t3); margin-top: 8px; }
+  .legend i { display: inline-block; width: 10px; height: 8px; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
+</style>
+</head>
+<body>
+<div class="mock-bar">
+  <span><b>MOCKUP</b> · Loreum app · Chamber overview · state as of Mar 16, 2027 14:20 UTC</span>
+  <span><a href="index.html">All mockups</a> · <a href="_mock-data.md">Mock data</a></span>
+</div>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="row" style="gap:18px">
+      <a class="brand" href="index.html"><span class="brand-mark">L</span><span>Loreum</span></a>
+      <nav class="nav" aria-label="Main">
+        <a href="app-overview.html" class="on">My Chambers</a>
+        <a href="app-session-keys.html">Operators</a>
+        <a href="#">Deploy Chamber</a>
+        <a href="#">Compliance</a>
+        <a href="app-migrate.html">Migrate from Safe</a>
+        <a href="#">Docs</a>
+      </nav>
+    </div>
+    <div class="top-right">
+      <span class="chain"><i></i>Ethereum</span>
+      <span class="fresh" title="All data on this page comes from chamber-indexer"><i></i>Indexed 24 s ago · #27,184,300</span>
+      <span class="wallet"><span class="avatar"></span>lena.eth</span>
+    </div>
+  </div>
+</header>
+
+<main class="page">
+  <div class="ch-head">
+    <div class="ch-title">
+      <div class="ch-icon">LD</div>
+      <div>
+        <h1>Loreum DAO</h1>
+        <div class="ch-meta">
+          <span class="chain"><i></i>Ethereum</span>
+          <span class="badge acc">v1.2.0</span>
+          <span class="badge">5 seats · quorum 3</span>
+          <span class="mono faint">0x3F1c…A92e</span>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <a class="btn" href="app-queue.html">Open queue</a>
+      <a class="btn primary" href="app-proposal.html">New proposal</a>
+    </div>
+  </div>
+
+  <nav class="tabs" aria-label="Chamber">
+    <a href="app-overview.html" class="on">Overview</a>
+    <a href="app-board.html">Board &amp; delegation</a>
+    <a href="app-queue.html">Queue <span class="badge warn">3</span></a>
+    <a href="p2-multichain-treasury.html">Treasury</a>
+    <a href="app-supply-authority.html">Supply authority</a>
+    <a href="app-session-keys.html">Session keys</a>
+  </nav>
+
+  <!-- Stat row -->
+  <section class="grid g4" aria-label="Chamber at a glance">
+    <div class="stat">
+      <div class="k"><span class="upper">Vault total assets</span><span class="note">1</span></div>
+      <div class="v">7,712,450 <small>LORE</small></div>
+      <div class="s">ERC-4626 vault. Depositors hold cLORE shares.</div>
+      <div class="src" style="margin-top:8px">from indexer · #27,184,300</div>
+    </div>
+    <div class="stat">
+      <div class="k"><span class="upper">Treasury outside the vault</span><span class="note">2</span></div>
+      <div class="v">2,410,000 <small>USDC</small></div>
+      <div class="v2">184.2 <small class="muted">ETH</small></div>
+      <div class="s">Chamber wallet balances. They don't back cLORE.</div>
+      <div class="src" style="margin-top:8px">from indexer · #27,184,300</div>
+    </div>
+    <div class="stat">
+      <div class="k"><span class="upper">Quorum</span><span class="note">3</span></div>
+      <div class="v">3 <small>of 5 directors</small></div>
+      <div class="s">5 seats, 5 reachable. 1 + ⌊5 × 51 / 100⌋ = 3.</div>
+      <div class="src" style="margin-top:8px">from indexer · #27,184,300</div>
+    </div>
+    <div class="stat">
+      <div class="k"><span class="upper">Open proposals</span></div>
+      <div class="v">3</div>
+      <div class="s"><span class="num">#46</span> ready · <span class="num">#47</span> waits for gate eta · <span class="num">#48</span> high risk</div>
+      <div class="src" style="margin-top:8px">from indexer · #27,184,300</div>
+    </div>
+  </section>
+
+  <div class="grid main-side" style="margin-top:16px">
+    <!-- Needs your attention -->
+    <section class="card accent" aria-labelledby="att-h">
+      <div class="card-h">
+        <div>
+          <h2 id="att-h">Needs your attention <span class="note">4</span></h2>
+          <p class="muted" style="font-size:12.5px;margin-top:4px">4 items you can act on as a director of Loreum DAO, most urgent first.</p>
+        </div>
+        <span class="src">from indexer · #27,184,300</span>
+      </div>
+
+      <div class="inset" style="margin-bottom:14px">
+        <div class="between" style="margin-bottom:8px">
+          <span class="upper">You act as <span class="note">5</span></span>
+          <span class="badge ok"><span class="dot"></span>Seated · mature</span>
+        </div>
+        <div class="auth" aria-label="Authority chain for your seat">
+          <div class="node seat"><span class="k">Seat · rank 4</span><span class="v">Explorer #44</span></div>
+          <div class="node"><span class="k">Owner · EOA</span><span class="v">lena.eth <span class="mono faint">0x3c7B…aa15</span></span></div>
+          <div class="node key"><span class="k">Session key</span><span class="v muted">None</span></div>
+        </div>
+        <p class="faint" style="font-size:12px;margin-top:8px">You sign from the owner wallet. Only a contract owner, such as a Safe, can set a session key.</p>
+      </div>
+
+      <ol class="att">
+        <li>
+          <div><span class="badge ok"><span class="dot"></span>Ready</span></div>
+          <div>
+            <div class="t"><span class="num">#46</span> Fund Q2 grants round: transfer 120,000 USDC to Grants Safe</div>
+            <div class="m">
+              <span class="pips" aria-label="3 of 3 confirmations"><i class="on"></i><i class="on"></i><i class="on"></i></span>
+              <span class="num">3 of 3 confirmations</span>
+              <span>Deadline Apr 12, 2027 · in 27 days</span>
+            </div>
+            <div class="x">Execute runs a simulation against the latest block via RPC first, then asks your wallet to sign. <span class="note">6</span></div>
+            <div class="x warn">Execute before Mar 18, 09:30 UTC if you can. If the 5 → 6 seat change gets a 3rd supporter and executes first, #46 will need a 4th confirmation.</div>
+          </div>
+          <div class="acts"><a class="btn primary sm" href="app-proposal.html">Execute #46</a></div>
+        </li>
+        <li>
+          <div><span class="badge bad">High risk</span></div>
+          <div>
+            <div class="t"><span class="num">#48</span> Upgrade Chamber implementation to v1.2.1</div>
+            <div class="m">
+              <span class="pips" aria-label="1 of 3 confirmations"><i class="on"></i><i></i><i></i></span>
+              <span class="num">1 of 3 confirmations</span>
+              <span>You haven't confirmed</span>
+              <span>Deadline Mar 30, 2027 · in 14 days</span>
+            </div>
+            <div class="x">Self-call <code>upgradeImplementation</code>. It takes effect the moment it executes: Chamber upgrades have no delay. Read the decoded calldata and the implementation diff before you confirm. <span class="note">7</span></div>
+            <div class="x">Needs 2 more from kofi.eth, you or marco.eth. The Treasury Agent's mandate excludes upgrades.</div>
+          </div>
+          <div class="acts"><a class="btn sm" href="app-proposal.html">Review #48</a></div>
+        </li>
+        <li>
+          <div><span class="badge warn">Timelock</span></div>
+          <div>
+            <div class="t">Gate op #3: mint 250,000 LORE to Vesting</div>
+            <div class="m">
+              <span>Ready Mar 19, 2027 14:02 UTC · in 2 d 23 h</span>
+              <span>Expires Apr 2, 14:02 UTC</span>
+              <span>You haven't confirmed #47</span>
+            </div>
+            <div class="x">Executes through <span class="num">#47</span>, which has 2 of 3 confirmations. You can confirm #47 now; only execution waits for the eta, and until then #47's simulation reverts with <code>NotReady</code>. The guardian can cancel op #3 until it executes. <span class="note">8</span></div>
+          </div>
+          <div class="acts">
+            <a class="btn sm" href="app-queue.html">Review #47</a>
+            <a class="btn ghost sm" href="app-supply-authority.html">View op #3</a>
+          </div>
+        </li>
+        <li>
+          <div><span class="badge info">Seat change</span></div>
+          <div>
+            <div class="t">Board size 5 → 6 seats</div>
+            <div class="m">
+              <span class="pips" aria-label="2 of 3 supporters"><i class="on"></i><i class="on"></i><i></i></span>
+              <span class="num">2 of 3 supporters</span>
+              <span>You haven't supported</span>
+              <span>Timelock ends Mar 18, 2027 09:30 UTC</span>
+            </div>
+            <div class="x">After it executes, Explorer #63 (nadia.eth) takes seat 6 and quorum rises to 4 for every open proposal.</div>
+          </div>
+          <div class="acts"><a class="btn sm" href="app-board.html#seat-change">Review seat change</a></div>
+        </li>
+      </ol>
+      <div class="divider"></div>
+      <p class="faint" style="font-size:12.5px">Also on the board: Explorer #12's session key expires Mar 28, 2027 (in 12 days). kofi.eth renews it from their Safe.</p>
+    </section>
+
+    <!-- Side column -->
+    <div class="stack">
+      <section class="card" aria-labelledby="sa-h">
+        <div class="card-h">
+          <h2 id="sa-h">LORE supply authority <span class="note">9</span></h2>
+          <span class="badge ok"><span class="dot"></span>Owner as expected</span>
+        </div>
+        <dl class="kv">
+          <dt>LORE owner</dt><dd>LoreMintGate <span class="mono faint">0x6c1D…3F8b</span></dd>
+          <dt>Proposer</dt><dd>Loreum DAO (this Chamber)</dd>
+          <dt>Guardian</dt><dd>Loreum Guardian Safe, 3-of-5. Can cancel, can't mint.</dd>
+          <dt>Supply</dt><dd class="num">10,070,000 of 100,000,000 max</dd>
+        </dl>
+        <div class="divider"></div>
+        <div class="between" style="margin-bottom:6px">
+          <span class="upper">Q1 2027 mint cap</span>
+          <span class="num" style="font-size:12.5px">650,000 of 1,000,000 left</span>
+        </div>
+        <div class="meter" role="img" aria-label="Q1 2027: 100,000 executed, 250,000 queued, 650,000 remaining of 1,000,000">
+          <span style="width:10%"></span><span class="q" style="width:25%"></span>
+        </div>
+        <div class="legend">
+          <span><i style="background:var(--a500)"></i><span class="num">100,000</span> executed (op #2)</span>
+          <span><i style="background:var(--warn)"></i><span class="num">250,000</span> queued (op #3)</span>
+        </div>
+        <div class="inset" style="margin-top:12px">
+          <div class="between">
+            <span style="font-weight:600">Op #3 · 250,000 LORE → Vesting</span>
+            <span class="badge warn">Queued</span>
+          </div>
+          <p class="muted" style="font-size:12.5px;margin-top:4px">Ready Mar 19, 14:02 UTC. Queued Mar 12 by Chamber tx #43.</p>
+        </div>
+        <p class="faint" style="font-size:12px;margin-top:10px">Every mint waits 7 days in a public queue and must execute within the next 14 days. Transferring or renouncing LORE ownership, or changing the guardian or proposer, needs a Chamber proposal, guardian approval and a 30-day delay.</p>
+        <div style="margin-top:12px"><a href="app-supply-authority.html">Open supply authority →</a></div>
+      </section>
+
+      <section class="card" aria-labelledby="fr-h">
+        <div class="card-h">
+          <h2 id="fr-h">Where these numbers come from <span class="note">10</span></h2>
+          <span class="badge ok"><span class="dot"></span>Healthy</span>
+        </div>
+        <p class="muted" style="font-size:13px">Everything on this page is read from chamber-indexer. The app makes no RPC calls to show it. It uses RPC only when you sign: simulate, send, then wait for the receipt.</p>
+        <dl class="kv" style="margin-top:12px">
+          <dt>Indexed block</dt><dd class="num">27,184,300 · 14:19:36 UTC</dd>
+          <dt>Chain head (est.)</dt><dd class="num">27,184,302 · 2 blocks behind</dd>
+          <dt>Next refresh</dt><dd>In 13 s (every 15 s while this tab is visible)</dd>
+          <dt>Display RPC calls</dt><dd class="num">0 this session</dd>
+          <dt>Last lag incident</dt><dd>Mar 14, 03:10–03:22 UTC · over 30 blocks behind</dd>
+        </dl>
+        <div style="margin-top:12px"><a href="app-indexer-states.html">What happens when the indexer lags →</a></div>
+      </section>
+    </div>
+  </div>
+
+  <div class="grid g2" style="margin-top:16px">
+    <!-- Board summary -->
+    <section class="card" aria-labelledby="bd-h">
+      <div class="card-h">
+        <div>
+          <h2 id="bd-h">Board <span class="note">11</span></h2>
+          <p class="muted" style="font-size:12.5px;margin-top:4px">Top 5 Explorers by delegated weight hold the seats.</p>
+        </div>
+        <div class="row" style="gap:8px">
+          <span class="pips" aria-label="Quorum 3 of 5"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span>
+          <span class="num" style="font-size:12.5px">Quorum 3 of 5</span>
+        </div>
+      </div>
+
+      <div class="seat">
+        <div class="hd"><span><span class="num">1</span> · <span class="num">2,410,000</span> LORE</span><span class="faint">Seated Feb 2, 2027</span></div>
+        <div class="auth mini">
+          <div class="node seat"><span class="k">Seat</span><span class="v">Explorer #7</span></div>
+          <div class="node"><span class="k">Owner</span><span class="v">aria.eth · EOA</span></div>
+          <div class="node key"><span class="k">Session key</span><span class="v muted">None</span></div>
+        </div>
+      </div>
+      <div class="seat">
+        <div class="hd"><span><span class="num">2</span> · <span class="num">1,905,000</span> LORE</span><span class="faint">Key expires Mar 28</span></div>
+        <div class="auth mini">
+          <div class="node seat"><span class="k">Seat</span><span class="v">Explorer #12</span></div>
+          <div class="node"><span class="k">Owner</span><span class="v">kofi.eth · Safe 2-of-3</span></div>
+          <div class="node key"><span class="k">Session key · 0x31</span><span class="v mono">0xA11c…04e5</span></div>
+        </div>
+      </div>
+      <div class="seat">
+        <div class="hd"><span><span class="num">3</span> · <span class="num">1,120,000</span> LORE · <span class="badge acc">Agent director</span></span><span class="faint">Key expires Mar 30</span></div>
+        <div class="auth mini">
+          <div class="node seat"><span class="k">Seat</span><span class="v">Explorer #31</span></div>
+          <div class="node"><span class="k">Owner</span><span class="v">Treasury Agent · policy Safe</span></div>
+          <div class="node key"><span class="k">Session key · 0x35</span><span class="v mono">0x7E0f…19b2</span></div>
+        </div>
+      </div>
+      <div class="seat">
+        <div class="hd"><span><span class="num">4</span> · <span class="num">980,000</span> LORE · <span class="you">You</span></span><span class="faint">Seated Feb 9, 2027</span></div>
+        <div class="auth mini">
+          <div class="node seat"><span class="k">Seat</span><span class="v">Explorer #44</span></div>
+          <div class="node"><span class="k">Owner</span><span class="v">lena.eth · EOA</span></div>
+          <div class="node key"><span class="k">Session key</span><span class="v muted">None</span></div>
+        </div>
+      </div>
+      <div class="seat">
+        <div class="hd"><span><span class="num">5</span> · <span class="num">612,000</span> LORE</span><span class="faint">Seated Feb 12, 2027</span></div>
+        <div class="auth mini">
+          <div class="node seat"><span class="k">Seat</span><span class="v">Explorer #58</span></div>
+          <div class="node"><span class="k">Owner</span><span class="v">marco.eth · EOA</span></div>
+          <div class="node key"><span class="k">Session key</span><span class="v muted">None</span></div>
+        </div>
+      </div>
+      <div class="inset" style="margin-top:10px">
+        <div class="between">
+          <span><span class="upper">Next in line</span> Explorer #63 · nadia.eth · <span class="num">540,000</span> LORE</span>
+          <span class="badge">Needs <span class="num">72,001</span> more</span>
+        </div>
+      </div>
+      <div class="between" style="margin-top:12px">
+        <span class="faint" style="font-size:12px">5 distinct owners. No owner holds 3 seats.</span>
+        <a href="app-board.html">Board &amp; delegation →</a>
+      </div>
+    </section>
+
+    <!-- Recent activity -->
+    <section class="card" aria-labelledby="ac-h">
+      <div class="card-h">
+        <h2 id="ac-h">Recent activity <span class="note">12</span></h2>
+        <span class="src">from indexer · chamberEvent</span>
+      </div>
+      <ol class="feed">
+        <li>
+          <div class="when">Mar 16 10:14<span>#27,183,075</span></div>
+          <div>
+            <div class="what">Submitted <span class="num">#48</span>: Upgrade Chamber implementation to v1.2.1 · 1 of 3</div>
+            <div class="auth mini">
+              <div class="node seat"><span class="v">Explorer #7</span></div>
+              <div class="node"><span class="v">aria.eth · EOA</span></div>
+            </div>
+            <p class="faint" style="font-size:12px;margin-top:4px">Submitting records the proposer's confirmation, so #48 starts at 1 of 3.</p>
+          </div>
+        </li>
+        <li>
+          <div class="when">Mar 15 16:20<span>#27,177,702</span></div>
+          <div>
+            <div class="what">Confirmed <span class="num">#47</span> (execute gate op #3) · 2 of 3</div>
+            <div class="auth mini">
+              <div class="node seat"><span class="v">Explorer #12</span></div>
+              <div class="node"><span class="v">kofi.eth · Safe 2-of-3</span></div>
+            </div>
+            <p class="faint" style="font-size:12px;margin-top:4px">Signed by the Safe. marco.eth submitted #47 on Mar 14, 11:05 UTC (1 of 3).</p>
+          </div>
+        </li>
+        <li>
+          <div class="when">Mar 14 09:30<span>#27,168,452</span></div>
+          <div>
+            <div class="what">You confirmed <span class="num">#46</span> · 3 of 3, now ready to execute</div>
+            <div class="auth mini">
+              <div class="node seat"><span class="v">Explorer #44</span></div>
+              <div class="node"><span class="v">lena.eth · EOA</span></div>
+            </div>
+          </div>
+        </li>
+        <li>
+          <div class="when">Mar 14 03:10<span>watcher</span></div>
+          <div class="what">Indexer lag over 30 blocks on Ethereum. <span class="badge ok">Resolved 03:22</span></div>
+        </li>
+        <li>
+          <div class="when">Mar 13 15:20<span>#27,163,002</span></div>
+          <div>
+            <div class="what">Confirmed <span class="num">#46</span> · 2 of 3</div>
+            <div class="auth mini">
+              <div class="node seat"><span class="v">Explorer #31</span></div>
+              <div class="node"><span class="v">Treasury Agent policy Safe <span class="mono faint">0x9aB3…40d1</span></span></div>
+            </div>
+            <p class="faint" style="font-size:12px;margin-top:4px">Through the agent's policy account, after its mandate check passed. Its session key has no CONFIRM bit.</p>
+          </div>
+        </li>
+        <li>
+          <div class="when">Mar 13 10:41<span>#27,161,607</span></div>
+          <div>
+            <div class="what">Submitted <span class="num">#46</span>: Fund Q2 grants round · 1 of 3</div>
+            <div class="auth mini">
+              <div class="node seat"><span class="v">Explorer #12</span></div>
+              <div class="node"><span class="v">kofi.eth · Safe</span></div>
+              <div class="node key"><span class="v mono">0xA11c…04e5</span></div>
+            </div>
+            <p class="faint" style="font-size:12px;margin-top:4px">Sent by the session key (scope 0x31). The key has no CONFIRM bit, but the submit still counts as Explorer #12's confirmation.</p>
+          </div>
+        </li>
+        <li>
+          <div class="when">Mar 12 14:02<span>#27,155,412</span></div>
+          <div class="what">Executed Proposal <span class="num">#43</span>: queue LORE mint op #3 via LoreMintGate. Op #3 (250,000 LORE → Vesting) is ready Mar 19, 14:02 UTC.</div>
+        </li>
+        <li>
+          <div class="when">Mar 11 09:30<span>#27,146,852</span></div>
+          <div>
+            <div class="what">Proposed seat change 5 → 6</div>
+            <div class="auth mini">
+              <div class="node seat"><span class="v">Explorer #12</span></div>
+              <div class="node"><span class="v">kofi.eth · Safe 2-of-3</span></div>
+            </div>
+            <p class="faint" style="font-size:12px;margin-top:4px">Signed by the Safe. The session key has no UPDATE_SEATS bit.</p>
+          </div>
+        </li>
+        <li>
+          <div class="when">Mar 10</div>
+          <div class="what">Cancelled Proposal <span class="num">#44</span> by cancel quorum: transfer 500,000 USDC to <span class="mono">0x9f3…</span> (unknown recipient). <span class="note">13</span></div>
+        </li>
+        <li>
+          <div class="when">Mar 9 16:55</div>
+          <div class="what">Executed Proposal <span class="num">#45</span>: set session key for Explorer #31 (scope 0x35, expires Mar 30).</div>
+        </li>
+      </ol>
+      <div style="margin-top:10px"><a href="app-queue.html">Full history in the queue →</a></div>
+    </section>
+  </div>
+
+  <section class="notes">
+    <h3>Design notes</h3>
+    <ol>
+      <li>Every stat carries its source and block (<code>from indexer · #27,184,300</code>). Today's ChamberDetail makes about 13 <code>eth_call</code>s per mount, plus <code>getTransaction</code> and <code>getCancelled</code> for every proposal just to count the queue badge, plus <code>useBalance</code>. This page reads one indexer query and nothing else (<code>I-12</code>). The lint guardrail (<code>I-11</code>) and the zero-display-RPC e2e budget (<code>I-21</code>) keep it that way.</li>
+      <li>Vault assets and treasury are separate stats. <code>totalAssets</code> is the Chamber's LORE balance and backs cLORE; USDC and ETH in the wallet don't. Showing them together would invite people to read the treasury as share backing. The review makes the same point about spoke balances, which must never count toward <code>totalAssets</code> (<code>I-20</code>, review "Don't move vault assets to spokes").</li>
+      <li>Quorum shows the formula and the reachable count, not just "3". Quorum uses reachable directors (<code>BoardLib.quorumFor</code>, PMN-M01): a seat whose NFT can't be resolved, or that the Chamber itself holds, doesn't count. Each proposal needs the higher of its submit-time quorum and the live quorum.</li>
+      <li>The attention list is computed from indexer rows for the connected wallet's seat and ordered by what this person can do now. It replaces the old "Recent transactions" panel, which listed raw targets and ETH values. Each button names the exact action (<code>Execute #46</code>, <code>Review #48</code>). Interactions between items are spelled out, for example that the pending seat change would raise #46 to 4 confirmations (<code>_requiredConfirmations</code> = max(submit, live)).</li>
+      <li>The authority chain (seat → owner → session key) opens the page, because it answers "who am I acting as?" before any button. lena.eth owns her NFT from an EOA, so there's no session key: only a contract owner can set one. Copy says "session key", never "operator" (<code>P-8</code>, <code>P-9</code>).</li>
+      <li>The page never shows a simulation result it didn't just run. Simulation is RPC, so it happens at transaction time, inside the execute flow (#260, <code>txSimulation.ts</code>). The overview only says that it will run.</li>
+      <li>High-risk items get the red badge and an explicit consequence: an upgrade executes immediately at quorum and has no delay. Risk classification comes from the #260 decoder. The proposal page does the full review.</li>
+      <li>Gate op #3 and Chamber tx #47 are shown as one item, because they're one decision: the Chamber proposes, LoreMintGate enforces the 7-day wait, and #47 executes after the eta. The countdown uses the indexer head clock (<code>useIndexerHead</code>), not <code>useBlockNumber</code> or the wall clock (<code>I-10</code>, <code>I-26</code>, <code>M-15</code>).</li>
+      <li>The supply authority summary is the M-15 panel in small: LORE owner, proposer, guardian, cap usage and pending ops, all from the indexer (<code>M-14</code>, <code>I-25</code>). LORE's owner is LoreMintGate, never the Chamber (review "Critical: the LORE handoff…", <code>M-3</code>, <code>D-9</code> ADR-0003). If the owner ever differs from the expected gate, or an exit op is queued, the badge turns red and a banner appears across every Loreum DAO page (<code>M-15</code>, <code>M-17</code>).</li>
+      <li>The freshness card explains the top-bar chip in plain words: which block the page shows, the estimated head, and that display RPC is zero. It links to the state sheet. Freshness comes from polling the indexer while the tab is visible, which replaces the Alchemy WebSocket subscription; hidden tabs make no requests (<code>I-10</code>, <code>I-19</code>).</li>
+      <li>The board summary lists every seat with its full chain, because 5 seats fit. The agent director is labelled, and its seat shows its policy Safe as owner. ERC-8004 identity is display only. "Next in line" shows the exact margin (612,000 − 540,000 + 1), so delegators can see how close the seat line is (<code>I-13</code>).</li>
+      <li>Activity comes from typed <code>chamberEvent</code> columns (actor, tokenId, nonce), not per-event RPC or <code>getLogs</code> from block 0 (<code>I-6</code>). Each actor is rendered as its authority chain, so you can see whether an owner, a Safe or a session key acted. Submissions show their count because <code>submitTransaction*</code> records the proposer's confirmation (WalletLib calls <code>confirmTransaction</code>). That means a SUBMIT-only key, like #12's, still adds its seat's confirmation. Whether that should stay is a <code>C-17</code> pre-freeze question. Watcher alerts (<code>M-17</code>, <code>I-33</code>) appear inline. Times and blocks match the queue and proposal pages.</li>
+      <li>Proposal numbers and Explorer token IDs overlap (#44 is both a cancelled proposal and lena's seat). Copy always says "Proposal #44" or "Explorer #44" where both could appear.</li>
+    </ol>
+  </section>
+</main>
+<footer class="foot">Mockup only. Addresses marked illustrative are placeholders. Loreum is the protocol; Chamber is the governance contract.</footer>
+</body>
+</html>

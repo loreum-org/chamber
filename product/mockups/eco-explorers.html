@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Loreum Explorers · explorers site mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@300;400;600&display=swap">
+<link rel="stylesheet" href="assets/app.css">
+<style>
+/* Explorers showcase. Not the operator console: deeper void, blue brand accent
+   from explorers/tailwind.config.js, Space Grotesk display, art-frame glows and
+   purposeful motion. app.css is linked only for .mock-bar and .note/.notes. */
+:root {
+  --xv: #05070d; --xv2: #070b12; --xv3: #0b1120;
+  --xink: #f8fafc; --xt1: #e2e8f0; --xt2: #cbd5e1; --xt3: #94a3b8; --xt4: #64748b;
+  --xa: #2563eb; --xa5: #3b82f6; --xa4: #60a5fa; --xa3: #93c5fd; --xa2: #bfdbfe;
+  --xcy: #38bdf8; --xin: #818cf8; --xok: #34d399; --xwarn: #fbbf24;
+  --xl: rgba(255, 255, 255, 0.07); --xl2: rgba(255, 255, 255, 0.12);
+  --xdisp: "Space Grotesk", "IBM Plex Sans", system-ui, sans-serif;
+  --xsans: Inter, "IBM Plex Sans", system-ui, sans-serif;
+  --xmono: "JetBrains Mono", "IBM Plex Mono", Menlo, monospace;
+  --xease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+body.x {
+  margin: 0; color: var(--xt1); font-family: var(--xsans); font-size: 15px; line-height: 1.6;
+  background: var(--xv);
+  background-image:
+    radial-gradient(75% 55% at 12% -8%, rgba(37, 99, 235, 0.14), transparent 60%),
+    radial-gradient(55% 45% at 92% 0%, rgba(129, 140, 248, 0.10), transparent 55%),
+    linear-gradient(180deg, #070b12 0%, #05070d 55%);
+  background-attachment: fixed; overflow-x: clip;
+}
+b, strong { font-weight: 600; }
+.x a { color: inherit; text-decoration: none; }
+.x :focus-visible { outline: 2px solid var(--xa4); outline-offset: 3px; border-radius: 8px; }
+.x h1, .x h2, .x h3 { margin: 0; }
+.x p { margin: 0; }
+.x-wrap { max-width: 1280px; margin: 0 auto; padding: 0 24px; }
+.num { font-variant-numeric: tabular-nums; }
+.x-mono { font-family: var(--xmono); font-size: 0.86em; }
+.x-muted { color: var(--xt3); }
+.x-small { font-size: 13px; color: var(--xt4); }
+
+/* ---------- Header ---------- */
+.x-head { position: sticky; top: 0; z-index: 30; background: rgba(5, 7, 13, 0.72); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-bottom: 1px solid var(--xl); }
+.x-head-in { display: flex; align-items: center; justify-content: space-between; gap: 16px; height: 64px; }
+.x-brand { display: flex; align-items: center; gap: 10px; }
+.x-brand svg { width: 30px; height: 30px; flex: none; }
+.x-brand-name { font-family: var(--xdisp); font-weight: 600; font-size: 19px; letter-spacing: -0.01em; color: var(--xink); }
+.x-brand-by { font-size: 12px; color: var(--xt4); }
+.x-nav { display: flex; gap: 28px; }
+.x-nav a { font-size: 14px; color: var(--xt3); position: relative; padding: 6px 0; transition: color 0.2s; white-space: nowrap; }
+.x-nav a:hover { color: var(--xink); }
+.x-nav a.on { color: var(--xink); }
+.x-nav a.on::after { content: ""; position: absolute; left: 0; right: 0; bottom: -2px; height: 2px; border-radius: 2px; background: linear-gradient(90deg, var(--xa5), var(--xcy)); }
+.x-head-r { display: flex; align-items: center; gap: 10px; }
+.x-chip { display: inline-flex; align-items: center; gap: 7px; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--xl2); background: rgba(255, 255, 255, 0.03); font-size: 12.5px; color: var(--xt2); white-space: nowrap; }
+.x-chip.sm { padding: 3px 10px; font-size: 11.5px; }
+.x-chip.blue { border-color: rgba(96, 165, 250, 0.35); background: rgba(37, 99, 235, 0.12); color: var(--xa3); }
+.x-chip.green { border-color: rgba(52, 211, 153, 0.3); background: rgba(16, 185, 129, 0.1); color: var(--xok); }
+.x-chip.amber { border-color: rgba(251, 191, 36, 0.3); background: rgba(245, 158, 11, 0.1); color: var(--xwarn); }
+.x-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--xt4); display: inline-block; flex: none; }
+.x-dot.ok { background: var(--xok); box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.15); }
+.x-wallet { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--xl2); background: rgba(255, 255, 255, 0.03); font-size: 13.5px; color: var(--xink); white-space: nowrap; }
+.x-avatar { width: 20px; height: 20px; border-radius: 50%; background: conic-gradient(from 200deg, #2563eb, #38bdf8, #818cf8, #2563eb); flex: none; }
+@media (max-width: 860px) {
+  .x-head-in { flex-wrap: wrap; height: auto; padding-top: 10px; row-gap: 2px; }
+  .x-nav { order: 3; width: 100%; gap: 22px; overflow-x: auto; padding-bottom: 8px; }
+  .x-head-r .x-chip { display: none; }
+}
+
+/* ---------- Hero (full-bleed art) ---------- */
+.x-hero { position: relative; min-height: calc(100vh - 64px); display: flex; flex-direction: column; justify-content: center; overflow: hidden; isolation: isolate; }
+.x-hero-media { position: absolute; inset: -2%; z-index: -2; transition: transform 1.2s var(--xease); transform: translate3d(var(--mx, 0), var(--my, 0), 0); }
+.x-hero-art { width: 100%; height: 100%; display: block; animation: x-kb 38s ease-in-out infinite alternate; transform-origin: 55% 75%; }
+@keyframes x-kb { from { transform: scale(1.02); } to { transform: scale(1.1) translate3d(-1.2%, -1%, 0); } }
+.x-hero-scrim {
+  position: absolute; inset: 0; z-index: -1;
+  background:
+    linear-gradient(90deg, rgba(5, 7, 13, 0.84) 0%, rgba(5, 7, 13, 0.5) 30%, rgba(5, 7, 13, 0) 52%, rgba(5, 7, 13, 0.18) 100%),
+    linear-gradient(180deg, rgba(5, 7, 13, 0.45) 0%, transparent 20%, transparent 72%, var(--xv) 100%);
+}
+.x-hero-grid { width: 100%; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); gap: 56px; align-items: center; padding-top: 72px; padding-bottom: 104px; }
+.x-eyebrow { display: inline-flex; align-items: center; gap: 9px; font-size: 11.5px; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase; color: var(--xa3); }
+.x-display { margin-top: 22px !important; font-family: var(--xdisp); font-weight: 600; line-height: 0.88; letter-spacing: -0.045em; color: var(--xink); }
+.x-display-sm { display: block; font-size: clamp(1.4rem, 2.6vw, 2.1rem); letter-spacing: -0.01em; font-weight: 300; color: var(--xt2); margin-bottom: 12px; line-height: 1; }
+.x-grad { background: linear-gradient(100deg, #f8fafc 0%, #bfdbfe 34%, #93c5fd 56%, #c4b5fd 78%, #f8fafc 100%); background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: x-sheen 9s ease-in-out infinite alternate; }
+.x-display .x-grad { display: block; font-size: clamp(3.4rem, 11vw, 9.2rem); padding-bottom: 0.06em; }
+@keyframes x-sheen { from { background-position: 0% 50%; } to { background-position: 100% 50%; } }
+.x-lede { margin-top: 26px !important; max-width: 34em; font-size: clamp(16px, 1.35vw, 19px); font-weight: 300; line-height: 1.6; color: var(--xt2); }
+.x-lede b { color: var(--xink); }
+.x-ctas { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+.x-hero-stats { display: grid; grid-template-columns: repeat(3, auto); justify-content: start; gap: 12px 36px; margin: 48px 0 0; }
+.x-hero-stats dt { font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--xt4); font-weight: 600; }
+.x-hero-stats dd { margin: 4px 0 0; font-family: var(--xdisp); font-size: 26px; font-weight: 400; color: var(--xink); letter-spacing: -0.02em; }
+.x-hero-stats dd small { font-size: 14px; color: var(--xt3); letter-spacing: 0; }
+.x-hero-cap { position: absolute; right: 24px; bottom: 26px; display: flex; gap: 8px; align-items: center; font-family: var(--xmono); font-size: 11.5px; color: var(--xt2); background: rgba(5, 7, 13, 0.55); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); padding: 7px 12px; border-radius: 10px; border: 1px solid var(--xl); }
+.x-hero-cap span { color: var(--xt4); }
+
+/* Buttons */
+.x-btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; height: 50px; padding: 0 24px; border-radius: 999px; font: 600 15px/1 var(--xsans); cursor: pointer; border: 1px solid transparent; transition: transform 0.25s var(--xease), box-shadow 0.25s, background 0.25s; white-space: nowrap; position: relative; overflow: hidden; color: var(--xink); }
+.x-btn-primary { background: linear-gradient(135deg, #3b82f6, #2563eb 55%, #4f46e5); color: #fff; border-color: rgba(147, 197, 253, 0.35); box-shadow: 0 1px 0 rgba(255, 255, 255, 0.18) inset, 0 14px 40px -12px rgba(37, 99, 235, 0.8); }
+.x-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 1px 0 rgba(255, 255, 255, 0.18) inset, 0 20px 50px -12px rgba(37, 99, 235, 0.95); }
+.x-btn-primary::after { content: ""; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.28) 50%, transparent 70%); transform: translateX(-120%); transition: transform 0.9s var(--xease); }
+.x-btn-primary:hover::after { transform: translateX(120%); }
+.x-btn-ghost { background: rgba(255, 255, 255, 0.04); border-color: var(--xl2); }
+.x-btn-ghost:hover { background: rgba(255, 255, 255, 0.09); }
+.x-btn-block { width: 100%; }
+.x-btn-sm { height: 36px; padding: 0 14px; font-size: 13px; }
+.x-btn[disabled] { opacity: 0.6; cursor: progress; }
+
+/* Glass */
+.x-glass { background: linear-gradient(180deg, rgba(15, 23, 42, 0.64), rgba(10, 15, 30, 0.56)); backdrop-filter: blur(22px) saturate(140%); -webkit-backdrop-filter: blur(22px) saturate(140%); border: 1px solid rgba(255, 255, 255, 0.09); border-radius: 24px; box-shadow: 0 30px 80px -30px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.06); }
+
+/* Mint panel */
+.x-mint { padding: 26px; }
+.x-mint-h { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 20px; }
+.x-mint-h h2 { font-family: var(--xdisp); font-size: 22px; font-weight: 600; color: var(--xink); letter-spacing: -0.01em; }
+.x-supply-row { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.x-big { font-family: var(--xdisp); font-size: 40px; line-height: 1; letter-spacing: -0.03em; color: var(--xink); }
+.x-bar { position: relative; height: 10px; border-radius: 999px; background: rgba(255, 255, 255, 0.06); overflow: hidden; margin-top: 14px; }
+.x-bar span { position: absolute; inset: 0 auto 0 0; border-radius: 999px; background: linear-gradient(90deg, #2563eb, #38bdf8); box-shadow: 0 0 18px rgba(56, 189, 248, 0.6); }
+.x-bar span::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent); background-size: 200% 100%; animation: x-shim 2.4s linear infinite; }
+@keyframes x-shim { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+.x-supply-meta { display: flex; justify-content: space-between; margin-top: 8px; font-size: 12.5px; color: var(--xt3); }
+.x-qty { margin-top: 22px; display: grid; gap: 8px; }
+.x-qty label { font-size: 12px; font-weight: 600; color: var(--xt3); letter-spacing: 0.04em; }
+.x-stepper { display: grid; grid-template-columns: 48px minmax(0, 1fr) 48px; height: 50px; border-radius: 14px; border: 1px solid var(--xl2); background: rgba(2, 6, 23, 0.55); overflow: hidden; }
+.x-stepper button { border: 0; background: transparent; color: var(--xink); font: 400 22px/1 var(--xsans); cursor: pointer; transition: background 0.2s; }
+.x-stepper button:hover { background: rgba(255, 255, 255, 0.06); }
+.x-stepper input { width: 100%; min-width: 0; border: 0; border-inline: 1px solid var(--xl); background: transparent; color: var(--xink); text-align: center; font: 600 20px/1 var(--xdisp); font-variant-numeric: tabular-nums; -moz-appearance: textfield; appearance: textfield; }
+.x-stepper input::-webkit-outer-spin-button, .x-stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.x-hint { font-size: 12.5px; color: var(--xt4); }
+.x-total { display: grid; grid-template-columns: auto auto; justify-content: space-between; gap: 6px 12px; margin: 20px 0; padding: 14px 0; border-block: 1px solid var(--xl); font-size: 14px; }
+.x-total dt { color: var(--xt3); }
+.x-total dd { margin: 0; text-align: right; color: var(--xink); font-variant-numeric: tabular-nums; }
+.x-total dd.big { font-family: var(--xdisp); font-size: 20px; }
+.x-fine { margin-top: 14px !important; font-size: 12.5px; line-height: 1.55; color: var(--xt3); }
+.x-status { margin-top: 12px; min-height: 0; font-size: 12.5px; }
+.x-status:empty { display: none; }
+.x-status .x-st { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 12px; background: rgba(37, 99, 235, 0.1); border: 1px solid rgba(96, 165, 250, 0.3); color: var(--xa2); }
+.x-src { margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--xl2); font-size: 11.5px; color: var(--xt4); display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* ---------- Marquee ---------- */
+.x-marq { position: relative; border-block: 1px solid var(--xl); background: rgba(7, 11, 18, 0.72); padding: 18px 0 20px; overflow: hidden; }
+.x-marq-h { display: flex; justify-content: space-between; align-items: center; gap: 4px 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.x-marq-h .x-eyebrow { white-space: nowrap; }
+.x-marq-view { overflow: hidden; -webkit-mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent); mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent); }
+.x-marq-track { display: flex; width: max-content; animation: x-marq 70s linear infinite; }
+.x-marq:hover .x-marq-track, .x-marq:focus-within .x-marq-track { animation-play-state: paused; }
+.x-marq-list { display: flex; gap: 14px; padding: 0 14px 0 0; margin: 0; list-style: none; }
+.x-marq-list a { display: block; width: 150px; }
+.x-marq-list canvas { width: 150px; height: 150px; border-radius: 14px; display: block; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06); transition: transform 0.4s var(--xease); }
+.x-marq-list a:hover canvas { transform: translateY(-4px); }
+.x-marq-list .cap { display: flex; justify-content: space-between; margin-top: 8px; font-size: 12px; color: var(--xt3); }
+@keyframes x-marq { to { transform: translateX(-50%); } }
+
+/* ---------- Sections ---------- */
+.x-sec { padding: 120px 0; position: relative; }
+.x-sec-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; flex-wrap: wrap; margin-bottom: 36px; }
+.x-h2 { margin-top: 12px !important; font-family: var(--xdisp); font-weight: 600; font-size: clamp(2rem, 4vw, 3.1rem); line-height: 1.02; letter-spacing: -0.03em; color: var(--xink); }
+.x-sec-aside { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; font-size: 13.5px; }
+.x-link { color: var(--xa3) !important; font-weight: 600; font-size: 14px; transition: color 0.2s; }
+.x-link:hover { color: var(--xa2) !important; }
+.x-fresh { display: inline-flex; align-items: center; gap: 7px; font-family: var(--xmono); font-size: 11.5px; color: var(--xt3); padding: 4px 10px; border-radius: 999px; border: 1px solid var(--xl); }
+.x-fresh i { width: 6px; height: 6px; border-radius: 50%; background: var(--xok); display: inline-block; }
+
+.x-statement { margin-top: 18px !important; font-family: var(--xdisp); font-weight: 400; font-size: clamp(2rem, 4.8vw, 4.1rem); line-height: 1.04; letter-spacing: -0.035em; color: var(--xink); max-width: 16em; }
+.x-sub { margin-top: 22px !important; max-width: 40em; font-size: 17px; font-weight: 300; color: var(--xt2); }
+.x-flow { list-style: none; margin: 56px 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; counter-reset: step; }
+.x-flow > li { padding: 22px; display: flex; flex-direction: column; gap: 14px; }
+.x-flow .viz { height: 176px; border-radius: 16px; background: rgba(2, 6, 23, 0.6); border: 1px solid var(--xl); position: relative; overflow: hidden; display: grid; place-items: center; }
+.x-flow h3 { font-family: var(--xdisp); font-weight: 600; font-size: 20px; color: var(--xink); letter-spacing: -0.01em; display: flex; gap: 12px; align-items: baseline; }
+.x-flow h3::before { counter-increment: step; content: "0" counter(step); font-family: var(--xmono); font-size: 12px; color: var(--xa4); font-weight: 400; }
+.x-flow p { font-size: 14.5px; color: var(--xt3); }
+.x-flow .viz canvas { width: 128px; height: 128px; border-radius: 12px; display: block; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 20px 40px -20px rgba(37, 99, 235, 0.6); }
+.x-viz-cap { position: absolute; left: 12px; bottom: 10px; font-family: var(--xmono); font-size: 11px; color: var(--xt3); }
+.x-rank { list-style: none; margin: 0; padding: 14px 16px; width: 100%; display: flex; flex-direction: column; gap: 6px; font-size: 11.5px; }
+.x-rank li { display: grid; grid-template-columns: 34px minmax(0, 1fr) 48px; gap: 8px; align-items: center; color: var(--xt2); font-family: var(--xmono); }
+.x-rank .bar { height: 7px; border-radius: 4px; background: rgba(255, 255, 255, 0.05); overflow: hidden; }
+.x-rank .bar i { display: block; height: 100%; border-radius: 4px; background: linear-gradient(90deg, #2563eb, #38bdf8); }
+.x-rank li.out { color: var(--xt4); }
+.x-rank li.out .bar i { background: repeating-linear-gradient(135deg, rgba(148, 163, 184, 0.5) 0 4px, rgba(148, 163, 184, 0.2) 4px 8px); }
+.x-rank li.cut { display: block; height: 0; border-top: 1px dashed rgba(251, 191, 36, 0.6); margin: 3px 0; position: relative; }
+.x-rank li.cut span { position: absolute; right: 0; top: -9px; font-size: 9.5px; color: var(--xwarn); background: #050914; padding: 0 4px; letter-spacing: 0.08em; text-transform: uppercase; }
+.x-rank .r { text-align: right; }
+
+/* Authority chain, showcase version of the signature element */
+.x-authwrap { margin-top: 26px; padding: 24px; display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.6fr); gap: 28px; align-items: center; }
+.x-authwrap h3 { font-family: var(--xdisp); font-size: 22px; font-weight: 600; color: var(--xink); letter-spacing: -0.01em; }
+.x-authwrap p { margin-top: 8px !important; font-size: 14.5px; color: var(--xt3); }
+.x-auth { display: flex; align-items: stretch; gap: 0; }
+.x-auth .n { position: relative; flex: 1 1 0; min-width: 0; padding: 14px 16px 14px 22px; background: rgba(2, 6, 23, 0.55); border: 1px solid var(--xl2); display: flex; flex-direction: column; gap: 3px; }
+.x-auth .n:first-child { border-radius: 14px 0 0 14px; padding-left: 16px; background: linear-gradient(135deg, rgba(37, 99, 235, 0.22), rgba(2, 6, 23, 0.55)); border-color: rgba(96, 165, 250, 0.35); }
+.x-auth .n:last-child { border-radius: 0 14px 14px 0; }
+.x-auth .n + .n { border-left: 0; }
+.x-auth .n + .n::before { content: ""; position: absolute; left: -7px; top: 50%; width: 12px; height: 12px; margin-top: -6px; background: #070b16; border-top: 1px solid var(--xcy); border-right: 1px solid var(--xcy); transform: rotate(45deg); box-shadow: 3px -3px 10px -2px rgba(56, 189, 248, 0.5); }
+.x-auth .k { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--xt4); font-weight: 600; }
+.x-auth .v { font-size: 14px; color: var(--xink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.x-auth .s { font-size: 12px; color: var(--xt3); overflow-wrap: anywhere; }
+.x-auth .n.key .v { color: var(--xa3); font-family: var(--xmono); font-size: 13px; }
+.x-scopes { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.x-scopes span { font-family: var(--xmono); font-size: 10px; padding: 1px 6px; border-radius: 5px; border: 1px solid var(--xl2); color: var(--xt4); }
+.x-scopes span.on { color: var(--xa3); border-color: rgba(96, 165, 250, 0.45); background: rgba(37, 99, 235, 0.14); }
+.x-auth.compact .n { padding: 10px 12px 10px 18px; }
+.x-auth.compact .n:first-child { padding-left: 12px; }
+.x-auth.compact .v { font-size: 13px; }
+
+/* Board wall */
+.x-board { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.x-seat { position: relative; display: block; border-radius: 20px; overflow: hidden; background: #050914; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 30px 70px -30px rgba(0, 0, 0, 0.9); transition: box-shadow 0.4s var(--xease), transform 0.5s var(--xease); transform: perspective(900px) rotateX(var(--ry, 0deg)) rotateY(var(--rx, 0deg)); }
+.x-seat:hover { box-shadow: 0 0 0 1px rgba(96, 165, 250, 0.4), 0 30px 80px -26px rgba(37, 99, 235, 0.55); }
+.x-seat canvas { width: 100%; aspect-ratio: 1 / 1; display: block; transition: transform 0.8s var(--xease); }
+.x-seat:hover canvas { transform: scale(1.04); }
+.x-seat.lg { grid-column: span 2; grid-row: span 2; }
+.x-seat-over { position: absolute; inset: auto 0 0 0; padding: 16px; background: linear-gradient(180deg, transparent, rgba(2, 4, 10, 0.88)); display: flex; flex-direction: column; gap: 3px; }
+.x-seat-top { position: absolute; top: 14px; left: 14px; right: 14px; display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.x-seat-top .x-chip { background: rgba(2, 6, 23, 0.72); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.x-rankpill { font-family: var(--xmono); font-size: 11px; padding: 4px 9px; border-radius: 999px; background: rgba(2, 6, 23, 0.7); border: 1px solid rgba(255, 255, 255, 0.14); color: var(--xink); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.x-seat-name { font-family: var(--xdisp); font-weight: 600; font-size: 19px; color: #fff; letter-spacing: -0.01em; }
+.x-seat.lg .x-seat-name { font-size: 30px; }
+.x-seat-owner { font-size: 13.5px; color: var(--xt2); }
+.x-seat-w { font-size: 12.5px; color: var(--xa3); font-variant-numeric: tabular-nums; }
+.x-next { margin-top: 16px; display: grid; grid-template-columns: 76px minmax(0, 1fr) auto; gap: 16px; align-items: center; padding: 14px 18px 14px 14px; border-radius: 18px; border: 1px dashed rgba(251, 191, 36, 0.35); background: rgba(251, 191, 36, 0.04); }
+.x-next canvas { width: 76px; height: 76px; border-radius: 12px; display: block; opacity: 0.85; }
+.x-next h3 { font-family: var(--xdisp); font-size: 17px; font-weight: 600; color: var(--xink); }
+.x-next p { font-size: 13.5px; color: var(--xt3); }
+
+/* Recent grid */
+.x-grid8 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.x-tile { position: relative; display: block; border-radius: 18px; overflow: hidden; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06); transition: box-shadow 0.35s, transform 0.5s var(--xease); }
+.x-tile canvas { width: 100%; aspect-ratio: 1 / 1; display: block; transition: transform 0.8s var(--xease); }
+.x-tile:hover, .x-tile:focus-visible { box-shadow: 0 0 0 1px rgba(96, 165, 250, 0.35), 0 26px 70px -28px rgba(37, 99, 235, 0.6); transform: translateY(-4px); }
+.x-tile:hover canvas { transform: scale(1.05); }
+.x-tile-cap { position: absolute; inset: auto 0 0 0; display: flex; justify-content: space-between; gap: 8px; padding: 12px 14px; background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.78)); font-size: 13.5px; color: #fff; opacity: 0; transform: translateY(6px); transition: opacity 0.3s, transform 0.4s var(--xease); }
+.x-tile-cap .x-mono { color: var(--xt2); font-size: 11px; align-self: center; }
+.x-tile:hover .x-tile-cap, .x-tile:focus-visible .x-tile-cap { opacity: 1; transform: none; }
+.x-tile .x-new { position: absolute; top: 12px; left: 12px; }
+.x-soon { margin-top: 18px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 18px; align-items: center; padding: 20px 22px; border-radius: 20px; border: 1px dashed var(--xl2); background: rgba(255, 255, 255, 0.02); }
+.x-soon h3 { font-family: var(--xdisp); font-size: 18px; font-weight: 600; color: var(--xink); margin-top: 8px !important; }
+.x-soon p { font-size: 14px; color: var(--xt3); margin-top: 4px !important; max-width: 52em; }
+
+/* My Explorers */
+.x-mine { background: linear-gradient(180deg, transparent, rgba(11, 17, 32, 0.6) 30%, transparent); }
+.x-mstats { display: flex; gap: 10px; flex-wrap: wrap; }
+.x-mstat { padding: 10px 16px; border-radius: 14px; border: 1px solid var(--xl); background: rgba(255, 255, 255, 0.02); min-width: 110px; }
+.x-mstat dt { font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--xt4); font-weight: 600; }
+.x-mstat dd { margin: 2px 0 0; font-family: var(--xdisp); font-size: 22px; color: var(--xink); font-variant-numeric: tabular-nums; }
+.x-mine-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.x-own { display: grid; grid-template-columns: 220px minmax(0, 1fr); overflow: hidden; }
+.x-own canvas { width: 100%; height: 100%; min-height: 220px; display: block; }
+.x-own-b { padding: 20px 22px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.x-own-b h3 { font-family: var(--xdisp); font-size: 24px; font-weight: 600; color: var(--xink); letter-spacing: -0.01em; }
+.x-own-b p { font-size: 13.5px; color: var(--xt3); }
+.x-own-b .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.x-kv { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 14px; font-size: 13px; margin: 0; }
+.x-kv dt { color: var(--xt4); }
+.x-kv dd { margin: 0; color: var(--xt1); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+
+/* Story band */
+.x-story { position: relative; overflow: hidden; border-block: 1px solid var(--xl); }
+.x-story canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -2; opacity: 0.7; }
+.x-story { isolation: isolate; }
+.x-story::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, rgba(5, 7, 13, 0.95), rgba(5, 7, 13, 0.55) 60%, rgba(5, 7, 13, 0.8)); }
+.x-quote { font-family: var(--xdisp); font-weight: 300; font-size: clamp(1.8rem, 4.2vw, 3.6rem); line-height: 1.08; letter-spacing: -0.03em; color: var(--xink); max-width: 17em; margin-top: 18px !important; }
+.x-quote em { font-style: normal; color: var(--xa3); }
+
+/* Facts */
+.x-facts { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 18px; }
+.x-factlist { padding: 8px 24px; }
+.x-factlist dl { margin: 0; display: grid; grid-template-columns: 150px minmax(0, 1fr); }
+.x-factlist dt, .x-factlist dd { padding: 13px 0; border-bottom: 1px solid var(--xl); font-size: 14px; margin: 0; }
+.x-factlist dt { color: var(--xt4); }
+.x-factlist dd { color: var(--xt1); overflow-wrap: anywhere; }
+.x-factlist dl > :nth-last-child(-n + 2) { border-bottom: 0; }
+.x-addr { font-family: var(--xmono); font-size: 12.5px; user-select: all; -webkit-user-select: all; color: var(--xink); }
+.x-copy { margin-left: 8px; font: 600 11.5px/1 var(--xsans); padding: 5px 9px; border-radius: 7px; border: 1px solid var(--xl2); background: rgba(255, 255, 255, 0.04); color: var(--xt2); cursor: pointer; vertical-align: 1px; }
+.x-copy:hover { background: rgba(255, 255, 255, 0.09); }
+.x-trust { padding: 26px; display: flex; flex-direction: column; gap: 14px; justify-content: space-between; background: radial-gradient(120% 90% at 100% 0%, rgba(37, 99, 235, 0.2), transparent 60%), linear-gradient(180deg, rgba(15, 23, 42, 0.64), rgba(10, 15, 30, 0.56)); }
+.x-trust h3 { font-family: var(--xdisp); font-size: 24px; font-weight: 600; color: var(--xink); line-height: 1.15; letter-spacing: -0.015em; }
+.x-trust p { font-size: 14.5px; color: var(--xt2); }
+.x-trust ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; font-size: 13.5px; color: var(--xt3); }
+.x-trust li { display: flex; gap: 10px; }
+.x-trust li::before { content: ""; width: 6px; height: 6px; margin-top: 8px; border-radius: 50%; background: var(--xcy); flex: none; }
+
+/* Closing CTA */
+.x-cta { position: relative; overflow: hidden; border-radius: 32px; padding: 96px 24px; text-align: center; isolation: isolate; border: 1px solid var(--xl); }
+.x-cta-mosaic { position: absolute; inset: -10%; z-index: -2; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; transform: rotate(-6deg) scale(1.1); opacity: 0.75; filter: saturate(1.25); }
+.x-cta-mosaic canvas { width: 100%; aspect-ratio: 1 / 1; display: block; border-radius: 14px; }
+.x-cta::before { content: ""; position: absolute; inset: 0; z-index: -1; background: radial-gradient(55% 60% at 50% 50%, rgba(5, 7, 13, 0.78), rgba(5, 7, 13, 0.35)); }
+.x-cta h2 { font-family: var(--xdisp); font-weight: 600; font-size: clamp(2.2rem, 5vw, 4.4rem); line-height: 1; letter-spacing: -0.04em; color: var(--xink); }
+.x-cta p { margin: 16px auto 0 !important; max-width: 32em; color: var(--xt2); font-size: 17px; font-weight: 300; }
+.x-cta .x-ctas { justify-content: center; }
+
+/* Footer */
+.x-foot { margin-top: 110px; border-top: 1px solid var(--xl); background: rgba(7, 11, 18, 0.6); }
+.x-foot-in { display: grid; grid-template-columns: minmax(0, 1.4fr) repeat(2, minmax(0, 0.6fr)); gap: 40px; padding-top: 48px; padding-bottom: 36px; }
+.x-foot h4 { margin: 0 0 14px; font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--xt4); font-weight: 600; }
+.x-foot ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; font-size: 14px; }
+.x-foot ul a { color: var(--xt3); transition: color 0.2s; }
+.x-foot ul a:hover { color: var(--xa3); }
+.x-foot-legal { border-top: 1px solid var(--xl); padding-top: 18px; padding-bottom: 28px; font-size: 12px; color: var(--xt4); display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.x-notes-wrap { padding-bottom: 60px; }
+
+/* Reveal */
+.js .rv { opacity: 0; transform: translateY(26px); transition: opacity 0.9s var(--xease), transform 0.9s var(--xease); }
+.js .rv.in { opacity: 1; transform: none; }
+.js .rv.d1 { transition-delay: 0.08s; } .js .rv.d2 { transition-delay: 0.16s; } .js .rv.d3 { transition-delay: 0.24s; }
+
+/* Responsive */
+@media (max-width: 1080px) {
+  .x-hero-grid { grid-template-columns: minmax(0, 1fr); gap: 36px; padding-bottom: 80px; }
+  .x-mint { max-width: 520px; }
+  .x-flow { grid-template-columns: minmax(0, 1fr); }
+  .x-authwrap { grid-template-columns: minmax(0, 1fr); }
+  .x-mine-grid { grid-template-columns: minmax(0, 1fr); }
+  .x-facts { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 900px) {
+  .x-board { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .x-grid8 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .x-hero-scrim { background: linear-gradient(180deg, rgba(5, 7, 13, 0.55) 0%, rgba(5, 7, 13, 0.78) 45%, rgba(5, 7, 13, 0.9) 80%, var(--xv) 100%); }
+  .x-foot-in { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .x-foot-in > :first-child { grid-column: 1 / -1; }
+}
+@media (max-width: 640px) {
+  .x-wrap { padding: 0 16px; }
+  .x-sec { padding: 76px 0; }
+  .x-hero-grid { padding-top: 44px; }
+  .x-hero-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 16px; }
+  .x-hero-stats dd { font-size: 21px; }
+  .x-hero-cap { position: relative; left: auto; right: auto; bottom: auto; margin: 0 16px 28px; align-self: flex-start; flex-wrap: wrap; }
+  .x-hero-grid { padding-bottom: 28px; }
+  .x-hero-stats dd small { display: block; font-size: 12px; margin-top: 2px; }
+  .x-mint { padding: 20px; }
+  .x-auth { flex-direction: column; }
+  .x-auth .n, .x-auth .n:first-child { border-radius: 0; padding-left: 16px; }
+  .x-auth .n:first-child { border-radius: 14px 14px 0 0; }
+  .x-auth .n:last-child { border-radius: 0 0 14px 14px; }
+  .x-auth .n + .n { border-left: 1px solid var(--xl2); border-top: 0; }
+  .x-auth .n + .n::before { left: 50%; top: -7px; margin-top: 0; margin-left: -6px; transform: rotate(135deg); }
+  .x-board { grid-template-columns: minmax(0, 1fr); }
+  .x-seat.lg { grid-column: auto; grid-row: auto; }
+  .x-next { grid-template-columns: 60px minmax(0, 1fr); }
+  .x-next canvas { width: 60px; height: 60px; }
+  .x-next .x-link { grid-column: 1 / -1; }
+  .x-own { grid-template-columns: minmax(0, 1fr); }
+  .x-own canvas { aspect-ratio: 1 / 1; height: auto; min-height: 0; }
+  .x-soon { grid-template-columns: minmax(0, 1fr); }
+  .x-factlist { padding: 4px 16px; }
+  .x-factlist dl { grid-template-columns: minmax(0, 1fr); }
+  .x-factlist dt { padding-bottom: 0; border-bottom: 0; }
+  .x-cta { padding: 64px 18px; border-radius: 24px; }
+  .x-cta-mosaic { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .x-foot-in { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .x-hero-art, .x-grad, .x-bar span::after { animation: none !important; }
+  .x-marq-track { animation: none; }
+  .x-marq-view { overflow-x: auto; }
+  .js .rv { opacity: 1; transform: none; transition: none; }
+  .x-seat, .x-tile, .x-btn, .x-seat canvas, .x-tile canvas, .x-hero-media { transition: none !important; transform: none !important; }
+}
+</style>
+</head>
+<body class="x">
+<div class="mock-bar">
+  <span><b>MOCKUP</b> · Loreum Explorers · explorers.loreum.org home · state as of Mar 16, 2027 14:20 UTC</span>
+  <span><a href="index.html">All mockups</a> · <a href="_mock-data.md">Mock data</a></span>
+</div>
+
+<header class="x-head">
+  <div class="x-wrap x-head-in">
+    <a class="x-brand" href="eco-explorers.html" aria-label="Loreum Explorers home">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lg-mark" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#93c5fd"/><stop offset="1" stop-color="#2563eb"/></linearGradient></defs><circle cx="16" cy="16" r="7.5" fill="url(#lg-mark)"/><ellipse cx="16" cy="16" rx="14" ry="5" fill="none" stroke="#bfdbfe" stroke-opacity="0.7" stroke-width="1.2" transform="rotate(-24 16 16)"/><circle cx="28.2" cy="11" r="1.6" fill="#f8fafc"/></svg>
+      <span class="x-brand-name">Explorers</span><span class="x-brand-by">by Loreum</span>
+    </a>
+    <nav class="x-nav" aria-label="Explorers">
+      <a href="eco-explorers.html" class="on" aria-current="page">Home</a>
+      <a href="#">Story</a>
+      <a href="eco-explorers.html#mint">Mint</a>
+      <a href="eco-explorers.html#mine">My Explorers</a>
+    </nav>
+    <div class="x-head-r">
+      <span class="x-chip"><i class="x-dot ok"></i>Ethereum</span>
+      <span class="x-wallet"><span class="x-avatar"></span>lena.eth</span>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- ============ HERO: the newest mint, full-bleed ============ -->
+  <section class="x-hero" aria-labelledby="x-title">
+    <div class="x-hero-media" id="heroMedia">
+      <canvas class="x-hero-art" data-id="1247" data-hero="1" width="1600" height="900" role="img" aria-label="Explorer #1247, the newest mint, shown full-bleed (placeholder art)"></canvas>
+    </div>
+    <div class="x-hero-scrim" aria-hidden="true"></div>
+    <div class="x-wrap x-hero-grid">
+      <div class="x-hero-copy">
+        <div class="x-eyebrow"><i class="x-dot ok"></i>On-chain collection · Ethereum <span class="note">1</span></div>
+        <h1 id="x-title" class="x-display"><span class="x-display-sm">Loreum</span><span class="x-grad">Explorers</span></h1>
+        <p class="x-lede">Up to 10,000 membership NFTs, minted straight from the contract with art on IPFS. <b>An Explorer can hold a board seat in a Chamber when LORE holders delegate to it.</b></p>
+        <div class="x-ctas">
+          <a class="x-btn x-btn-primary" href="eco-explorers.html#mint">Mint an Explorer · 0.05 ETH</a>
+          <a class="x-btn x-btn-ghost" href="eco-explorers.html#what">What an Explorer does</a>
+        </div>
+        <dl class="x-hero-stats">
+          <div><dt>Minted</dt><dd class="num">1,247 <small>/ 10,000</small></dd></div>
+          <div><dt>Price</dt><dd class="num">0.05 <small>ETH</small></dd></div>
+          <div><dt>Seated now</dt><dd class="num">5 <small>on Loreum DAO</small></dd></div>
+        </dl>
+      </div>
+
+      <aside id="mint" class="x-mint x-glass" aria-labelledby="mint-h">
+        <div class="x-mint-h">
+          <h2 id="mint-h">Mint <span class="note">2</span></h2>
+          <span class="x-chip sm green"><i class="x-dot ok"></i>Open</span>
+        </div>
+        <div class="x-supply">
+          <div class="x-supply-row"><span class="x-big num">1,247</span><span class="x-muted">of 10,000 minted</span></div>
+          <div class="x-bar" role="progressbar" aria-label="Explorers minted" aria-valuemin="0" aria-valuemax="10000" aria-valuenow="1247"><span style="width:12.47%"></span></div>
+          <div class="x-supply-meta"><span class="num">8,753 left</span><span class="num">12.5%</span></div>
+        </div>
+        <div class="x-qty">
+          <label for="qty">Quantity</label>
+          <div class="x-stepper">
+            <button type="button" data-step="-1" aria-label="Mint one fewer">&#8722;</button>
+            <input id="qty" type="number" min="1" max="98" value="1" inputmode="numeric" aria-describedby="qty-hint">
+            <button type="button" data-step="1" aria-label="Mint one more">+</button>
+          </div>
+          <span class="x-hint" id="qty-hint">This wallet can mint 98 more (100 per wallet, lifetime).</span>
+        </div>
+        <dl class="x-total">
+          <dt>Price</dt><dd>0.05 ETH each</dd>
+          <dt>Total</dt><dd class="big" id="total">0.05 ETH</dd>
+        </dl>
+        <button class="x-btn x-btn-primary x-btn-block" type="button" id="mintBtn">Mint 1 Explorer for 0.05 ETH</button>
+        <div class="x-status" id="mintStatus" aria-live="polite"></div>
+        <p class="x-fine">Right before you sign, we simulate the mint against the contract. If the price changed since you loaded the page, we stop and show you the new price. Your wallet shows the network fee.</p>
+        <div class="x-src"><span>Read once from</span><span class="x-mono">LoreumNFT 0xB99D…4E15</span><span>when this page loaded · no polling</span></div>
+      </aside>
+    </div>
+    <div class="x-hero-cap"><span>Now showing</span> Explorer #1247 · <b data-trait="1247"></b> · newest mint</div>
+  </section>
+
+  <!-- ============ MARQUEE: recent mints ============ -->
+  <section class="x-marq" aria-labelledby="marq-h">
+    <div class="x-wrap x-marq-h">
+      <div class="x-eyebrow" id="marq-h">Just minted <span class="note">3</span></div>
+      <span class="x-small">Newest first. IDs are sequential. Hover to pause.</span>
+    </div>
+    <div class="x-marq-view">
+      <div class="x-marq-track">
+        <ul class="x-marq-list">
+          <li><a href="#"><canvas class="x-art" data-id="1247" width="150" height="150" role="img" aria-label="Explorer #1247 (placeholder art)"></canvas><span class="cap"><span>#1247</span><span data-trait="1247"></span></span></a></li>
+          <li><a href="#"><canvas class="x-art" data-id="1246" width="150" height="150" role="img" aria-label="Explorer #1246 (placeholder art)"></canvas><span class="cap"><span>#1246</span><span data-trait="1246"></span></span></a></li>
+          <li><a href="#"><canvas class="x-art" data-id="1245" width="150" height="150" role="img" aria-label="Explorer #1245 (placeholder art)"></canvas><span class="cap"><span>#1245</span><span data-trait="1245"></span></span></a></li>
+          <li><a href="#"><canvas class="x-art" data-id="1244" width="150" height="150" role="img" aria-label="Explorer #1244 (placeholder art)"></canvas><span class="cap"><span>#1244</span><span data-trait="1244"></span></span></a></li>
+          <li><a href="#"><canvas class="x-art" data-id="1243" width="150" height="150" role="img" aria-label="Explorer #1243 (placeholder art)"></canvas><span class="cap"><span>#1243</span><span data-trait="1243"></span></span></a></li>
+          <li><a href="#"><canvas class="x-art" data-id="1242" width="150" height="150" role="img" aria-label="Explorer #1242 (placeholder art)"></canvas><span class="cap"><span>#1242</span><span data-trait="1242"></span></span></a></li>
+          <li><a href="#"><canvas class="x-art" data-id="1241" width="150" height="150" role="img" aria-label="Explorer #1241 (placeholder art)"></canvas><span class="cap"><span>#1241</span><span data-trait="1241"></span></span></a></li>
+          <li><a href="#"><canvas class="x-art" data-id="1240" width="150" height="150" role="img" aria-label="Explorer #1240 (placeholder art)"></canvas><span class="cap"><span>#1240</span><span data-trait="1240"></span></span></a></li>
+          <li><a href="#"><canvas class="x-art" data-id="1239" width="150" height="150" role="img" aria-label="Explorer #1239 (placeholder art)"></canvas><span class="cap"><span>#1239</span><span data-trait="1239"></span></span></a></li>
+          <li><a href="#"><canvas class="x-art" data-id="1238" width="150" height="150" role="img" aria-label="Explorer #1238 (placeholder art)"></canvas><span class="cap"><span>#1238</span><span data-trait="1238"></span></span></a></li>
+          <li><a href="#"><canvas class="x-art" data-id="1237" width="150" height="150" role="img" aria-label="Explorer #1237 (placeholder art)"></canvas><span class="cap"><span>#1237</span><span data-trait="1237"></span></span></a></li>
+          <li><a href="#"><canvas class="x-art" data-id="1236" width="150" height="150" role="img" aria-label="Explorer #1236 (placeholder art)"></canvas><span class="cap"><span>#1236</span><span data-trait="1236"></span></span></a></li>
+        </ul>
+        <ul class="x-marq-list" aria-hidden="true">
+          <li><a href="#" tabindex="-1"><canvas class="x-art" data-id="1247" width="150" height="150"></canvas><span class="cap"><span>#1247</span><span data-trait="1247"></span></span></a></li>
+          <li><a href="#" tabindex="-1"><canvas class="x-art" data-id="1246" width="150" height="150"></canvas><span class="cap"><span>#1246</span><span data-trait="1246"></span></span></a></li>
+          <li><a href="#" tabindex="-1"><canvas class="x-art" data-id="1245" width="150" height="150"></canvas><span class="cap"><span>#1245</span><span data-trait="1245"></span></span></a></li>
+          <li><a href="#" tabindex="-1"><canvas class="x-art" data-id="1244" width="150" height="150"></canvas><span class="cap"><span>#1244</span><span data-trait="1244"></span></span></a></li>
+          <li><a href="#" tabindex="-1"><canvas class="x-art" data-id="1243" width="150" height="150"></canvas><span class="cap"><span>#1243</span><span data-trait="1243"></span></span></a></li>
+          <li><a href="#" tabindex="-1"><canvas class="x-art" data-id="1242" width="150" height="150"></canvas><span class="cap"><span>#1242</span><span data-trait="1242"></span></span></a></li>
+          <li><a href="#" tabindex="-1"><canvas class="x-art" data-id="1241" width="150" height="150"></canvas><span class="cap"><span>#1241</span><span data-trait="1241"></span></span></a></li>
+          <li><a href="#" tabindex="-1"><canvas class="x-art" data-id="1240" width="150" height="150"></canvas><span class="cap"><span>#1240</span><span data-trait="1240"></span></span></a></li>
+          <li><a href="#" tabindex="-1"><canvas class="x-art" data-id="1239" width="150" height="150"></canvas><span class="cap"><span>#1239</span><span data-trait="1239"></span></span></a></li>
+          <li><a href="#" tabindex="-1"><canvas class="x-art" data-id="1238" width="150" height="150"></canvas><span class="cap"><span>#1238</span><span data-trait="1238"></span></span></a></li>
+          <li><a href="#" tabindex="-1"><canvas class="x-art" data-id="1237" width="150" height="150"></canvas><span class="cap"><span>#1237</span><span data-trait="1237"></span></span></a></li>
+          <li><a href="#" tabindex="-1"><canvas class="x-art" data-id="1236" width="150" height="150"></canvas><span class="cap"><span>#1236</span><span data-trait="1236"></span></span></a></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ WHAT AN EXPLORER DOES ============ -->
+  <section id="what" class="x-sec" aria-labelledby="what-h">
+    <div class="x-wrap">
+      <div class="x-eyebrow rv">What an Explorer does <span class="note">4</span></div>
+      <h2 id="what-h" class="x-statement rv d1">An Explorer can hold a board seat in a Chamber <span class="x-grad">when LORE holders delegate to it.</span></h2>
+      <p class="x-sub rv d2">Owning one makes you eligible. On its own it doesn't give you a seat, a vote or income. Delegation decides who sits, and delegators can move their weight whenever they like.</p>
+
+      <ol class="x-flow">
+        <li class="x-glass rv">
+          <div class="viz">
+            <canvas class="x-art" data-id="63" width="128" height="128" role="img" aria-label="Explorer #63 (placeholder art)"></canvas>
+            <span class="x-viz-cap">#63 · nadia.eth · not seated</span>
+          </div>
+          <h3>Hold an Explorer</h3>
+          <p>Mint one here or buy one from a holder. Chambers that use Loreum Explorers as their membership NFT, like Loreum DAO, can seat it.</p>
+        </li>
+        <li class="x-glass rv d1">
+          <div class="viz">
+            <svg viewBox="0 0 300 176" width="100%" height="100%" role="img" aria-label="LORE holders delegating 540,000 LORE to Explorer #63">
+              <defs>
+                <linearGradient id="lg-del" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#60a5fa" stop-opacity="0.1"/><stop offset="1" stop-color="#38bdf8" stop-opacity="0.9"/></linearGradient>
+                <radialGradient id="rg-node" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#bfdbfe"/><stop offset="0.5" stop-color="#3b82f6"/><stop offset="1" stop-color="#1e3a8a"/></radialGradient>
+              </defs>
+              <g fill="none" stroke="url(#lg-del)" stroke-width="1.4">
+                <path d="M40 30 C 130 30, 150 88, 222 88"/>
+                <path d="M30 62 C 120 62, 150 88, 222 88"/>
+                <path d="M46 94 C 130 94, 160 88, 222 88"/>
+                <path d="M28 124 C 120 124, 150 88, 222 88"/>
+                <path d="M44 152 C 130 152, 150 88, 222 88"/>
+              </g>
+              <g fill="#cbd5e1"><circle cx="40" cy="30" r="4"/><circle cx="30" cy="62" r="5"/><circle cx="46" cy="94" r="3.5"/><circle cx="28" cy="124" r="6"/><circle cx="44" cy="152" r="3"/></g>
+              <circle cx="238" cy="88" r="22" fill="url(#rg-node)"/>
+              <circle cx="238" cy="88" r="30" fill="none" stroke="#38bdf8" stroke-opacity="0.35"/>
+              <text x="238" y="92" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" fill="#f8fafc">#63</text>
+            </svg>
+            <span class="x-viz-cap">540,000 LORE delegated to #63</span>
+          </div>
+          <h3>LORE holders delegate</h3>
+          <p>Holders deposit LORE into a Chamber's vault and delegate that weight to the Explorers they trust. They can move it at any time.</p>
+        </li>
+        <li class="x-glass rv d2">
+          <div class="viz">
+            <ol class="x-rank" aria-label="Loreum DAO Explorers ranked by delegated LORE">
+              <li><span>#7</span><span class="bar"><i style="width:100%"></i></span><span class="r num">2.41M</span></li>
+              <li><span>#12</span><span class="bar"><i style="width:79.05%"></i></span><span class="r num">1.905M</span></li>
+              <li><span>#31</span><span class="bar"><i style="width:46.47%"></i></span><span class="r num">1.12M</span></li>
+              <li><span>#44</span><span class="bar"><i style="width:40.66%"></i></span><span class="r num">980K</span></li>
+              <li><span>#58</span><span class="bar"><i style="width:25.39%"></i></span><span class="r num">612K</span></li>
+              <li class="cut" aria-hidden="true"><span>5 seats</span></li>
+              <li class="out"><span>#63</span><span class="bar"><i style="width:22.41%"></i></span><span class="r num">540K</span></li>
+            </ol>
+          </div>
+          <h3>The top 5 take the seats</h3>
+          <p>In Loreum DAO the 5 Explorers with the most delegated LORE are the board, and any 3 of them can approve a transaction. Seat changes take effect after 1 block.</p>
+        </li>
+      </ol>
+
+      <div class="x-authwrap x-glass rv">
+        <div>
+          <h3>Who acts for a seat <span class="note">5</span></h3>
+          <p>The owner of a seated Explorer acts for it. An owner that is a contract, like a Safe, can also add a session key that is limited to certain actions and expires. Treasury Agent, an AI director, submits with its key and confirms only through its policy account.</p>
+        </div>
+        <div class="x-auth" role="group" aria-label="Authority chain for Explorer #31">
+          <div class="n"><span class="k">Seat</span><span class="v">Explorer #31 · seat 3</span><span class="s">1,120,000 LORE delegated</span></div>
+          <div class="n"><span class="k">Owner</span><span class="v">Treasury Agent</span><span class="s">Policy account · Safe 0x9aB3…40d1</span></div>
+          <div class="n key"><span class="k">Session key</span><span class="v">0x7E0f…19b2</span>
+            <span class="x-scopes" role="img" aria-label="Scope 0x35: submit, execute, revoke and cancel. No confirm."><span class="on">SUBMIT</span><span>CONFIRM</span><span class="on">EXECUTE</span><span class="on">REVOKE</span><span class="on">CANCEL</span></span>
+            <span class="s">Expires Mar 30, 2027</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ BOARD WALL ============ -->
+  <section class="x-sec" aria-labelledby="board-h" style="padding-top:20px">
+    <div class="x-wrap">
+      <div class="x-sec-head">
+        <div>
+          <div class="x-eyebrow">Seated now · Loreum DAO <span class="note">6</span></div>
+          <h2 id="board-h" class="x-h2">The board, as art</h2>
+        </div>
+        <div class="x-sec-aside">
+          <span class="x-fresh"><i></i>From chamber-indexer · 24 s ago</span>
+          <a class="x-link" href="app-board.html">Open the board in the Loreum app</a>
+        </div>
+      </div>
+      <div class="x-board">
+        <a class="x-seat lg x-tilt rv" href="#">
+          <canvas class="x-art" data-id="7" width="600" height="600" role="img" aria-label="Explorer #7 (placeholder art)"></canvas>
+          <span class="x-seat-top"><span class="x-rankpill">Seat 1</span><span class="x-rankpill" data-trait="7"></span></span>
+          <span class="x-seat-over"><span class="x-seat-name">Explorer #7</span><span class="x-seat-owner">aria.eth · seated Feb 2, 2027</span><span class="x-seat-w">2,410,000 LORE delegated</span></span>
+        </a>
+        <a class="x-seat x-tilt rv d1" href="#">
+          <canvas class="x-art" data-id="12" width="300" height="300" role="img" aria-label="Explorer #12 (placeholder art)"></canvas>
+          <span class="x-seat-top"><span class="x-rankpill">Seat 2</span></span>
+          <span class="x-seat-over"><span class="x-seat-name">Explorer #12</span><span class="x-seat-owner">kofi.eth · Safe 2-of-3</span><span class="x-seat-w">1,905,000 LORE</span></span>
+        </a>
+        <a class="x-seat x-tilt rv d2" href="#">
+          <canvas class="x-art" data-id="31" width="300" height="300" role="img" aria-label="Explorer #31 (placeholder art)"></canvas>
+          <span class="x-seat-top"><span class="x-rankpill">Seat 3</span><span class="x-chip sm blue">AI director</span></span>
+          <span class="x-seat-over"><span class="x-seat-name">Explorer #31</span><span class="x-seat-owner">Treasury Agent · policy account</span><span class="x-seat-w">1,120,000 LORE</span></span>
+        </a>
+        <a class="x-seat x-tilt rv d1" href="#">
+          <canvas class="x-art" data-id="44" width="300" height="300" role="img" aria-label="Explorer #44 (placeholder art)"></canvas>
+          <span class="x-seat-top"><span class="x-rankpill">Seat 4</span><span class="x-chip sm">You</span></span>
+          <span class="x-seat-over"><span class="x-seat-name">Explorer #44</span><span class="x-seat-owner">lena.eth</span><span class="x-seat-w">980,000 LORE</span></span>
+        </a>
+        <a class="x-seat x-tilt rv d2" href="#">
+          <canvas class="x-art" data-id="58" width="300" height="300" role="img" aria-label="Explorer #58 (placeholder art)"></canvas>
+          <span class="x-seat-top"><span class="x-rankpill">Seat 5</span></span>
+          <span class="x-seat-over"><span class="x-seat-name">Explorer #58</span><span class="x-seat-owner">marco.eth</span><span class="x-seat-w">612,000 LORE</span></span>
+        </a>
+      </div>
+      <div class="x-next rv">
+        <canvas class="x-art" data-id="63" width="76" height="76" role="img" aria-label="Explorer #63 (placeholder art)"></canvas>
+        <div>
+          <h3>Next in line: Explorer #63 · nadia.eth</h3>
+          <p><span class="num">540,000</span> LORE delegated. Needs <span class="num">72,001</span> more to take seat 5 from Explorer #58.</p>
+        </div>
+        <a class="x-link" href="app-board.html">Delegate in the app</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ RECENTLY MINTED ============ -->
+  <section class="x-sec" aria-labelledby="recent-h" style="padding-top:40px">
+    <div class="x-wrap">
+      <div class="x-sec-head">
+        <div>
+          <div class="x-eyebrow">From the collection</div>
+          <h2 id="recent-h" class="x-h2">Recently minted</h2>
+        </div>
+        <a class="x-link" href="eco-explorers.html#mine">My Explorers</a>
+      </div>
+      <div class="x-grid8">
+        <a class="x-tile rv" href="#"><canvas class="x-art" data-id="1247" width="300" height="300" role="img" aria-label="Explorer #1247 (placeholder art)"></canvas><span class="x-new x-chip sm blue">New</span><span class="x-tile-cap"><span>Explorer #1247</span><span class="x-mono" data-trait="1247"></span></span></a>
+        <a class="x-tile rv d1" href="#"><canvas class="x-art" data-id="1246" width="300" height="300" role="img" aria-label="Explorer #1246 (placeholder art)"></canvas><span class="x-tile-cap"><span>Explorer #1246</span><span class="x-mono" data-trait="1246"></span></span></a>
+        <a class="x-tile rv d2" href="#"><canvas class="x-art" data-id="1245" width="300" height="300" role="img" aria-label="Explorer #1245 (placeholder art)"></canvas><span class="x-tile-cap"><span>Explorer #1245</span><span class="x-mono" data-trait="1245"></span></span></a>
+        <a class="x-tile rv d3" href="#"><canvas class="x-art" data-id="1244" width="300" height="300" role="img" aria-label="Explorer #1244 (placeholder art)"></canvas><span class="x-tile-cap"><span>Explorer #1244</span><span class="x-mono" data-trait="1244"></span></span></a>
+        <a class="x-tile rv" href="#"><canvas class="x-art" data-id="1243" width="300" height="300" role="img" aria-label="Explorer #1243 (placeholder art)"></canvas><span class="x-tile-cap"><span>Explorer #1243</span><span class="x-mono" data-trait="1243"></span></span></a>
+        <a class="x-tile rv d1" href="#"><canvas class="x-art" data-id="1242" width="300" height="300" role="img" aria-label="Explorer #1242 (placeholder art)"></canvas><span class="x-tile-cap"><span>Explorer #1242</span><span class="x-mono" data-trait="1242"></span></span></a>
+        <a class="x-tile rv d2" href="#"><canvas class="x-art" data-id="1241" width="300" height="300" role="img" aria-label="Explorer #1241 (placeholder art)"></canvas><span class="x-tile-cap"><span>Explorer #1241</span><span class="x-mono" data-trait="1241"></span></span></a>
+        <a class="x-tile rv d3" href="#"><canvas class="x-art" data-id="1240" width="300" height="300" role="img" aria-label="Explorer #1240 (placeholder art)"></canvas><span class="x-tile-cap"><span>Explorer #1240</span><span class="x-mono" data-trait="1240"></span></span></a>
+      </div>
+      <div class="x-soon rv">
+        <div>
+          <span class="x-chip sm amber">Not built yet <span class="note">7</span></span>
+          <h3>Browse all 10,000 with trait filters</h3>
+          <p>Filtering every Explorer by trait needs an index of the whole collection, and we haven't built one. Until then this site shows recent mints, the seated board and the Explorers in your wallet.</p>
+        </div>
+        <a class="x-link" href="eco-explorers.html#mine">See the Explorers in your wallet</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ MY EXPLORERS (wallet-scoped) ============ -->
+  <section id="mine" class="x-sec x-mine" aria-labelledby="mine-h">
+    <div class="x-wrap">
+      <div class="x-sec-head">
+        <div>
+          <div class="x-eyebrow">Your collection · lena.eth <span class="note">8</span></div>
+          <h2 id="mine-h" class="x-h2">My Explorers</h2>
+        </div>
+        <dl class="x-mstats">
+          <div class="x-mstat"><dt>Held</dt><dd>2</dd></div>
+          <div class="x-mstat"><dt>Seated</dt><dd>1</dd></div>
+          <div class="x-mstat"><dt>Can mint</dt><dd>98</dd></div>
+        </dl>
+      </div>
+      <div class="x-mine-grid">
+        <article class="x-own x-glass rv">
+          <canvas class="x-art" data-id="44" width="220" height="260" role="img" aria-label="Explorer #44 (placeholder art)"></canvas>
+          <div class="x-own-b">
+            <div class="row"><span class="x-chip sm green"><i class="x-dot ok"></i>Seated · Loreum DAO seat 4</span></div>
+            <h3>Explorer #44</h3>
+            <dl class="x-kv">
+              <dt>Delegated</dt><dd>980,000 LORE</dd>
+              <dt>Seated since</dt><dd>Feb 9, 2027</dd>
+              <dt>Lead</dt><dd>440,000 LORE over #63, the first unseated Explorer</dd>
+            </dl>
+            <div class="x-auth compact" role="group" aria-label="Authority chain for Explorer #44">
+              <div class="n"><span class="k">Seat</span><span class="v">#44 · seat 4</span></div>
+              <div class="n"><span class="k">Owner</span><span class="v">lena.eth</span><span class="s">EOA</span></div>
+              <div class="n key"><span class="k">Session key</span><span class="v">None</span><span class="s">EOAs can't set one</span></div>
+            </div>
+            <p>You act for this seat directly from lena.eth. Only a contract owner, like a Safe, can add a session key.</p>
+            <a class="x-link" href="app-queue.html">Review the queue in the Loreum app</a>
+          </div>
+        </article>
+        <article class="x-own x-glass rv d1">
+          <canvas class="x-art" data-id="1203" width="220" height="260" role="img" aria-label="Explorer #1203 (placeholder art)"></canvas>
+          <div class="x-own-b">
+            <div class="row"><span class="x-chip sm">Not seated</span></div>
+            <h3>Explorer #1203</h3>
+            <dl class="x-kv">
+              <dt>Delegated</dt><dd>0 LORE</dd>
+              <dt>To take a seat</dt><dd>More than 612,000 LORE in Loreum DAO today</dd>
+            </dl>
+            <p>An Explorer becomes eligible for a seat when LORE holders delegate to it. Share its number with delegators, or hold it as art.</p>
+            <a class="x-link" href="eco-explorers.html#what">How delegation works</a>
+          </div>
+        </article>
+      </div>
+      <p class="x-small" style="margin-top:16px">Shows only Explorers held by this wallet. Holdings come from the contract; seat status comes from chamber-indexer.</p>
+    </div>
+  </section>
+
+  <!-- ============ STORY BAND ============ -->
+  <section class="x-story x-sec" aria-labelledby="story-h">
+    <canvas class="x-art" data-id="58" width="1200" height="500" aria-hidden="true"></canvas>
+    <div class="x-wrap">
+      <div class="x-eyebrow" id="story-h">The story</div>
+      <p class="x-quote rv">Investors own. Employees execute. <em>Explorers put the seat between them on-chain</em>, where delegation, not a boardroom, decides who governs.</p>
+      <div class="x-ctas rv d1"><a class="x-btn x-btn-ghost" href="#">Read the story</a></div>
+    </div>
+  </section>
+
+  <!-- ============ FACTS + TRUST ============ -->
+  <section class="x-sec" aria-labelledby="facts-h">
+    <div class="x-wrap">
+      <div class="x-sec-head">
+        <div>
+          <div class="x-eyebrow">The contract</div>
+          <h2 id="facts-h" class="x-h2">Check it yourself</h2>
+        </div>
+      </div>
+      <div class="x-facts">
+        <div class="x-factlist x-glass rv">
+          <dl>
+            <dt>Contract</dt><dd><span class="x-addr">0xB99DEdbDe082B8Be86f06449f2fC7b9FED044E15</span><button class="x-copy" type="button" data-copy="0xB99DEdbDe082B8Be86f06449f2fC7b9FED044E15">Copy</button></dd>
+            <dt>Token</dt><dd>ERC-721 · Loreum Explorers (LOREUM) · Ethereum mainnet</dd>
+            <dt>Supply</dt><dd><span class="num">10,000</span> max · <span class="num">1,247</span> minted</dd>
+            <dt>Price</dt><dd>0.05 ETH <span class="note">9</span> The contract owner can change it. The mint panel re-checks the price right before you sign.</dd>
+            <dt>Per wallet</dt><dd>100 mints, lifetime</dd>
+            <dt>Royalty</dt><dd>5%</dd>
+            <dt>Contract owner</dt><dd>Team Safe, 4-of-7 · <span class="x-mono">0x5d45…2095</span></dd>
+            <dt>Art and traits</dt><dd>IPFS, content-addressed, read from each token's URI</dd>
+          </dl>
+        </div>
+        <div class="x-trust x-glass rv d1">
+          <div>
+            <span class="x-chip sm blue">Trust <span class="note">10</span></span>
+            <h3 style="margin-top:12px">We only claim what you can verify.</h3>
+            <p style="margin-top:8px">Security reviews, the bug bounty, contract verification and what the Loreum team can and can't do are published in one place.</p>
+          </div>
+          <ul>
+            <li>Contract addresses and verification status</li>
+            <li>Audit status and bug bounty</li>
+            <li>Who controls LORE supply, and live alerts</li>
+          </ul>
+          <a class="x-btn x-btn-ghost" href="eco-trust.html">Open loreum.org/trust</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CLOSING CTA ============ -->
+  <section class="x-wrap" aria-labelledby="cta-h">
+    <div class="x-cta rv">
+      <div class="x-cta-mosaic" aria-hidden="true">
+        <canvas class="x-art" data-id="1231" width="160" height="160"></canvas>
+        <canvas class="x-art" data-id="7" width="160" height="160"></canvas>
+        <canvas class="x-art" data-id="1229" width="160" height="160"></canvas>
+        <canvas class="x-art" data-id="31" width="160" height="160"></canvas>
+        <canvas class="x-art" data-id="1226" width="160" height="160"></canvas>
+        <canvas class="x-art" data-id="12" width="160" height="160"></canvas>
+        <canvas class="x-art" data-id="1222" width="160" height="160"></canvas>
+        <canvas class="x-art" data-id="44" width="160" height="160"></canvas>
+        <canvas class="x-art" data-id="1219" width="160" height="160"></canvas>
+        <canvas class="x-art" data-id="1215" width="160" height="160"></canvas>
+        <canvas class="x-art" data-id="58" width="160" height="160"></canvas>
+        <canvas class="x-art" data-id="1211" width="160" height="160"></canvas>
+      </div>
+      <h2 id="cta-h">Mint an Explorer</h2>
+      <p>0.05 ETH, straight from the contract. <span class="num">8,753</span> of 10,000 left.</p>
+      <div class="x-ctas" style="margin-top:30px">
+        <a class="x-btn x-btn-primary" href="eco-explorers.html#mint">Mint an Explorer · 0.05 ETH</a>
+        <a class="x-btn x-btn-ghost" href="eco-landing.html">What is Loreum?</a>
+      </div>
+    </div>
+  </section>
+
+  <div class="x-wrap x-notes-wrap">
+    <section class="notes">
+      <h3>Design notes</h3>
+      <ol>
+        <li><b>Full-bleed art hero.</b> Chad's direction for Explorers is a bold, art-forward showcase in the Art Blocks / Azuki register, not the operator console. The newest mint (#1247) fills the viewport, with a slow drift, pointer parallax and twinkling stars. Everything stops under <code>prefers-reduced-motion</code>. The art on this page is generated in the browser as a placeholder for the real IPFS images, and the Form/Palette labels are placeholder traits, not the collection's metadata.</li>
+        <li><b>Mint panel.</b> Name, supply, price and the per-wallet limit are read from <code>LoreumNFT</code> (<code>totalSupply</code>, <code>MAX_SUPPLY</code>, <code>mintCost</code>, <code>MAX_MINT</code>), as <code>Claim.tsx</code> does. The Explorers site reads the NFT contract and IPFS directly because it has no collection indexer; the app-only indexer rule doesn't apply here. It reads once on page load and never polls or watches, so an idle tab costs no RPC; the source line under the panel says so. The mint is simulated at click time ("Simulated at block … via RPC just now"), and a price change is shown as a designed state, not a toast. The minted count (1,247) is a mock value and isn't in <code>_mock-data.md</code>; on-chain supply was 70 in Sep 2026 (review read cited in <code>I-6</code>).</li>
+        <li><b>Recent-mints marquee and grid.</b> Token IDs are sequential, so "newest first" is <code>totalSupply</code> counting down. This matches <code>Home.tsx</code> (<code>FEATURED_COUNT</code> = 8) and costs no enumeration. The marquee pauses on hover and focus, and its duplicate track is hidden from assistive tech.</li>
+        <li><b>Honest statement of what an Explorer does</b> (<code>D-6</code>). The page never says the NFT <em>is</em> a seat and makes no yield or income claims. It uses the exact framing: an Explorer can hold a seat when LORE holders delegate to it. The ranked bars show the real rule (top 5 by delegated LORE, quorum 3 of 5 from <code>1 + n*51/100</code>, <code>SEATING_DELAY</code> = 1 block).</li>
+        <li><b>The authority chain carries over</b> from the app's signature element (seat, then owner, then session key) in showcase styling. The copy says "session key", never "operator" (<code>P-8</code>/<code>P-9</code>). Treasury Agent's scope <code>0x35</code> omits CONFIRM because it confirms only through its policy account.</li>
+        <li><b>Board wall from chamber-indexer.</b> Seats, owners and delegated LORE come from chamber-indexer, the same GraphQL API the app uses (<code>I-6</code> NFT ownership, <code>I-13</code> board and delegation), so showing the board costs no RPC. The board wall and the seat status on My Explorers cards are the site's only indexer reads, and the freshness chip says where the data came from. All values match <code>_mock-data.md</code>.</li>
+        <li><b>The full public gallery is out of scope.</b> Browsing and filtering all 10,000 tokens by trait needs a collection index. The card says so plainly and points to what does exist (My Explorers) instead of a disabled "later" button or a link to a gallery that doesn't exist.</li>
+        <li><b>My Explorers stays wallet-scoped</b> (<code>tokenOfOwnerByIndex</code>, as in <code>Gallery.tsx</code>). Seat status on each card comes from the indexer. lena.eth owns #44 from an EOA, so the card explains why there's no session key rather than offering a button that would fail (<code>setDirectorOperator</code> reverts unless the owner has code). The owner and key nodes carry their detail on a second line so nothing truncates in the compact chain.</li>
+        <li><b>Contract facts</b> come from <code>explorers/deployments/mainnet.txt</code>: owner Team Safe, <code>MAX_MINT</code> 100, royalty 500 bps. Because the owner can change the price, the page says so next to the price and explains the pre-sign check. The Team Safe threshold is 4-of-7 after <code>M-2</code>.</li>
+        <li><b>Trust callout replaces the Story page's audit claim</b> (<code>Story.tsx:161</code>, <code>D-6</code>; the <code>D-7</code> banned-claims check keeps it from returning). It links to <code>eco-trust.html</code> instead of asserting anything.</li>
+      </ol>
+    </section>
+  </div>
+</main>
+
+<footer class="x-foot">
+  <div class="x-wrap x-foot-in">
+    <div>
+      <a class="x-brand" href="eco-explorers.html">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="7.5" fill="#3b82f6"/><ellipse cx="16" cy="16" rx="14" ry="5" fill="none" stroke="#bfdbfe" stroke-opacity="0.7" stroke-width="1.2" transform="rotate(-24 16 16)"/></svg>
+        <span class="x-brand-name">Explorers</span>
+      </a>
+      <p class="x-small" style="margin-top:14px;max-width:26em">A public, on-chain NFT collection by Loreum. Art on IPFS, minted directly from the contract.</p>
+    </div>
+    <div>
+      <h4>Explore</h4>
+      <ul>
+        <li><a href="eco-explorers.html">Home</a></li>
+        <li><a href="#">Story</a></li>
+        <li><a href="eco-explorers.html#mint">Mint</a></li>
+        <li><a href="eco-explorers.html#mine">My Explorers</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Loreum</h4>
+      <ul>
+        <li><a href="eco-landing.html">loreum.org</a></li>
+        <li><a href="app-overview.html">Loreum app</a></li>
+        <li><a href="eco-trust.html">Trust and security</a></li>
+        <li><a href="#">GitHub</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="x-wrap x-foot-legal">
+    <span>&#169; 2027 Loreum DAO LLC.</span>
+    <span>Mockup only. Art is generated placeholder art.</span>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+  document.documentElement.classList.add('js');
+  var reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  var TAU = Math.PI * 2;
+
+  /* ---------- Placeholder art: seeded, deterministic per token id ---------- */
+  var PAL = {
+    Abyss:  ['#03050b', '#0b1a3a', '#3b82f6', '#38bdf8', '#e0f2fe'],
+    Violet: ['#05030c', '#24124a', '#a685f5', '#f0abfc', '#faf5ff'],
+    Ember:  ['#0a0403', '#3b1406', '#f97316', '#fbbf24', '#fff7ed'],
+    Aurora: ['#020b09', '#06342a', '#34d399', '#38bdf8', '#ecfeff'],
+    Tide:   ['#020617', '#10284a', '#818cf8', '#22d3ee', '#f8fafc'],
+    Dust:   ['#0a0908', '#2b2522', '#e7e5e4', '#fda4af', '#fafaf9']
+  };
+  var PNAMES = Object.keys(PAL);
+  var FORMS = ['Orbit', 'Horizon', 'Drift', 'Signal', 'Monolith'];
+  var CURATED = { 1247: ['Horizon', 'Abyss'], 7: ['Orbit', 'Violet'], 12: ['Signal', 'Tide'], 31: ['Monolith', 'Aurora'], 44: ['Drift', 'Ember'], 58: ['Horizon', 'Dust'], 63: ['Orbit', 'Ember'], 1203: ['Signal', 'Violet'] };
+
+  function rnd(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  function traitsOf(id) {
+    var r = rnd(id * 7919 + 13);
+    var f = FORMS[(id * 3 + Math.floor(r() * 2)) % FORMS.length], p = PNAMES[Math.floor(r() * PNAMES.length)];
+    if (CURATED[id]) { f = CURATED[id][0]; p = CURATED[id][1]; }
+    return { form: f, palette: p };
+  }
+  function rgba(hex, a) { var n = parseInt(hex.slice(1), 16); return 'rgba(' + (n >> 16 & 255) + ',' + (n >> 8 & 255) + ',' + (n & 255) + ',' + a + ')'; }
+
+  function mkOrbit(r, p) {
+    var cx = 0.5 + (r() - 0.5) * 0.16, cy = 0.5 + (r() - 0.5) * 0.12, R = 0.12 + r() * 0.07, tilt = -0.55 + r() * 1.1, sq = 0.22 + r() * 0.16;
+    var rings = [], n = 4 + Math.floor(r() * 4), i;
+    for (i = 0; i < n; i++) rings.push({ k: 1.6 + i * (0.36 + r() * 0.14), a: 0.16 + r() * 0.42, c: i % 2 ? p[3] : p[2], lw: 0.0016 + r() * 0.0035, sp: (0.04 + r() * 0.12) * (r() < 0.5 ? -1 : 1), ph: r() * TAU, ms: 0.006 + r() * 0.01, mc: r() < 0.5 ? p[4] : p[3], moon: r() < 0.75 });
+    function geo(w, h) { var u = Math.min(w, h); return { u: u, X: cx * w, Y: cy * h, RR: R * u }; }
+    return {
+      st: function (c, w, h) {
+        var G = geo(w, h), u = G.u, X = G.X, Y = G.Y, RR = G.RR;
+        var hg = c.createRadialGradient(X, Y, RR * 0.8, X, Y, RR * 3.4);
+        hg.addColorStop(0, rgba(p[2], 0.26)); hg.addColorStop(1, rgba(p[2], 0));
+        c.fillStyle = hg; c.beginPath(); c.arc(X, Y, RR * 3.4, 0, TAU); c.fill();
+        c.save(); c.translate(X, Y); c.rotate(tilt);
+        rings.forEach(function (q) { c.strokeStyle = rgba(q.c, q.a); c.lineWidth = Math.max(0.6, q.lw * u); c.beginPath(); c.ellipse(0, 0, q.k * RR, q.k * RR * sq, 0, 0, TAU); c.stroke(); });
+        c.restore();
+        var pg = c.createRadialGradient(X - RR * 0.45, Y - RR * 0.5, RR * 0.05, X, Y, RR * 1.05);
+        pg.addColorStop(0, p[4]); pg.addColorStop(0.28, p[2]); pg.addColorStop(0.8, p[1]); pg.addColorStop(1, p[0]);
+        c.fillStyle = pg; c.beginPath(); c.arc(X, Y, RR, 0, TAU); c.fill();
+        c.save(); c.translate(X, Y); c.rotate(tilt);
+        rings.forEach(function (q) { c.strokeStyle = rgba(q.c, Math.min(1, q.a + 0.15)); c.lineWidth = Math.max(0.6, q.lw * u * 1.2); c.beginPath(); c.ellipse(0, 0, q.k * RR, q.k * RR * sq, 0, 0, Math.PI); c.stroke(); });
+        c.restore();
+      },
+      dyn: function (c, w, h, t) {
+        var G = geo(w, h);
+        c.save(); c.translate(G.X, G.Y); c.rotate(tilt);
+        rings.forEach(function (q) {
+          if (!q.moon) return;
+          var a = q.ph + q.sp * t, x = Math.cos(a) * q.k * G.RR, y = Math.sin(a) * q.k * G.RR * sq, s = Math.max(1.2, q.ms * G.u);
+          var mg = c.createRadialGradient(x, y, 0, x, y, s * 4);
+          mg.addColorStop(0, rgba(q.mc, 0.9)); mg.addColorStop(0.25, rgba(q.mc, 0.35)); mg.addColorStop(1, rgba(q.mc, 0));
+          c.fillStyle = mg; c.beginPath(); c.arc(x, y, s * 4, 0, TAU); c.fill();
+          c.fillStyle = q.mc; c.beginPath(); c.arc(x, y, s, 0, TAU); c.fill();
+        });
+        c.restore();
+      },
+      occ: function (x, y, w, h) { var G = geo(w, h), dx = x - G.X, dy = y - G.Y; return dx * dx + dy * dy < G.RR * G.RR * 1.1; }
+    };
+  }
+
+  function mkHorizon(r, p, hero) {
+    var cxk = 0.5 + (r() - 0.5) * 0.3, topk = 0.5 + r() * 0.14, rk = 0.9 + r() * 0.3;
+    var bands = [], n = 7 + Math.floor(r() * 6), i;
+    for (i = 0; i < n; i++) bands.push({ d: r(), t: 0.008 + r() * 0.05, c: r() < 0.5 ? p[2] : p[3], a: 0.05 + r() * 0.16 });
+    var moon = { x: 0.12 + r() * 0.3 + (r() < 0.5 ? 0 : 0.45), y: 0.1 + r() * 0.22, R: (0.025 + r() * 0.03) * (hero ? 2.2 : 1) };
+    var sat = { ph: r(), sp: 0.006 + r() * 0.01, y: 0.15 + r() * 0.2 };
+    var sunk = (r() - 0.5) * 0.5, boost = hero ? 1.5 : 1;
+    if (hero) { cxk = 0.62; topk = 0.6; sunk = -0.12; }
+    function geo(w, h) { var u = Math.min(w, h), top = topk * h, R = Math.max(w * 0.75, h * 0.9) * rk; return { u: u, X: cxk * w, top: top, R: R, CY: top + R }; }
+    return {
+      st: function (c, w, h) {
+        var G = geo(w, h);
+        var ag = c.createRadialGradient(G.X, G.CY, G.R * 0.97, G.X, G.CY, G.R * 1.25);
+        ag.addColorStop(0, rgba(p[3], Math.min(1, 0.55 * boost))); ag.addColorStop(0.25, rgba(p[2], 0.22 * boost)); ag.addColorStop(1, rgba(p[2], 0));
+        c.fillStyle = ag; c.beginPath(); c.arc(G.X, G.CY, G.R * 1.25, 0, TAU); c.fill();
+        var mx = moon.x * w, my = moon.y * h, mr = moon.R * G.u;
+        var mg = c.createRadialGradient(mx - mr * 0.4, my - mr * 0.4, mr * 0.1, mx, my, mr);
+        mg.addColorStop(0, p[4]); mg.addColorStop(1, p[1]);
+        c.fillStyle = mg; c.beginPath(); c.arc(mx, my, mr, 0, TAU); c.fill();
+        c.save(); c.beginPath(); c.arc(G.X, G.CY, G.R, 0, TAU); c.clip();
+        var depth = h - G.top;
+        var pg = c.createLinearGradient(0, G.top, 0, h); pg.addColorStop(0, p[1]); pg.addColorStop(1, p[0]);
+        c.fillStyle = pg; c.fillRect(0, G.top, w, depth);
+        bands.forEach(function (b) { c.strokeStyle = rgba(b.c, Math.min(1, b.a * boost)); c.lineWidth = Math.max(1, b.t * depth); c.beginPath(); c.arc(G.X, G.CY, G.R - b.d * depth, Math.PI, TAU); c.stroke(); });
+        var sh = c.createRadialGradient(G.X - G.R * 0.2, G.top, 0, G.X, G.top, G.R * 0.9);
+        sh.addColorStop(0, rgba(p[3], 0.22)); sh.addColorStop(1, 'rgba(0,0,0,0)');
+        c.fillStyle = sh; c.fillRect(0, G.top, w, depth);
+        c.restore();
+        c.save(); c.shadowColor = p[3]; c.shadowBlur = Math.max(6, G.u * 0.04 * boost); c.strokeStyle = rgba(p[4], 0.9); c.lineWidth = Math.max(1, G.u * 0.003 * boost);
+        c.beginPath(); c.arc(G.X, G.CY, G.R, Math.PI * 1.02, Math.PI * 1.98); c.stroke(); c.restore();
+        /* sunrise over the limb */
+        var ang = -Math.PI / 2 + sunk * 0.6, sx = G.X + Math.cos(ang) * G.R, sy = G.CY + Math.sin(ang) * G.R;
+        var sg = c.createRadialGradient(sx, sy, 0, sx, sy, G.u * 0.95 * boost);
+        sg.addColorStop(0, rgba(p[4], 0.95)); sg.addColorStop(0.03, rgba(p[4], 0.7)); sg.addColorStop(0.12, rgba(p[3], 0.3)); sg.addColorStop(0.45, rgba(p[2], 0.08)); sg.addColorStop(1, rgba(p[2], 0));
+        c.fillStyle = sg; c.fillRect(0, 0, w, h);
+        c.save(); c.translate(sx, sy); c.scale(7, 0.28);
+        var fl = c.createRadialGradient(0, 0, 0, 0, 0, G.u * 0.14 * boost);
+        fl.addColorStop(0, rgba(p[4], 0.75)); fl.addColorStop(1, rgba(p[3], 0));
+        c.fillStyle = fl; c.beginPath(); c.arc(0, 0, G.u * 0.14 * boost, 0, TAU); c.fill(); c.restore();
+      },
+      dyn: function (c, w, h, t) {
+        var G = geo(w, h), k = (sat.ph + sat.sp * t) % 1, x = k * w, y = sat.y * h + Math.sin(k * Math.PI) * h * 0.04, s = Math.max(1, G.u * 0.004);
+        var tg = c.createLinearGradient(x - G.u * 0.12, y, x, y); tg.addColorStop(0, rgba(p[4], 0)); tg.addColorStop(1, rgba(p[4], 0.55));
+        c.strokeStyle = tg; c.lineWidth = s * 0.8; c.beginPath(); c.moveTo(x - G.u * 0.12, y + h * 0.004); c.lineTo(x, y); c.stroke();
+        c.fillStyle = p[4]; c.beginPath(); c.arc(x, y, s, 0, TAU); c.fill();
+      },
+      occ: function (x, y, w, h) {
+        var G = geo(w, h), dx = x - G.X, dy = y - G.CY;
+        if (dx * dx + dy * dy < G.R * G.R) return true;
+        var mx = moon.x * w - x, my = moon.y * h - y, mr = moon.R * G.u; return mx * mx + my * my < mr * mr;
+      }
+    };
+  }
+
+  function mkDrift(r, p) {
+    var f1 = 1 + r() * 2.2, f2 = 1 + r() * 2.2, f3 = 0.5 + r() * 1.5, s1 = r() * TAU, s2 = r() * TAU;
+    var sun = { x: 0.2 + r() * 0.6, y: 0.18 + r() * 0.5, R: 0.06 + r() * 0.07 };
+    var lines = [], n = 200 + Math.floor(r() * 140), i;
+    for (i = 0; i < n; i++) lines.push({ x: r(), y: r(), c: r() < 0.6 ? p[2] : (r() < 0.5 ? p[3] : p[4]), a: 0.12 + r() * 0.4, len: 30 + Math.floor(r() * 70) });
+    return {
+      st: function (c, w, h) {
+        var u = Math.min(w, h), sx = sun.x * w, sy = sun.y * h, sr = sun.R * u;
+        var g = c.createRadialGradient(sx, sy, 0, sx, sy, sr * 5);
+        g.addColorStop(0, rgba(p[4], 0.9)); g.addColorStop(0.18, rgba(p[3], 0.45)); g.addColorStop(1, rgba(p[2], 0));
+        c.fillStyle = g; c.beginPath(); c.arc(sx, sy, sr * 5, 0, TAU); c.fill();
+        c.lineCap = 'round';
+        var step = u * 0.0065, lw = Math.max(0.5, u * 0.0018), j, k, L, x, y, a;
+        for (j = 0; j < lines.length; j++) {
+          L = lines[j]; x = L.x * w; y = L.y * h;
+          c.strokeStyle = rgba(L.c, L.a); c.lineWidth = lw; c.beginPath(); c.moveTo(x, y);
+          for (k = 0; k < L.len; k++) { a = (Math.sin(x / u * f1 * 3 + s1) + Math.cos(y / u * f2 * 3 + s2) + Math.sin((x + y) / u * f3 * 2)) * 1.3; x += Math.cos(a) * step; y += Math.sin(a) * step; c.lineTo(x, y); }
+          c.stroke();
+        }
+      }
+    };
+  }
+
+  function mkSignal(r, p) {
+    var cx = 0.32 + r() * 0.36, cy = 0.32 + r() * 0.36, n = 8 + Math.floor(r() * 8), gap = 0.045 + r() * 0.03, freq = 18 + r() * 20, ph = r();
+    var rings = [], i;
+    for (i = 0; i < n; i++) rings.push({ dash: r() < 0.35, a: 0.1 + r() * 0.45, c: i % 3 ? p[2] : p[3] });
+    return {
+      st: function (c, w, h) {
+        var u = Math.min(w, h), X = cx * w, Y = cy * h, sp = Math.max(6, u * 0.03), gx, gy, d, b, a;
+        for (gx = sp / 2; gx < w; gx += sp) {
+          for (gy = sp / 2; gy < h; gy += sp) {
+            d = Math.sqrt((gx - X) * (gx - X) + (gy - Y) * (gy - Y)) / u;
+            b = Math.pow(Math.max(0, Math.cos(d * freq)), 6);
+            a = 0.06 + b * 0.55 * Math.max(0, 1 - d * 0.9);
+            c.fillStyle = rgba(b > 0.5 ? p[3] : p[4], a); c.beginPath(); c.arc(gx, gy, Math.max(0.6, u * 0.0025), 0, TAU); c.fill();
+          }
+        }
+        c.strokeStyle = rgba(p[4], 0.16); c.lineWidth = 1; c.beginPath(); c.moveTo(X, 0); c.lineTo(X, h); c.moveTo(0, Y); c.lineTo(w, Y); c.stroke();
+        rings.forEach(function (q, j) { c.setLineDash(q.dash ? [u * 0.01, u * 0.012] : []); c.strokeStyle = rgba(q.c, q.a); c.lineWidth = Math.max(0.8, u * 0.0028); c.beginPath(); c.arc(X, Y, (j + 1) * gap * u, 0, TAU); c.stroke(); });
+        c.setLineDash([]);
+        var cg = c.createRadialGradient(X, Y, 0, X, Y, u * 0.09);
+        cg.addColorStop(0, rgba(p[4], 1)); cg.addColorStop(0.2, rgba(p[3], 0.6)); cg.addColorStop(1, rgba(p[2], 0));
+        c.fillStyle = cg; c.beginPath(); c.arc(X, Y, u * 0.09, 0, TAU); c.fill();
+      },
+      dyn: function (c, w, h, t) {
+        var u = Math.min(w, h), X = cx * w, Y = cy * h, j, k;
+        for (j = 0; j < 2; j++) { k = ((t * 0.06) + ph + j * 0.5) % 1; c.strokeStyle = rgba(p[4], (1 - k) * 0.55); c.lineWidth = Math.max(1, u * 0.004); c.beginPath(); c.arc(X, Y, k * u * 0.85, 0, TAU); c.stroke(); }
+      }
+    };
+  }
+
+  function mkMonolith(r, p) {
+    var hz = 0.6 + r() * 0.1, sx = 0.5 + (r() - 0.5) * 0.3, sw = 0.075 + r() * 0.05, sh = 0.28 + r() * 0.14, ph = r();
+    function geo(w, h) { var u = Math.min(w, h), H = hz * h, W = sw * u, SH = sh * h, X = sx * w; return { u: u, H: H, W: W, SH: SH, X: X, x0: X - W / 2, y0: H - SH }; }
+    return {
+      st: function (c, w, h) {
+        var G = geo(w, h), i, j, yy;
+        var sky = c.createLinearGradient(0, G.H - h * 0.35, 0, G.H); sky.addColorStop(0, rgba(p[2], 0)); sky.addColorStop(1, rgba(p[3], 0.32));
+        c.fillStyle = sky; c.fillRect(0, G.H - h * 0.35, w, h * 0.35);
+        var bg = c.createLinearGradient(0, 0, 0, G.y0); bg.addColorStop(0, rgba(p[3], 0)); bg.addColorStop(1, rgba(p[4], 0.5));
+        c.fillStyle = bg; c.beginPath(); c.moveTo(G.x0 + G.W * 0.2, G.y0); c.lineTo(G.x0 + G.W * 0.8, G.y0); c.lineTo(G.X + G.W * 1.6, 0); c.lineTo(G.X - G.W * 1.6, 0); c.closePath(); c.fill();
+        var gg = c.createLinearGradient(0, G.H, 0, h); gg.addColorStop(0, p[1]); gg.addColorStop(1, '#000');
+        c.fillStyle = gg; c.fillRect(0, G.H, w, h - G.H);
+        c.strokeStyle = rgba(p[2], 0.16); c.lineWidth = 1;
+        for (i = -10; i <= 10; i++) { c.beginPath(); c.moveTo(G.X, G.H); c.lineTo(G.X + i * w * 0.12, h); c.stroke(); }
+        for (j = 1; j < 9; j++) { yy = G.H + (h - G.H) * Math.pow(j / 9, 1.8); c.beginPath(); c.moveTo(0, yy); c.lineTo(w, yy); c.stroke(); }
+        c.save(); c.shadowColor = p[3]; c.shadowBlur = Math.max(6, G.u * 0.03); c.strokeStyle = rgba(p[4], 0.8); c.lineWidth = Math.max(1, G.u * 0.0025);
+        c.beginPath(); c.moveTo(0, G.H); c.lineTo(w, G.H); c.stroke(); c.restore();
+        var rg = c.createLinearGradient(0, G.H, 0, G.H + G.SH * 0.6); rg.addColorStop(0, rgba(p[3], 0.28)); rg.addColorStop(1, rgba(p[3], 0));
+        c.fillStyle = rg; c.fillRect(G.x0, G.H, G.W, G.SH * 0.6);
+        var sg = c.createLinearGradient(G.x0, 0, G.x0 + G.W, 0); sg.addColorStop(0, '#000'); sg.addColorStop(0.7, p[0]); sg.addColorStop(1, p[1]);
+        c.fillStyle = sg; c.fillRect(G.x0, G.y0, G.W, G.SH);
+        c.strokeStyle = rgba(p[3], 0.9); c.lineWidth = Math.max(1, G.u * 0.003);
+        c.beginPath(); c.moveTo(G.x0 + G.W, G.y0); c.lineTo(G.x0 + G.W, G.H); c.moveTo(G.x0, G.y0); c.lineTo(G.x0 + G.W, G.y0); c.stroke();
+      },
+      dyn: function (c, w, h, t) {
+        var G = geo(w, h), i, k, y, x;
+        for (i = 0; i < 14; i++) { k = ((t * 0.04) + ph + i / 14) % 1; y = G.y0 - k * G.y0; x = G.X + Math.sin(i * 1.7 + t * 0.3) * G.W * (0.3 + k * 1.2); c.fillStyle = rgba(p[4], (1 - k) * 0.7); c.beginPath(); c.arc(x, y, Math.max(0.8, G.u * 0.0035), 0, TAU); c.fill(); }
+      },
+      occ: function (x, y, w, h) { var G = geo(w, h); if (y > G.H) return true; return x > G.x0 && x < G.x0 + G.W && y > G.y0; }
+    };
+  }
+
+  var MAKERS = { Orbit: mkOrbit, Horizon: mkHorizon, Drift: mkDrift, Signal: mkSignal, Monolith: mkMonolith };
+  var grainC = null;
+  function grain() {
+    if (grainC) return grainC;
+    grainC = document.createElement('canvas'); grainC.width = grainC.height = 128;
+    var x = grainC.getContext('2d'), d = x.createImageData(128, 128), i, v;
+    for (i = 0; i < d.data.length; i += 4) { v = Math.random() * 255 | 0; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 26; }
+    x.putImageData(d, 0, 0); return grainC;
+  }
+
+  function scene(id, dense) {
+    var tr = traitsOf(id), p = PAL[tr.palette], r = rnd(id * 9973 + 7);
+    var g = [0.2 + r() * 0.6, 0.1 + r() * 0.45];
+    var f = MAKERS[tr.form](r, p, !!dense);
+    var stars = [], n = (150 + Math.floor(r() * 150)) * (dense ? 3 : 1), i;
+    for (i = 0; i < n; i++) stars.push([r(), r(), r(), r()]);
+    return {
+      base: function (c, w, h) {
+        var lg = c.createLinearGradient(0, 0, w * 0.35, h); lg.addColorStop(0, p[1]); lg.addColorStop(1, p[0]);
+        c.fillStyle = lg; c.fillRect(0, 0, w, h);
+        var cx = g[0] * w, cy = g[1] * h, R = Math.max(w, h) * 0.8;
+        var rg = c.createRadialGradient(cx, cy, 0, cx, cy, R);
+        rg.addColorStop(0, rgba(p[2], 0.28)); rg.addColorStop(0.45, rgba(p[2], 0.07)); rg.addColorStop(1, rgba(p[2], 0));
+        c.fillStyle = rg; c.fillRect(0, 0, w, h);
+      },
+      stars: function (c, w, h, t) {
+        var u = Math.max(0.5, Math.min(w, h) / 500), j, s, x, y, big, rad, a;
+        for (j = 0; j < stars.length; j++) {
+          s = stars[j]; x = s[0] * w; y = s[1] * h;
+          if (f.occ && f.occ(x, y, w, h)) continue;
+          big = s[2] > 0.95; rad = (big ? 1.2 + s[2] : 0.3 + s[2] * 0.6) * u; a = 0.2 + s[3] * 0.65;
+          if (t) a *= 0.6 + 0.4 * Math.sin(t * (0.5 + s[3] * 1.8) + s[0] * 50);
+          c.fillStyle = rgba(j % 6 ? p[4] : p[3], Math.max(0, a)); c.beginPath(); c.arc(x, y, rad, 0, TAU); c.fill();
+        }
+      },
+      fg: function (c, w, h) { f.st(c, w, h); },
+      dyn: function (c, w, h, t) { if (f.dyn) f.dyn(c, w, h, t); },
+      ov: function (c, w, h) {
+        c.save(); c.globalCompositeOperation = 'overlay'; c.fillStyle = c.createPattern(grain(), 'repeat'); c.fillRect(0, 0, w, h); c.restore();
+        var vg = c.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.3, w / 2, h / 2, Math.max(w, h) * 0.78);
+        vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.55)');
+        c.fillStyle = vg; c.fillRect(0, 0, w, h);
+      },
+      paint: function (c, w, h, t) { this.base(c, w, h); this.stars(c, w, h, t); this.fg(c, w, h); this.dyn(c, w, h, t); this.ov(c, w, h); }
+    };
+  }
+
+  function fit(cv) {
+    var b = cv.getBoundingClientRect(), w = Math.round(b.width), h = Math.round(b.height);
+    if (w < 2 || h < 2) return null;
+    var d = Math.min(window.devicePixelRatio || 1, 2);
+    cv.width = Math.round(w * d); cv.height = Math.round(h * d);
+    var c = cv.getContext('2d'); c.setTransform(d, 0, 0, d, 0, 0);
+    return { c: c, w: w, h: h, d: d };
+  }
+  function drawStatic(cv) {
+    var f = fit(cv); if (!f) return;
+    cv.setAttribute('data-drawn', f.w + 'x' + f.h);
+    scene(+cv.getAttribute('data-id'), false).paint(f.c, f.w, f.h, 0);
+  }
+
+  /* Trait labels */
+  Array.prototype.forEach.call(document.querySelectorAll('[data-trait]'), function (el) {
+    var t = traitsOf(+el.getAttribute('data-trait')); el.textContent = t.form + ' · ' + t.palette;
+  });
+
+  /* Lazy static render for every art canvas except the hero */
+  var arts = Array.prototype.slice.call(document.querySelectorAll('canvas.x-art:not([data-hero])'));
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) { if (e.isIntersecting) { drawStatic(e.target); io.unobserve(e.target); } });
+    }, { rootMargin: '600px 0px' });
+    arts.forEach(function (cv) { io.observe(cv); });
+  } else { arts.forEach(drawStatic); }
+
+  /* Hero: layered, animated render of the newest mint */
+  var hero = document.querySelector('canvas[data-hero]'), H = null, heroOn = true, raf = 0;
+  function layer(w, h, d, fn) { var o = document.createElement('canvas'); o.width = Math.round(w * d); o.height = Math.round(h * d); var c = o.getContext('2d'); c.setTransform(d, 0, 0, d, 0, 0); fn(c); return o; }
+  function setupHero() {
+    var f = fit(hero); if (!f) return;
+    var s = scene(+hero.getAttribute('data-id'), true);
+    H = { f: f, s: s,
+      bg: layer(f.w, f.h, f.d, function (c) { s.base(c, f.w, f.h); }),
+      fg: layer(f.w, f.h, f.d, function (c) { s.fg(c, f.w, f.h); }),
+      ov: layer(f.w, f.h, f.d, function (c) { s.ov(c, f.w, f.h); }) };
+    frame(performance.now());
+  }
+  function frame(now) {
+    raf = 0; if (!H) return;
+    var c = H.f.c, w = H.f.w, h = H.f.h, t = reduce ? 0 : now / 1000 + 40;
+    c.clearRect(0, 0, w, h);
+    c.drawImage(H.bg, 0, 0, w, h); H.s.stars(c, w, h, t); c.drawImage(H.fg, 0, 0, w, h); H.s.dyn(c, w, h, t); c.drawImage(H.ov, 0, 0, w, h);
+    if (!reduce && heroOn) raf = requestAnimationFrame(frame);
+  }
+  if (hero) {
+    setupHero();
+    if ('IntersectionObserver' in window) {
+      new IntersectionObserver(function (e) { heroOn = e[0].isIntersecting; if (heroOn && !raf && !reduce) raf = requestAnimationFrame(frame); }).observe(hero);
+    }
+    var media = document.getElementById('heroMedia'), heroSec = hero.closest('.x-hero');
+    if (!reduce && media && heroSec && window.matchMedia('(pointer: fine)').matches) {
+      heroSec.addEventListener('pointermove', function (ev) {
+        var b = heroSec.getBoundingClientRect(), x = (ev.clientX - b.left) / b.width - 0.5, y = (ev.clientY - b.top) / b.height - 0.5;
+        media.style.setProperty('--mx', (-x * 18).toFixed(1) + 'px'); media.style.setProperty('--my', (-y * 12).toFixed(1) + 'px');
+      });
+    }
+  }
+
+  /* Redraw on resize */
+  var rt = 0;
+  window.addEventListener('resize', function () {
+    clearTimeout(rt);
+    rt = setTimeout(function () {
+      if (hero) setupHero();
+      arts.forEach(function (cv) {
+        var was = cv.getAttribute('data-drawn'); if (!was) return;
+        var b = cv.getBoundingClientRect(); if (was !== Math.round(b.width) + 'x' + Math.round(b.height)) drawStatic(cv);
+      });
+    }, 220);
+  });
+
+  /* Tilt on seated cards */
+  if (!reduce && window.matchMedia('(pointer: fine)').matches) {
+    Array.prototype.forEach.call(document.querySelectorAll('.x-tilt'), function (el) {
+      el.addEventListener('pointermove', function (ev) {
+        var b = el.getBoundingClientRect(), x = (ev.clientX - b.left) / b.width - 0.5, y = (ev.clientY - b.top) / b.height - 0.5;
+        el.style.setProperty('--rx', (x * 6).toFixed(2) + 'deg'); el.style.setProperty('--ry', (-y * 6).toFixed(2) + 'deg');
+      });
+      el.addEventListener('pointerleave', function () { el.style.setProperty('--rx', '0deg'); el.style.setProperty('--ry', '0deg'); });
+    });
+  }
+
+  /* Reveal on scroll */
+  var rvs = document.querySelectorAll('.rv');
+  if ('IntersectionObserver' in window && !reduce) {
+    var ro = new IntersectionObserver(function (entries) { entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); ro.unobserve(e.target); } }); }, { threshold: 0.12 });
+    Array.prototype.forEach.call(rvs, function (el) { ro.observe(el); });
+  } else { Array.prototype.forEach.call(rvs, function (el) { el.classList.add('in'); }); }
+
+  /* Mint stepper and the transaction-time check */
+  var qty = document.getElementById('qty'), total = document.getElementById('total'), btn = document.getElementById('mintBtn'), st = document.getElementById('mintStatus');
+  function setQty(v) {
+    v = Math.max(1, Math.min(98, Math.round(+v || 1))); qty.value = v;
+    var eth = (v * 0.05).toFixed(2);
+    total.textContent = eth + ' ETH';
+    btn.textContent = 'Mint ' + v + ' Explorer' + (v > 1 ? 's' : '') + ' for ' + eth + ' ETH';
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('[data-step]'), function (b) {
+    b.addEventListener('click', function () { setQty(+qty.value + +b.getAttribute('data-step')); });
+  });
+  qty.addEventListener('change', function () { setQty(qty.value); });
+  btn.addEventListener('click', function () {
+    var label = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Simulating the mint…';
+    st.innerHTML = '';
+    setTimeout(function () {
+      st.innerHTML = '<div class="x-st"><span>&#10003;</span><span>Simulated at block 27,184,302 via RPC just now. Price is still 0.05 ETH and ' + qty.value + ' fit your wallet limit. Confirm in your wallet to mint.</span></div>';
+      btn.textContent = 'Waiting for your wallet…';
+      setTimeout(function () { btn.disabled = false; btn.textContent = label; }, 3200);
+    }, 900);
+  });
+
+  /* Copy address */
+  Array.prototype.forEach.call(document.querySelectorAll('[data-copy]'), function (b) {
+    b.addEventListener('click', function () {
+      var v = b.getAttribute('data-copy');
+      try { navigator.clipboard.writeText(v).then(function () { b.textContent = 'Copied'; setTimeout(function () { b.textContent = 'Copy'; }, 1600); }); } catch (e) { b.textContent = 'Select to copy'; }
+    });
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Loreum UX mockups</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap">
+<link rel="stylesheet" href="assets/app.css">
+<style>
+  .hero { padding: 40px 0 8px; display: flex; flex-direction: column; gap: 12px; max-width: 760px; }
+  .hero h1 { font-size: 30px; font-weight: 300; letter-spacing: -0.01em; }
+  .hero h1 b { font-weight: 600; }
+  .hero p { color: var(--t2); font-size: 15px; }
+  .group { margin-top: 36px; }
+  .group-h { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+  .group-h h2 { font-size: 18px; }
+  .group-h p { color: var(--t3); font-size: 13px; max-width: 70ch; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+  .tile { display: flex; flex-direction: column; gap: 8px; background: var(--s1); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; color: var(--t1); }
+  .tile:hover { background: var(--s2); border-color: rgba(124, 92, 214, 0.4); color: var(--t1); }
+  .tile .file { font-family: var(--mono); font-size: 11.5px; color: var(--t4); }
+  .tile h3 { font-size: 15px; }
+  .tile p { color: var(--t3); font-size: 13px; flex: 1; }
+  .tile .tags { display: flex; gap: 4px; flex-wrap: wrap; }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--t3); margin-top: 6px; }
+</style>
+</head>
+<body>
+<div class="mock-bar">
+  <span><b>MOCKUPS</b> · Loreum app and ecosystem · revised plan (mainnet first, multichain gated)</span>
+  <span><a href="_mock-data.md">Mock data</a> · <a href="README.md">README</a></span>
+</div>
+
+<main class="page">
+  <section class="hero">
+    <span class="upper">product/mockups</span>
+    <h1>What Loreum looks like <b>after the plan ships</b></h1>
+    <p>Static, high-fidelity mockups of the Loreum app, the safety surfaces the revised plan adds, gated Phase 2 previews, and the public ecosystem sites. Every screen uses the same mock data, reads display state from the indexer, and cites the plan tasks it implements in its design notes.</p>
+    <div class="legend">
+      <span><span class="badge acc">M1</span> ships with mainnet</span>
+      <span><span class="badge warn">Gated</span> preview, waits for the Phase 2 go/no-go</span>
+      <span><span class="badge">Internal</span> team-only</span>
+      <span><span class="note">1</span> design-note marker</span>
+    </div>
+  </section>
+
+  <section class="group">
+    <div class="group-h"><h2>Loreum app · governance</h2><p>The operator console for directors and delegators. State as of Mar 16, 2027, after the audited mainnet launch.</p></div>
+    <div class="tiles">
+      <a class="tile" href="app-overview.html"><span class="file">app-overview.html</span><h3>Chamber overview</h3><p>What needs attention, board and supply authority at a glance, indexer freshness.</p><span class="tags"><span class="badge acc">M1</span><span class="badge">I-10</span><span class="badge">I-12</span></span></a>
+      <a class="tile" href="app-board.html"><span class="file">app-board.html</span><h3>Board &amp; delegation</h3><p>Ranked seats with the authority chain, quorum math, independence check, delegate and undelegate.</p><span class="tags"><span class="badge acc">M1</span><span class="badge">I-13</span></span></a>
+      <a class="tile" href="app-queue.html"><span class="file">app-queue.html</span><h3>Transaction queue</h3><p>Decoded proposals, risk badges, confirmations, deadlines and simulation status.</p><span class="tags"><span class="badge acc">M1</span><span class="badge">#260</span><span class="badge">I-14</span></span></a>
+      <a class="tile" href="app-proposal.html"><span class="file">app-proposal.html</span><h3>Proposal detail</h3><p>Full decode, dataHash check, simulated balance diff, confirm / execute, typed-confirm cancel, high-risk upgrade pattern.</p><span class="tags"><span class="badge acc">M1</span><span class="badge">#260</span></span></a>
+      <a class="tile" href="app-session-keys.html"><span class="file">app-session-keys.html</span><h3>Session keys &amp; AI directors</h3><p>Scoped, expiring keys per seat; the Treasury Agent confirms only through its policy account.</p><span class="tags"><span class="badge acc">M1</span><span class="badge">#259</span><span class="badge">I-15</span></span></a>
+      <a class="tile" href="app-migrate.html"><span class="file">app-migrate.html</span><h3>Import from Safe</h3><p>Parallel run and handover ceremony for a Safe moving to a Chamber.</p><span class="tags"><span class="badge acc">M1</span><span class="badge">#262</span><span class="badge">X-1</span></span></a>
+      <a class="tile" href="app-indexer-states.html"><span class="file">app-indexer-states.html</span><h3>Indexer states</h3><p>Healthy, lagging and stalled: how the app behaves without ever falling back to RPC polling.</p><span class="tags"><span class="badge acc">M0</span><span class="badge">I-1</span><span class="badge">I-10</span></span></a>
+    </div>
+  </section>
+
+  <section class="group">
+    <div class="group-h"><h2>Supply authority &amp; safety</h2><p>The surfaces the review added: LORE is owned by a timelocked, capped mint gate, with an independent guardian and a read-only handoff preflight.</p></div>
+    <div class="tiles">
+      <a class="tile" href="app-supply-authority.html"><span class="file">app-supply-authority.html</span><h3>LORE supply authority</h3><p>LORE → LoreMintGate → Chamber, quarterly cap, queued mints with countdowns, dual-control exits.</p><span class="tags"><span class="badge acc">M1</span><span class="badge">M-15</span><span class="badge">M-16</span></span></a>
+      <a class="tile" href="app-guardian.html"><span class="file">app-guardian.html</span><h3>Guardian console</h3><p>Cancel-only powers, watcher alerts, and a Safe transaction export for the 3-of-5 guardian.</p><span class="tags"><span class="badge acc">M1</span><span class="badge">M-17</span><span class="badge">D-18</span></span></a>
+      <a class="tile" href="app-handoff-preflight.html"><span class="file">app-handoff-preflight.html</span><h3>LORE handoff preflight</h3><p>Every precondition checked before the Safe signs the irreversible ownership transfer.</p><span class="tags"><span class="badge acc">M1</span><span class="badge">M-10</span><span class="badge">M-20</span></span></a>
+    </div>
+  </section>
+
+  <section class="group">
+    <div class="group-h"><h2>Phase 2 previews</h2><p>One board governing spokes on Base and Arbitrum over native messaging. These screens are gated on the Phase 2 go/no-go and show a date after a GO.</p></div>
+    <div class="tiles">
+      <a class="tile" href="p2-multichain-treasury.html"><span class="file">p2-multichain-treasury.html</span><h3>Multichain treasury</h3><p>Balances per chain and an L2BEAT-style security panel for each spoke.</p><span class="tags"><span class="badge warn">Gated</span><span class="badge">P-25</span></span></a>
+      <a class="tile" href="p2-cross-chain-proposal.html"><span class="file">p2-cross-chain-proposal.html</span><h3>Cross-chain proposal</h3><p>Nested decode, lifecycle from home proposal to spoke execution, honest timing, guardian window.</p><span class="tags"><span class="badge warn">Gated</span><span class="badge">P-19</span><span class="badge">I-27</span></span></a>
+      <a class="tile" href="p2-bridge-template.html"><span class="file">p2-bridge-template.html</span><h3>Bridge-action template</h3><p>Move USDC to a spoke through Across with min-out, fill deadline and an atomic approve/revoke batch.</p><span class="tags"><span class="badge warn">Gated</span><span class="badge">P-10</span><span class="badge">P-31</span></span></a>
+    </div>
+  </section>
+
+  <section class="group">
+    <div class="group-h"><h2>Ecosystem</h2><p>Public sites. The Explorers site is a bold showcase, not the operator console.</p></div>
+    <div class="tiles">
+      <a class="tile" href="eco-landing.html"><span class="file">eco-landing.html</span><h3>loreum.org</h3><p>Positioning from the review: accountable boards of humans and AI directors, with no overclaims.</p><span class="tags"><span class="badge">D-6</span><span class="badge">D-12</span></span></a>
+      <a class="tile" href="eco-explorers.html"><span class="file">eco-explorers.html</span><h3>Loreum Explorers</h3><p>Art-forward mint and showcase site; honest copy about what an Explorer does.</p><span class="tags"><span class="badge">D-6</span></span></a>
+      <a class="tile" href="eco-trust.html"><span class="file">eco-trust.html</span><h3>Trust &amp; status</h3><p>Addresses, versions, supply authority, audit and bounty status, alerts, and what the team can't do.</p><span class="tags"><span class="badge">D-16</span><span class="badge">M-17</span></span></a>
+    </div>
+  </section>
+
+  <section class="group">
+    <div class="group-h"><h2>Internal</h2><p>Team-only tools.</p></div>
+    <div class="tiles">
+      <a class="tile" href="ops-gate-dashboard.html"><span class="file">ops-gate-dashboard.html</span><h3>Phase 2 gate dashboard</h3><p>Evidence for the go/no-go: external orgs, proposal streaks, interviews, audit and bounty.</p><span class="tags"><span class="badge">Internal</span><span class="badge">P-4</span><span class="badge">P-6</span></span></a>
+      <a class="tile" href="_shell.html"><span class="file">_shell.html</span><h3>Page template</h3><p>The shell every app mockup starts from: top bar, chain and freshness chips, chamber header and tabs.</p><span class="tags"><span class="badge">Template</span></span></a>
+    </div>
+  </section>
+</main>
+<footer class="foot">Mockups only. Addresses marked illustrative in the mock data are placeholders. Loreum is the protocol; Chamber is the governance contract.</footer>
+</body>
+</html>

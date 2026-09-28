@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guardian console · Loreum app mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap">
+<link rel="stylesheet" href="assets/app.css">
+<style>
+  b, strong { font-weight: 600; }
+  .grid > * { min-width: 0; }
+  .subnav { display: flex; gap: 6px; flex-wrap: wrap; margin: -6px 0 18px; }
+  .subnav a { padding: 6px 12px; border-radius: 8px; font-size: 12.5px; color: var(--t3); border: 1px solid var(--line); background: var(--s1); }
+  .subnav a:hover { color: var(--t1); }
+  .subnav a.on { color: var(--t1); background: var(--s3); border-color: var(--line-strong); }
+  .src { font-size: 11.5px; color: var(--t4); font-family: var(--mono); }
+  .cd { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  .auth .s { font-size: 11.5px; color: var(--t3); font-family: var(--mono); white-space: nowrap; }
+  .can, .cannot { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; font-size: 13px; }
+  .can li, .cannot li { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 8px; }
+  .can li::before { content: "+"; color: var(--ok); font-family: var(--mono); font-weight: 600; }
+  .cannot li::before { content: "×"; color: var(--bad); font-family: var(--mono); font-weight: 600; }
+  .feed { list-style: none; margin: 0; padding: 0; }
+  .feed li { display: grid; grid-template-columns: 112px minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 10px 0; border-bottom: 1px solid rgba(148, 163, 184, 0.08); font-size: 13px; }
+  .feed .when { font-family: var(--mono); font-size: 11.5px; color: var(--t4); font-variant-numeric: tabular-nums; }
+  .feed .sub { display: block; font-size: 12px; color: var(--t3); margin-top: 2px; }
+  .links { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+  .links li { padding: 8px 0; border-bottom: 1px solid rgba(148, 163, 184, 0.08); font-size: 13px; }
+  .links .hint { display: block; }
+  .signers { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+  .signers li { display: flex; justify-content: space-between; gap: 8px; font-family: var(--mono); font-size: 12px; color: var(--t2); }
+  .hash { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 4px 12px; font-size: 12px; }
+  .hash dt { color: var(--t4); font-family: var(--mono); }
+  .hash dd { margin: 0; font-family: var(--mono); color: var(--t1); overflow-wrap: anywhere; }
+  .hash dd.big { color: var(--a300); }
+  pre.raw { margin: 0; white-space: pre-wrap; max-height: 260px; overflow: auto; }
+  .confirm-box .input { border-color: rgba(248, 113, 113, 0.35); }
+  /* Authority chains stack top-to-bottom on narrow screens instead of wrapping into a staircase */
+  @media (max-width: 720px) {
+    .auth { flex-direction: column; }
+    .auth .node { border-radius: 0; }
+    .auth .node:first-child { border-radius: 8px 8px 0 0; }
+    .auth .node:last-child { border-radius: 0 0 8px 8px; }
+    .auth .node + .node { border-left: 1px solid var(--line); border-top: 0; }
+    .auth .node + .node::before { left: 18px; top: -6px; margin-top: 0; transform: rotate(135deg); }
+  }
+  @media (max-width: 640px) {
+    .top { position: static; }
+    .top-inner { height: auto; min-height: 60px; padding-top: 8px; padding-bottom: 8px; flex-wrap: wrap; }
+    .top-right { flex-wrap: wrap; }
+    .feed li { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+    .hash { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="mock-bar">
+  <span><b>MOCKUP</b> · Loreum app · Guardian console · state as of Mar 16, 2027 14:20 UTC</span>
+  <span><a href="index.html">All mockups</a> · <a href="_mock-data.md">Mock data</a></span>
+</div>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="row" style="gap:18px">
+      <a class="brand" href="index.html"><span class="brand-mark">L</span><span>Loreum</span></a>
+      <nav class="nav" aria-label="Main">
+        <a href="app-overview.html" class="on">My Chambers</a>
+        <a href="app-session-keys.html">Operators</a>
+        <a href="#">Deploy Chamber</a>
+        <a href="#">Compliance</a>
+        <a href="app-migrate.html">Migrate from Safe</a>
+        <a href="#">Docs</a>
+      </nav>
+    </div>
+    <div class="top-right">
+      <span class="chain"><i></i>Ethereum</span>
+      <span class="fresh" title="All data on this page comes from chamber-indexer"><i></i>Indexed 24 s ago · #27,184,300</span>
+      <span class="wallet"><span class="avatar"></span>0x61Fd…b2C0</span>
+    </div>
+  </div>
+</header>
+
+<main class="page">
+  <div class="ch-head">
+    <div class="ch-title">
+      <div class="ch-icon">LD</div>
+      <div>
+        <h1>Loreum DAO</h1>
+        <div class="ch-meta">
+          <span class="chain"><i></i>Ethereum</span>
+          <span class="badge acc">v1.2.0</span>
+          <span class="badge">5 seats · quorum 3</span>
+          <span class="mono faint">0x3F1c…A92e</span>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <a class="btn" href="app-queue.html">Open queue</a>
+      <button class="btn" type="button" disabled aria-describedby="np-why">New proposal</button>
+      <span class="hint" id="np-why">Seated directors only</span>
+    </div>
+  </div>
+
+  <nav class="tabs" aria-label="Chamber">
+    <a href="app-overview.html">Overview</a>
+    <a href="app-board.html">Board &amp; delegation</a>
+    <a href="app-queue.html">Queue <span class="badge warn">3</span></a>
+    <a href="p2-multichain-treasury.html">Treasury</a>
+    <a href="app-supply-authority.html" class="on">Supply authority</a>
+    <a href="app-session-keys.html">Session keys</a>
+  </nav>
+
+  <nav class="subnav" aria-label="Supply authority">
+    <a href="app-supply-authority.html">LORE supply</a>
+    <a href="app-guardian.html" class="on">Guardian console</a>
+    <a href="app-handoff-preflight.html">Handoff preflight (archived Feb 19)</a>
+  </nav>
+
+  <!-- Role -->
+  <section class="card accent" aria-labelledby="role-h">
+    <div class="card-h">
+      <div class="stack-sm">
+        <h2 id="role-h">Guardian console <span class="note">1</span></h2>
+        <p class="muted" style="font-size:13px">You are signer 2 of 5 on the Loreum Guardian Safe. You hold no seat and no session key in this Chamber.</p>
+      </div>
+      <span class="badge info">Guardian signer</span>
+    </div>
+    <div class="auth" role="group" aria-label="Your guardian authority chain">
+      <div class="node seat"><span class="k">Role</span><span class="v">Guardian of LoreMintGate</span><span class="s">0x6c1D…3F8b</span></div>
+      <div class="node"><span class="k">Safe</span><span class="v">Loreum Guardian Safe · 3-of-5</span><span class="s">0x9C44…E01d</span></div>
+      <div class="node key"><span class="k">You</span><span class="v">Signer 0x61Fd…b2C0</span><span class="s">1 of 3 signatures needed</span></div>
+    </div>
+    <p class="hint" style="margin-top:10px">This console never sends a transaction. It prepares Safe transactions that the Guardian Safe's signers review and sign in Safe{Wallet} on their own devices.</p>
+  </section>
+
+  <div class="grid g4" style="margin-top:16px">
+    <div class="stat">
+      <div class="upper">Queued ops</div>
+      <div class="v">1</div>
+      <div class="s">op #3 · mint 250,000 LORE</div>
+    </div>
+    <div class="stat">
+      <div class="upper">Op #3 can execute in <span class="note">2</span></div>
+      <div class="v cd">2 d 23 h 42 m</div>
+      <div class="s">Mar 19 14:02 UTC · tx #47 is at 2/3</div>
+    </div>
+    <div class="stat">
+      <div class="upper">Exits awaiting you</div>
+      <div class="v">0</div>
+      <div class="s">none queued</div>
+    </div>
+    <div class="stat">
+      <div class="upper">Review target</div>
+      <div class="v">72 h</div>
+      <div class="s">per alert · acknowledged in the alert channel</div>
+    </div>
+  </div>
+
+  <div class="grid main-side" style="margin-top:16px">
+    <div class="stack">
+      <!-- Pending op -->
+      <section class="card" aria-labelledby="pend-h">
+        <div class="card-h">
+          <h2 id="pend-h">Queued gate operations</h2>
+          <span class="badge info">from indexer</span>
+        </div>
+
+        <div class="inset" style="padding:0;overflow:hidden">
+          <div class="between" style="padding:12px 14px;border-bottom:1px solid var(--line)">
+            <div class="row" style="gap:8px"><span class="mono">Op #3</span><span class="badge warn"><span class="dot"></span>Queued · in delay</span></div>
+            <span class="src">queued Mar 12 14:02 UTC · expires Apr 2 14:02 UTC</span>
+          </div>
+          <div style="padding:14px" class="stack">
+            <div class="decode">
+              <div class="sum"><b>Mint 250,000 LORE</b> to the <b>Vesting contract</b> <span class="mono faint">0x4dE2…9a07</span></div>
+              <dl>
+                <dt>queued by</dt><dd>Loreum DAO Chamber 0x3F1c…A92e · tx #43</dd>
+                <dt>call</dt><dd>queueMint(0x4dE2bE58Cb3921ef5E7F05c9177f0bF9F73C9a07, 250000000000000000000000)</dd>
+                <dt>can execute</dt><dd>Mar 19, 2027 14:02 UTC → Apr 2, 2027 14:02 UTC</dd>
+                <dt>executor</dt><dd>Chamber tx #47 "Execute LORE mint op #3" · 2/3 confirmations</dd>
+              </dl>
+            </div>
+
+            <div class="banner warn">
+              <span class="ic">!</span>
+              <div><b>Decide before Mar 19, 14:02 UTC.</b> After that, tx #47 needs one more confirmation, so op #3 could execute within minutes. You can still cancel after the eta, up until the Chamber executes it.</div>
+            </div>
+
+            <div>
+              <h3 style="margin-bottom:4px">Checks before you decide <span class="note">3</span></h3>
+              <ul class="checks">
+                <li><span class="st pass">✓</span><div>Queued by the proposer, through Chamber tx #43 (executed Mar 12 14:02)<div class="hint">Calldata matches the proposal's stored calldata byte for byte</div></div><span class="src">indexer</span></li>
+                <li><span class="st pass">✓</span><div>Approved by 3 of 5 seated directors with distinct owners<div class="hint">Explorer #7 aria.eth · #12 kofi.eth · #44 lena.eth, all seated more than 7 days</div></div><span class="src">indexer</span></li>
+                <li><span class="st pass">✓</span><div>Recipient is an end recipient, not a Chamber vault that holds LORE</div><span class="src">indexer</span></li>
+                <li><span class="st pass">✓</span><div>Within the Q1 cap: 350,000 of 1,000,000 used including this op</div><span class="src">indexer</span></li>
+                <li><span class="st wait">!</span><div>A Chamber upgrade is pending: tx #48 "Upgrade Chamber implementation to v1.2.1" (1/3)<div class="hint">It does not touch op #3, but an upgrade can change what the proposer does. Watch it and read the new implementation's diff.</div></div><a class="src" href="app-queue.html">tx #48</a></li>
+              </ul>
+            </div>
+
+            <div class="row">
+              <button class="btn danger" type="button" aria-expanded="true" aria-controls="cancel-3">Cancel op #3</button>
+              <span class="hint">Opens a typed confirmation. Nothing is sent from here.</span>
+            </div>
+
+            <!-- Typed confirmation, shown expanded -->
+            <div class="confirm-box stack" id="cancel-3">
+              <div class="between">
+                <h3 style="color:var(--bad)">Cancel op #3 <span class="note">4</span></h3>
+                <span class="src">shown expanded for the mockup</span>
+              </div>
+              <p style="font-size:13px">This prepares a Guardian Safe transaction that calls <span class="mono">cancel(3)</span> on LoreMintGate. Once 3 of 5 signers sign and it executes, op #3 is cancelled for good. The Chamber would need a new proposal and a new 7-day delay to mint again.</p>
+
+              <div class="field">
+                <label for="reason">Reason (optional, the playbook asks for one)</label>
+                <textarea id="reason" class="input" rows="2" placeholder="Why you are cancelling. Included in the export and posted to the alert channel."></textarea>
+              </div>
+              <div class="field">
+                <label for="phrase">Type <span class="phrase">cancel op 3</span> to continue</label>
+                <input id="phrase" class="input mono" value="cancel op 3" autocomplete="off">
+                <span class="hint" style="color:var(--ok)">Phrase matches.</span>
+              </div>
+
+              <div class="inset">
+                <div class="between" style="margin-bottom:8px">
+                  <h3>Simulation <span class="note">5</span></h3>
+                  <span class="badge ok"><span class="dot"></span>Passes</span>
+                </div>
+                <p class="src" style="margin-bottom:8px">Simulated at block 27,184,302 via RPC just now, as the Guardian Safe calling the gate. Safe nonce read via RPC at the same block.</p>
+                <div class="diff">
+                  <span>Op #3 status <span class="minus">Queued</span> → <span class="plus">Cancelled</span></span>
+                  <span>Q1 cap remaining <span class="minus">650,000</span> → <span class="plus">900,000</span> (refund)</span>
+                  <span>Emits OperationCancelled(3)</span>
+                  <span>LORE totalSupply 10,070,000 → 10,070,000</span>
+                </div>
+              </div>
+
+              <div class="inset">
+                <h3 style="margin-bottom:10px">Safe transaction to sign <span class="note">6</span></h3>
+                <dl class="hash">
+                  <dt>Safe</dt><dd>0x9C44Cb7205E7658eC7a7F776d187fb0deF35E01d (Loreum Guardian Safe, 3-of-5)</dd>
+                  <dt>to</dt><dd>0x6c1D286e5f86e64805e3D1e33B3d804c0f813F8b (LoreMintGate)</dd>
+                  <dt>value</dt><dd>0</dd>
+                  <dt>data</dt><dd>0x40e58ee50000000000000000000000000000000000000000000000000000000000000003</dd>
+                  <dt>operation</dt><dd>0 (CALL, not DELEGATECALL)</dd>
+                  <dt>nonce</dt><dd>1</dd>
+                  <dt>domain hash</dt><dd>0xc0beca2edc6dcdbfa80227705d847efc7bfc872686fef74d0ac986fd3e02789b</dd>
+                  <dt>message hash</dt><dd>0x1f18850160732c520b99823d9a70509e5beabc1299ad63b5aa114db568e7633f</dd>
+                  <dt>safeTxHash</dt><dd class="big">0x4bcaac656279b3a214998b0b3d5a79428d28cfeb10648d2e7cf1f344e0152af7</dd>
+                </dl>
+                <p class="hint" style="margin-top:8px">Each signer compares the safeTxHash in Safe{Wallet}, and the domain and message hashes on the hardware wallet screen. If anything differs, stop and tell the other signers. If another Guardian Safe transaction takes nonce 1 first, export again.</p>
+              </div>
+
+              <details>
+                <summary class="muted" style="cursor:pointer;font-size:12.5px">Export file preview: Safe Transaction Builder JSON</summary>
+<pre class="raw" style="margin-top:8px">{
+  "version": "1.0",
+  "chainId": "1",
+  "createdAt": 1805206800000,
+  "meta": {
+    "name": "Guardian cancel: LoreMintGate op #3",
+    "description": "Cancel queued mint of 250,000 LORE to 0x4dE2bE58Cb3921ef5E7F05c9177f0bF9F73C9a07 (op #3, eta 2027-03-19T14:02Z).",
+    "createdFromSafeAddress": "0x9C44Cb7205E7658eC7a7F776d187fb0deF35E01d"
+  },
+  "transactions": [
+    {
+      "to": "0x6c1D286e5f86e64805e3D1e33B3d804c0f813F8b",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [{ "internalType": "uint256", "name": "opId", "type": "uint256" }],
+        "name": "cancel",
+        "payable": false
+      },
+      "contractInputsValues": { "opId": "3" }
+    }
+  ]
+}</pre>
+              </details>
+
+              <div class="row">
+                <button class="btn danger" type="button">Export cancel of op #3 for signing</button>
+                <button class="btn" type="button">Copy safeTxHash</button>
+                <button class="btn ghost" type="button">Keep op #3</button>
+              </div>
+              <p class="hint">Next: import the file in Safe{Wallet} (Transaction Builder), sign, and ask two more guardian signers to sign. The watcher alerts everyone when the cancel lands.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Exits -->
+      <section class="card" aria-labelledby="exits-h">
+        <div class="card-h">
+          <h2 id="exits-h">Exit operations awaiting guardian approval <span class="note">7</span></h2>
+          <span class="badge ok"><span class="dot"></span>None</span>
+        </div>
+        <p class="muted" style="font-size:13px">TransferOwnership, Renounce, SetGuardian and SetProposer take effect only with a Chamber proposal, your Safe's approval and a 30-day wait. If one is queued, it appears here with an <b>Approve</b> export and a <b>Cancel</b> export. Not approving is enough to block it. Follow the exit checklist before you approve anything.</p>
+      </section>
+
+      <!-- Alert feed -->
+      <section class="card" aria-labelledby="feed-h">
+        <div class="card-h">
+          <h2 id="feed-h">Watcher alert feed <span class="note">8</span></h2>
+          <span class="badge info">from indexer</span>
+        </div>
+        <div class="grid g2" style="margin-bottom:12px">
+          <div class="inset">
+            <div class="between"><b style="font-size:13px">Watcher</b><span class="badge ok"><span class="dot"></span>Running</span></div>
+            <p class="hint" style="margin-top:4px">Reads the indexer, no RPC. Last run 14:15 UTC. Weekly heartbeat on Mondays at 09:00 UTC, so a stopped watcher gets noticed.</p>
+          </div>
+          <div class="inset">
+            <div class="between"><b style="font-size:13px">Second channel</b><span class="badge ok"><span class="dot"></span>Running</span></div>
+            <p class="hint" style="margin-top:4px">Third-party address alerts on LORE, the Team Safe and the gate. Independent of the indexer.</p>
+          </div>
+        </div>
+        <ul class="feed">
+          <li><span class="when">Mar 15 09:00</span><div>Weekly heartbeat: no change<span class="sub">Team Safe threshold 4-of-7 · LORE owner is LoreMintGate</span></div><span class="badge ok">OK</span></li>
+          <li><span class="when">Mar 14 03:10</span><div>Indexer more than 30 blocks behind on Ethereum<span class="sub">Resolved 03:22. During a lag, check Etherscan before acting.</span></div><span class="badge">Resolved</span></li>
+          <li><span class="when">Mar 12 14:02</span><div>Gate op #3 queued: mint 250,000 LORE to Vesting (eta Mar 19)<span class="sub">Live until op #3 executes or is cancelled. Review it against the checks above; acknowledgements are logged in the alert channel.</span></div><span class="badge warn">Live</span></li>
+          <li><span class="when">Mar 9 16:55</span><div>Session key set for Explorer #31 (scope 0x35)<span class="sub">SUBMIT, EXECUTE, REVOKE, CANCEL · expires Mar 30</span></div><span class="badge info">Info</span></li>
+          <li><span class="when">Feb 26 09:40</span><div>LORE totalSupply +100,000<span class="sub">Gate op #2 executed to Grants Safe</span></div><span class="badge info">Info</span></li>
+          <li><span class="when">Feb 19 09:31</span><div>LORE owner changed: Team Safe → LoreMintGate<span class="sub">Expected: the planned handoff</span></div><span class="badge info">Info</span></li>
+        </ul>
+      </section>
+    </div>
+
+    <!-- Side -->
+    <aside class="stack">
+      <section class="card" aria-labelledby="scope-h">
+        <div class="card-h"><h2 id="scope-h">What the guardian can do <span class="note">9</span></h2></div>
+        <ul class="can">
+          <li>Cancel any queued op until it executes</li>
+          <li>Approve an exit op, or withhold approval so it never takes effect</li>
+        </ul>
+        <div class="divider"></div>
+        <h3 class="upper" style="margin-bottom:8px">What it cannot do</h3>
+        <ul class="cannot">
+          <li>Mint, queue or execute anything</li>
+          <li>Change the cap, the delays or the recipient rule</li>
+          <li>Speed up an op or undo an executed mint</li>
+          <li>Vote, confirm or submit in the Chamber</li>
+        </ul>
+        <div class="divider"></div>
+        <p class="hint">Your duty: review every alert within 72 hours, and never share keys or devices with Team Safe signers or directors.</p>
+      </section>
+
+      <section class="card" aria-labelledby="owner-h">
+        <div class="card-h"><h2 id="owner-h">LORE owner check <span class="note">10</span></h2><span class="badge ok"><span class="dot"></span>As expected</span></div>
+        <dl class="kv">
+          <dt>LORE.owner()</dt><dd>LoreMintGate 0x6c1D…3F8b</dd>
+          <dt>gate.proposer()</dt><dd>Loreum DAO Chamber</dd>
+          <dt>gate.guardian()</dt><dd>Loreum Guardian Safe</dd>
+          <dt>Since</dt><dd>Feb 19, 2027 09:31 UTC · block 27,002,857</dd>
+        </dl>
+        <p class="hint" style="margin-top:10px">From indexed events. Before you sign anything, confirm these on Etherscan too. If the app and Etherscan disagree, trust Etherscan and alert the other signers.</p>
+        <a class="btn sm" href="https://etherscan.io/address/0x7756D245527F5f8925A537be509BF54feb2FdC99#readContract" rel="noopener noreferrer" style="margin-top:8px">Check LORE.owner() on Etherscan</a>
+      </section>
+
+      <section class="card" aria-labelledby="team-h">
+        <div class="card-h"><h2 id="team-h">Team Safe</h2><span class="badge ok"><span class="dot"></span>4-of-7</span></div>
+        <dl class="kv">
+          <dt>Address</dt><dd class="mono">0x5d45…2095</dd>
+          <dt>Threshold</dt><dd>4 of 7 owners, raised from 2-of-7</dd>
+          <dt>Modules · guard</dt><dd>None · none</dd>
+          <dt>Mint power</dt><dd>None since Feb 19</dd>
+          <dt>Last change</dt><dd>No change this week (heartbeat Mar 15)</dd>
+        </dl>
+        <p class="hint" style="margin-top:10px">Why you watch it: the Team Safe holds a large share of LORE, so it steers delegation. A threshold drop or a new module is an early warning of board capture.</p>
+      </section>
+
+      <section class="card" aria-labelledby="gs-h">
+        <div class="card-h"><h2 id="gs-h">Loreum Guardian Safe</h2><span class="badge">3-of-5</span></div>
+        <ul class="signers" aria-label="Guardian Safe signers (illustrative)">
+          <li><span>0x0E3a…77d4</span><span class="faint">signer 1</span></li>
+          <li><span style="color:var(--a300)">0x61Fd…b2C0</span><span class="faint">you</span></li>
+          <li><span>0xB19c…5e02</span><span class="faint">signer 3</span></li>
+          <li><span>0x7aD0…c9F1</span><span class="faint">signer 4</span></li>
+          <li><span>0xC4e8…1a3B</span><span class="faint">signer 5</span></li>
+        </ul>
+        <div class="divider"></div>
+        <ul class="checks">
+          <li><span class="st pass">✓</span><span>No signer is a Team Safe owner</span><span></span></li>
+          <li><span class="st pass">✓</span><span>No signer owns a seat or holds a session key</span><span></span></li>
+          <li><span class="st pass">✓</span><span>No signer is a large LORE holder</span><span></span></li>
+        </ul>
+        <p class="hint" style="margin-top:8px">Last action: cancelled drill op #0 on Feb 11 (nonce 0). Next nonce: 1.</p>
+      </section>
+
+      <section class="card" aria-labelledby="rb-h">
+        <div class="card-h"><h2 id="rb-h">Incident runbooks <span class="note">11</span></h2></div>
+        <ul class="links">
+          <li><a href="#">Guardian playbook</a><span class="hint">Roles, the 72-hour target, contacts</span></li>
+          <li><a href="#">Cancel a queued mint</a><span class="hint">Export, sign, confirm the cancel landed</span></li>
+          <li><a href="#">Suspected board capture or unexpected upgrade</a><span class="hint">What to cancel first, who to call</span></li>
+          <li><a href="#">Indexer down or lagging</a><span class="hint">Verify on Etherscan before acting</span></li>
+          <li><a href="#">Exit op queued: approval checklist</a><span class="hint">Two-channel check before any approval</span></li>
+          <li><a href="#">Guardian key lost or exposed</a><span class="hint">Rotate the signer inside the Guardian Safe</span></li>
+        </ul>
+      </section>
+    </aside>
+  </div>
+
+  <section class="notes">
+    <h3>Design notes</h3>
+    <ol>
+      <li>The console detects the guardian role from the connected wallet and reuses the <code>.auth</code> chain (role, then Safe, then you), so the guardian's authority reads the same way a director's does. Saying up front that the signer has no seat reinforces the independence rule from <code>M-2</code>: the guardian must not be the Team Safe, a director or a large holder. The chamber header is role-aware, so "New proposal" is disabled with a visible reason and the cancel export is the only primary path on the page.</li>
+      <li>The main number is the decision deadline, not a generic countdown. Tx #47 is already at 2/3, so after the eta, op #3 is one confirmation from executing. The guardian needs that fact more than anything else on the page. The countdown uses the indexer head clock (<code>I-10</code>).</li>
+      <li>The provenance checks come from the indexer: <code>proposal.data</code> and confirmations (<code>M-14</code>, <code>M-16</code>), with no <code>getLogs</code> for display. A pending Chamber upgrade (#48) is flagged even though it is unrelated, because a Chamber that owns its ProxyAdmin can be upgraded to change what the proposer does (review Critical finding; corrected facts in the mint-gate plan).</li>
+      <li>Cancel is destructive: a ghost <code>.btn.danger</code> plus a typed phrase (Design System v1.0, epic #258). The result is an export for the 3-of-5 to sign, not a transaction sent from the app (<code>M-16</code>: the Safe JSON imports into the Transaction Builder).</li>
+      <li>RPC is used only at export time, for the simulation and the Safe nonce, and the page names the block. Everything else on the page is indexer data (pinned rule; <code>I-11</code>, <code>I-21</code>).</li>
+      <li>Each signer compares the safeTxHash, domain hash and message hash on their own device. This is the same practice <code>M-10</code>/<code>M-11</code> require for the handoff. The hashes are real EIP-712 values for this illustrative Safe, gate and nonce, computed with <code>cast</code>.</li>
+      <li>Exits need guardian approval under the dual-control option in <code>M-3</code>(i). The empty state explains that not approving is itself a veto, which is the liveness-for-safety trade the ADR accepts.</li>
+      <li>The feed mirrors the watcher (<code>M-17</code>): gate ops, supply and owner changes, session keys, indexer staleness and the weekly heartbeat. The independent second channel (<code>M-21</code>) is shown as a peer, so the indexer is never the only alarm. "Live" means the op behind the alert can still execute. The 72-hour review target from <code>M-2</code>(c) is tracked where signers acknowledge alerts, in the alert channel, because acknowledgements are off-chain state the indexer does not hold. The page therefore does not claim a review status it cannot know.</li>
+      <li>Every "cannot" line is backed by a test: <code>symbolicGuardianCannotMint</code> and the related Halmos properties (<code>M-6</code>), and the invariants in <code>M-5</code>. The console does not make claims the contract cannot keep.</li>
+      <li>The owner check pushes the guardian to verify against a second source before signing, and says what to do when the sources disagree. The guardian's job exists for the case where something upstream is wrong. The Team Safe card tracks the SEC-17 threshold hardening (<code>M-2</code>) as a capture signal.</li>
+      <li>The runbook links point to the guardian playbook sections in the rewritten M1 runbook (<code>M-11</code>). They are not mocked here.</li>
+    </ol>
+  </section>
+</main>
+<footer class="foot">Mockup only. Addresses marked illustrative are placeholders. Loreum is the protocol; Chamber is the governance contract.</footer>
+</body>
+</html>

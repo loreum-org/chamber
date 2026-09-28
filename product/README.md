@@ -19,6 +19,7 @@ product/
 │   └── graph.md            human-readable summary + health banner
 ├── knowledge/
 │   └── assumption-audit.md load-bearing bets ranked by decision-at-risk
+├── mockups/      static HTML UX mockups of the app and ecosystem (open mockups/index.html)
 └── README.md
 ```
 

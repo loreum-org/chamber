@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Multichain treasury · Loreum app mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap">
+<link rel="stylesheet" href="assets/app.css">
+<style>
+  /* Page-only additions. Tokens come from assets/app.css. */
+  .grid > * { min-width: 0; } /* let single-column grids shrink below table width */
+  table.t .mono { white-space: nowrap; }
+  .fresh .short { display: none; }
+  .sec-h { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 28px 0 12px; }
+  .sec-h p { color: var(--t3); font-size: 13px; }
+  .chain-cell { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+  .chain-cell i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; background: var(--eth); flex: none; }
+  .chain-cell.base i { background: var(--base); }
+  .chain-cell.arb i { background: var(--arb); }
+  table.t tfoot td { border-top: 1px solid var(--line-strong); border-bottom: 0; color: var(--t1); font-weight: 600; }
+  .risk { display: grid; grid-template-columns: 4px minmax(0, 1fr); gap: 12px; padding: 11px 0; border-bottom: 1px solid rgba(148, 163, 184, 0.08); }
+  .risk:last-child { border-bottom: 0; }
+  .risk .bar { border-radius: 2px; background: var(--ok); }
+  .risk.warn .bar { background: var(--warn); }
+  .risk .rk { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--t4); font-weight: 600; }
+  .risk .rv { font-weight: 600; color: var(--t1); margin: 1px 0 3px; }
+  .risk.warn .rv { color: var(--warn); }
+  .risk p { font-size: 12.5px; color: var(--t3); }
+  .rosette { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+  .rosette svg { width: 96px; height: 96px; flex: none; }
+  .rosette .ok-w { fill: rgba(52, 211, 153, 0.55); }
+  .rosette .warn-w { fill: rgba(251, 191, 36, 0.6); }
+  .legend { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--t3); }
+  .legend i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; margin-right: 6px; background: var(--ok); vertical-align: 1px; }
+  .legend i.w { background: var(--warn); }
+  .rule { display: flex; gap: 14px; align-items: flex-start; }
+  .rule .big { font-size: 20px; font-weight: 300; color: var(--t1); line-height: 1.3; }
+  .nope { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+  .nope li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; padding: 9px 0; border-bottom: 1px solid rgba(148, 163, 184, 0.08); font-size: 13px; }
+  .nope li:last-child { border-bottom: 0; }
+  .nope small { display: block; color: var(--t4); font-size: 12px; }
+  .auth.path .node { flex: 1 1 110px; }
+  .meter-lbl { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--t3); margin-bottom: 6px; flex-wrap: wrap; }
+  .fresh-tbl td, .fresh-tbl th { padding: 7px 8px; }
+  @media (max-width: 600px) {
+    .top-right .chain, .top-right .wallet { display: none; }
+    .fresh .long { display: none; }
+    .fresh .short { display: inline; }
+    .rule { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+<div class="mock-bar">
+  <span><b>MOCKUP</b> · Loreum app · Phase 2 preview · Multichain treasury · state as of Sep 21, 2027 11:00 UTC</span>
+  <span><a href="index.html">All mockups</a> · <a href="_mock-data.md">Mock data</a></span>
+</div>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="row" style="gap:18px">
+      <a class="brand" href="index.html"><span class="brand-mark">L</span><span>Loreum</span></a>
+      <nav class="nav" aria-label="Main">
+        <a href="app-overview.html" class="on">My Chambers</a>
+        <a href="app-session-keys.html">Operators</a>
+        <a href="#">Deploy Chamber</a>
+        <a href="#">Compliance</a>
+        <a href="app-migrate.html">Migrate from Safe</a>
+        <a href="#">Docs</a>
+      </nav>
+    </div>
+    <div class="top-right">
+      <span class="chain"><i></i>Ethereum</span>
+      <span class="fresh" title="Per-chain indexer heads from chamber-indexer. Ethereum #28,544,100 (24 s), Base #63,412,871 (19 s), Arbitrum #617,420,118 (27 s). No RPC is used to render this page."><i></i><span class="long">ETH 24 s · Base 19 s · Arb 27 s</span><span class="short">3 chains · ≤27 s</span></span>
+      <span class="wallet"><span class="avatar"></span>lena.eth</span>
+    </div>
+  </div>
+</header>
+
+<main class="page">
+  <div class="gated-ribbon">
+    <b>Phase 2 preview</b>
+    <span>Gated on the Phase 2 go/no-go (P-7). Nothing on this page ships before a GO; the date shown assumes one. Spokes are built from existing Safe and Zodiac modules and change zero lines of Chamber.sol (C-19).</span>
+  </div>
+
+  <div class="ch-head">
+    <div class="ch-title">
+      <div class="ch-icon">LD</div>
+      <div>
+        <h1>Loreum DAO</h1>
+        <div class="ch-meta">
+          <span class="chain"><i></i>Ethereum</span>
+          <span class="badge acc">v1.2.0</span>
+          <span class="badge">5 seats · quorum 3</span>
+          <span class="badge info">Home chain · 2 spokes</span>
+          <span class="mono faint">0x3F1c…A92e</span>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <a class="btn" href="app-queue.html">Open queue</a>
+      <a class="btn primary" href="app-proposal.html">New proposal</a>
+    </div>
+  </div>
+
+  <nav class="tabs" aria-label="Chamber">
+    <a href="app-overview.html">Overview</a>
+    <a href="app-board.html">Board &amp; delegation</a>
+    <a href="app-queue.html">Queue <span class="badge warn">2</span></a>
+    <a href="p2-multichain-treasury.html" class="on">Treasury</a>
+    <a href="app-supply-authority.html">Supply authority</a>
+    <a href="app-session-keys.html">Session keys</a>
+    <a href="p2-multichain-treasury.html#spokes">Spokes <span class="badge warn">Preview</span></a>
+  </nav>
+
+  <div class="between" style="margin-bottom:16px">
+    <div>
+      <h2>Treasury</h2>
+      <p class="muted" style="font-size:13px">One board, three chains. Every number below comes from chamber-indexer.</p>
+    </div>
+    <div class="row">
+      <a class="btn" href="#">Propose a spoke action</a>
+      <a class="btn primary" href="p2-bridge-template.html">Move USDC to a spoke</a>
+    </div>
+  </div>
+
+  <div class="grid g4">
+    <div class="stat">
+      <div class="upper">USDC, all chains</div>
+      <div class="v num">2,815,000 <small>USDC</small></div>
+      <div class="s num">Ethereum 2,410,000 · Base 310,000 · Arbitrum 95,000</div>
+    </div>
+    <div class="stat">
+      <div class="upper">ETH, all chains</div>
+      <div class="v num">226.2 <small>ETH</small></div>
+      <div class="s num">Ethereum 184.2 · Base 42.0</div>
+    </div>
+    <div class="stat">
+      <div class="upper">Who can spend</div>
+      <div class="v num">3 of 5 <small>directors</small></div>
+      <div class="s">The same board on every chain. Votes happen on Ethereum only.</div>
+    </div>
+    <div class="stat">
+      <div class="upper">In flight</div>
+      <div class="v num">1 <small>cross-chain proposal</small></div>
+      <div class="s"><a href="p2-cross-chain-proposal.html">#61</a> · 50,000 USDC · eta passed 09:16</div>
+    </div>
+  </div>
+
+  <div class="grid main-side" style="margin-top:16px">
+    <div class="card">
+      <div class="card-h">
+        <h2>Balances by chain <span class="note">1</span></h2>
+        <span class="badge"><span class="dot" style="color:var(--ok)"></span>From indexer</span>
+      </div>
+      <div class="tbl-wrap">
+        <table class="t">
+          <thead>
+            <tr><th>Chain</th><th>Account</th><th class="r">USDC</th><th class="r">ETH</th><th>Who can move it</th><th>Path</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="chain-cell"><i></i>Ethereum <span class="badge acc">Home</span></span></td>
+              <td><div>Loreum DAO Chamber</div><div class="mono faint">0x3F1c…A92e</div></td>
+              <td class="r num">2,410,000</td>
+              <td class="r num">184.2</td>
+              <td>Board, quorum 3 of 5</td>
+              <td class="muted">Hash-bound tx, no delay after quorum</td>
+            </tr>
+            <tr>
+              <td><span class="chain-cell base"><i></i>Base <span class="badge">Spoke</span></span></td>
+              <td><div>Spoke Safe</div><div class="mono faint">0xBa5e…77a1</div></td>
+              <td class="r num">310,000</td>
+              <td class="r num">42.0</td>
+              <td>Board, via OP Stack messenger</td>
+              <td class="muted num">~1–3 min delivery + 72 h delay</td>
+            </tr>
+            <tr>
+              <td><span class="chain-cell arb"><i></i>Arbitrum <span class="badge">Spoke</span></span></td>
+              <td><div>Spoke Safe</div><div class="mono faint">0xA7b1…2e90</div></td>
+              <td class="r num">95,000</td>
+              <td class="r num">0</td>
+              <td>Board, via retryable ticket</td>
+              <td class="muted num">~10–15 min delivery + 72 h delay</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr><td colspan="2">Treasury total</td><td class="r num">2,815,000</td><td class="r num">226.2</td><td colspan="2"></td></tr>
+          </tfoot>
+        </table>
+      </div>
+      <div class="banner info" style="margin-top:14px">
+        <span class="ic">i</span>
+        <div><b>Vault assets stay home. <span class="note">2</span></b> The Chamber also holds 7,712,450 LORE that backs cLORE. That is not treasury: it never moves to a spoke, and spoke balances are never counted in the vault's totalAssets. Moving vault LORE would shift the cLORE share price, because totalAssets is the Chamber's own balance.</div>
+      </div>
+    </div>
+
+    <div class="stack">
+      <div class="card raised">
+        <div class="card-h"><h2>Indexer, per chain <span class="note">3</span></h2><span class="badge ok"><span class="dot"></span>All fresh</span></div>
+        <div class="tbl-wrap">
+          <table class="t fresh-tbl">
+            <thead><tr><th>Chain</th><th class="r">Head</th><th class="r">Age</th><th class="r">Poll</th></tr></thead>
+            <tbody>
+              <tr><td><span class="chain-cell"><i></i>Ethereum</span></td><td class="r mono num">28,544,100</td><td class="r num">24 s</td><td class="r num">12 s</td></tr>
+              <tr><td><span class="chain-cell base"><i></i>Base</span></td><td class="r mono num">63,412,871</td><td class="r num">19 s</td><td class="r num">30 s</td></tr>
+              <tr><td><span class="chain-cell arb"><i></i>Arbitrum</span></td><td class="r mono num">617,420,118</td><td class="r num">27 s</td><td class="r num">30 s</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="hint" style="margin-top:10px">Ethereum turns amber at more than 30 blocks behind (about 6 min); a spoke turns amber when its indexed head is more than 5 min old. Only that chain's numbers are marked stale. The indexer polls spokes every 30 s on its own RPC budget. This page makes no RPC calls.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><h2>In flight</h2><span class="badge info">Cross-chain</span></div>
+        <div class="stack-sm">
+          <div class="row" style="gap:8px"><span class="chain base"><i></i>Base</span><span class="badge ok">Ready to execute</span></div>
+          <a href="p2-cross-chain-proposal.html" style="font-weight:600">#61 On Base: transfer 50,000 USDC to Base Grants Safe</a>
+          <p class="muted" style="font-size:12.5px">Approved Sep 18 09:12 · delivered 09:16 · 72 h delay ended Sep 21 09:16 · expires Sep 28 09:16 if nobody executes it.</p>
+          <a class="btn sm" href="p2-cross-chain-proposal.html" style="align-self:flex-start;margin-top:4px">Review and execute #61</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <div class="card-h">
+      <h2>How the board reaches Base <span class="note">4</span></h2>
+      <span class="muted" style="font-size:12.5px">Authority flows one way, from Ethereum out</span>
+    </div>
+    <div class="auth path" aria-label="Authority path from the board to the Base spoke Safe">
+      <div class="node seat"><span class="k">Board</span><span class="v">Quorum 3 of 5</span></div>
+      <div class="node"><span class="k">Home Chamber</span><span class="v mono">0x3F1c…A92e</span></div>
+      <div class="node"><span class="k">Verifier</span><span class="v">OP messenger</span></div>
+      <div class="node"><span class="k">Receiver</span><span class="v mono">0xB5e1…0c33</span></div>
+      <div class="node"><span class="k">Delay</span><span class="v">72 h · 7 d expiry</span></div>
+      <div class="node"><span class="k">Roles v2</span><span class="v">6 pairs · 250k/wk</span></div>
+      <div class="node key"><span class="k">Spoke Safe</span><span class="v mono">0xBa5e…77a1</span></div>
+    </div>
+    <dl class="kv" style="margin-top:14px">
+      <dt>Directors</dt><dd>Authorize. They vote on Ethereum only, over hash-bound calldata.</dd>
+      <dt>Verifier</dt><dd>The rollup's native messenger. It proves the message came from this Chamber.</dd>
+      <dt>Relayers</dt><dd>Deliver and replay messages. Liveness only: they can't create, change or approve anything.</dd>
+      <dt>Guardian</dt><dd>Loreum Guardian Safe, 3-of-5. Can cancel queued entries on a spoke. Can't queue, approve or move anything.</dd>
+      <dt>Watchers</dt><dd>Compare every queued spoke entry with its home proposal and raise alerts.</dd>
+      <dt>Session keys</dt><dd>Stay a home-chain concept. A director's session key can submit on Ethereum; nothing on a spoke recognizes it.</dd>
+    </dl>
+  </div>
+
+  <section id="spokes" aria-labelledby="spokes-h">
+    <div class="sec-h">
+      <h2 id="spokes-h">Spokes <span class="badge warn">Preview</span></h2>
+      <p>Security settings come from the indexer's <code>spoke_config</code> table, not from RPC.</p>
+    </div>
+
+    <div class="card accent">
+      <div class="card-h">
+        <div class="row" style="gap:10px">
+          <span class="chain base"><i></i>Base</span>
+          <h2>Base spoke · security <span class="note">5</span></h2>
+        </div>
+        <span class="badge ok"><span class="dot"></span>Receiving from home only</span>
+      </div>
+
+      <div class="grid main-side">
+        <div>
+          <div class="risk">
+            <span class="bar"></span>
+            <div>
+              <div class="rk">Verification</div>
+              <div class="rv">Native OP Stack messenger</div>
+              <p>The receiver accepts a call only from L2CrossDomainMessenger <span class="mono">0x4200…0007</span>, and only when <span class="mono">xDomainMessageSender()</span> is Loreum DAO Chamber <span class="mono">0x3F1c…A92e</span> on chain 1. No relayer, oracle or Loreum-held key can create a message.</p>
+            </div>
+          </div>
+          <div class="risk">
+            <span class="bar"></span>
+            <div>
+              <div class="rk">Receiver rule</div>
+              <div class="rv">Sender, chain, nonce and validUntil are all checked</div>
+              <p>Rejects any other L1 sender (including other Chambers from the same Factory), a replayed home nonce, the wrong destination chain or Safe, and any message that arrives after its validUntil (the home proposal's deadline). The receiver is immutable: no owner, no proxy.</p>
+            </div>
+          </div>
+          <div class="risk">
+            <span class="bar"></span>
+            <div>
+              <div class="rk">Execution delay</div>
+              <div class="rv num">72 h cooldown · 7-day expiration</div>
+              <p>Every message waits 72 h in Zodiac Delay before anyone can execute it. An entry nobody executes within 7 days of its eta expires, so a stuck entry can't block the queue forever.</p>
+            </div>
+          </div>
+          <div class="risk">
+            <span class="bar"></span>
+            <div>
+              <div class="rk">Guardian <span class="note">6</span></div>
+              <div class="rv">Cancel only</div>
+              <p>Loreum Guardian Safe (3-of-5) holds one Roles permission: <span class="mono">Delay.setTxNonce</span>. It can skip queued entries. It can't queue entries, change the allowlist or move funds. Skipping moves the nonce forward, so it also cancels every entry queued before the target. Last drill: #58 cancelled Sep 10.</p>
+            </div>
+          </div>
+          <div class="risk">
+            <span class="bar"></span>
+            <div>
+              <div class="rk">Permissions</div>
+              <div class="rv">Roles v2 allowlist · 6 target/selector pairs</div>
+              <p>Only the calls in the table below can run, with the parameter rules shown, inside a weekly allowance. Anything else reverts at execution.</p>
+            </div>
+          </div>
+          <div class="risk warn">
+            <span class="bar"></span>
+            <div>
+              <div class="rk">Home dependency <span class="note">7</span></div>
+              <div class="rv">Trusts the Chamber's address, not its code</div>
+              <p>A quorum upgrade of the home Chamber changes what can send to every spoke. The 72 h spoke delay still applies, and the watcher alerts on any Chamber upgrade proposal. Pausing the home Chamber doesn't stop messages already sent; only the guardian can.</p>
+            </div>
+          </div>
+          <div class="risk warn">
+            <span class="bar"></span>
+            <div>
+              <div class="rk">Rollup</div>
+              <div class="rv">Inherits Base's own risks</div>
+              <p>Base's sequencer can delay delivery, within its forced-inclusion window for L1 deposits. Base's upgrade keys are outside Loreum's control. Loreum adds no bridge of its own.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="stack">
+          <div class="inset">
+            <div class="rosette">
+              <svg viewBox="0 0 96 96" role="img" aria-label="Risk summary: verification, execution delay, guardian and permissions green; home dependency and rollup amber">
+                <path class="ok-w" d="M49.2 40.1L49.2 4.0A44 44 0 0 1 85.5 25.0L54.3 43.0A8 8 0 0 0 49.2 40.1Z"/>
+                <path class="ok-w" d="M55.4 45.1L86.7 27.0A44 44 0 0 1 86.7 69.0L55.4 50.9A8 8 0 0 0 55.4 45.1Z"/>
+                <path class="ok-w" d="M54.3 53.0L85.5 71.0A44 44 0 0 1 49.2 92.0L49.2 55.9A8 8 0 0 0 54.3 53.0Z"/>
+                <path class="ok-w" d="M46.8 55.9L46.8 92.0A44 44 0 0 1 10.5 71.0L41.7 53.0A8 8 0 0 0 46.8 55.9Z"/>
+                <path class="warn-w" d="M40.6 50.9L9.3 69.0A44 44 0 0 1 9.3 27.0L40.6 45.1A8 8 0 0 0 40.6 50.9Z"/>
+                <path class="warn-w" d="M41.7 43.0L10.5 25.0A44 44 0 0 1 46.8 4.0L46.8 40.1A8 8 0 0 0 41.7 43.0Z"/>
+              </svg>
+              <ul class="legend">
+                <li><i></i>Verification</li>
+                <li><i></i>Execution delay</li>
+                <li><i></i>Guardian</li>
+                <li><i></i>Permissions</li>
+                <li><i class="w"></i>Home dependency</li>
+                <li><i class="w"></i>Rollup (inherited)</li>
+              </ul>
+            </div>
+          </div>
+          <dl class="kv">
+            <dt>Spoke Safe</dt><dd><span class="mono">0xBa5e…77a1</span> · Safe v1.4.1</dd>
+            <dt>Safe owners</dt><dd>Module-only, no local signers <span class="note">8</span></dd>
+            <dt>Receiver</dt><dd><span class="mono">0xB5e1…0c33</span> · immutable</dd>
+            <dt>Delay</dt><dd>Zodiac Delay 1.0.0, pinned mastercopy</dd>
+            <dt>Roles</dt><dd>Zodiac Roles v2</dd>
+            <dt>Guardian</dt><dd>Loreum Guardian Safe, 3-of-5 (Base deployment)</dd>
+            <dt>Queue</dt><dd class="num">1 entry (#61, Delay nonce 1) · nonce 0 was the #58 cancel drill</dd>
+          </dl>
+          <div>
+            <div class="meter-lbl"><span>USDC allowance, this week <span class="note">9</span></span><span class="num">50,000 reserved of 250,000</span></div>
+            <div class="meter" role="img" aria-label="0 used, 50,000 reserved by #61, 200,000 free"><span class="q" style="width:20%"></span></div>
+            <p class="hint" style="margin-top:6px">0 spent · 50,000 held for queued #61 · 200,000 free. Refills to 250,000 on Sep 27, 00:00 UTC. ETH allowance: 0 of 10 used.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+      <h3 style="margin-bottom:10px">Roles allowlist · 6 target/selector pairs</h3>
+      <div class="tbl-wrap">
+        <table class="t">
+          <thead><tr><th>#</th><th>Target</th><th>Function</th><th>Parameter rule</th><th>Allowance</th></tr></thead>
+          <tbody>
+            <tr><td class="num">1</td><td>USDC <span class="mono faint">0x8335…2913</span></td><td class="mono">transfer(address,uint256)</td><td>to is one of 3 registered payees, including Base Grants Safe <span class="mono">0xB6a2…1f04</span></td><td class="num">USDC, 250,000/wk</td></tr>
+            <tr><td class="num">2</td><td>USDC <span class="mono faint">0x8335…2913</span></td><td class="mono">approve(address,uint256)</td><td>spender is the Across SpokePool on Base <span class="mono">0x09ae…EC64</span></td><td class="num">USDC, 250,000/wk</td></tr>
+            <tr><td class="num">3</td><td>Across SpokePool <span class="mono faint">0x09ae…EC64</span></td><td class="mono">depositNow(…)</td><td>recipient is Loreum DAO Chamber on Ethereum; output token is USDC</td><td class="muted">via pair 2</td></tr>
+            <tr><td class="num">4</td><td>WETH <span class="mono faint">0x4200…0006</span></td><td class="mono">deposit()</td><td>value up to 10 ETH per call</td><td class="num">ETH, 10/wk</td></tr>
+            <tr><td class="num">5</td><td>WETH <span class="mono faint">0x4200…0006</span></td><td class="mono">withdraw(uint256)</td><td>Any amount</td><td class="muted">—</td></tr>
+            <tr><td class="num">6</td><td>Registered payees</td><td class="mono">ETH send (empty calldata)</td><td>to is one of the 3 registered payees</td><td class="num">ETH, 10/wk</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="hint" style="margin-top:10px">Changing this list is itself a cross-chain proposal: it goes through the same messenger, the same 72 h delay and the same guardian window. MultiSend batches are unwrapped, and each inner call is checked against this list.</p>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <div class="card-h">
+        <div class="row" style="gap:10px">
+          <span class="chain arb"><i></i>Arbitrum</span>
+          <h2>Arbitrum spoke · security</h2>
+        </div>
+        <span class="badge ok"><span class="dot"></span>Receiving from home only</span>
+      </div>
+      <p class="muted" style="font-size:13px;margin-bottom:12px">Same receiver, Delay, Roles and guardian settings as Base. These rows differ:</p>
+      <div class="grid g2">
+        <div class="risk">
+          <span class="bar"></span>
+          <div>
+            <div class="rk">Verification</div>
+            <div class="rv">Retryable tickets with address aliasing</div>
+            <p>The receiver accepts a call only from the aliased Chamber address (<span class="mono">0x3F1c…A92e + 0x1111…1111</span>). An unaliased sender or any other alias is rejected.</p>
+          </div>
+        </div>
+        <div class="risk warn">
+          <span class="bar"></span>
+          <div>
+            <div class="rk">Delivery</div>
+            <div class="rv">Redeem within 7 days</div>
+            <p>If a ticket fails to auto-redeem, someone must redeem it within 7 days or it expires. The reference relayer does this; any wallet can too.</p>
+          </div>
+        </div>
+      </div>
+      <dl class="kv" style="margin-top:10px">
+        <dt>Spoke Safe</dt><dd><span class="mono">0xA7b1…2e90</span> · 95,000 USDC</dd>
+        <dt>Queue</dt><dd>Empty</dd>
+      </dl>
+    </div>
+  </section>
+
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card accent">
+      <div class="rule">
+        <span class="badge acc">Rule</span>
+        <div class="stack-sm">
+          <p class="big">The home Chamber accepts zero inbound messages. <span class="note">10</span></p>
+          <p class="muted" style="font-size:13px">No spoke, bridge or relayer can call the Chamber on Ethereum, change the board or move vault assets. A spoke can return funds home only through an Across deposit to the Chamber's address (Roles pairs 2 and 3); the fill is a plain token transfer and carries no authority. Board changes need no sync: spokes trust the Chamber, not a copy of the board, so a rotated board controls every spoke from its next proposal.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><h2>Not supported yet <span class="note">11</span></h2></div>
+      <ul class="nope">
+        <li><div>Chains without a native messenger<small>Hyperlane, CCIP, LayerZero and Wormhole routes need a multi-verifier layer. Phase 3, only for a paying customer.</small></div><span class="badge">Phase 3</span></li>
+        <li><div>Messages from a spoke to home<small>Not planned. Authority stays on Ethereum.</small></div><span class="badge">By design</span></li>
+        <li><div>Mirrored boards, bridged seats or cLORE<small>A mirrored board is always stale. Delegation stays on Ethereum.</small></div><span class="badge">Deferred</span></li>
+        <li><div>Spoke balances in the vault<small>Spoke holdings are treasury, never totalAssets.</small></div><span class="badge">Deferred</span></li>
+        <li><div>OP Superchain interop, non-EVM chains, L2 LORE<small>Wait for mainnet interop and real L2 demand.</small></div><span class="badge">Deferred</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <div class="card-h">
+      <h2>Recent cross-chain activity <span class="note">12</span></h2>
+      <span class="badge"><span class="dot" style="color:var(--ok)"></span>From indexer</span>
+    </div>
+    <div class="tbl-wrap">
+      <table class="t">
+        <thead><tr><th>Proposal</th><th>Route</th><th>What</th><th>Status</th><th class="r">Received</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><a href="p2-cross-chain-proposal.html">#61</a> <span class="faint num">Sep 18</span></td>
+            <td><span class="chain-cell base"><i></i>Messenger → Base</span></td>
+            <td>On Base: transfer 50,000 USDC to Base Grants Safe</td>
+            <td><span class="badge ok">Ready to execute</span></td>
+            <td class="r muted">—</td>
+          </tr>
+          <tr>
+            <td>#58 <span class="faint num">Sep 9</span></td>
+            <td><span class="chain-cell base"><i></i>Messenger → Base</span></td>
+            <td>Drill: queue a 1 USDC transfer on Base for the guardian to cancel</td>
+            <td><span class="badge">Cancelled by guardian · Sep 10</span></td>
+            <td class="r muted">—</td>
+          </tr>
+          <tr>
+            <td>#55 <span class="faint num">Sep 7</span></td>
+            <td><span class="chain-cell arb"><i></i>Across → Arbitrum</span></td>
+            <td>Move 95,095 USDC to the Arbitrum spoke Safe</td>
+            <td><span class="badge ok">Filled in 12 s</span></td>
+            <td class="r num">95,000 USDC</td>
+          </tr>
+          <tr>
+            <td>#52 <span class="faint num">Aug 3</span></td>
+            <td><span class="chain-cell base"><i></i>Across → Base</span></td>
+            <td>Move 310,310 USDC to the Base spoke Safe</td>
+            <td><span class="badge ok">Filled in 7 s</span></td>
+            <td class="r num">310,000 USDC</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="hint" style="margin-top:10px">Fill times start when the proposal executes on Ethereum, not when it was proposed. Approval and delay time are on each proposal. Drills are scheduled tests of the cancel path during the guarded launch.</p>
+  </div>
+
+  <section class="notes">
+    <h3>Design notes</h3>
+    <ol>
+      <li><b>Balances come from the indexer.</b> Home balances come from the periodic vault and treasury snapshots (I-7, I-20). Spoke balances come from spoke-chain tables with a slower poll interval and their own RPC budget (P-24, P-29), because the review warned that Ponder's default one-second polling on every chain would bring back the Alchemy quota burn.</li>
+      <li><b>Vault assets never move.</b> The review: "Don't move vault assets to spokes" and "Counting spoke balances in the vault's totalAssets" is deferred. The banner says why in one sentence, so nobody proposes it by accident.</li>
+      <li><b>Per-chain freshness.</b> With three chains, one "Indexed 24 s ago" chip would hide a stalled spoke. The chip shows each chain's head age, and the side card shows head, age and poll interval. If one chain goes stale, only its numbers get marked (I-10 chain-aware client and head clock; I-11/I-21 zero display-time RPC). Ethereum keeps the app-wide 30-block warn threshold; spokes use a time threshold because their block times differ (Base 2 s, Arbitrum about 0.25 s).</li>
+      <li><b>The authority chain, extended.</b> The <code>.auth</code> element usually shows seat → owner → session key. For a spoke, the same element shows board → Chamber → verifier → receiver → Delay → Roles → Safe. The role list uses the P-8/P-9 names: "operator" still means a director's session key, and relayers, verifiers, guardians and watchers are separate roles.</li>
+      <li><b>L2BEAT-style security panel.</b> One row per trust question, with a green or amber bar and a rosette summary that has one slice per rated row (the receiver rule folds into verification), so the summary can't look safer than the rows. Data comes from the indexer's <code>spoke_config</code> (P-25). The parameters follow the P-19 spec defaults: 72 h cooldown and a 7-day expiration. Expiration must be above zero, because a failing head entry otherwise blocks the Delay queue forever.</li>
+      <li><b>Guardian semantics are stated honestly.</b> <code>Delay.setTxNonce</code> skips every entry below the new nonce, not just one (phase 2 open question 5). The panel says so, so nobody is surprised by a mass cancel.</li>
+      <li><b>Home dependency is amber on purpose.</b> From the P-19 review note: the spoke trusts the Chamber's address, not its code, so a quorum self-upgrade re-points every spoke. This is the one place the design inherits home-chain governance risk, so it isn't shown as green.</li>
+      <li><b>Safe ownership is an open decision.</b> This mockup shows module-only (no local signers), so only the home board can act. Break-glass local signers would bypass the board and would need their own row in this panel (phase 2 open question 4).</li>
+      <li><b>Allowance meter counts queued entries.</b> Roles checks allowances at execution, not at queueing. Two queued payments could each pass preflight and together overrun the allowance; the second would then fail and block the queue head until it expires. The meter shows queued amounts as reserved (hatched), and the composer counts them.</li>
+      <li><b>Zero inbound messages.</b> This is the hub-and-spoke rule from the review ("home accepts zero inbound messages"; "any authority flowing from a spoke back to home" is deferred). It gets its own card because it's the property that keeps a compromised spoke or bridge from reaching the board.</li>
+      <li><b>What's not supported is listed.</b> These come from the review's Cut and Defer lists: non-native routes wait for the Phase 3 multi-verifier Outbox, and there are no mirrored boards, bridged seats or cLORE, and no Superchain interop. The page doesn't promise speed; it shows delivery time plus the 72 h delay.</li>
+      <li><b>Activity from the indexer.</b> Bridge rows come from <code>bridge_transfer</code> (P-16) and messenger rows from the cross-chain lifecycle table keyed by home chain, Chamber and wallet nonce (I-27, P-24). Fill time is measured from execution so it isn't mistaken for end-to-end governance time. #58 is a scheduled guardian-cancel drill from the guarded launch (P-27); it proves the cancel path on real infrastructure and is why #61 sits at Delay nonce 1.</li>
+    </ol>
+  </section>
+</main>
+<footer class="foot">Mockup only. Addresses marked illustrative in the mock data are placeholders; token and messenger addresses are shortened public mainnet contracts. Loreum is the protocol; Chamber is the governance contract.</footer>
+</body>
+</html>

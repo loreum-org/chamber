@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Loreum · loreum.org landing mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bellefair&family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@300;400;600&display=swap">
+<link rel="stylesheet" href="assets/app.css">
+<style>
+/* loreum.org: evolves landing/src (space-900 navy, Bellefair display, Inter
+   light, star field, pale-lavender accent, square tracked CTAs). Not the app
+   console. app.css is linked only for .mock-bar and .note/.notes. */
+:root {
+  --sp9: #0b0d17; --sp8: #151932; --sp7: #1c2142; --spa: #d0d6f9;
+  --lt1: #ffffff; --lt2: #d6d9e8; --lt3: #9aa0b8; --lt4: #6b7190;
+  --ll: rgba(255, 255, 255, 0.08); --ll2: rgba(255, 255, 255, 0.16);
+  --lok: #34d399; --lwarn: #fbbf24; --lbad: #f87171; --lblue: #60a5fa; --lpur: #a685f5;
+  --ldisp: "Bellefair", Georgia, serif;
+  --lsans: Inter, "IBM Plex Sans", system-ui, sans-serif;
+  --lmono: "IBM Plex Mono", Menlo, monospace;
+  --lease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+body.lp { margin: 0; background: var(--sp9); color: var(--lt1); font-family: var(--lsans); font-weight: 300; font-size: 16px; line-height: 1.6; overflow-x: clip; background-image: none; }
+b, strong { font-weight: 600; }
+.lp a { color: inherit; text-decoration: none; }
+.lp :focus-visible { outline: 2px solid var(--spa); outline-offset: 3px; border-radius: 4px; }
+.lp h1, .lp h2, .lp h3, .lp h4 { margin: 0; font-weight: 400; }
+.lp p { margin: 0; }
+.num { font-variant-numeric: tabular-nums; }
+.lp-mono { font-family: var(--lmono); font-size: 0.82em; }
+.lp-wrap { max-width: 1240px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+.lp-muted { color: var(--lt3); }
+
+/* Sky */
+.lp-sky { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.lp-sky::before { content: ""; position: absolute; top: -20%; right: -10%; width: 800px; height: 800px; border-radius: 50%; background: radial-gradient(circle, rgba(30, 58, 138, 0.35), transparent 65%); }
+.lp-sky::after { content: ""; position: absolute; bottom: -25%; left: -12%; width: 650px; height: 650px; border-radius: 50%; background: radial-gradient(circle, rgba(88, 28, 135, 0.28), transparent 65%); }
+.lp-stars { position: absolute; inset: 0; opacity: 0.55; background-image:
+  radial-gradient(1px 1px at 8% 12%, #fff, transparent), radial-gradient(1.5px 1.5px at 23% 64%, #d0d6f9, transparent),
+  radial-gradient(1px 1px at 37% 28%, #fff, transparent), radial-gradient(1px 1px at 51% 83%, #fff, transparent),
+  radial-gradient(2px 2px at 66% 18%, #d0d6f9, transparent), radial-gradient(1px 1px at 78% 52%, #fff, transparent),
+  radial-gradient(1px 1px at 91% 76%, #93c5fd, transparent), radial-gradient(1.5px 1.5px at 14% 91%, #fff, transparent),
+  radial-gradient(1px 1px at 47% 47%, #fff, transparent), radial-gradient(1px 1px at 86% 8%, #fff, transparent),
+  radial-gradient(1px 1px at 60% 66%, #d0d6f9, transparent), radial-gradient(1px 1px at 30% 5%, #fff, transparent); }
+.lp-stars.b { opacity: 0.35; transform: scale(1.6) rotate(12deg); animation: lp-tw 7s ease-in-out infinite alternate; }
+@keyframes lp-tw { from { opacity: 0.15; } to { opacity: 0.45; } }
+
+/* Nav */
+.lp-nav { position: sticky; top: 0; z-index: 30; background: rgba(11, 13, 23, 0.72); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom: 1px solid var(--ll); }
+.lp-nav-in { display: flex; align-items: center; justify-content: space-between; gap: 18px; height: 72px; }
+.lp-logo { display: flex; align-items: center; gap: 10px; }
+.lp-logo svg { width: 28px; height: 28px; }
+.lp-logo span { font-family: var(--ldisp); font-size: 24px; letter-spacing: 0.14em; }
+.lp-links { display: flex; gap: 28px; font-size: 12.5px; letter-spacing: 0.14em; }
+.lp-links a { color: var(--lt2); transition: color 0.2s; white-space: nowrap; }
+.lp-links a:hover { color: var(--spa); }
+.lp-pill { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--ll2); padding: 9px 20px; border-radius: 999px; font-size: 12.5px; letter-spacing: 0.14em; transition: background 0.2s; white-space: nowrap; }
+.lp-pill:hover { background: rgba(255, 255, 255, 0.08); }
+
+/* Buttons (square, tracked, as on the current site) */
+.lp-btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 54px; padding: 0 30px; font: 600 13px/1 var(--lsans); letter-spacing: 0.18em; text-transform: uppercase; border: 1px solid transparent; transition: background 0.25s, border-color 0.25s, transform 0.25s var(--lease); white-space: nowrap; }
+.lp-btn.solid { background: #fff; color: var(--sp9); }
+.lp-btn.solid:hover { background: var(--spa); }
+.lp-btn.line { border-color: var(--ll2); color: #fff; }
+.lp-btn.line:hover { border-color: #fff; background: rgba(255, 255, 255, 0.05); }
+.lp-btn .arr { transition: transform 0.25s var(--lease); }
+.lp-btn:hover .arr { transform: translateX(4px); }
+
+/* Chips and badges */
+.lp-chip { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; border: 1px solid rgba(208, 214, 249, 0.3); background: rgba(208, 214, 249, 0.08); color: var(--spa); font-size: 11.5px; letter-spacing: 0.2em; text-transform: uppercase; }
+.lp-chip.amber { border-color: rgba(251, 191, 36, 0.35); background: rgba(251, 191, 36, 0.08); color: #fde68a; }
+.lp-tag { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 5px; font-size: 11px; font-weight: 600; letter-spacing: 0.02em; border: 1px solid var(--ll2); color: var(--lt2); background: rgba(255, 255, 255, 0.04); white-space: nowrap; }
+.lp-tag.ok { color: var(--lok); border-color: rgba(52, 211, 153, 0.35); background: rgba(16, 185, 129, 0.1); }
+.lp-tag.warn { color: var(--lwarn); border-color: rgba(251, 191, 36, 0.35); background: rgba(245, 158, 11, 0.1); }
+.lp-tag.bad { color: var(--lbad); border-color: rgba(248, 113, 113, 0.35); background: rgba(239, 68, 68, 0.1); }
+.lp-tag.ai { color: #c4b5fd; border-color: rgba(166, 133, 245, 0.4); background: rgba(124, 92, 214, 0.14); }
+.lp-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; background: currentColor; flex: none; }
+.lp-fresh { display: inline-flex; align-items: center; gap: 7px; font-family: var(--lmono); font-size: 11.5px; color: var(--lt3); }
+.lp-fresh i { width: 6px; height: 6px; border-radius: 50%; background: var(--lok); display: inline-block; box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.18); }
+
+/* Hero */
+.lp-hero { position: relative; z-index: 1; padding: 110px 0 40px; text-align: center; }
+.lp-hero h1 { font-family: var(--ldisp); font-size: clamp(2.6rem, 7vw, 5.6rem); line-height: 1.02; letter-spacing: -0.005em; margin: 28px auto 0; max-width: 13em; text-wrap: balance; }
+.lp-grad { background: linear-gradient(90deg, #ffffff 0%, #d0d6f9 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.lp-hero .lede { margin: 28px auto 0; max-width: 40em; font-size: clamp(17px, 1.6vw, 20px); color: var(--lt3); line-height: 1.65; }
+.lp-hero .lede b { color: #fff; font-weight: 400; }
+.lp-hero .ctas { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; margin-top: 44px; }
+.lp-hero .sub-cta { margin-top: 18px; font-size: 14px; color: var(--lt3); }
+.lp-hero .sub-cta a { color: var(--spa); border-bottom: 1px solid rgba(208, 214, 249, 0.35); }
+
+/* Product window */
+.lp-window { margin: 72px auto 0; max-width: 1120px; text-align: left; border: 1px solid var(--ll2); border-radius: 18px; background: linear-gradient(180deg, rgba(21, 25, 50, 0.82), rgba(13, 16, 32, 0.9)); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); overflow: hidden; border-top-color: rgba(208, 214, 249, 0.28); }
+.lp-win-h { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding: 14px 20px; border-bottom: 1px solid var(--ll); background: rgba(11, 13, 23, 0.5); }
+.lp-win-h .ttl { display: flex; align-items: center; gap: 12px; font-size: 14px; }
+.lp-win-h .ttl .ic { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; background: rgba(124, 92, 214, 0.2); border: 1px solid rgba(166, 133, 245, 0.35); font-family: var(--lmono); font-size: 11px; color: #c4b5fd; }
+.lp-win-b { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); }
+.lp-pane { padding: 18px 20px 20px; min-width: 0; }
+.lp-pane + .lp-pane { border-left: 1px solid var(--ll); }
+.lp-pane-h { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 12px; }
+.lp-pane-h h3 { font-family: var(--lsans); font-size: 11px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--lt3); }
+.lp-seats { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.lp-seats li { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 9px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.05); font-size: 13.5px; }
+.lp-seats li:last-child { border-bottom: 0; }
+.lp-seats .rk { font-family: var(--lmono); font-size: 11px; color: var(--lt4); }
+.lp-seats .who { min-width: 0; display: flex; flex-direction: column; }
+.lp-seats .who span:first-child { color: #fff; font-weight: 400; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lp-seats .who span:last-child { font-size: 11.5px; color: var(--lt4); }
+.lp-seats .w { text-align: right; font-size: 12.5px; color: var(--lt2); font-variant-numeric: tabular-nums; }
+.lp-seats .w i { display: block; height: 3px; margin-top: 5px; border-radius: 2px; background: linear-gradient(90deg, rgba(208, 214, 249, 0.2), #d0d6f9); margin-left: auto; }
+.lp-seats li.next { opacity: 0.6; border-top: 1px dashed rgba(251, 191, 36, 0.45); }
+.lp-q { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.lp-q li { padding: 12px 14px; border-radius: 10px; border: 1px solid var(--ll); background: rgba(11, 13, 23, 0.5); display: grid; gap: 8px; }
+.lp-q li.ready { border-color: rgba(52, 211, 153, 0.35); background: linear-gradient(90deg, rgba(16, 185, 129, 0.08), rgba(11, 13, 23, 0.5)); }
+.lp-q .qtop { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+.lp-q .t { font-size: 14px; color: #fff; font-weight: 400; }
+.lp-q .t .id { font-family: var(--lmono); font-size: 12px; color: var(--lt4); margin-right: 6px; }
+.lp-q .meta { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 12px; color: var(--lt3); }
+.lp-pips { display: inline-flex; gap: 4px; }
+.lp-pips i { width: 16px; height: 5px; border-radius: 3px; background: rgba(255, 255, 255, 0.12); display: inline-block; }
+.lp-pips i.on { background: #d0d6f9; }
+.lp-q li.ready .lp-pips i.on { background: var(--lok); }
+.lp-win-f { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 12px 20px; border-top: 1px solid var(--ll); font-size: 12px; color: var(--lt4); background: rgba(11, 13, 23, 0.45); }
+
+/* Proof strip */
+.lp-proof { position: relative; z-index: 1; margin-top: 90px; border-block: 1px solid var(--ll); background: rgba(21, 25, 50, 0.45); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.lp-proof-in { display: grid; grid-template-columns: 1.1fr repeat(4, minmax(0, 1fr)); gap: 24px; padding-top: 34px; padding-bottom: 34px; align-items: center; }
+.lp-proof .lead { font-size: 13px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--lt3); line-height: 1.6; }
+.lp-proof .lead b { color: #fff; font-weight: 400; display: block; font-family: var(--ldisp); font-size: 22px; letter-spacing: 0.02em; text-transform: none; }
+.lp-proof dt { font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--lt4); }
+.lp-proof dd { margin: 6px 0 0; font-family: var(--ldisp); font-size: 30px; line-height: 1; color: #fff; font-variant-numeric: tabular-nums; }
+.lp-proof dd small { display: block; font-family: var(--lsans); font-size: 12.5px; color: var(--lt3); margin-top: 6px; }
+
+/* Sections */
+.lp-sec { position: relative; z-index: 1; padding: 130px 0; }
+.lp-sec.line { border-top: 1px solid rgba(255, 255, 255, 0.05); }
+.lp-eyebrow { display: inline-flex; align-items: center; gap: 8px; font-size: 11.5px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--spa); }
+.lp-h2 { font-family: var(--ldisp); font-size: clamp(2.2rem, 5vw, 3.9rem); line-height: 1.05; margin-top: 18px !important; max-width: 16em; text-wrap: balance; }
+.lp-intro { margin-top: 20px !important; max-width: 42em; font-size: 18px; color: var(--lt3); }
+
+/* How it works */
+.lp-steps { list-style: none; margin: 64px 0 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; position: relative; counter-reset: s; }
+.lp-steps::before { content: ""; position: absolute; left: 30px; right: 30px; top: 29px; height: 1px; background: linear-gradient(90deg, rgba(208, 214, 249, 0.1), rgba(208, 214, 249, 0.5), rgba(208, 214, 249, 0.1)); }
+.lp-steps > li { position: relative; display: flex; flex-direction: column; gap: 14px; }
+.lp-steps .n { width: 58px; height: 58px; border-radius: 50%; display: grid; place-items: center; background: var(--sp9); border: 1px solid rgba(208, 214, 249, 0.4); font-family: var(--ldisp); font-size: 24px; color: var(--spa); position: relative; }
+.lp-steps .n::after { content: ""; position: absolute; inset: -6px; border-radius: 50%; border: 1px solid rgba(208, 214, 249, 0.12); }
+.lp-steps h3 { font-family: var(--ldisp); font-size: 28px; letter-spacing: 0.02em; }
+.lp-steps p { font-size: 14.5px; color: var(--lt3); }
+.lp-steps .ex { margin-top: auto; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--ll); background: rgba(21, 25, 50, 0.55); font-family: var(--lmono); font-size: 11.5px; color: var(--lt2); line-height: 1.55; }
+.lp-steps .ex span { color: var(--lt4); }
+.lp-rules { margin-top: 44px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: var(--ll); border: 1px solid var(--ll); border-radius: 12px; overflow: hidden; }
+.lp-rules div { background: rgba(13, 16, 32, 0.92); padding: 16px 18px; }
+.lp-rules dt { font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--lt4); }
+.lp-rules dd { margin: 6px 0 0; font-size: 14px; color: var(--lt2); }
+.lp-rules dd code { font-family: var(--lmono); font-size: 12.5px; color: var(--spa); }
+
+/* Authority chain (landing variant of the signature element) */
+.lp-chainwrap { margin-top: 28px; display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 2fr); gap: 28px; align-items: center; padding: 26px; border: 1px solid var(--ll); border-radius: 16px; background: linear-gradient(135deg, rgba(28, 33, 66, 0.7), rgba(13, 16, 32, 0.75)); }
+.lp-chainwrap h3 { font-family: var(--ldisp); font-size: 30px; }
+.lp-chainwrap > div > p { margin-top: 8px !important; font-size: 14.5px; color: var(--lt3); }
+.lp-auth { display: flex; }
+.lp-auth .n { position: relative; flex: 1 1 0; min-width: 0; padding: 14px 16px 14px 24px; background: rgba(11, 13, 23, 0.7); border: 1px solid var(--ll2); display: flex; flex-direction: column; gap: 3px; }
+.lp-auth .n:first-child { border-radius: 12px 0 0 12px; padding-left: 16px; background: rgba(74, 47, 143, 0.28); border-color: rgba(166, 133, 245, 0.45); }
+.lp-auth .n:last-child { border-radius: 0 12px 12px 0; }
+.lp-auth .n + .n { border-left: 0; }
+.lp-auth .n + .n::before { content: ""; position: absolute; left: -7px; top: 50%; width: 12px; height: 12px; margin-top: -6px; background: #0e1122; border-top: 1px solid var(--spa); border-right: 1px solid var(--spa); transform: rotate(45deg); }
+.lp-auth .k { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--lt4); font-weight: 600; }
+.lp-auth .v { font-size: 14.5px; color: #fff; font-weight: 400; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lp-auth .n.key .v { font-family: var(--lmono); font-size: 13px; color: #c4b5fd; }
+.lp-auth .s { font-size: 12px; color: var(--lt3); }
+
+/* AI directors */
+.lp-ai { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 56px; align-items: start; }
+.lp-guard { list-style: none; margin: 36px 0 0; padding: 0; display: grid; gap: 22px; }
+.lp-guard li { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 14px; }
+.lp-guard .gi { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; border: 1px solid rgba(166, 133, 245, 0.35); background: rgba(124, 92, 214, 0.12); color: #c4b5fd; }
+.lp-guard .gi svg { width: 18px; height: 18px; }
+.lp-guard h3 { font-family: var(--lsans); font-size: 16px; font-weight: 600; }
+.lp-guard p { margin-top: 3px !important; font-size: 14.5px; color: var(--lt3); }
+.lp-agent { border: 1px solid rgba(166, 133, 245, 0.3); border-radius: 18px; background: linear-gradient(180deg, rgba(28, 33, 66, 0.85), rgba(13, 16, 32, 0.9)); overflow: hidden; }
+.lp-agent-h { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding: 18px 20px; border-bottom: 1px solid var(--ll); }
+.lp-agent-h .nm { display: flex; align-items: center; gap: 12px; }
+.lp-agent-h .av { width: 42px; height: 42px; border-radius: 12px; background: conic-gradient(from 120deg, #064e3b, #34d399, #0e7490, #064e3b); border: 1px solid rgba(255, 255, 255, 0.15); flex: none; }
+.lp-agent-h .nm div span:first-child { display: block; font-size: 16px; font-weight: 600; }
+.lp-agent-h .nm div span:last-child { font-size: 12.5px; color: var(--lt3); }
+.lp-agent-b { padding: 18px 20px; display: grid; gap: 18px; }
+.lp-lbl { font-size: 10.5px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--lt4); font-weight: 600; margin-bottom: 8px; }
+.lp-scopes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.lp-scopes span { display: flex; justify-content: space-between; align-items: center; gap: 6px; padding: 7px 10px; border-radius: 7px; border: 1px solid var(--ll); font-family: var(--lmono); font-size: 11.5px; color: var(--lt4); background: rgba(11, 13, 23, 0.5); }
+.lp-scopes span::after { content: "off"; font-size: 10px; }
+.lp-scopes span.on { color: #ddd6fe; border-color: rgba(166, 133, 245, 0.45); background: rgba(124, 92, 214, 0.16); }
+.lp-scopes span.on::after { content: "on"; color: #c4b5fd; }
+.lp-checks { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; font-size: 13.5px; }
+.lp-checks li { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 10px; color: var(--lt2); }
+.lp-checks .ck { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 600; background: rgba(16, 185, 129, 0.14); color: var(--lok); }
+.lp-checks .ck.no { background: rgba(239, 68, 68, 0.12); color: var(--lbad); }
+.lp-mhint { margin-top: 10px; font-size: 12.5px; color: var(--lt3); padding: 8px 10px; border-radius: 8px; border: 1px dashed rgba(251, 191, 36, 0.35); background: rgba(251, 191, 36, 0.05); }
+.lp-agent-f { padding: 12px 20px; border-top: 1px solid var(--ll); font-size: 12px; color: var(--lt4); display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+
+/* Supply */
+.lp-supply { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); gap: 24px; margin-top: 56px; }
+.lp-card { border: 1px solid var(--ll); border-radius: 16px; background: rgba(21, 25, 50, 0.55); padding: 24px; }
+.lp-gate { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; }
+.lp-gate .row { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 16px; align-items: center; padding: 14px 0; border-bottom: 1px dashed rgba(255, 255, 255, 0.08); }
+.lp-gate .row:last-child { border-bottom: 0; }
+.lp-gate .role { font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--lt4); font-weight: 600; }
+.lp-gate .ent { display: flex; flex-direction: column; gap: 2px; }
+.lp-gate .ent b { font-weight: 600; font-size: 15px; }
+.lp-gate .ent span { font-size: 13px; color: var(--lt3); }
+.lp-gate .row.core { background: linear-gradient(90deg, rgba(208, 214, 249, 0.08), transparent); margin: 0 -24px; padding-left: 24px; padding-right: 24px; }
+.lp-meter { height: 10px; border-radius: 5px; background: rgba(255, 255, 255, 0.07); overflow: hidden; display: flex; margin-top: 10px; }
+.lp-meter span { display: block; height: 100%; }
+.lp-meter .ex { background: #d0d6f9; }
+.lp-meter .qd { background: repeating-linear-gradient(135deg, #fbbf24 0 6px, rgba(251, 191, 36, 0.55) 6px 12px); }
+.lp-legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12.5px; color: var(--lt3); margin-top: 10px; }
+.lp-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+.lp-big { font-family: var(--ldisp); font-size: 44px; line-height: 1; font-variant-numeric: tabular-nums; }
+.lp-op { margin-top: 18px; padding: 14px 16px; border-radius: 10px; border: 1px solid rgba(251, 191, 36, 0.35); background: rgba(251, 191, 36, 0.06); display: grid; gap: 6px; }
+.lp-op .t { font-size: 14.5px; }
+.lp-op .m { font-size: 12.5px; color: var(--lt3); font-family: var(--lmono); }
+
+/* Coming later (gated) */
+.lp-later { border: 1px solid rgba(251, 191, 36, 0.28); border-radius: 20px; overflow: hidden; background: repeating-linear-gradient(135deg, rgba(251, 191, 36, 0.035) 0 14px, transparent 14px 28px), rgba(13, 16, 32, 0.85); }
+.lp-later-in { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 40px; padding: 40px; align-items: center; }
+.lp-later h2 { font-family: var(--ldisp); font-size: clamp(2rem, 4vw, 3.1rem); line-height: 1.06; margin-top: 16px !important; }
+.lp-later p { margin-top: 14px !important; color: var(--lt3); font-size: 15.5px; }
+.lp-later .gate { margin-top: 20px; padding: 14px 16px; border-radius: 10px; border: 1px dashed rgba(251, 191, 36, 0.45); font-size: 14px; color: #fde68a; }
+.lp-hub { width: 100%; height: auto; display: block; }
+
+/* Trust */
+.lp-trust { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-top: 52px; }
+.lp-tcard { display: flex; flex-direction: column; gap: 10px; padding: 22px; border: 1px solid var(--ll); border-radius: 14px; background: rgba(21, 25, 50, 0.5); transition: border-color 0.25s, transform 0.35s var(--lease), background 0.25s; }
+.lp-tcard:hover { border-color: rgba(208, 214, 249, 0.4); transform: translateY(-3px); background: rgba(28, 33, 66, 0.6); }
+.lp-tcard .k { font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--lt4); }
+.lp-tcard h3 { font-family: var(--ldisp); font-size: 24px; line-height: 1.15; }
+.lp-tcard p { font-size: 13.5px; color: var(--lt3); }
+.lp-tcard .go { margin-top: auto; font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--spa); }
+.lp-cant { margin-top: 16px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); border: 1px solid var(--ll); border-radius: 14px; overflow: hidden; }
+.lp-cant > div { padding: 22px 24px; }
+.lp-cant > div + div { border-left: 1px solid var(--ll); background: rgba(21, 25, 50, 0.4); }
+.lp-cant h3 { font-family: var(--lsans); font-size: 12px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; }
+.lp-cant ul { margin: 12px 0 0; padding: 0; list-style: none; display: grid; gap: 10px; font-size: 14.5px; color: var(--lt2); }
+.lp-cant li { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 10px; align-items: baseline; }
+.lp-cant li span:first-child { font-family: var(--lmono); font-size: 10.5px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+.lp-cant .more { display: inline-block; margin-top: 14px; font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--spa); }
+.lp-cant .no span:first-child { color: var(--lok); }
+.lp-cant .yes span:first-child { color: var(--lwarn); }
+
+/* CTA */
+.lp-cta { text-align: center; padding: 120px 0 140px; position: relative; z-index: 1; }
+.lp-cta h2 { font-family: var(--ldisp); font-size: clamp(2.4rem, 6vw, 4.6rem); line-height: 1.02; max-width: 14em; margin: 0 auto; text-wrap: balance; }
+.lp-cta p { margin: 20px auto 0 !important; max-width: 36em; font-size: 18px; color: var(--lt3); }
+.lp-cta .ctas { display: flex; justify-content: center; flex-wrap: wrap; gap: 14px; margin-top: 40px; }
+
+/* Footer */
+.lp-foot { position: relative; z-index: 1; border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 72px; }
+.lp-foot-in { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 48px; }
+.lp-foot p { margin-top: 18px !important; color: var(--lt4); max-width: 24em; font-size: 14.5px; }
+.lp-foot h4 { font-family: var(--lsans); font-size: 12.5px; font-weight: 600; letter-spacing: 0.2em; margin-bottom: 18px !important; }
+.lp-foot ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; font-size: 14px; color: var(--lt3); }
+.lp-foot ul a:hover { color: #fff; }
+.lp-legal { margin-top: 56px; border-top: 1px solid rgba(255, 255, 255, 0.05); padding: 26px 0 36px; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; font-size: 12px; letter-spacing: 0.08em; color: var(--lt4); }
+
+/* Reveal */
+.js .reveal { opacity: 0; transform: translateY(22px); transition: opacity 0.9s var(--lease), transform 0.9s var(--lease); }
+.js .reveal.in { opacity: 1; transform: none; }
+.js .reveal.d1 { transition-delay: 0.1s; } .js .reveal.d2 { transition-delay: 0.2s; } .js .reveal.d3 { transition-delay: 0.3s; }
+
+.lp-notes { position: relative; z-index: 1; padding-bottom: 40px; }
+
+/* Responsive */
+@media (max-width: 1060px) {
+  .lp-links { display: none; }
+  .lp-win-b { grid-template-columns: minmax(0, 1fr); }
+  .lp-pane + .lp-pane { border-left: 0; border-top: 1px solid var(--ll); }
+  .lp-proof-in { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .lp-proof .lead { grid-column: 1 / -1; }
+  .lp-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 40px; }
+  .lp-steps::before { display: none; }
+  .lp-rules { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .lp-chainwrap { grid-template-columns: minmax(0, 1fr); }
+  .lp-ai { grid-template-columns: minmax(0, 1fr); gap: 36px; }
+  .lp-supply { grid-template-columns: minmax(0, 1fr); }
+  .lp-later-in { grid-template-columns: minmax(0, 1fr); }
+  .lp-trust { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .lp-wrap { padding: 0 16px; }
+  .lp-nav-in { height: 64px; }
+  .lp-pill { padding: 8px 14px; }
+  .lp-hero { padding-top: 64px; }
+  .lp-btn { width: 100%; }
+  .lp-window { margin-top: 48px; border-radius: 14px; }
+  .lp-pane { padding: 16px; }
+  .lp-q .qtop { flex-direction: column; gap: 6px; }
+  .lp-sec { padding: 84px 0; }
+  .lp-steps { grid-template-columns: minmax(0, 1fr); }
+  .lp-rules { grid-template-columns: minmax(0, 1fr); }
+  .lp-chainwrap { padding: 18px; }
+  .lp-auth { flex-direction: column; }
+  .lp-auth .n, .lp-auth .n:first-child { border-radius: 0; padding-left: 16px; }
+  .lp-auth .n:first-child { border-radius: 12px 12px 0 0; }
+  .lp-auth .n:last-child { border-radius: 0 0 12px 12px; }
+  .lp-auth .n + .n { border-left: 1px solid var(--ll2); border-top: 0; }
+  .lp-auth .n + .n::before { left: 50%; top: -7px; margin-top: 0; margin-left: -6px; transform: rotate(135deg); }
+  .lp-scopes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .lp-gate .row { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .lp-later-in { padding: 24px 18px; }
+  .lp-trust { grid-template-columns: minmax(0, 1fr); }
+  .lp-cant { grid-template-columns: minmax(0, 1fr); }
+  .lp-cant > div + div { border-left: 0; border-top: 1px solid var(--ll); }
+  .lp-foot-in { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .lp-foot-in > :first-child { grid-column: 1 / -1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp-stars.b { animation: none; }
+  .js .reveal { opacity: 1; transform: none; transition: none; }
+  .lp-btn, .lp-tcard, .lp-btn .arr { transition: none; }
+}
+</style>
+</head>
+<body class="lp">
+<div class="mock-bar">
+  <span><b>MOCKUP</b> · loreum.org landing · state as of Mar 16, 2027 14:20 UTC</span>
+  <span><a href="index.html">All mockups</a> · <a href="_mock-data.md">Mock data</a></span>
+</div>
+<div class="lp-sky" aria-hidden="true"><div class="lp-stars"></div><div class="lp-stars b"></div></div>
+
+<header class="lp-nav">
+  <div class="lp-wrap lp-nav-in">
+    <a class="lp-logo" href="eco-landing.html" aria-label="Loreum home">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="13" fill="none" stroke="#d0d6f9" stroke-width="1.2"/><circle cx="16" cy="16" r="5.5" fill="#ffffff"/><circle cx="16" cy="3" r="2" fill="#d0d6f9"/></svg>
+      <span>LOREUM</span>
+    </a>
+    <nav class="lp-links" aria-label="Main">
+      <a href="eco-landing.html#how">HOW IT WORKS</a>
+      <a href="eco-landing.html#ai">AI DIRECTORS</a>
+      <a href="eco-landing.html#supply">LORE SUPPLY</a>
+      <a href="eco-trust.html">TRUST</a>
+      <a href="eco-explorers.html">EXPLORERS</a>
+      <a href="#">BLOG</a>
+    </nav>
+    <a class="lp-pill" href="app-overview.html">OPEN APP</a>
+  </div>
+</header>
+
+<main>
+  <!-- ============ HERO ============ -->
+  <section class="lp-hero" aria-labelledby="lp-title">
+    <div class="lp-wrap">
+      <span class="lp-chip">Loreum · Onchain governance <span class="note">1</span></span>
+      <h1 id="lp-title">Accountable boards for <span class="lp-grad">onchain treasuries.</span></h1>
+      <p class="lede">Humans and AI directors work from <b>one queue</b>. Holders delegate to decide <b>who sits on the board</b>. Nothing moves without a quorum, and an AI director's key can do only what its on-chain scope allows.</p>
+      <div class="ctas">
+        <a class="lp-btn solid" href="app-overview.html">Open the app <span class="arr" aria-hidden="true">&#8250;</span></a>
+        <a class="lp-btn line" href="eco-landing.html#how">See how it works</a>
+      </div>
+      <p class="sub-cta">In Loreum DAO, seats go to the <a href="eco-explorers.html">Loreum Explorers</a> with the most delegated LORE.</p>
+
+      <!-- Product window: what a board looks like, live from the indexer -->
+      <div class="lp-window reveal" role="figure" aria-label="Loreum DAO board and queue in the Loreum app">
+        <div class="lp-win-h">
+          <div class="ttl"><span class="ic">LD</span><span>Loreum DAO <span class="lp-muted">· our own treasury runs here</span> <span class="note">2</span></span></div>
+          <span class="lp-fresh"><i></i>From chamber-indexer · 24 s ago · #27,184,300</span>
+        </div>
+        <div class="lp-win-b">
+          <div class="lp-pane">
+            <div class="lp-pane-h"><h3>Board · 5 seats · quorum 3</h3><span class="lp-muted" style="font-size:12px">Delegated LORE</span></div>
+            <ol class="lp-seats">
+              <li><span class="rk">1</span><span class="who"><span>aria.eth · Explorer #7</span><span>Person · EOA</span></span><span class="w">2,410,000<i style="width:100%"></i></span></li>
+              <li><span class="rk">2</span><span class="who"><span>kofi.eth · Explorer #12</span><span>Person · Safe 2-of-3 · session key</span></span><span class="w">1,905,000<i style="width:79%"></i></span></li>
+              <li><span class="rk">3</span><span class="who"><span>Treasury Agent · Explorer #31 <span class="lp-tag ai">AI</span></span><span>Policy account · session key</span></span><span class="w">1,120,000<i style="width:46%"></i></span></li>
+              <li><span class="rk">4</span><span class="who"><span>lena.eth · Explorer #44</span><span>Person · EOA</span></span><span class="w">980,000<i style="width:41%"></i></span></li>
+              <li><span class="rk">5</span><span class="who"><span>marco.eth · Explorer #58</span><span>Person · EOA</span></span><span class="w">612,000<i style="width:25%"></i></span></li>
+              <li class="next"><span class="rk">6</span><span class="who"><span>nadia.eth · Explorer #63</span><span>Next in line · needs 72,001 more</span></span><span class="w">540,000<i style="width:22%"></i></span></li>
+            </ol>
+          </div>
+          <div class="lp-pane">
+            <div class="lp-pane-h"><h3>Queue · decoded before anyone confirms</h3><a class="lp-muted" style="font-size:12px" href="app-queue.html">Open queue</a></div>
+            <ul class="lp-q">
+              <li class="ready">
+                <div class="qtop"><span class="t"><span class="id">#46</span>Fund Q2 grants round: transfer 120,000 USDC to Grants Safe</span><span class="lp-tag ok"><span class="lp-dot"></span>Ready to execute</span></div>
+                <div class="meta"><span class="lp-pips" role="img" aria-label="3 of 3 confirmations"><i class="on"></i><i class="on"></i><i class="on"></i></span><span>3/3</span><span>Simulation passes · treasury &#8722;120,000 USDC</span></div>
+              </li>
+              <li>
+                <div class="qtop"><span class="t"><span class="id">#47</span>Execute LORE mint op #3 (250,000 LORE to Vesting)</span><span class="lp-tag warn">Waits for gate</span></div>
+                <div class="meta"><span class="lp-pips" role="img" aria-label="2 of 3 confirmations"><i class="on"></i><i class="on"></i><i></i></span><span>2/3</span><span>Can't run before Mar 19, 14:02 UTC</span></div>
+              </li>
+              <li>
+                <div class="qtop"><span class="t"><span class="id">#48</span>Upgrade Chamber implementation to v1.2.1</span><span class="lp-tag bad">High risk</span></div>
+                <div class="meta"><span class="lp-pips" role="img" aria-label="1 of 3 confirmations"><i class="on"></i><i></i><i></i></span><span>1/3</span><span>Deadline Mar 30, 2027</span></div>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div class="lp-win-f"><span>Every row above is read from chamber-indexer. The app talks to the chain only when you sign.</span><a href="app-overview.html" style="color:var(--spa)">See it in the app</a></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PROOF STRIP ============ -->
+  <section class="lp-proof" aria-label="Loreum DAO at a glance">
+    <div class="lp-wrap lp-proof-in">
+      <p class="lead">We run our own treasury this way <b>Loreum DAO on Ethereum</b></p>
+      <dl><dt>Vault</dt><dd>7,712,450<small>LORE in the vault</small></dd></dl>
+      <dl><dt>Treasury</dt><dd>2,410,000<small>USDC, plus 184.2 ETH</small></dd></dl>
+      <dl><dt>Board</dt><dd>5 seats<small>quorum 3 · 1 AI director</small></dd></dl>
+      <dl><dt>LORE supply</dt><dd>7-day queue<small>for every mint, capped per quarter</small></dd></dl>
+    </div>
+  </section>
+
+  <!-- ============ HOW IT WORKS ============ -->
+  <section id="how" class="lp-sec" aria-labelledby="how-h">
+    <div class="lp-wrap">
+      <span class="lp-eyebrow">How it works <span class="note">3</span></span>
+      <h2 id="how-h" class="lp-h2 reveal">Delegation picks the board. The board runs one queue.</h2>
+      <p class="lp-intro reveal d1">A Chamber is the contract Loreum deploys for your organization: a vault, a ranked board and a quorum wallet in one. The rules below are enforced by that contract, not by us.</p>
+      <ol class="lp-steps">
+        <li class="reveal"><span class="n">1</span><h3>Delegate</h3><p>Holders deposit the Chamber's token into its vault and delegate that weight to membership NFTs. They can undelegate at any time.</p><div class="ex"><span>nadia.eth's Explorer</span><br>#63 · 540,000 LORE</div></li>
+        <li class="reveal d1"><span class="n">2</span><h3>Seat</h3><p>The NFTs with the most delegated weight hold the seats. Whoever owns a seated NFT is a director, whether a person, a Safe or an AI agent's policy account.</p><div class="ex"><span>Seat 5 line</span><br>612,000 LORE (#58)</div></li>
+        <li class="reveal d2"><span class="n">3</span><h3>Queue</h3><p>Any director submits a transaction. Everyone sees the decoded call and a simulation of what it changes before they confirm.</p><div class="ex"><span>#46 simulated</span><br>treasury &#8722;120,000 USDC</div></li>
+        <li class="reveal d3"><span class="n">4</span><h3>Execute</h3><p>Once a quorum confirms, any director executes. The board can also cancel a transaction by quorum.</p><div class="ex"><span>#46 · 3 of 3</span><br>ready to execute</div></li>
+      </ol>
+      <dl class="lp-rules reveal">
+        <div><dt>Quorum</dt><dd><code>1 + &#8970;directors &#215; 51 / 100&#8971;</code>, so 3 of 5</dd></div>
+        <div><dt>Seat changes</dt><dd>Take effect after 1 block</dd></div>
+        <div><dt>Number of seats</dt><dd>Changes wait 7 days</dd></div>
+        <div><dt>Expiry</dt><dd>Unexecuted transactions expire after 30 days</dd></div>
+      </dl>
+
+      <div class="lp-chainwrap reveal">
+        <div>
+          <h3>Who can act for a seat <span class="note">4</span></h3>
+          <p>The seat's owner, and a session key only if the owner is a contract and set one up. Keys are limited to specific actions, always expire, and are cleared when the NFT changes hands.</p>
+        </div>
+        <div class="lp-auth" role="group" aria-label="Authority chain for Explorer #12">
+          <div class="n"><span class="k">Seat</span><span class="v">Explorer #12 · seat 2</span><span class="s">1,905,000 LORE delegated</span></div>
+          <div class="n"><span class="k">Owner</span><span class="v">kofi.eth</span><span class="s">Safe, 2-of-3 signers</span></div>
+          <div class="n key"><span class="k">Session key</span><span class="v">0xA11c…04e5</span><span class="s">Submit, revoke, cancel · expires Mar 28, 2027</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ AI DIRECTORS ============ -->
+  <section id="ai" class="lp-sec line" aria-labelledby="ai-h">
+    <div class="lp-wrap lp-ai">
+      <div>
+        <span class="lp-eyebrow">AI directors <span class="note">5</span></span>
+        <h2 id="ai-h" class="lp-h2 reveal">AI on the board, inside limits anyone can check.</h2>
+        <ul class="lp-guard">
+          <li class="reveal"><span class="gi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 20h16M6 20V9l6-5 6 5v11"/><path d="M10 20v-6h4v6"/></svg></span><div><h3>It holds a seat because holders chose it</h3><p>An AI director is seated the same way a person is: by delegation. If delegators move their weight, it loses the seat and the next Explorer takes it after 1 block.</p></div></li>
+          <li class="reveal d1"><span class="gi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span><div><h3>Its key does only what the scope allows</h3><p>The Chamber contract enforces each session key's scope and expiry. Treasury Agent's key can submit, execute, revoke and cancel. It can't confirm.</p></div></li>
+          <li class="reveal d2"><span class="gi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 3l8 4v5c0 5-3.5 7.5-8 9-4.5-1.5-8-4-8-9V7l8-4z"/><path d="M9 12l2 2 4-4"/></svg></span><div><h3>It confirms through a policy account</h3><p>To count toward quorum, the agent confirms through a Safe. The Safe signs only when the transaction fits the agent's published mandate and a human co-signer approves. Today people check the mandate; a contract that enforces it comes later.</p></div></li>
+          <li class="reveal d3"><span class="gi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 5h14v10H9l-4 4V5z"/><path d="M9 9h6M9 12h4"/></svg></span><div><h3>Drafts are text. Approvals are calldata.</h3><p>A model can draft a proposal. Every director, human or AI, confirms the decoded call and its simulation, never the model's summary of it.</p></div></li>
+        </ul>
+      </div>
+
+      <div class="lp-agent reveal d1" role="group" aria-label="Treasury Agent, an AI director on Loreum DAO">
+        <div class="lp-agent-h">
+          <div class="nm"><span class="av" aria-hidden="true"></span><div><span>Treasury Agent</span><span>Explorer #31 · seat 3 · 1,120,000 LORE delegated</span></div></div>
+          <span class="lp-tag ai">AI director</span>
+        </div>
+        <div class="lp-agent-b">
+          <div class="lp-auth" role="group" aria-label="Authority chain for Explorer #31">
+            <div class="n"><span class="k">Seat</span><span class="v">#31 · seat 3</span></div>
+            <div class="n"><span class="k">Owner</span><span class="v">Policy account</span><span class="s">Safe 0x9aB3…40d1</span></div>
+            <div class="n key"><span class="k">Session key</span><span class="v">0x7E0f…19b2</span><span class="s">Expires Mar 30, 2027</span></div>
+          </div>
+          <div>
+            <div class="lp-lbl">Session key scope · 0x35</div>
+            <div class="lp-scopes">
+              <span class="on">SUBMIT</span><span>CONFIRM</span><span class="on">EXECUTE</span>
+              <span>UPDATE_SEATS</span><span class="on">REVOKE</span><span class="on">CANCEL</span>
+            </div>
+          </div>
+          <div>
+            <div class="lp-lbl">Mandate v2 · checked before every confirm</div>
+            <ul class="lp-checks">
+              <li><span class="ck" aria-hidden="true">&#10003;</span><span>USDC transfers to allowlisted recipients, such as the Grants Safe</span></li>
+              <li><span class="ck" aria-hidden="true">&#10003;</span><span>Up to 150,000 USDC per transaction and 400,000 USDC per rolling 30 days</span></li>
+              <li><span class="ck no" aria-hidden="true">&#215;</span><span>Never upgrades, pauses, seat changes, LORE or the mint gate. The human directors decide those.</span></li>
+            </ul>
+            <p class="lp-mhint">A human co-signer on the policy Safe checks the mandate before it signs. No contract enforces the mandate yet.</p>
+          </div>
+        </div>
+        <div class="lp-agent-f"><span>ERC-8004 agent #212 · shown for identity only, grants no authority</span><span>Key expires in 14 days</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ LORE SUPPLY ============ -->
+  <section id="supply" class="lp-sec line" aria-labelledby="supply-h">
+    <div class="lp-wrap">
+      <span class="lp-eyebrow">LORE supply <span class="note">6</span></span>
+      <h2 id="supply-h" class="lp-h2 reveal">LORE supply sits behind a public, capped queue.</h2>
+      <p class="lp-intro reveal d1">No one can mint LORE on the spot, including the Loreum team. The token is owned by a small mint gate. Loreum DAO can ask for a mint, the request waits 7 days in public, a separate guardian can cancel it, and no quarter can go over 1,000,000 LORE.</p>
+      <div class="lp-supply">
+        <div class="lp-card lp-gate reveal" role="group" aria-label="LORE supply authority chain">
+          <div class="row"><span class="role">Token</span><span class="ent"><b>LORE</b><span>Max supply 100,000,000 · <span class="lp-mono">0x7756…DC99</span></span></span></div>
+          <div class="row core"><span class="role">Owner</span><span class="ent"><b>LoreMintGate</b><span>7-day delay · 14-day window to execute · 1,000,000 LORE per quarter</span></span></div>
+          <div class="row"><span class="role">Can propose</span><span class="ent"><b>Loreum DAO Chamber</b><span>Only by a 3-of-5 board quorum</span></span></div>
+          <div class="row"><span class="role">Can cancel</span><span class="ent"><b>Loreum Guardian Safe, 3-of-5</b><span>Can't mint. Signers are not team signers, directors or large holders.</span></span></div>
+          <div class="row"><span class="role">To change this</span><span class="ent"><b>Dual control plus 30 days</b><span>A Chamber proposal, guardian approval and a 30-day wait</span></span></div>
+        </div>
+        <div class="lp-card reveal d1">
+          <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:baseline">
+            <span class="lp-lbl" style="margin:0">Q1 2027 mint budget</span>
+            <span class="lp-fresh"><i></i>From chamber-indexer</span>
+          </div>
+          <div style="margin-top:14px"><span class="lp-big">650,000</span> <span class="lp-muted">LORE left of 1,000,000</span></div>
+          <div class="lp-meter" role="img" aria-label="100,000 executed, 250,000 queued, 650,000 remaining"><span class="ex" style="width:10%"></span><span class="qd" style="width:25%"></span></div>
+          <div class="lp-legend"><span><i style="background:#d0d6f9"></i>Executed 100,000</span><span><i style="background:#fbbf24"></i>Queued 250,000</span><span>Total supply 10,070,000</span></div>
+          <div class="lp-op">
+            <span class="t">Op #3: mint 250,000 LORE to the Vesting contract</span>
+            <span class="m">Queued Mar 12 14:02 · runs no earlier than Mar 19 14:02 UTC · expires Apr 2</span>
+          </div>
+          <p style="margin-top:14px;font-size:13.5px;color:var(--lt3)">Every queued mint triggers an alert. See every operation on <a href="eco-trust.html#supply" style="color:var(--spa)">loreum.org/trust</a>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ COMING LATER (gated) ============ -->
+  <section id="later" class="lp-sec" aria-labelledby="later-h" style="padding-top:40px">
+    <div class="lp-wrap">
+      <div class="lp-later reveal">
+        <div class="lp-later-in">
+          <div>
+            <span class="lp-chip amber">Coming later · only if customers ask <span class="note">7</span></span>
+            <h2 id="later-h">One board governing spokes on Base and Arbitrum.</h2>
+            <p>If organizations running on Loreum need it, one board on Ethereum will govern Safe accounts on other chains. Every action there starts as a quorum-approved proposal at home. The spoke waits out a delay that a guardian can cancel, then runs only allowlisted calls. Relayers deliver messages; they can't approve anything.</p>
+            <div class="gate">Not available today, and not scheduled. We start only if a go/no-go review finds all of this: at least 3 outside organizations on Loreum, each with 3 or more independent directors and at least one real proposal a week for 8 weeks; at least 3 of them hold assets or admin roles on two or more chains and ask for it; and the audit is closed with no open critical or high findings.</div>
+          </div>
+          <svg class="lp-hub" viewBox="0 0 520 300" role="img" aria-label="Diagram: the Ethereum board sends approved messages through native messengers to Base and Arbitrum spokes, each with a delay, an allowlist and a Safe">
+            <defs>
+              <marker id="lp-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#d0d6f9"/></marker>
+            </defs>
+            <rect x="12" y="92" width="170" height="116" rx="12" fill="rgba(74,47,143,0.25)" stroke="rgba(166,133,245,0.55)"/>
+            <text x="28" y="118" font-family="Inter, sans-serif" font-size="11" letter-spacing="2" fill="#9aa0b8">HOME · ETHEREUM</text>
+            <text x="28" y="146" font-family="Bellefair, serif" font-size="22" fill="#ffffff">Loreum board</text>
+            <text x="28" y="168" font-family="Inter, sans-serif" font-size="12" fill="#d6d9e8">Quorum approves the</text>
+            <text x="28" y="185" font-family="Inter, sans-serif" font-size="12" fill="#d6d9e8">exact calldata</text>
+            <path d="M184 128 C 240 128, 250 62, 296 62" fill="none" stroke="#d0d6f9" stroke-dasharray="4 4" marker-end="url(#lp-ar)"/>
+            <path d="M184 172 C 240 172, 250 238, 296 238" fill="none" stroke="#d0d6f9" stroke-dasharray="4 4" marker-end="url(#lp-ar)"/>
+            <text x="198" y="147" font-family="IBM Plex Mono, monospace" font-size="10" fill="#9aa0b8">native</text>
+            <text x="198" y="160" font-family="IBM Plex Mono, monospace" font-size="10" fill="#9aa0b8">messenger</text>
+            <g>
+              <rect x="300" y="18" width="208" height="92" rx="12" fill="rgba(21,25,50,0.9)" stroke="rgba(59,130,246,0.55)"/>
+              <circle cx="318" cy="38" r="5" fill="#3b82f6"/>
+              <text x="330" y="42" font-family="Inter, sans-serif" font-size="11" letter-spacing="2" fill="#9aa0b8">SPOKE · BASE</text>
+              <rect x="314" y="56" width="56" height="36" rx="6" fill="rgba(251,191,36,0.12)" stroke="rgba(251,191,36,0.5)"/>
+              <text x="342" y="78" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="#fde68a">Delay</text>
+              <rect x="376" y="56" width="62" height="36" rx="6" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.2)"/>
+              <text x="407" y="78" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="#d6d9e8">Allowlist</text>
+              <rect x="444" y="56" width="52" height="36" rx="6" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.2)"/>
+              <text x="470" y="78" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="#d6d9e8">Safe</text>
+            </g>
+            <g>
+              <rect x="300" y="192" width="208" height="92" rx="12" fill="rgba(21,25,50,0.9)" stroke="rgba(40,160,240,0.55)"/>
+              <circle cx="318" cy="212" r="5" fill="#28a0f0"/>
+              <text x="330" y="216" font-family="Inter, sans-serif" font-size="11" letter-spacing="2" fill="#9aa0b8">SPOKE · ARBITRUM</text>
+              <rect x="314" y="230" width="56" height="36" rx="6" fill="rgba(251,191,36,0.12)" stroke="rgba(251,191,36,0.5)"/>
+              <text x="342" y="252" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="#fde68a">Delay</text>
+              <rect x="376" y="230" width="62" height="36" rx="6" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.2)"/>
+              <text x="407" y="252" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="#d6d9e8">Allowlist</text>
+              <rect x="444" y="230" width="52" height="36" rx="6" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.2)"/>
+              <text x="470" y="252" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="#d6d9e8">Safe</text>
+            </g>
+            <text x="404" y="150" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" fill="#6b7190">Guardian can cancel</text>
+            <text x="404" y="165" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" fill="#6b7190">during the delay</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TRUST ============ -->
+  <section id="trust" class="lp-sec line" aria-labelledby="trust-h">
+    <div class="lp-wrap">
+      <span class="lp-eyebrow">Trust <span class="note">8</span></span>
+      <h2 id="trust-h" class="lp-h2 reveal">Check us. Everything is published.</h2>
+      <div class="lp-trust">
+        <a class="lp-tcard reveal" href="eco-trust.html#contracts"><span class="k">Contracts</span><h3>Addresses and verification</h3><p>Every deployed contract, its version, who controls it and whether its source is verified.</p><span class="go">View contracts</span></a>
+        <a class="lp-tcard reveal d1" href="eco-trust.html#audit"><span class="k">Audit</span><h3>External review</h3><p>Audit: [firm] · Jan 2027 · 0 open critical/high (placeholder)</p><span class="go">Scope and report</span></a>
+        <a class="lp-tcard reveal d2" href="eco-trust.html#audit"><span class="k">Bug bounty</span><h3>Live since Jan 29, 2027</h3><p>Covers the mainnet Factory, Chamber, libraries and the LORE mint gate.</p><span class="go">Bounty scope</span></a>
+        <a class="lp-tcard reveal d3" href="eco-trust.html#status"><span class="k">Status</span><h3>Indexer healthy</h3><p><span class="lp-fresh"><i></i>Indexed 24 s ago · block 27,184,300</span></p><span class="go">System status and alerts</span></a>
+      </div>
+      <div class="lp-cant reveal">
+        <div class="no">
+          <h3>What the Loreum team can't do</h3>
+          <ul>
+            <li><span>Can't</span><span>Mint LORE. The mint gate owns the token.</span></li>
+            <li><span>Can't</span><span>Move funds out of any Chamber. Only that Chamber's board quorum can.</span></li>
+            <li><span>Can't</span><span>Upgrade or pause your Chamber. Each Chamber owns its own upgrade admin.</span></li>
+          </ul>
+        </div>
+        <div class="yes">
+          <h3>What the team can do, in public</h3>
+          <ul>
+            <li><span>Can</span><span>Change the implementation that new Chambers are created from. The Team Safe (4-of-7) does this through a 48-hour timelock, so every change is visible first.</span></li>
+            <li><span>Can</span><span>Delegate its own LORE like any holder. The Team Safe holds a large share, so it influences who sits on Loreum DAO's board.</span></li>
+            <li><span>Can</span><span>Run the app, the indexer and the watcher. If they stop, your Chamber keeps working and you can act from any wallet.</span></li>
+          </ul>
+          <a class="more" href="eco-trust.html#powers">Full list with what enforces each line</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CTA ============ -->
+  <section class="lp-cta" aria-labelledby="cta-h">
+    <div class="lp-wrap">
+      <h2 id="cta-h" class="reveal">Put your treasury under a board you can hold to account.</h2>
+      <p class="reveal d1">Deploy a Chamber, move over from a Safe, or get an Explorer and ask holders to delegate to you.</p>
+      <div class="ctas reveal d2">
+        <a class="lp-btn solid" href="app-overview.html">Open the app <span class="arr" aria-hidden="true">&#8250;</span></a>
+        <a class="lp-btn line" href="app-migrate.html">Migrate from a Safe</a>
+        <a class="lp-btn line" href="eco-explorers.html">Get an Explorer</a>
+      </div>
+    </div>
+  </section>
+
+  <div class="lp-wrap lp-notes">
+    <section class="notes">
+      <h3>Design notes</h3>
+      <ol>
+        <li><b>Positioning comes from the review:</b> accountable boards for onchain treasuries, with humans and AI directors in one queue and delegation deciding who sits. It replaces the current "Decentralized Governance System" headline and the unscoped "compliant" and "credibly neutral" language. This page is the public face of the strategy v2.0 rewrite (<code>D-12</code>). The look evolves <code>landing/src</code> (Bellefair, space navy, star field, square tracked buttons) instead of borrowing the app console. It keeps the rules that apply to every surface: weights 300/400/600 only, depth from layered surfaces rather than drop shadows, and the authority chain as the signature element.</li>
+        <li><b>The product window shows real state, not a stock illustration.</b> It's Loreum DAO's board and queue as chamber-indexer reports them (<code>I-12</code>/<code>I-14</code>), with the freshness line, so the landing page costs no RPC either (<code>I-21</code>). The numbers match <code>_mock-data.md</code>. Dogfooding the LORE Chamber is the first customer the review recommends.</li>
+        <li><b>The contract rules are stated exactly:</b> quorum <code>1 + n*51/100</code>, <code>SEATING_DELAY</code> = 1 block, <code>SEAT_UPDATE_TIMELOCK</code> = 7 days, and a 30-day transaction max age. Step 3 describes the shipped #260 decoding and simulation gate.</li>
+        <li><b>The authority chain is the signature element on public pages too.</b> The copy says "session key", never "operator", because operator is reserved for the session-key feature and relayers are a separate role (<code>P-8</code>/<code>P-9</code>). Keys can only be set by a contract owner, and an NFT transfer clears them.</li>
+        <li><b>AI directors are the differentiator the review keeps.</b> Scope <code>0x35</code> omits CONFIRM, and the agent confirms only through its policy account. ERC-8004 is labelled display-only. The page never implies natural-language signing: a model drafts, and directors confirm decoded calldata. The copy separates what a contract enforces (session-key scope and expiry, in Chamber.sol) from what people enforce (the mandate, checked by the policy Safe's human co-signer). An agent account that enforces mandates on-chain is Phase 3 in the review, so the page doesn't claim one. The mandate matches Mandate v2 on <code>app-session-keys.html</code>.</li>
+        <li><b>Supply transparency</b> (<code>M-3</code>, <code>M-14</code>, <code>M-15</code>): LORE is owned by LoreMintGate, never directly by a Chamber and never by the team. Delay, window, cap, guardian and dual-control exits all match the gate spec. The budget and op #3 come from the indexer.</li>
+        <li><b>Multichain is shown as gated and conditional.</b> It has no dates and no latency promise (the review cut the "15–30 s" claim). It is not framed as bridging or intents, and it is hub-and-spoke over native messengers (<code>D-8</code>, <code>P-19</code>). The gate text restates the review's full Phase 2 gate (<code>P-4</code>/<code>P-7</code>): at least 3 outside orgs with 3+ independent directors and a real proposal a week for 8 weeks, at least 3 of them multichain and asking for it, and the audit closed with 0 open critical/high. Relayers only deliver messages; they never authorize.</li>
+        <li><b>Trust links go to one page</b> (<code>eco-trust.html</code>). The only audit wording is the placeholder line. The can/can't lists reflect <code>C-6</code> (Factory owned by the Team Safe through a 48h timelock), <code>M-2</code> (4-of-7 Safe, independent guardian) and each Chamber owning its ProxyAdmin. The markers are words ("Can't", "Can"), not a green check next to a power the team doesn't have. The "can" column admits that the Team Safe's LORE influences seating (<code>M-12</code>), because that is the first thing a skeptical reader would ask. The footer has no <code>docs.loreum.org</code> link because that host is broken (<code>D-5</code>). The whole page avoids the banned claims: audited, staking, yield, instant cross-chain and intents (<code>D-7</code>).</li>
+      </ol>
+    </section>
+  </div>
+</main>
+
+<footer class="lp-foot">
+  <div class="lp-wrap">
+    <div class="lp-foot-in">
+      <div>
+        <a class="lp-logo" href="eco-landing.html"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="13" fill="none" stroke="#d0d6f9" stroke-width="1.2"/><circle cx="16" cy="16" r="5.5" fill="#ffffff"/><circle cx="16" cy="3" r="2" fill="#d0d6f9"/></svg><span>LOREUM</span></a>
+        <p>Accountable boards for onchain treasuries. A Chamber is a vault, a ranked board and a quorum wallet, enforced by contract code.</p>
+      </div>
+      <div>
+        <h4>PLATFORM</h4>
+        <ul>
+          <li><a href="app-overview.html">Loreum app</a></li>
+          <li><a href="eco-explorers.html">Explorers</a></li>
+          <li><a href="eco-trust.html">Trust and status</a></li>
+          <li><a href="#">Blog</a></li>
+          <li><a href="#">Team</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>COMMUNITY</h4>
+        <ul>
+          <li><a href="#">X</a></li>
+          <li><a href="#">GitHub</a></li>
+          <li><a href="eco-trust.html#report">Report a vulnerability</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="lp-legal"><span>&#169; 2027 LOREUM DAO LLC. ALL RIGHTS RESERVED.</span><span>MOCKUP ONLY</span></div>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+  document.documentElement.classList.add('js');
+  var reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  var els = document.querySelectorAll('.reveal');
+  if ('IntersectionObserver' in window && !reduce) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+    }, { threshold: 0.12 });
+    Array.prototype.forEach.call(els, function (el) { io.observe(el); });
+  } else {
+    Array.prototype.forEach.call(els, function (el) { el.classList.add('in'); });
+  }
+})();
+</script>
+</body>
+</html>

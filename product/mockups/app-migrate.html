@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Migrate from Safe · Loreum app mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap">
+<link rel="stylesheet" href="assets/app.css">
+<style>
+  b, strong { font-weight: 600; }
+  .src { font-family: var(--mono); font-size: 11px; color: var(--t4); }
+  .arrow { color: var(--a400); font-family: var(--mono); }
+  .cmp td { vertical-align: top; }
+  .cell-sub { display: block; font-size: 12px; color: var(--t4); margin-top: 3px; }
+  .side-title { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+  .signer { padding: 10px 0; border-bottom: 1px solid rgba(148, 163, 184, 0.08); }
+  .signer:last-child { border-bottom: 0; }
+  .opt { border: 1px solid var(--line); border-radius: var(--r-sm); padding: 14px; background: var(--s2); }
+  .opt.rec { border-color: rgba(124, 92, 214, 0.45); background: var(--a950); }
+  .opt ul { margin: 8px 0 0; padding-left: 18px; font-size: 13px; color: var(--t2); display: flex; flex-direction: column; gap: 4px; }
+  .step-done { display: flex; gap: 10px; align-items: flex-start; }
+  .tick { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font: 600 11px/1 var(--mono); background: var(--ok-soft); color: var(--ok); flex: none; margin-top: 1px; }
+  /* Page-level fixes: let grid columns shrink around wide tables; keep the shared top bar inside 400px */
+  .main-side > * { min-width: 0; }
+  .diff span { white-space: pre-wrap; }
+  @media (max-width: 560px) {
+    .top-right .chain { display: none; }
+    .top-right .wallet { font-size: 0; gap: 0; padding: 6px; }
+    .top-inner { gap: 10px; }
+  }
+</style>
+</head>
+<body>
+<div class="mock-bar">
+  <span><b>MOCKUP</b> · Loreum app · Migrate from Safe · state as of Mar 16, 2027 14:20 UTC · viewing as lena.eth, a Grants Safe signer</span>
+  <span><a href="index.html">All mockups</a> · <a href="_mock-data.md">Mock data</a></span>
+</div>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="row" style="gap:18px">
+      <a class="brand" href="index.html"><span class="brand-mark">L</span><span>Loreum</span></a>
+      <nav class="nav" aria-label="Main">
+        <a href="app-overview.html">My Chambers</a>
+        <a href="app-session-keys.html">Operators</a>
+        <a href="#">Deploy Chamber</a>
+        <a href="#">Compliance</a>
+        <a href="app-migrate.html" class="on">Migrate from Safe</a>
+        <a href="#">Docs</a>
+      </nav>
+    </div>
+    <div class="top-right">
+      <span class="chain"><i></i>Ethereum</span>
+      <span class="fresh" title="All data on this page comes from chamber-indexer"><i></i>Indexed 24 s ago · #27,184,300</span>
+      <span class="wallet"><span class="avatar"></span>lena.eth</span>
+    </div>
+  </div>
+</header>
+
+<main class="page">
+  <div class="ch-head">
+    <div class="ch-title">
+      <div class="ch-icon">LG</div>
+      <div>
+        <h1>Migrate Loreum Grants Safe <span class="note">1</span></h1>
+        <div class="ch-meta">
+          <span class="chain"><i></i>Ethereum</span>
+          <span class="badge">Safe 3-of-5</span>
+          <span class="mono faint">0x2c9F…d810</span>
+          <span class="arrow">→</span>
+          <span class="badge acc">Chamber v1.2.0</span>
+          <span class="badge">5 seats · quorum 3</span>
+          <span class="mono faint">0x5A0E…C7b4</span>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <a class="btn ghost" href="#">Export parallel-run report</a>
+      <a class="btn" href="#">Open Loreum Grants</a>
+    </div>
+  </div>
+
+  <section class="card" aria-label="Migration progress" style="margin-bottom:16px">
+    <div class="card-h"><h2>Progress</h2><span class="badge warn"><span class="dot"></span>Parallel run · day 14 of 14</span></div>
+    <ol class="steps">
+      <li class="done">Connect Safe<span class="when">Mar 1</span></li>
+      <li class="done">Map signers to seats<span class="when">Mar 2</span></li>
+      <li class="done">Deploy via Factory<span class="when">Mar 3</span></li>
+      <li class="now">Parallel run<span class="when">ends Mar 17 14:00</span></li>
+      <li>Handover ceremony<span class="when">Mar 18 15:00</span></li>
+      <li>Safe becomes vault or retires<span class="when">after handover</span></li>
+    </ol>
+  </section>
+
+  <div class="banner info" style="margin-bottom:16px">
+    <span class="ic">i</span>
+    <div><b>Loreum deploys Chambers on Ethereum only today.</b> This Safe is on Ethereum, so it can migrate. Safes on Base, Arbitrum or other chains can't be imported yet. Governing other chains from one board is a Phase 2 preview that depends on the go/no-go decision (<a href="p2-multichain-treasury.html">see preview</a>). <span class="note">2</span></div>
+  </div>
+
+  <div class="grid main-side">
+    <div class="stack" style="gap:16px">
+
+      <!-- Parallel run -->
+      <section class="card" aria-labelledby="pr-h">
+        <div class="card-h">
+          <h2 id="pr-h">Parallel run: both must agree <span class="note">3</span></h2>
+          <span class="src">Safe executions + mirror proposals from indexer</span>
+        </div>
+        <p class="muted" style="font-size:13px;margin-bottom:14px">The Safe still holds the funds and executes. Every Safe transaction gets a mirror proposal on the new Chamber with the same target, value and calldata. Signers execute on the Safe only after the mirror reaches quorum. Mirrors are never executed; they expire after 30 days.</p>
+
+        <div class="grid g4" style="margin-bottom:14px">
+          <div class="stat"><div class="upper">Safe transactions</div><div class="v num">6</div><div class="s">nonces 211–216</div></div>
+          <div class="stat"><div class="upper">Mirrored</div><div class="v num">6 <small>of 6</small></div><div class="s">same calldata hash</div></div>
+          <div class="stat"><div class="upper">Agreed</div><div class="v num">4</div><div class="s">+1 divergence, resolved</div></div>
+          <div class="stat"><div class="upper">Days clean</div><div class="v num">7</div><div class="s">since Mar 9 · 7 needed</div></div>
+        </div>
+
+        <div class="tbl-wrap">
+          <table class="t cmp">
+            <thead>
+              <tr><th>Safe tx</th><th>Action (decoded)</th><th>Safe 3-of-5</th><th>Chamber mirror</th><th>Result</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="mono">211</td>
+                <td>Grant G-031: <span class="num">18,000</span> USDC to <span class="mono">0x7a31…c0d2</span></td>
+                <td>Executed Mar 4<span class="cell-sub">lena, ines, tomas</span></td>
+                <td>#1 · 3 of 3<span class="cell-sub">confirmed Mar 4</span></td>
+                <td><span class="badge ok"><span class="dot"></span>Agree</span></td>
+              </tr>
+              <tr>
+                <td class="mono">212</td>
+                <td>Grant G-032: <span class="num">12,500</span> USDC to <span class="mono">0xE4b0…71aa</span></td>
+                <td>Executed Mar 5<span class="cell-sub">ines, priya, sam</span></td>
+                <td>#2 · 3 of 3<span class="cell-sub">confirmed Mar 5</span></td>
+                <td><span class="badge ok"><span class="dot"></span>Agree</span></td>
+              </tr>
+              <tr>
+                <td class="mono">213</td>
+                <td>Grant G-033: <span class="num">40,000</span> USDC to <span class="mono">0x93cD…0b5e</span></td>
+                <td>Executed Mar 8<span class="cell-sub">ines, tomas, sam</span></td>
+                <td>#3 · 2 of 3 at Safe execution<span class="cell-sub">3 of 3 on Mar 9 (priya.eth)</span></td>
+                <td><span class="badge warn"><span class="dot"></span>Diverged</span><span class="cell-sub">Resolved Mar 9: the Safe executed before the mirror reached quorum. Signers agreed to wait for the mirror from then on.</span></td>
+              </tr>
+              <tr>
+                <td class="mono">214</td>
+                <td>Approve streaming contract <span class="mono">0x1f0A…d9C3</span> for <span class="num">25,000</span> USDC</td>
+                <td>Rejected Mar 10<span class="cell-sub">on-chain rejection tx, nonce 214</span></td>
+                <td>#4 · cancelled<span class="cell-sub">cancel quorum Mar 10</span></td>
+                <td><span class="badge ok"><span class="dot"></span>Agree</span><span class="cell-sub">Both rejected</span></td>
+              </tr>
+              <tr>
+                <td class="mono">215</td>
+                <td>Grant G-034: <span class="num">9,000</span> USDC to <span class="mono">0x2E6f…4a17</span></td>
+                <td>Executed Mar 12<span class="cell-sub">lena, tomas, priya</span></td>
+                <td>#5 · 3 of 3<span class="cell-sub">confirmed Mar 11</span></td>
+                <td><span class="badge ok"><span class="dot"></span>Agree</span></td>
+              </tr>
+              <tr>
+                <td class="mono">216</td>
+                <td>Grant G-035: <span class="num">22,000</span> USDC to <span class="mono">0xB0c8…e6F2</span></td>
+                <td>2 of 3 signatures<span class="cell-sub">Safe Transaction Service (off-chain)</span></td>
+                <td>#6 · 1 of 3<span class="cell-sub">lena.eth confirmed Mar 15</span></td>
+                <td><span class="badge info"><span class="dot"></span>Pending</span><span class="cell-sub">Both sides must finish or reject before handover</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="hint" style="margin-top:10px">Mirrors are votes, not payments. The app never offers Execute on a mirror, and the Chamber holds no USDC until handover, so a transfer mirror would revert anyway. The app refuses to mirror LORE transfers, because the Chamber's LORE balance is its vault. Paying LORE out of it would lower the value of every share. <span class="note">4</span></p>
+      </section>
+
+      <!-- Handover ceremony -->
+      <section class="card accent" aria-labelledby="ho-h">
+        <div class="card-h">
+          <h2 id="ho-h">Handover ceremony · Thu Mar 18, 15:00 UTC <span class="note">5</span></h2>
+          <span class="badge warn"><span class="dot"></span>3 checks open</span>
+        </div>
+
+        <ul class="checks" style="margin-bottom:14px">
+          <li><span class="st wait">…</span><span>Parallel run completes 14 days with every Safe transaction mirrored<span class="cell-sub">6 of 6 mirrored so far · ends Mar 17 14:00 UTC, in 23 h 40 min</span></span><span class="faint">indexer</span></li>
+          <li><span class="st pass">✓</span><span>No unresolved divergence, and none in the last 7 days<span class="cell-sub">Last: nonce 213, resolved Mar 9</span></span><span class="faint">indexer</span></li>
+          <li><span class="st wait">…</span><span>Safe queue is empty<span class="cell-sub">Nonce 216 (G-035) is pending. Execute it on both sides or reject it on both.</span></span><span class="faint">Safe service</span></li>
+          <li><span class="st wait">…</span><span>No money in flight to the old Safe<span class="cell-sub">Loreum DAO <a href="app-queue.html">#46</a> sends 120,000 USDC here (ready to execute, deadline Apr 12). Execute it before the ceremony and move the funds in the batch, or ask the DAO to replace it with a proposal that pays 0x5A0E…C7b4.</span></span><span class="faint">indexer</span></li>
+          <li><span class="st pass">✓</span><span>Board seated and past the seating delay, with 5 distinct owners<span class="cell-sub">Quorum 3 matches the Safe's 3-of-5. No owner holds 3 or more seats.</span></span><span class="faint">indexer</span></li>
+          <li><span class="st pass">✓</span><span>Safe has no modules and no guard<span class="cell-sub">Read at handover preflight, block 27,184,302</span></span><span class="faint">RPC preflight</span></li>
+          <li><span class="st pass">✓</span><span>Handover batch decoded and simulated<span class="cell-sub">See below</span></span><span class="faint">RPC simulate</span></li>
+        </ul>
+
+        <div class="decode">
+          <div class="sum">Safe <b>0x2c9F…d810</b> sends <b>84,500 USDC</b> and <b>3.1 ETH</b> to Chamber <b>Loreum Grants</b> and makes it the owner of <b>grants.loreum.eth</b>. 3 calls in one MultiSend batch.</div>
+          <dl>
+            <dt>safe</dt><dd>0x2c9F…d810 · 3-of-5 · nonce 217</dd>
+            <dt>to</dt><dd>MultiSendCallOnly 1.4.1 · delegatecall</dd>
+            <dt>call 1</dt><dd>USDC.transfer(0x5A0E…C7b4, 84,500.000000)</dd>
+            <dt>call 2</dt><dd>0x5A0E…C7b4 ← 3.1 ETH, no calldata</dd>
+            <dt>call 3</dt><dd>ENSRegistry.setOwner(namehash("grants.loreum.eth"), 0x5A0E…C7b4)</dd>
+            <dt>not moved</dt><dd>100,000,000 gLORE shares (the Safe's delegation; see step 6)</dd>
+          </dl>
+        </div>
+        <details style="margin-top:8px">
+          <summary class="hint" style="cursor:pointer">Raw calldata, call 1</summary>
+          <div class="raw" style="margin-top:6px">0xa9059cbb0000000000000000000000005a0e3b7d91c4f2a6e8b0d13c57f9a2e4b6d8c7b400000000000000000000000000000000000000000000000000000013ac97ad00</div>
+        </details>
+
+        <div class="inset" style="margin-top:12px">
+          <div class="between" style="margin-bottom:8px">
+            <span class="upper">Simulation</span>
+            <span class="badge ok"><span class="dot"></span>Passes</span>
+          </div>
+          <p class="hint" style="margin-bottom:8px">Simulated at block 27,184,302 via RPC just now. It runs again automatically when you sign. Amounts come from the Safe's balance at that block: if nonce 216 executes first, call 1 becomes 62,500 USDC and the batch is rebuilt and simulated again.</p>
+          <div class="diff">
+            <span class="minus">- Safe      84,500 USDC · 3.1 ETH · owner of grants.loreum.eth</span>
+            <span class="plus">+ Chamber   84,500 USDC · 3.1 ETH · owner of grants.loreum.eth</span>
+            <span>  Vault     totalAssets unchanged (100,000 LORE)</span>
+          </div>
+        </div>
+
+        <div class="confirm-box" style="margin-top:14px">
+          <p style="font-size:13px;margin-bottom:10px">After this runs, grants are paid by Chamber proposals. The Safe can't undo it on its own; moving funds back would take a Chamber proposal with quorum 3.</p>
+          <div class="field" style="max-width:440px">
+            <label for="ho-phrase">Type <span class="phrase">HAND OVER LOREUM GRANTS</span> to continue</label>
+            <input id="ho-phrase" class="input mono" placeholder="HAND OVER LOREUM GRANTS">
+          </div>
+          <div class="between" style="margin-top:12px">
+            <span class="hint">Signers acknowledged: 2 of 5 (lena.eth, ines.eth). The Safe needs 3 signatures to execute.</span>
+            <button class="btn primary" type="button" disabled>Sign handover Safe tx (1 of 3)</button>
+          </div>
+          <p class="hint" style="margin-top:8px">Disabled: 3 checks are still open (parallel run ends Mar 17, nonce 216 pending, #46 in flight).</p>
+        </div>
+      </section>
+
+      <!-- After handover -->
+      <section class="card" aria-labelledby="after-h">
+        <div class="card-h"><h2 id="after-h">Step 6: what happens to the Safe <span class="note">6</span></h2><span class="src">choose before the ceremony</span></div>
+        <div class="grid g2">
+          <div class="opt rec">
+            <div class="between"><h3>Keep as a module-less vault</h3><span class="badge acc">Recommended</span></div>
+            <ul>
+              <li>Keeps its 3-of-5 signers and its 100,000,000 gLORE shares, which carry the board's delegation.</li>
+              <li>No modules, no guard, no other assets. The app alerts on any module, guard or owner change.</li>
+              <li>Redelegating only by a public Safe transaction announced 7 days ahead, written into the Chamber's metadata.</li>
+            </ul>
+          </div>
+          <div class="opt">
+            <h3>Retire it</h3>
+            <ul>
+              <li>Only after other holders' delegation replaces the Safe's 100,000 LORE.</li>
+              <li>Redeeming the shares first would remove every seat's weight and leave the board empty.</li>
+              <li>A Safe can't be deleted. Retired means empty, with signers told to reject anything it asks them to sign.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Side column -->
+    <aside class="stack" style="gap:16px">
+      <section class="card">
+        <div class="side-title"><h2 style="font-size:15px">Safe connected</h2><span class="badge ok">Done Mar 1</span></div>
+        <dl class="kv">
+          <dt>Safe</dt><dd class="mono">0x2c9F…d810</dd>
+          <dt>Threshold</dt><dd>3 of 5 signers</dd>
+          <dt>Nonce at import</dt><dd class="num">211</dd>
+          <dt>Modules, guard</dt><dd>None, none</dd>
+          <dt>Holds now</dt><dd class="num">84,500 USDC · 3.1 ETH<span class="cell-sub">164,000 USDC at import; 79,500 paid in 4 grants</span></dd>
+        </dl>
+        <p class="src" style="margin-top:10px">Owners and threshold read by RPC at import (tx-time preflight). Executions indexed from the Safe's events since.</p>
+      </section>
+
+      <section class="card">
+        <div class="side-title"><h2 style="font-size:15px">Signers mapped to seats</h2><span class="badge ok">Done Mar 2</span></div>
+        <p class="hint" style="margin-bottom:6px">The Safe deposited its 100,000 LORE (from gate op #2) on Mar 3 and delegated 20,000 to each signer's Explorer.</p>
+        <div class="signer">
+          <div class="auth compact">
+            <div class="node seat"><span class="k">Seat</span><span class="v">Explorer #44</span></div>
+            <div class="node"><span class="k">Owner · EOA</span><span class="v">lena.eth</span></div>
+          </div>
+          <span class="cell-sub">20,000 LORE · also seat 4 on Loreum DAO</span>
+        </div>
+        <div class="signer">
+          <div class="auth compact">
+            <div class="node seat"><span class="k">Seat</span><span class="v">Explorer #88</span></div>
+            <div class="node"><span class="k">Owner · EOA</span><span class="v">ines.eth</span></div>
+          </div>
+          <span class="cell-sub">20,000 LORE</span>
+        </div>
+        <div class="signer">
+          <div class="auth compact">
+            <div class="node seat"><span class="k">Seat</span><span class="v">Explorer #102</span></div>
+            <div class="node"><span class="k">Owner · EOA</span><span class="v">tomas.eth</span></div>
+          </div>
+          <span class="cell-sub">20,000 LORE</span>
+        </div>
+        <div class="signer">
+          <div class="auth compact">
+            <div class="node seat"><span class="k">Seat</span><span class="v">Explorer #117</span></div>
+            <div class="node"><span class="k">Owner · EOA</span><span class="v">priya.eth</span></div>
+          </div>
+          <span class="cell-sub">20,000 LORE</span>
+        </div>
+        <div class="signer">
+          <div class="auth compact">
+            <div class="node seat"><span class="k">Seat</span><span class="v">Explorer #129</span></div>
+            <div class="node"><span class="k">Owner · EOA</span><span class="v">sam.eth</span></div>
+          </div>
+          <span class="cell-sub">20,000 LORE · minted Mar 2 for 0.05 ETH</span>
+        </div>
+      </section>
+
+      <div class="banner warn">
+        <span class="ic">!</span>
+        <div><b>Seats follow delegated weight, not the Safe's owner list.</b> After handover, any Explorer holder who attracts more than 20,000 LORE of delegation in Loreum Grants takes the lowest seat. That is how a Chamber works; make sure the signers want it. <span class="note">7</span></div>
+      </div>
+
+      <section class="card">
+        <div class="side-title"><h2 style="font-size:15px">Chamber deployed</h2><span class="badge ok">Done Mar 3</span></div>
+        <dl class="kv">
+          <dt>Chamber</dt><dd class="mono">0x5A0E…C7b4</dd>
+          <dt>Factory</dt><dd class="mono">0x0Fa7…71C2</dd>
+          <dt>Implementation</dt><dd>v1.2.0</dd>
+          <dt>Asset, shares</dt><dd>LORE, gLORE</dd>
+          <dt>Membership</dt><dd>Explorers NFT</dd>
+          <dt>ProxyAdmin</dt><dd>Owned by the Chamber (set by the Factory at create)</dd>
+        </dl>
+      </section>
+    </aside>
+  </div>
+
+  <section class="notes">
+    <h3>Design notes</h3>
+    <ol>
+      <li><b>This is an import flow (<code>#262</code>), so the header shows the Safe and the Chamber side by side instead of the Loreum DAO header and tabs.</b> The new Chamber is live but should not be managed as usual until the handover. This flow is how the design-partner program brings Safe-using orgs onto mainnet (<code>X-1</code>, M2). The top nav keeps "Migrate from Safe" selected.</li>
+      <li><b>Say where Loreum runs today.</b> Per the review, Phase 1 is Ethereum only, and the copy names the product (Loreum), not the contract. Multichain is a gated preview, not a promise. The copy does not say "coming soon".</li>
+      <li><b>The parallel run is real data, not a timer.</b> The live <code>Migrate.tsx</code> completes its eight steps on <code>setTimeout</code> and shows random mirrored-transaction counts. Here each row pairs a Safe nonce with a Chamber proposal carrying the same calldata hash. Safe executions come from chamber-indexer (a new source for the imported Safe's execution events). Pending Safe signatures are labeled as coming from the Safe Transaction Service. Safe owners, threshold and modules are read by RPC only at the import and handover preflights. The plan lists "do Migrate.tsx's Safe reads count as transaction-time?" as an open decision. This mock assumes yes, only at those two moments.</li>
+      <li><b>No LORE mirrors.</b> The review points out that <code>totalAssets</code> is the Chamber's LORE balance, so LORE sent out of the Chamber comes out of every share. The app refuses to mirror a LORE transfer, and the handover never sends LORE to the Chamber as treasury.</li>
+      <li><b>The ceremony is one decoded, simulated Safe batch plus a typed phrase.</b> This reuses the <code>#260</code> decoder and simulation gate: "Simulated at block 27,184,302 via RPC just now" is transaction-time RPC. The button stays disabled while any check is open, and the reason is shown under it. The parallel-run check stays open until the 14 days actually end (Mar 17 14:00), rather than passing early. Call 2 works because the Chamber has a payable <code>receive()</code>. The live app's "Transfer ProxyAdmin" step is dropped, because <code>Factory.createChamber</code> already makes the Chamber its own ProxyAdmin owner. The "money in flight" check pulls Loreum DAO's #46 from the indexer. A handover that ignored it would strand 120,000 USDC in a Safe that is retiring.</li>
+      <li><b>"Module-less vault or retire" is a real choice with a consequence.</b> The Safe's deposit is what gives the new board its weight, so retiring first would empty the board. The redelegation rule mirrors <code>M-23</code>: whoever holds the shares must announce any redelegation publicly.</li>
+      <li><b>State the governance change plainly.</b> A Safe has a fixed signer list; a Chamber has a market-driven board. The review's customer research points to founder multisigs moving to rules as the clearest wedge. That only works if the signers understand what they are opting into, so the warning sits next to the mapping.</li>
+    </ol>
+  </section>
+</main>
+<footer class="foot">Mockup only. Addresses marked illustrative are placeholders. Loreum is the protocol; Chamber is the governance contract.</footer>
+</body>
+</html>

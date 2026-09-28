@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Session keys · Loreum app mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap">
+<link rel="stylesheet" href="assets/app.css">
+<style>
+  b, strong { font-weight: 600; }
+  .scope.risky { border-style: dashed; }
+  .src { font-family: var(--mono); font-size: 11px; color: var(--t4); }
+  .sec-h { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 26px 0 12px; }
+  .sec-h p { max-width: 720px; }
+  .seatrow { padding: 14px 16px; border-bottom: 1px solid var(--line); }
+  .sr-top { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .sr-top .grow { flex: 1 1 0; }
+  .rank { width: 24px; height: 24px; border-radius: 6px; display: grid; place-items: center; background: var(--s3); color: var(--t3); font-size: 12px; font-weight: 600; flex: none; }
+  .sr-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 12px; padding-left: 36px; font-size: 13px; }
+  .sr-grid .k { display: block; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--t4); font-weight: 600; margin-bottom: 5px; }
+  .sr-none { margin-top: 8px; padding-left: 36px; font-size: 13px; color: var(--t3); }
+  @media (max-width: 860px) { .sr-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); padding-left: 0; } .sr-none { padding-left: 0; } }
+  @media (max-width: 480px) { .sr-grid { grid-template-columns: minmax(0, 1fr); } }
+  .cell-sub { display: block; font-size: 12px; color: var(--t4); margin-top: 3px; }
+  .wiz-step { border-top: 1px solid var(--line); padding: 16px 0 4px; }
+  .wiz-step:first-of-type { border-top: 0; padding-top: 4px; }
+  .wiz-n { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; font: 600 11px/1 var(--mono); background: var(--a-soft); color: var(--a300); border: 1px solid rgba(124, 92, 214, 0.4); flex: none; }
+  .wiz-n.done { background: var(--ok-soft); color: var(--ok); border-color: rgba(52, 211, 153, 0.35); }
+  .pick { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 10px; align-items: start; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--s2); cursor: pointer; }
+  .pick + .pick { margin-top: 6px; }
+  .pick.sel { border-color: rgba(124, 92, 214, 0.55); background: var(--a950); }
+  .pick.off { opacity: 0.55; cursor: not-allowed; }
+  .pick input { margin: 3px 0 0; accent-color: var(--a500); }
+  .presets { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  @media (max-width: 720px) { .presets { grid-template-columns: 1fr; } }
+  .bitrow { display: grid; grid-template-columns: 18px 132px minmax(0, 1fr); gap: 8px; align-items: start; padding: 7px 0; border-bottom: 1px solid rgba(148, 163, 184, 0.07); font-size: 12.5px; }
+  .bitrow input { margin: 2px 0 0; accent-color: var(--a500); }
+  @media (max-width: 480px) { .bitrow { grid-template-columns: 18px minmax(0, 1fr); } .bitrow .bd { grid-column: 2; } }
+  .feed { list-style: none; margin: 0; padding: 0; }
+  .feed li { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 10px; padding: 9px 0; border-bottom: 1px solid rgba(148, 163, 184, 0.08); font-size: 13px; }
+  .feed .when { font-family: var(--mono); font-size: 11.5px; color: var(--t4); padding-top: 1px; }
+  .rules { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: var(--t2); }
+  .agent-id { display: flex; align-items: center; gap: 12px; }
+  .agent-mark { width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; background: var(--s3); border: 1px solid var(--line-strong); font: 600 12px/1 var(--mono); color: var(--a300); flex: none; }
+  .never { display: flex; flex-wrap: wrap; gap: 4px; }
+  /* Page-level fixes: let grid columns shrink around wide tables; keep the shared top bar inside 400px */
+  .main-side > * { min-width: 0; }
+  .diff span { white-space: pre-wrap; }
+  /* Phone: stack the authority chain vertically so a wrapped node keeps its border and arrow */
+  @media (max-width: 480px) {
+    .auth { flex-direction: column; }
+    .auth .node:first-child { border-radius: 8px 8px 0 0; }
+    .auth .node:last-child { border-radius: 0 0 8px 8px; }
+    .auth .node + .node { border-left: 1px solid var(--line); border-top: 0; }
+    .auth .node + .node::before { left: 16px; top: -6px; margin-top: 0; transform: rotate(135deg); }
+  }
+  @media (max-width: 560px) {
+    .top-right .chain { display: none; }
+    .top-right .wallet { font-size: 0; gap: 0; padding: 6px; }
+    .top-inner { gap: 10px; }
+  }
+</style>
+</head>
+<body>
+<div class="mock-bar">
+  <span><b>MOCKUP</b> · Loreum app · Session keys · state as of Mar 16, 2027 14:20 UTC · viewing as a signer on the Safe that owns Explorer #12</span>
+  <span><a href="index.html">All mockups</a> · <a href="_mock-data.md">Mock data</a></span>
+</div>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="row" style="gap:18px">
+      <a class="brand" href="index.html"><span class="brand-mark">L</span><span>Loreum</span></a>
+      <nav class="nav" aria-label="Main">
+        <a href="app-overview.html">My Chambers</a>
+        <a href="app-session-keys.html" class="on">Operators</a>
+        <a href="#">Deploy Chamber</a>
+        <a href="#">Compliance</a>
+        <a href="app-migrate.html">Migrate from Safe</a>
+        <a href="#">Docs</a>
+      </nav>
+    </div>
+    <div class="top-right">
+      <span class="chain"><i></i>Ethereum</span>
+      <span class="fresh" title="All data on this page comes from chamber-indexer"><i></i>Indexed 24 s ago · #27,184,300</span>
+      <span class="wallet" title="Signer on the kofi.eth Safe"><span class="avatar"></span>kofi.eth</span>
+    </div>
+  </div>
+</header>
+
+<main class="page">
+  <div class="ch-head">
+    <div class="ch-title">
+      <div class="ch-icon">LD</div>
+      <div>
+        <h1>Loreum DAO</h1>
+        <div class="ch-meta">
+          <span class="chain"><i></i>Ethereum</span>
+          <span class="badge acc">v1.2.0</span>
+          <span class="badge">5 seats · quorum 3</span>
+          <span class="mono faint">0x3F1c…A92e</span>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <a class="btn" href="app-queue.html">Open queue</a>
+      <a class="btn primary" href="app-proposal.html">New proposal</a>
+    </div>
+  </div>
+
+  <nav class="tabs" aria-label="Chamber">
+    <a href="app-overview.html">Overview</a>
+    <a href="app-board.html">Board &amp; delegation</a>
+    <a href="app-queue.html">Queue <span class="badge warn">3</span></a>
+    <a href="p2-multichain-treasury.html">Treasury</a>
+    <a href="app-supply-authority.html">Supply authority</a>
+    <a href="app-session-keys.html" class="on">Session keys</a>
+  </nav>
+
+  <!-- Page intro -->
+  <div class="between" style="margin-bottom:16px">
+    <div class="stack-sm" style="max-width:760px">
+      <h2 style="font-size:20px">Session keys <span class="note">1</span></h2>
+      <p class="muted">A session key acts for one seat with a limited scope until it expires. Only the seat's <em>contract</em> owner can set one. The key never outranks its seat: if the seat leaves the top 5, the key can do nothing.</p>
+    </div>
+    <span class="src">from indexer · directorOperator, boardSeat, membershipToken</span>
+  </div>
+
+  <div class="grid g4" style="margin-bottom:16px">
+    <div class="stat"><div class="upper">Live keys</div><div class="v">2 <small>of 5 seats</small></div><div class="s">#12 kofi.eth · #31 Treasury Agent</div></div>
+    <div class="stat"><div class="upper">Can't hold a key</div><div class="v">3 <small>seats</small></div><div class="s">#7, #44, #58 are owned by EOAs</div></div>
+    <div class="stat"><div class="upper">Next expiry</div><div class="v num">12 <small>days</small></div><div class="s">#12 · Mar 28, 2027 14:00 UTC</div></div>
+    <div class="stat"><div class="upper">Keys with CONFIRM</div><div class="v">0</div><div class="s">No hot key can vote for a seat</div></div>
+  </div>
+
+  <div class="banner warn" style="margin-bottom:8px">
+    <span class="ic">!</span>
+    <div><b>Explorer #12's key expires in 12 days</b> (Mar 28, 2027 14:00 UTC). After that it can't submit, revoke or cancel for the seat. Transactions it already submitted stay in the queue. <a href="#wizard">Renew or rotate it below</a>.</div>
+  </div>
+
+  <!-- Keys by seat -->
+  <div class="sec-h">
+    <h2>Keys by seat <span class="note">2</span></h2>
+    <span class="src">Board ranks from indexer at #27,184,300</span>
+  </div>
+
+  <div class="card" style="padding:0">
+    <div class="seatrow">
+      <div class="sr-top">
+        <span class="rank num">1</span>
+        <div class="auth compact">
+          <div class="node seat"><span class="k">Seat · 2,410,000 LORE</span><span class="v">Explorer #7</span></div>
+          <div class="node"><span class="k">Owner · EOA</span><span class="v">aria.eth</span></div>
+        </div>
+        <span class="grow"></span>
+        <span class="badge">EOA owner</span>
+      </div>
+      <p class="sr-none">No key possible. EOA owners act directly; the contract rejects <code>setDirectorOperator</code> from an EOA.</p>
+    </div>
+
+    <div class="seatrow">
+      <div class="sr-top">
+        <span class="rank num">2</span>
+        <div class="auth compact">
+          <div class="node seat"><span class="k">Seat · 1,905,000 LORE</span><span class="v">Explorer #12</span></div>
+          <div class="node"><span class="k">Owner · Safe 2-of-3</span><span class="v">kofi.eth</span></div>
+          <div class="node key"><span class="k">Session key</span><span class="v mono">0xA11c…04e5</span></div>
+        </div>
+        <span class="grow"></span>
+        <span class="badge warn"><span class="dot"></span>Expires soon</span>
+        <a class="btn sm" href="#wizard">Rotate key</a>
+      </div>
+      <div class="sr-grid">
+        <div>
+          <span class="k">Scope · 0x31 Proposer</span>
+          <div class="scopes" aria-label="Scope 0x31: submit, revoke, cancel">
+            <span class="scope on">SUBMIT</span>
+            <span class="scope risky">CONFIRM</span>
+            <span class="scope">EXECUTE</span>
+            <span class="scope risky">UPDATE_SEATS</span>
+            <span class="scope on">REVOKE</span>
+            <span class="scope on">CANCEL</span>
+          </div>
+        </div>
+        <div><span class="k">Expires</span><span class="num">Mar 28, 2027 14:00 UTC</span><span class="cell-sub">in 12 days · 47-day lifetime, over the 14-day default <span class="note">3</span></span></div>
+        <div><span class="k">Live at block</span><span class="num mono">26,932,203</span><span class="cell-sub">Only gates confirm and execute. This scope has neither.</span></div>
+        <div><span class="k">Set by</span><span class="mono">0x8b2d…11F0</span><span class="cell-sub">owner Safe · Feb 9, 14:00</span></div>
+      </div>
+    </div>
+
+    <div class="seatrow">
+      <div class="sr-top">
+        <span class="rank num">3</span>
+        <div class="auth compact">
+          <div class="node seat"><span class="k">Seat · 1,120,000 LORE</span><span class="v">Explorer #31</span></div>
+          <div class="node"><span class="k">Owner · policy account</span><span class="v">Treasury Agent</span></div>
+          <div class="node key"><span class="k">Session key</span><span class="v mono">0x7E0f…19b2</span></div>
+        </div>
+        <span class="grow"></span>
+        <span class="badge ok"><span class="dot"></span>Live</span>
+        <a class="btn sm ghost" href="#agent">View agent</a>
+      </div>
+      <div class="sr-grid">
+        <div>
+          <span class="k">Scope · 0x35 Agent executor</span>
+          <div class="scopes" aria-label="Scope 0x35: submit, execute, revoke, cancel">
+            <span class="scope on">SUBMIT</span>
+            <span class="scope risky">CONFIRM</span>
+            <span class="scope on">EXECUTE</span>
+            <span class="scope risky">UPDATE_SEATS</span>
+            <span class="scope on">REVOKE</span>
+            <span class="scope on">CANCEL</span>
+          </div>
+        </div>
+        <div><span class="k">Expires</span><span class="num">Mar 30, 2027 16:55 UTC</span><span class="cell-sub">in 14 days · 21-day lifetime, over the 14-day default</span></div>
+        <div><span class="k">Live at block</span><span class="num mono">27,134,678</span><span class="cell-sub">passed · 49,622 blocks ago · can execute</span></div>
+        <div><span class="k">Set by</span><span class="mono">0x9aB3…40d1</span><span class="cell-sub">policy account · Mar 9, 16:55 · board co-signed in <a href="app-queue.html">#45</a></span></div>
+      </div>
+    </div>
+
+    <div class="seatrow">
+      <div class="sr-top">
+        <span class="rank num">4</span>
+        <div class="auth compact">
+          <div class="node seat"><span class="k">Seat · 980,000 LORE</span><span class="v">Explorer #44</span></div>
+          <div class="node"><span class="k">Owner · EOA</span><span class="v">lena.eth</span></div>
+        </div>
+        <span class="grow"></span>
+        <span class="badge">EOA owner</span>
+      </div>
+      <p class="sr-none">No key possible. Move the NFT into a Safe to use one.</p>
+    </div>
+
+    <div class="seatrow">
+      <div class="sr-top">
+        <span class="rank num">5</span>
+        <div class="auth compact">
+          <div class="node seat"><span class="k">Seat · 612,000 LORE</span><span class="v">Explorer #58</span></div>
+          <div class="node"><span class="k">Owner · EOA</span><span class="v">marco.eth</span></div>
+        </div>
+        <span class="grow"></span>
+        <span class="badge">EOA owner</span>
+      </div>
+      <p class="sr-none">No key possible. Move the NFT into a Safe to use one.</p>
+    </div>
+
+    <div class="between" style="padding:12px 16px">
+      <span class="hint">Scope legend: filled = granted · dashed border = high-impact bit (CONFIRM lets a hot key vote for the seat; UPDATE_SEATS changes board size). Status is derived by the indexer: live, not yet live, expired, or stale (NFT changed owner).</span>
+      <span class="src">Next in line: Explorer #63 · nadia.eth · 540,000 LORE (not seated, keys would be inert)</span>
+    </div>
+  </div>
+
+  <div class="grid main-side" style="margin-top:16px">
+    <!-- Agent director card -->
+    <section class="card accent" id="agent" aria-labelledby="agent-h">
+      <div class="card-h">
+        <div class="agent-id">
+          <div class="agent-mark">AI</div>
+          <div>
+            <h2 id="agent-h">Treasury Agent</h2>
+            <div class="row" style="gap:6px;margin-top:4px">
+              <span class="badge acc">AI director</span>
+              <span class="badge">Seat 3 · Explorer #31</span>
+              <span class="badge">Seated Feb 5, 2027</span>
+            </div>
+          </div>
+        </div>
+        <span class="src">from indexer · chamberEvent (typed columns)</span>
+      </div>
+
+      <div class="auth" style="margin-bottom:14px">
+        <div class="node seat"><span class="k">Seat · rank 3</span><span class="v">Explorer #31 · 1,120,000 LORE</span></div>
+        <div class="node"><span class="k">Owner · policy account</span><span class="v mono">Safe 0x9aB3…40d1</span></div>
+        <div class="node key"><span class="k">Session key · 0x35</span><span class="v mono">0x7E0f…19b2 · to Mar 30</span></div>
+      </div>
+
+      <div class="grid g2" style="gap:12px">
+        <div class="inset">
+          <div class="upper" style="margin-bottom:8px">What the key can do alone</div>
+          <div class="scopes" style="margin-bottom:8px">
+            <span class="scope on">SUBMIT</span>
+            <span class="scope on">EXECUTE</span>
+            <span class="scope on">REVOKE</span>
+            <span class="scope on">CANCEL</span>
+          </div>
+          <p class="hint">Submit proposals, execute ones that already reached quorum, withdraw its seat's confirmation, and vote to cancel.</p>
+        </div>
+        <div class="inset">
+          <div class="upper" style="margin-bottom:8px">How it confirms <span class="note">4</span></div>
+          <p style="font-size:13px">Only through the policy account. The key has no CONFIRM bit, so every vote for seat 3 is a transaction from policy Safe 0x9aB3…40d1. The Safe signs a confirm only after the mandate check below passes and a human co-signer approves.</p>
+        </div>
+      </div>
+
+      <div class="inset deep" style="margin-top:12px">
+        <div class="between" style="margin-bottom:8px">
+          <div class="upper">Mandate v2 · checked before every confirm</div>
+          <span class="mono faint">hash 0x8e3d…51a2 · in metadataURI</span>
+        </div>
+        <p class="hint" style="margin-bottom:10px">Phase 1: the policy Safe's co-signers check the mandate. No contract enforces it yet. An agent account that enforces mandates on-chain is a Phase 3 item.</p>
+        <dl class="kv">
+          <dt>May confirm</dt><dd>USDC transfers to allowlisted recipients (Grants Safe 0x2c9F…d810, 4 vendor addresses)</dd>
+          <dt>Per transaction</dt><dd class="num">≤ 150,000 USDC</dd>
+          <dt>Rolling 30 days</dt>
+          <dd>
+            <div class="between" style="margin-bottom:4px"><span class="num">120,000 of 400,000 USDC confirmed</span><span class="faint num">30%</span></div>
+            <div class="meter" role="img" aria-label="120,000 of 400,000 USDC used"><span style="width:30%"></span></div>
+          </dd>
+          <dt>Never</dt>
+          <dd>
+            <div class="never">
+              <span class="badge bad">Self-calls (upgrade, pause)</span>
+              <span class="badge bad">LORE or LoreMintGate</span>
+              <span class="badge bad">Seat changes</span>
+              <span class="badge bad">ProxyAdmin</span>
+            </div>
+          </dd>
+        </dl>
+      </div>
+
+      <div style="margin-top:14px">
+        <div class="between" style="margin-bottom:4px"><h3>Recent actions</h3><span class="src">full history, not a block window</span></div>
+        <ul class="feed">
+          <li><span class="when">Mar 13 15:20</span><span><b>Confirmed #46</b> Fund Q2 grants round: 120,000 USDC to Grants Safe (2 of 3). <span class="faint">Via policy account; mandate check passed (allowlisted recipient, under the per-transaction cap). kofi.eth submitted #46.</span></span></li>
+          <li><span class="when">Mar 9 16:55</span><span><b>Session key set</b> 0x7E0f…19b2, scope 0x35, expires Mar 30. <span class="faint">The policy Safe executed it after the board co-signed in #45 (<code>approveHash</code>).</span></span></li>
+          <li><span class="when">Feb 5</span><span><b>Seated</b> at rank 3 with 1,120,000 LORE delegated.</span></li>
+        </ul>
+        <p class="hint" style="margin-top:6px">No vote on #44: its recipient 0x9f3… is not on the allowlist, so the policy account never signed. #7, #44 and #58 cancelled it on Mar 10.</p>
+        <div class="banner info" style="margin-top:12px">
+          <span class="ic">i</span>
+          <div><b>Outside the mandate right now:</b> #48 (self-call <code>upgradeImplementation</code>) and #47 (<code>LoreMintGate.execute</code>). The policy account will not confirm either; the human directors decide them.</div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="grid g2" style="gap:12px">
+        <div>
+          <div class="upper" style="margin-bottom:6px">Identity · display only <span class="note">5</span></div>
+          <p style="font-size:13px"><span class="badge info">ERC-8004 agent #212</span></p>
+          <p class="hint" style="margin-top:6px">A public profile for the agent. The Chamber never checks it; authority comes only from the seat, owner and key above.</p>
+        </div>
+        <div>
+          <div class="upper" style="margin-bottom:6px">How humans demote it</div>
+          <p class="hint">Delegators move weight away until seat 3 drops out of the top 5. It holds 580,000 LORE more than nadia.eth, next in line. The policy account's signers can also clear the key at any time. You are not one of them.</p>
+          <div class="row" style="margin-top:8px">
+            <a class="btn sm" href="app-board.html">Review delegation</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Side column -->
+    <aside class="stack">
+      <section class="card" aria-labelledby="rules-h">
+        <div class="card-h"><h2 id="rules-h">Rules the contract enforces</h2><span class="note">6</span></div>
+        <ol class="rules">
+          <li><b>EOA owners can't set keys.</b> Only a contract owner (a Safe or policy account) can call <code>setDirectorOperator</code>. EOAs act directly.</li>
+          <li><b>An NFT transfer switches the key off.</b> A key is bound to the owner that set it, so a new owner starts with no key. The record isn't deleted: if the NFT returns to that owner before expiry, the key works again. Clear it before a transfer.</li>
+          <li><b>Expiry and scope are required.</b> The contract rejects an expiry that is 0 or in the past, and scope 0. Full access needs the explicit UNSCOPED value.</li>
+          <li><b>Confirm and execute wait one block.</b> A new key can submit, revoke and cancel right away, but can confirm or execute only from its live-at block.</li>
+          <li><b>The seat still has to be seated.</b> If the seat drops out of the top 5, the key is inert until it returns.</li>
+        </ol>
+      </section>
+
+      <section class="card" aria-labelledby="eoa-h">
+        <div class="card-h"><h2 id="eoa-h">What EOA owners see</h2></div>
+        <div class="banner info">
+          <span class="ic">i</span>
+          <div><b>Explorer #44 is owned by an EOA</b> (lena.eth, 0x3c7B…aa15), so it can't have a session key. Sign with that wallet directly, or move the NFT into a Safe first. The move keeps the delegated weight on #44; the seat waits one block before it can act again.</div>
+        </div>
+        <div class="banner warn" style="margin-top:8px">
+          <span class="ic">!</span>
+          <div><b>Moving the NFT drops #44's open confirmations.</b> A confirmation counts only while the NFT has the owner that gave it. #46 would fall from 3 of 3 to 2 of 3 until the Safe confirms again.</div>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="events-h">
+        <div class="card-h"><h2 id="events-h">Key events</h2><span class="src">DirectorOperatorSet</span></div>
+        <ul class="feed">
+          <li><span class="when">Mar 9 16:55</span><span>#31 set <span class="mono">0x7E0f…19b2</span>, scope 0x35, 21 days</span></li>
+          <li><span class="when">Feb 9 14:00</span><span>#12 set <span class="mono">0xA11c…04e5</span>, scope 0x31, 47 days</span></li>
+        </ul>
+        <p class="src" style="margin-top:8px">Full history from indexer, not a block window</p>
+      </section>
+    </aside>
+  </div>
+
+  <!-- Wizard -->
+  <div class="sec-h" id="wizard">
+    <h2>Set session key <span class="note">7</span></h2>
+    <span class="src">Draft is local until you sign · no RPC until simulate</span>
+  </div>
+
+  <section class="card raised" aria-label="Set session key wizard">
+    <ol class="steps" style="margin-bottom:18px">
+      <li class="done">Seat<span class="when">Explorer #12</span></li>
+      <li class="done">Key<span class="when">0xb42D…7a19</span></li>
+      <li class="done">Scope<span class="when">0x31 Proposer</span></li>
+      <li class="done">Expiry<span class="when">Mar 30 14:00</span></li>
+      <li class="now">Review<span class="when">simulated</span></li>
+    </ol>
+
+    <div class="wiz-step">
+      <div class="row" style="margin-bottom:10px"><span class="wiz-n done">1</span><h3>Pick a seat you control</h3></div>
+      <label class="pick sel">
+        <input type="radio" name="seat" checked>
+        <span>
+          <span class="row" style="gap:8px"><b>Explorer #12</b> <span class="badge">rank 2</span> <span class="mono faint">owner Safe 0x8b2d…11F0 · 2-of-3</span></span>
+          <span class="hint" style="display:block;margin-top:3px">You are 1 of 3 signers (Safe owners read by RPC when this flow opened). This creates a Safe transaction that needs one more signature.</span>
+        </span>
+      </label>
+      <label class="pick off">
+        <input type="radio" name="seat" disabled>
+        <span>
+          <span class="row" style="gap:8px"><b>Explorer #31</b> <span class="badge">rank 3</span></span>
+          <span class="hint" style="display:block;margin-top:3px">Owned by policy account 0x9aB3…40d1. You are not a signer.</span>
+        </span>
+      </label>
+      <label class="pick off">
+        <input type="radio" name="seat" disabled>
+        <span>
+          <span class="row" style="gap:8px"><b>Explorers #7, #44, #58</b></span>
+          <span class="hint" style="display:block;margin-top:3px">EOA owners. The contract would reject the call, so the app does not offer it.</span>
+        </span>
+      </label>
+    </div>
+
+    <div class="wiz-step">
+      <div class="row" style="margin-bottom:10px"><span class="wiz-n done">2</span><h3>Pick the key</h3></div>
+      <div class="grid g2">
+        <div class="field">
+          <label for="k-addr">New session key address</label>
+          <input id="k-addr" class="input mono" value="0xb42D9E1c07A5f3b86d2e4c90A1f37B6C58e27a19">
+          <span class="hint">Rotating replaces 0xA11c…04e5 as soon as this executes. The old key stops working in the same block. #12's confirmation on #46 stays valid, because confirmations belong to the seat's owner, not to the key.</span>
+        </div>
+        <ul class="checks">
+          <li><span class="st pass">✓</span><span>Not the owner Safe or one of its signers</span><span class="faint">RPC preflight</span></li>
+          <li><span class="st pass">✓</span><span>Not a key or owner on another seat in this Chamber</span><span class="faint">indexer</span></li>
+          <li><span class="st pass">✓</span><span>Plain account (no code)</span><span class="faint">RPC preflight</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="wiz-step">
+      <div class="row" style="margin-bottom:10px"><span class="wiz-n done">3</span><h3>Choose a scope</h3></div>
+      <div class="presets" style="margin-bottom:12px">
+        <label class="pick sel">
+          <input type="radio" name="preset" checked>
+          <span><b>Proposer</b> <span class="mono faint">0x31</span><span class="hint" style="display:block;margin-top:3px">Submit, revoke, cancel. For a human's hot key. Votes stay with the Safe.</span></span>
+        </label>
+        <label class="pick">
+          <input type="radio" name="preset">
+          <span><b>Agent executor</b> <span class="mono faint">0x35</span><span class="hint" style="display:block;margin-top:3px">Adds execute. For an AI director that confirms only through its policy account.</span></span>
+        </label>
+        <label class="pick">
+          <input type="radio" name="preset">
+          <span><b>Custom</b><span class="hint" style="display:block;margin-top:3px">Pick bits one by one. High-impact bits need a typed reason.</span></span>
+        </label>
+      </div>
+      <div class="inset">
+        <p class="hint" style="margin-bottom:4px">Bits follow the Proposer preset. Choose Custom to change them.</p>
+        <div class="bitrow"><input type="checkbox" checked disabled aria-label="SUBMIT, granted by preset"><span class="mono">SUBMIT · 1</span><span class="bd muted">Submit transactions, including batches. Works immediately.</span></div>
+        <div class="bitrow"><input type="checkbox" disabled aria-label="CONFIRM, not granted"><span class="mono" style="color:var(--warn)">CONFIRM · 2</span><span class="bd muted">Votes for the seat. A stolen key could push a transaction to quorum. Keep votes on the Safe.</span></div>
+        <div class="bitrow"><input type="checkbox" disabled aria-label="EXECUTE, not granted"><span class="mono">EXECUTE · 4</span><span class="bd muted">Executes transactions that already have quorum. Waits for the live-at block.</span></div>
+        <div class="bitrow"><input type="checkbox" disabled aria-label="UPDATE_SEATS, not granted"><span class="mono" style="color:var(--warn)">UPDATE_SEATS · 8</span><span class="bd muted">Proposes, executes or cancels a seat-count change (7-day timelock). Never offered for agent seats.</span></div>
+        <div class="bitrow"><input type="checkbox" checked disabled aria-label="REVOKE, granted by preset"><span class="mono">REVOKE · 16</span><span class="bd muted">Withdraws the seat's confirmation. Works immediately.</span></div>
+        <div class="bitrow" style="border-bottom:0"><input type="checkbox" checked disabled aria-label="CANCEL, granted by preset"><span class="mono">CANCEL · 32</span><span class="bd muted">Votes to cancel a pending transaction. Works immediately.</span></div>
+      </div>
+      <p class="hint" style="margin-top:8px">Unscoped (<code>0xFFFFFFFF</code>) is not offered. If a key needs every power, the Safe should act itself.</p>
+    </div>
+
+    <div class="wiz-step">
+      <div class="row" style="margin-bottom:10px"><span class="wiz-n done">4</span><h3>Set expiry</h3></div>
+      <div class="grid g2">
+        <div class="field">
+          <label for="k-exp">Expires (UTC)</label>
+          <input id="k-exp" class="input mono" value="2027-03-30 14:00">
+          <span class="hint">Default limit: Mar 30, 2027 14:20 UTC (14 days from now). The contract only needs a future time. The 14-day limit is app policy; a longer expiry needs a typed reason.</span>
+        </div>
+        <dl class="kv" style="align-content:start">
+          <dt>Lifetime</dt><dd class="num">13 days 23 hours 40 min</dd>
+          <dt>Live at</dt><dd>execution block + 1. This only delays confirm and execute, which this scope doesn't have, so the key works as soon as the Safe tx executes.</dd>
+          <dt>Reminder</dt><dd>Watcher alert 48 h before expiry</dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="wiz-step">
+      <div class="row" style="margin-bottom:10px"><span class="wiz-n">5</span><h3>Review what you sign</h3></div>
+
+      <div class="decode">
+        <div class="sum">Set the session key for <b>Explorer #12</b> to <b class="mono">0xb42D…7a19</b> with <b>Submit, Revoke, Cancel</b> until <b>Mar 30, 2027 14:00 UTC</b>. Replaces 0xA11c…04e5.</div>
+        <dl>
+          <dt>safe</dt><dd>0x8b2d…11F0 · kofi.eth · 2-of-3 · nonce 38</dd>
+          <dt>to</dt><dd>0x3F1c…A92e · Loreum DAO Chamber</dd>
+          <dt>function</dt><dd>setDirectorOperator(uint256,address,uint256,uint32)</dd>
+          <dt>tokenId</dt><dd>12</dd>
+          <dt>operator</dt><dd>0xb42D9E1c07A5f3b86d2e4c90A1f37B6C58e27a19</dd>
+          <dt>expiry</dt><dd>1806415200 · Tue Mar 30, 2027 14:00:00 UTC</dd>
+          <dt>scope</dt><dd>49 · 0x31 · SUBMIT | REVOKE | CANCEL</dd>
+          <dt>value</dt><dd>0 ETH</dd>
+        </dl>
+      </div>
+      <details style="margin-top:8px">
+        <summary class="hint" style="cursor:pointer">Raw calldata</summary>
+        <div class="raw" style="margin-top:6px">0xd7d5a6e3000000000000000000000000000000000000000000000000000000000000000c000000000000000000000000b42d9e1c07a5f3b86d2e4c90a1f37b6c58e27a19000000000000000000000000000000000000000000000000000000006babb5600000000000000000000000000000000000000000000000000000000000000031</div>
+      </details>
+
+      <div class="grid g2" style="margin-top:12px">
+        <div class="inset">
+          <div class="between" style="margin-bottom:8px">
+            <span class="upper">Simulation</span>
+            <span class="badge ok"><span class="dot"></span>Passes</span>
+          </div>
+          <p class="hint" style="margin-bottom:8px">Simulated at block 27,184,302 via RPC just now, as Safe 0x8b2d…11F0. Gas 58,214.</p>
+          <div class="diff">
+            <span class="minus">- key #12   0xA11c…04e5  scope 0x31  exp Mar 28 14:00</span>
+            <span class="plus">+ key #12   0xb42D…7a19  scope 0x31  exp Mar 30 14:00</span>
+            <span>  event     DirectorOperatorSet(12, 0x8b2d…11F0, 0xb42D…7a19)</span>
+          </div>
+        </div>
+        <div class="inset">
+          <div class="upper" style="margin-bottom:8px">Compare on your device</div>
+          <dl class="kv">
+            <dt>Safe tx hash</dt><dd class="mono">0x4c1e…9b07</dd>
+            <dt>Signatures</dt><dd>0 of 2 · you would be first</dd>
+            <dt>Afterwards</dt><dd>Share with another kofi.eth signer to execute</dd>
+          </dl>
+        </div>
+      </div>
+
+      <div class="between" style="margin-top:14px">
+        <button class="btn ghost" type="button">Back to expiry</button>
+        <div class="row">
+          <button class="btn" type="button">Save draft</button>
+          <button class="btn primary" type="button">Sign Safe tx (1 of 2)</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Destructive: clear key -->
+  <section class="confirm-box" id="clear-key" style="margin-top:16px" aria-labelledby="clear-h">
+    <div class="between" style="margin-bottom:8px">
+      <h3 id="clear-h">Clear the session key for Explorer #12</h3>
+      <span class="note">8</span>
+    </div>
+    <div class="auth compact" style="margin-bottom:10px">
+      <div class="node seat"><span class="k">Seat · rank 2</span><span class="v">Explorer #12</span></div>
+      <div class="node"><span class="k">Owner · Safe 2-of-3</span><span class="v">kofi.eth</span></div>
+      <div class="node key"><span class="k">Session key · to be cleared</span><span class="v mono">0xA11c…04e5</span></div>
+    </div>
+    <p class="muted" style="font-size:13px;margin-bottom:10px">Builds a Safe transaction calling <code>setDirectorOperator(12, 0x0, 0, 0)</code>. The key stops working when it executes, and the Safe keeps every power it had. #46, which the key submitted, stays in the queue with #12's confirmation; cancel it separately if needed.</p>
+    <div class="field" style="max-width:420px">
+      <label for="clr">Type <span class="phrase">CLEAR KEY #12</span> to continue</label>
+      <input id="clr" class="input mono" placeholder="CLEAR KEY #12" autocomplete="off" spellcheck="false">
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button class="btn danger" type="button" disabled>Clear key #12: sign Safe tx (1 of 2)</button>
+      <span class="hint">Enabled once the phrase matches. Simulated via RPC before your wallet opens.</span>
+    </div>
+  </section>
+
+  <section class="notes">
+    <h3>Design notes</h3>
+    <ol>
+      <li><b>Naming.</b> The top nav keeps the existing label "Operators", but every string on the page says "session key", per the naming ADR and copy pass (<code>P-8</code>, <code>P-9</code>). "Operator" never means a relayer. Relayers, verifiers, guardians and watchers are separate roles and don't appear here. The page is viewed as a signer on kofi.eth's Safe because only contract-owned seats can hold keys. What an EOA owner like lena.eth sees is shown in the side column.</li>
+      <li><b>Every seat in one list, with the authority chain on each row</b> (seat → owner → key), including seats that can't have a key and the reason. Rows instead of a table give each chain a full line, and the same layout works at phone width. All rows come from chamber-indexer (<code>directorOperator</code> joined to <code>boardSeat</code> and <code>membershipToken</code>, <code>I-6</code>). Status (live, not yet live, expired, stale) is derived in the query from the indexer head, not from <code>getDirectorOperator</code> or <code>useBlockNumber</code> (<code>I-15</code>, <code>I-10</code>). Opening this page makes zero JSON-RPC calls (<code>I-21</code>).</li>
+      <li><b>The 14-day limit is a proposed app default, not a contract rule</b> (the contract only needs a future expiry). Both live keys predate it: #12's key has run 47 days since Feb 9 and the Treasury Agent's 21 days since Mar 9. The rows say so rather than hiding it, and renewals get the default. The live-at block is shown for every key, but the row says when it has no effect: it only delays confirm and execute, and #12's 0x31 scope has neither. CONFIRM and UPDATE_SEATS have dashed borders because they are the bits whose misuse changes outcomes. Open question for Chad: adopt the 14-day default?</li>
+      <li><b>AI directors confirm only through a policy account.</b> The agent key has SUBMIT, EXECUTE, REVOKE and CANCEL (0x35). Every vote is a transaction from the policy Safe. This follows the review's "AI agents are directors, not relayers" recommendation. The page does not claim on-chain enforcement: the review puts "an agent director account with enforced mandates" in Phase 3, so in Phase 1 the mandate is checked by the policy Safe's co-signers and published in <code>metadataURI</code>. The live wizard's whitelist, value limits and time window live in <code>localStorage</code> (<code>app/src/lib/operatorPolicy.ts</code>) and are only checked by the app, so this mock drops them rather than show them as protection. Recent actions match the queue: kofi.eth submitted #46 with its key, the agent confirmed it at 15:20, and #44 was cancelled by #7, #44 and #58. #45 is shown the way the queue page records it: the board co-signed with <code>approveHash</code>, because a Chamber tx that calls back into <code>setDirectorOperator</code> would hit the reentrancy lock.</li>
+      <li><b>ERC-8004 is display only.</b> The review notes ERC-8004 is a draft and not a security primitive. The badge is info-colored, not accent, and the copy says the Chamber never checks it. The ways humans demote the agent sit next to the identity. A kofi.eth signer can't clear the agent's key, so the page says so instead of offering a button that would fail.</li>
+      <li><b>The rules are stated in terms of what the contract does</b> (<code>Chamber.sol</code> <code>setDirectorOperator</code>: rejects EOA owners, a zero or past expiry and scope 0, and sets <code>liveAt = block + SEATING_DELAY</code>). They are not framed as best practices. A transfer doesn't delete the session record; <code>_isLiveSessionKey</code> just stops matching the new owner, so a transfer back revives an unexpired key. "The move keeps the delegated weight on #44" holds because delegations are keyed to the tokenId. The one-block wait comes from <code>BoardLib.syncSeatingControl</code>, which resets the seating clock when the owner changes. Open confirmations stop counting because <code>confirmOwner</code> no longer matches (PMN-H01), which is why the EOA card warns about #46.</li>
+      <li><b>The wizard follows the <code>#259</code> pattern: pick a seat, pick a key, choose a scope preset, set expiry, then review decoded calldata.</b> It improves on the live wizard in four ways. EOA-owned seats are shown disabled with the reason, instead of failing at the end. The presets (Proposer 0x31, Agent executor 0x35) replace a raw bitmask. UNSCOPED is never offered, and UPDATE_SEATS is locked for agent seats. The review step reuses the <code>#260</code> decoder and simulation gate; the calldata is the real ABI encoding (selector <code>0xd7d5a6e3</code>). Reading the Safe's owners, the key's code check and "Simulated at block 27,184,302 via RPC just now" are the only RPC on this page, and all of them happen inside the write flow. The Safe tx hash is shown for comparison on the signing device, as in the <code>M-10</code> preflight.</li>
+      <li><b>Destructive action = ghost danger button plus a typed phrase.</b> Clearing a key is safe for the Chamber but surprising for a seat that relies on it. The box shows the authority chain it changes, names the exact call, and the button says what happens when you press it.</li>
+    </ol>
+  </section>
+</main>
+<footer class="foot">Mockup only. Addresses marked illustrative are placeholders. Loreum is the protocol; Chamber is the governance contract.</footer>
+</body>
+</html>

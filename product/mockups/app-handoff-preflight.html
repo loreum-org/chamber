@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Handoff preflight · Loreum app mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap">
+<link rel="stylesheet" href="assets/app.css">
+<style>
+  b, strong { font-weight: 600; }
+  .grid > * { min-width: 0; }
+  .subnav { display: flex; gap: 6px; flex-wrap: wrap; margin: -6px 0 18px; }
+  .subnav a { padding: 6px 12px; border-radius: 8px; font-size: 12.5px; color: var(--t3); border: 1px solid var(--line); background: var(--s1); }
+  .subnav a:hover { color: var(--t1); }
+  .subnav a.on { color: var(--t1); background: var(--s3); border-color: var(--line-strong); }
+  .src { font-size: 11.5px; color: var(--t4); font-family: var(--mono); }
+  .cd { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  .hero { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: center; }
+  .hero .big { font-size: 26px; font-weight: 300; color: var(--warn); line-height: 1.2; }
+  .hero .big b { color: var(--warn); }
+  .tally { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .grp { margin-top: 16px; }
+  .grp:first-of-type { margin-top: 0; }
+  .grp > h3 { margin-bottom: 2px; }
+  .checks .t { font-size: 13.5px; color: var(--t1); }
+  .checks .d { font-size: 12.5px; color: var(--t3); margin-top: 2px; }
+  .checks .val { font-family: var(--mono); font-size: 12px; color: var(--t2); text-align: right; white-space: nowrap; }
+  .checks li.waiting { background: rgba(251, 191, 36, 0.05); margin: 0 -10px; padding-left: 10px; padding-right: 10px; border-radius: 6px; }
+  .tx dl { grid-template-columns: 140px minmax(0, 1fr); }
+  .hash { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 6px 12px; font-size: 12.5px; }
+  .hash dt { color: var(--t4); font-family: var(--mono); }
+  .hash dd { margin: 0; font-family: var(--mono); color: var(--t1); overflow-wrap: anywhere; }
+  .hash dd.big { color: var(--a300); font-size: 13.5px; }
+  .ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--t2); }
+  .warn-hero { padding: 16px 18px; }
+  .warn-hero .ic { font-size: 16px; }
+  .warn-hero h3 { color: #fecaca; font-size: 16px; margin-bottom: 4px; }
+  tr.waiting td { background: rgba(251, 191, 36, 0.05); }
+  /* Authority chain stacked top-to-bottom: always in the narrow side card, and everywhere on small screens */
+  .auth.vert { flex-direction: column; }
+  .auth.vert .node { border-radius: 0; }
+  .auth.vert .node:first-child { border-radius: 8px 8px 0 0; }
+  .auth.vert .node:last-child { border-radius: 0 0 8px 8px; }
+  .auth.vert .node + .node { border-left: 1px solid var(--line); border-top: 0; }
+  .auth.vert .node + .node::before { left: 18px; top: -6px; margin-top: 0; transform: rotate(135deg); }
+  @media (max-width: 720px) {
+    .auth { flex-direction: column; }
+    .auth .node { border-radius: 0; }
+    .auth .node:first-child { border-radius: 8px 8px 0 0; }
+    .auth .node:last-child { border-radius: 0 0 8px 8px; }
+    .auth .node + .node { border-left: 1px solid var(--line); border-top: 0; }
+    .auth .node + .node::before { left: 18px; top: -6px; margin-top: 0; transform: rotate(135deg); }
+  }
+  @media (max-width: 640px) {
+    .top { position: static; }
+    .top-inner { height: auto; min-height: 60px; padding-top: 8px; padding-bottom: 8px; flex-wrap: wrap; }
+    .top-right { flex-wrap: wrap; }
+    .hero { grid-template-columns: minmax(0, 1fr); }
+    .hash, .tx dl { grid-template-columns: minmax(0, 1fr); }
+    .checks li { grid-template-columns: 26px minmax(0, 1fr); }
+    .checks .val { grid-column: 2; text-align: left; white-space: normal; }
+  }
+</style>
+</head>
+<body>
+<div class="mock-bar">
+  <span><b>MOCKUP</b> · Loreum app · LORE handoff preflight · state as of Feb 16, 2027 10:05 UTC</span>
+  <span><a href="index.html">All mockups</a> · <a href="_mock-data.md">Mock data</a></span>
+</div>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="row" style="gap:18px">
+      <a class="brand" href="index.html"><span class="brand-mark">L</span><span>Loreum</span></a>
+      <nav class="nav" aria-label="Main">
+        <a href="app-overview.html" class="on">My Chambers</a>
+        <a href="app-session-keys.html">Operators</a>
+        <a href="#">Deploy Chamber</a>
+        <a href="#">Compliance</a>
+        <a href="app-migrate.html">Migrate from Safe</a>
+        <a href="#">Docs</a>
+      </nav>
+    </div>
+    <div class="top-right">
+      <span class="chain"><i></i>Ethereum</span>
+      <span class="fresh" title="Context tables on this page come from chamber-indexer; the preflight checks are RPC reads at the block shown"><i></i>Indexed 18 s ago · #26,981,425</span>
+      <span class="wallet" style="white-space:nowrap" title="No wallet connected. This page never writes anything.">Read-only</span>
+    </div>
+  </div>
+</header>
+
+<main class="page">
+  <div class="ch-head">
+    <div class="ch-title">
+      <div class="ch-icon">LD</div>
+      <div>
+        <h1>Loreum DAO</h1>
+        <div class="ch-meta">
+          <span class="chain"><i></i>Ethereum</span>
+          <span class="badge acc">v1.2.0</span>
+          <span class="badge">5 seats · quorum 3</span>
+          <span class="mono faint">0x3F1c…A92e</span>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <a class="btn" href="app-queue.html">Open queue</a>
+      <a class="btn primary" href="app-proposal.html">New proposal</a>
+    </div>
+  </div>
+
+  <nav class="tabs" aria-label="Chamber">
+    <a href="app-overview.html">Overview</a>
+    <a href="app-board.html">Board &amp; delegation</a>
+    <a href="app-queue.html">Queue <span class="badge warn">2</span></a>
+    <a href="p2-multichain-treasury.html">Treasury</a>
+    <a href="app-supply-authority.html" class="on">Supply authority</a>
+    <a href="app-session-keys.html">Session keys</a>
+  </nav>
+
+  <nav class="subnav" aria-label="Supply authority">
+    <a href="app-supply-authority.html">LORE supply</a>
+    <a href="app-guardian.html">Guardian console</a>
+    <a href="app-handoff-preflight.html" class="on">Handoff preflight</a>
+  </nav>
+
+  <div class="banner info" style="margin-bottom:16px">
+    <span class="ic">i</span>
+    <div><b>Read-only.</b> This page runs the handoff preflight checks with RPC reads at the latest block, and shows the exact Safe transaction so signers can compare it. It has no sign or send button and never writes anything. Team Safe signers sign in Safe{Wallet} on their own hardware wallets. <span class="note">1</span></div>
+  </div>
+
+  <!-- Overall status -->
+  <section class="card" aria-labelledby="status-h" style="border-color:rgba(251,191,36,0.35)">
+    <div class="hero">
+      <div>
+        <div class="upper" id="status-h">Handoff: Team Safe → LoreMintGate <span class="note">2</span></div>
+        <div class="big" style="margin-top:6px"><b>Not ready</b>: 1 check waiting</div>
+        <div class="tally">
+          <span class="badge ok">12 passed</span>
+          <span class="badge warn">1 waiting</span>
+          <span class="badge">0 failed</span>
+        </div>
+        <p style="margin-top:10px;font-size:13px" class="muted">Earliest ready: <b class="num" style="color:var(--t1)">Feb 19, 2027 09:14 UTC</b>, in <span class="cd">2 d 23 h 09 m</span>, when marco.eth's seat reaches 7 days. On signing day, run the preflight again at the latest block. A result more than 1 hour old is not valid for signing.</p>
+        <p class="src" style="margin-top:6px">Ran at block 26,981,427 via RPC · Feb 16, 2027 10:05:02 UTC · same checks as the preflight script, which refuses --broadcast</p>
+      </div>
+      <div class="stack-sm" style="align-items:stretch;min-width:200px">
+        <button class="btn primary" type="button">Run again at latest block</button>
+        <button class="btn ghost" type="button">Download report (JSON)</button>
+        <button class="btn ghost" type="button">Copy CLI command</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="grid main-side" style="margin-top:16px">
+    <!-- Checklist -->
+    <section class="card" aria-labelledby="checks-h">
+      <div class="card-h">
+        <h2 id="checks-h">Preflight checks <span class="note">3</span></h2>
+        <span class="src">RPC · block 26,981,427</span>
+      </div>
+
+      <div class="grp">
+        <h3 class="upper">Contracts</h3>
+        <ul class="checks">
+          <li>
+            <span class="st pass">✓</span>
+            <div><div class="t">LoreMintGate is deployed and its source is verified</div><div class="d">Constructor: token LORE, proposer Loreum DAO Chamber, guardian Loreum Guardian Safe, delay 7 d, window 14 d, cap 1,000,000 per quarter, exit delay 30 d. Deployed Feb 8.</div></div>
+            <span class="val">0x6c1D…3F8b</span>
+          </li>
+          <li>
+            <span class="st pass">✓</span>
+            <div><div class="t">Bytecode matches the audited commit <span class="note">4</span></div><div class="d">Gate runtime codehash and the Chamber implementation in the EIP-1967 slot (v1.2.0) both match a clean build of commit <span class="mono">a41c7d2</span> (illustrative).</div><div class="d faint">Audit: [firm] · Jan 2027 · 0 open critical/high (placeholder)</div></div>
+            <span class="val">2 of 2 match</span>
+          </li>
+          <li>
+            <span class="st pass">✓</span>
+            <div><div class="t">Proposer is the Loreum DAO Chamber</div><div class="d">gate.proposer() = 0x3F1c…A92e. ProxyAdmin.owner() = the Chamber. paused() = false. getQuorum() = 3, which meets the gate's floor.</div></div>
+            <span class="val">quorum 3</span>
+          </li>
+          <li>
+            <span class="st pass">✓</span>
+            <div><div class="t">No pending Chamber tx targets the ProxyAdmin, the Chamber, the gate or LORE</div><div class="d">Scanned tx #0 to #35. 2 are pending (#34, #35); neither targets these addresses.</div></div>
+            <span class="val">0 found</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="grp">
+        <h3 class="upper">People and keys</h3>
+        <ul class="checks">
+          <li>
+            <span class="st pass">✓</span>
+            <div><div class="t">Guardian is independent</div><div class="d">Loreum Guardian Safe 0x9C44…E01d, 3-of-5. None of its signers is a Team Safe owner, owns a seat, holds a session key or holds a large amount of LORE.</div></div>
+            <span class="val">3-of-5</span>
+          </li>
+          <li>
+            <span class="st pass">✓</span>
+            <div><div class="t">At least 4 reachable directors with distinct owners</div><div class="d">Quorum 3 needs at least 4 reachable directors. 5 seated, 5 distinct owners. All 5 confirmed at least one drill transaction (#31 to #33) since Feb 10.</div></div>
+            <span class="val">5 of 5</span>
+          </li>
+          <li class="waiting">
+            <span class="st wait">…</span>
+            <div><div class="t">Every seat has been held for at least 7 days <span class="note">5</span></div><div class="d">4 of 5 matured. <b>marco.eth</b> (Explorer #58) was seated Feb 12 09:14 UTC and matures <b>Feb 19, 09:14 UTC</b>.</div></div>
+            <span class="val" style="color:var(--warn)">in 2 d 23 h 09 m</span>
+          </li>
+          <li>
+            <span class="st pass">✓</span>
+            <div><div class="t">No owner holds as many seats as the quorum</div><div class="d">Each owner holds 1 seat; quorum is 3. The Team Safe owns no seat.</div></div>
+            <span class="val">max 1 of 3</span>
+          </li>
+          <li>
+            <span class="st pass">✓</span>
+            <div><div class="t">Taking 3 of the 5 seats costs more than all LORE outside the Team Safe <span class="note">6</span></div><div class="d">Each of an outsider's 3 Explorers must outweigh the rank-3 seat (Treasury Agent, 1,120,000 LORE): 3 × 1,120,001 = <span class="num">3,360,003</span> LORE, plus 3 Explorers at 0.05 ETH. LORE outside the Team Safe: <span class="num">2,970,000</span> (9,970,000 supply − 7,000,000 held by the Safe directly or as cLORE). Seat weights are converted from cLORE shares with convertToAssets before comparing.</div><div class="d faint">Covers outside buyers only. The Team Safe can still redelegate its 7,000,000; the delegation plan says who may do that and how.</div></div>
+            <span class="val">+390,003 LORE</span>
+          </li>
+          <li>
+            <span class="st pass">✓</span>
+            <div><div class="t">The Team Safe owns LORE today and is hardened</div><div class="d">LORE.owner() = Team Safe 0x5d45…2095. Threshold 4-of-7, no modules, no guard. Current nonce 61.</div></div>
+            <span class="val">4-of-7</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="grp">
+        <h3 class="upper">Monitoring and drills</h3>
+        <ul class="checks">
+          <li>
+            <span class="st pass">✓</span>
+            <div><div class="t">Alerts are live on both channels</div><div class="d">Watcher heartbeat Feb 15 09:00 UTC. Drill events alerted within 6 and 9 minutes. The second channel watches LORE, the Team Safe and the gate.</div></div>
+            <span class="val">2 channels</span>
+          </li>
+          <li>
+            <span class="st pass">✓</span>
+            <div><div class="t">The mainnet indexer is live</div><div class="d">chamber-indexer at #26,981,425, 2 blocks behind the head. The LoreMintGate and LORE sources are synced from their deploy blocks.</div></div>
+            <span class="val">2 behind</span>
+          </li>
+          <li>
+            <span class="st pass">✓</span>
+            <div><div class="t">Drill done: both cancel paths work</div><div class="d">Op #0: queued Feb 10, cancelled by the Guardian Safe Feb 11. Op #1: queued Feb 12, cancelled by Chamber tx #33 Feb 13. Both were alerted.</div></div>
+            <span class="val">2 of 2</span>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Side: the waiting item + context -->
+    <aside class="stack">
+      <section class="card" aria-labelledby="block-h">
+        <div class="card-h"><h2 id="block-h">What is holding it up</h2><span class="badge warn">1 waiting</span></div>
+        <div class="auth compact vert" role="group" aria-label="marco.eth authority chain">
+          <div class="node seat"><span class="k">Seat</span><span class="v">Explorer #58 · rank 5</span></div>
+          <div class="node"><span class="k">Owner</span><span class="v">marco.eth · EOA</span></div>
+          <div class="node key"><span class="k">Session key</span><span class="v">None</span></div>
+        </div>
+        <dl class="kv" style="margin-top:12px">
+          <dt>Seated</dt><dd>Feb 12, 09:14 UTC · block 26,952,372</dd>
+          <dt>Matures</dt><dd><b>Feb 19, 09:14 UTC</b></dd>
+          <dt>Weight</dt><dd>612,000 LORE</dd>
+        </dl>
+        <div class="banner warn" style="margin-top:12px">
+          <span class="ic">!</span>
+          <div>Next in line is Explorer #63 nadia.eth with 540,000 LORE, 72,001 short of seat 5. If she takes the seat, the new seat's 7-day clock starts over and the earliest ready date moves.</div>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="after-h">
+        <div class="card-h"><h2 id="after-h">After the Safe signs <span class="note">7</span></h2></div>
+        <ol class="ol">
+          <li>Check that LORE.owner() is the gate, on Etherscan and in the app.</li>
+          <li>Simulate a mint from the Team Safe: it must revert (not the owner).</li>
+          <li>Confirm the watcher posted "LORE owner changed" on both channels.</li>
+          <li>Record the addresses in the 3 mainnet.txt copies from the receipt.</li>
+          <li>Close #188 with links to the receipt and this report.</li>
+        </ol>
+      </section>
+
+      <section class="inset" aria-labelledby="src-h">
+        <h3 id="src-h" class="upper" style="margin-bottom:6px">Where this data comes from <span class="note">8</span></h3>
+        <p class="muted" style="font-size:12.5px">The checks and the Safe transaction are RPC reads, made only when you press Run, because this is the step right before a signature. The board table below comes from chamber-indexer, and the check compares both.</p>
+      </section>
+    </aside>
+  </div>
+
+  <!-- Board snapshot -->
+  <section class="card" style="margin-top:16px" aria-labelledby="board-h">
+    <div class="card-h">
+      <h2 id="board-h">Board snapshot <span class="note">9</span></h2>
+      <div class="row" style="gap:6px">
+        <span class="muted num" style="font-size:12.5px">quorum = 1 + floor(5 × 51 / 100) = 3</span>
+        <span class="badge info">from indexer · #26,981,425</span>
+        <span class="badge ok"><span class="dot"></span>Matches RPC at #26,981,427</span>
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table class="t">
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Seat</th>
+            <th>Owner</th>
+            <th class="r">Weight</th>
+            <th>Seated</th>
+            <th>7-day mark</th>
+            <th>Session key</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="num">1</td>
+            <td>Explorer #7</td>
+            <td><div class="stack-sm"><span>aria.eth</span><span class="mono faint">EOA 0x51a0…7C3e</span></div></td>
+            <td class="r"><div class="stack-sm"><span class="num" title="convertToAssets of about 2,410,000 cLORE">2,410,000 LORE</span><span class="src">2.41M cLORE</span></div></td>
+            <td class="num">Feb 2</td>
+            <td><span class="badge ok">Matured Feb 9</span></td>
+            <td><span class="faint">None</span></td>
+          </tr>
+          <tr>
+            <td class="num">2</td>
+            <td>Explorer #12</td>
+            <td><div class="stack-sm"><span>kofi.eth</span><span class="mono faint">Safe 2-of-3 0x8b2d…11F0</span></div></td>
+            <td class="r"><div class="stack-sm"><span class="num" title="convertToAssets of about 1,905,000 cLORE">1,905,000 LORE</span><span class="src">1.91M cLORE</span></div></td>
+            <td class="num">Feb 2</td>
+            <td><span class="badge ok">Matured Feb 9</span></td>
+            <td>
+              <div class="stack-sm">
+                <span class="mono">0xA11c…04e5 · 0x31</span>
+                <div class="scopes"><span class="scope on">SUBMIT</span><span class="scope">CONFIRM</span><span class="scope">EXECUTE</span><span class="scope on">REVOKE</span><span class="scope on">CANCEL</span></div>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td class="num">3</td>
+            <td>Explorer #31</td>
+            <td><div class="stack-sm"><span>Treasury Agent</span><span class="mono faint">policy Safe 0x9aB3…40d1</span></div></td>
+            <td class="r"><div class="stack-sm"><span class="num" title="convertToAssets of about 1,120,000 cLORE">1,120,000 LORE</span><span class="src">1.12M cLORE</span></div></td>
+            <td class="num">Feb 5</td>
+            <td><span class="badge ok">Matured Feb 12</span></td>
+            <td><span class="faint">None</span></td>
+          </tr>
+          <tr>
+            <td class="num">4</td>
+            <td>Explorer #44</td>
+            <td><div class="stack-sm"><span>lena.eth</span><span class="mono faint">EOA 0x3c7B…aa15</span></div></td>
+            <td class="r"><div class="stack-sm"><span class="num" title="convertToAssets of about 980,000 cLORE">980,000 LORE</span><span class="src">0.98M cLORE</span></div></td>
+            <td class="num">Feb 9 08:47</td>
+            <td><span class="badge ok">Matured 1 h 18 m ago</span></td>
+            <td><span class="faint">None</span></td>
+          </tr>
+          <tr class="waiting">
+            <td class="num">5</td>
+            <td>Explorer #58</td>
+            <td><div class="stack-sm"><span>marco.eth</span><span class="mono faint">EOA 0xE2f0…6d3C</span></div></td>
+            <td class="r"><div class="stack-sm"><span class="num" title="convertToAssets of about 612,000 cLORE">612,000 LORE</span><span class="src">0.61M cLORE</span></div></td>
+            <td class="num">Feb 12 09:14</td>
+            <td><span class="badge warn">Feb 19 09:14</span></td>
+            <td><span class="faint">None</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="hint" style="margin-top:10px">Rows come from chamber-indexer. The preflight read the same seats again over RPC (getTop(getSeats()) and the live session-key getters) and all 5 rows match; any difference would fail the run. No session key can confirm or execute. Weights are shown in LORE (convertToAssets), with cLORE shares underneath.</p>
+  </section>
+
+  <!-- The Safe transaction -->
+  <section class="card tx" style="margin-top:16px" aria-labelledby="tx-h">
+    <div class="card-h">
+      <h2 id="tx-h">The Safe transaction to compare <span class="note">10</span></h2>
+      <span class="badge">This page cannot sign it</span>
+    </div>
+
+    <div class="banner bad warn-hero" style="margin-bottom:16px" role="alert">
+      <span class="ic">!!</span>
+      <div>
+        <h3>One step, and it cannot be undone</h3>
+        <p>LORE uses single-step Ownable. <span class="mono">transferOwnership</span> takes effect in the same transaction: there is no accept step and no undo. If the new owner address is wrong, LORE's mint authority is lost or handed to someone else for good. After it executes, only LoreMintGate can mint: every mint waits 7 days in public, the guardian can cancel it, and at most 1,000,000 LORE can be minted a quarter. Moving ownership again takes a Chamber proposal, guardian approval and 30 days.</p>
+      </div>
+    </div>
+
+    <div class="grid g2" style="align-items:start">
+      <div class="decode">
+        <div class="sum">Team Safe calls LORE to <b>transfer ownership to LoreMintGate</b>.</div>
+        <dl>
+          <dt>Safe</dt><dd>0x5d45A213B2B6259F0b3c116a8907B56AB5E22095 · Team Safe, 4-of-7, Safe v1.3.0, chain 1</dd>
+          <dt>to</dt><dd>0x7756D245527F5f8925A537be509BF54feb2FdC99 · LORE</dd>
+          <dt>value</dt><dd>0</dd>
+          <dt>data</dt><dd>0xf2fde38b0000000000000000000000006c1d286e5f86e64805e3d1e33b3d804c0f813f8b</dd>
+          <dt>decoded</dt><dd>transferOwnership(newOwner = 0x6c1D286e5f86e64805e3D1e33B3d804c0f813F8b · LoreMintGate)</dd>
+          <dt>operation</dt><dd>0 · CALL (not DELEGATECALL)</dd>
+          <dt>gas / refund</dt><dd>safeTxGas 0 · baseGas 0 · gasPrice 0 · gasToken 0x0 · refundReceiver 0x0</dd>
+          <dt>nonce</dt><dd>61</dd>
+        </dl>
+      </div>
+
+      <div class="stack">
+        <div class="inset">
+          <h3 style="margin-bottom:10px">Hashes to compare on every device</h3>
+          <dl class="hash">
+            <dt>domain hash</dt><dd>0xf0e31f066cd189caae1f76d68ef0e00c0050f7fc75afb725a5d30c421b2946e7</dd>
+            <dt>message hash</dt><dd>0x2f6e7799fd2f4397ec7b88c20904e36c705aa3f50c5fc301f901e67759674a2a</dd>
+            <dt>safeTxHash</dt><dd class="big">0xb5eafceb4cc09186665dbb822299259c56f89601f3f26a22bbc5ffef6f9953c2</dd>
+          </dl>
+          <div class="row" style="margin-top:10px">
+            <button class="btn sm" type="button">Copy safeTxHash</button>
+            <span class="src">valid only at Team Safe nonce 61</span>
+          </div>
+        </div>
+
+        <div class="inset">
+          <div class="between" style="margin-bottom:8px">
+            <h3>Simulation</h3>
+            <span class="badge ok"><span class="dot"></span>Passes</span>
+          </div>
+          <p class="src" style="margin-bottom:8px">Simulated at block 26,981,427 via RPC just now, as the Team Safe</p>
+          <div class="diff">
+            <span>LORE.owner() <span class="minus">Team Safe</span> → <span class="plus">LoreMintGate</span></span>
+            <span>Team Safe calling LORE.mint afterwards: reverts (not owner)</span>
+            <span>LORE totalSupply 9,970,000 → 9,970,000</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <h3 style="margin-bottom:8px">Each signer, before signing <span class="note">11</span></h3>
+    <ol class="ol">
+      <li>In Safe{Wallet}, open the queued transaction at nonce 61 and check that its safeTxHash matches the value above, character for character.</li>
+      <li>On your hardware wallet, check the domain hash and the message hash against this page.</li>
+      <li>Check that <span class="mono">to</span> is LORE and <span class="mono">newOwner</span> is the gate by comparing all 40 characters against the contract address in the gate's deploy transaction receipt on Etherscan. Do not rely on the first and last few.</li>
+      <li>Check that the preflight above was run within the last hour and shows no waiting or failed checks.</li>
+      <li>If anything differs, do not sign. Tell the other signers on the second channel.</li>
+    </ol>
+    <p class="hint" style="margin-top:10px">4 of 7 signatures are needed. Safe{Wallet} tracks signatures; this page does not. If the Team Safe executes any other transaction first, the nonce changes and so do all three hashes, so run the preflight again.</p>
+  </section>
+
+  <section class="notes">
+    <h3>Design notes</h3>
+    <ol>
+      <li>Read-only by construction: there is no connect-wallet prompt and no sign or send button, and the wallet chip says so. This mirrors the <code>M-10</code> script, which refuses <code>--broadcast</code>. The signature happens in Safe{Wallet}, as <code>M-20</code> step 6 requires (Chad-only).</li>
+      <li>The overall status is one sentence with a tally and the earliest time it can turn green, taken from the waiting check. The result is only valid for a short time and must be run again at the latest block on signing day (<code>M-20</code> step 5; <code>M-11</code> step 9 archives the output).</li>
+      <li>The checks follow the <code>M-10</code> scope: seats from <code>getTop(getSeats())</code>, the EIP-1967 implementation slot, <code>ProxyAdmin.owner()</code>, <code>!paused()</code>, and a scan of pending Chamber transactions for the ProxyAdmin, the Chamber, the gate or LORE. Reachability is backed by on-chain evidence (drill confirmations), not by a claim.</li>
+      <li>This is a post-audit page, so the audit line appears, but only as a clearly marked placeholder (product rule 3; <code>M-19</code>). Bytecode is matched against a clean build of the audited commit.</li>
+      <li>Maturity is 7 days of wall-clock seat tenure. <code>SEATING_DELAY</code> is only 1 block, which is the gap the review's Critical finding exploits. The side card warns that a seat change resets the clock, using the next-in-line data.</li>
+      <li>The capture-cost check is the <code>M-10</code> weight margin, taken from the review's ECO-3 finding and the <code>M-12</code> analysis. An outsider needs 3 Explorers that each outweigh the rank-3 seat, and that total is compared with all LORE outside the Team Safe. Seat weights are cLORE shares, so they are converted with <code>convertToAssets</code> before comparing, which fixes the roughly 1,000× unit error the plan review found. The faint line says what the check does not cover: the Team Safe's own power to redelegate is governed by the <code>M-23</code> delegation plan, not by this script.</li>
+      <li>Post-handoff steps come from <code>M-20</code> steps 7 and 8, including the proof that the Team Safe can no longer mint.</li>
+      <li>This is the one page where display data uses RPC, because it is the preflight right before a signature, which the pinned rule allows. The page says so, and the reads run only when you press Run. The board table comes from the indexer and is labelled that way. The preflight reads the same seats again over RPC, and any mismatch between the two sources fails the run, because it means one of them is wrong (<code>I-10</code>).</li>
+      <li>Weights are shown in LORE with cLORE shares underneath: <code>M-10</code> requires <code>convertToAssets</code> and both units (_decimalsOffset = 3), and the capture-cost check (note 6) uses the converted values. The session-key scope bits use the Chamber.sol values, and none of them grants CONFIRM or EXECUTE.</li>
+      <li>This is the exact transaction <code>M-10</code> prints. The calldata, domain hash, message hash and safeTxHash are real EIP-712 values for the real Team Safe and LORE addresses, the illustrative gate address and an illustrative nonce, computed with <code>cast</code>. The red banner states the single-step, irreversible nature in plain words, because this is the step the review found unsafe when it pointed at the Chamber (<code>M-1</code>).</li>
+      <li>The signer checklist puts the <code>M-11</code> requirement (every signer compares the hash on their hardware device) into steps anyone can follow, and tells signers to compare full addresses rather than the first and last few characters.</li>
+    </ol>
+  </section>
+</main>
+<footer class="foot">Mockup only. Addresses marked illustrative are placeholders. Loreum is the protocol; Chamber is the governance contract.</footer>
+</body>
+</html>
