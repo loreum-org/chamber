@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Proposal #46 · Loreum app mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap">
+<link rel="stylesheet" href="assets/app.css">
+<style>
+  b, strong { font-weight: 600; }
+  .main-side > * { min-width: 0; }
+  @media (max-width: 1000px) { .main-side { grid-template-columns: minmax(0, 1fr); } }
+  @media (max-width: 520px) {
+    .auth.vert-sm { flex-direction: column; }
+    .auth.vert-sm .node { border-radius: 0; }
+    .auth.vert-sm .node:first-child { border-radius: 8px 8px 0 0; }
+    .auth.vert-sm .node:last-child { border-radius: 0 0 8px 8px; }
+    .auth.vert-sm .node + .node { border-left: 1px solid var(--line); border-top: 0; }
+    .auth.vert-sm .node + .node::before { left: 16px; top: -6px; margin-top: 0; transform: rotate(135deg); }
+  }
+  @media (max-width: 640px) {
+    .top-inner { flex-wrap: wrap; height: auto; padding-top: 10px; padding-bottom: 10px; }
+    .top-right { flex-wrap: wrap; }
+  }
+  .crumb { font-size: 13px; color: var(--t4); margin-bottom: 12px; }
+  .crumb a { color: var(--t3); }
+  .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--t4); font-weight: 600; margin-bottom: 6px; }
+  .src { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 11px; color: var(--t4); white-space: nowrap; }
+  .src i { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); display: inline-block; }
+  .src.rpc i { background: var(--info); }
+  .src.rpc { color: var(--info); }
+  .chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px; border-radius: 5px; background: var(--s2); border: 1px solid var(--line); font-family: var(--mono); font-size: 11.5px; color: var(--t2); max-width: 100%; overflow-wrap: anywhere; }
+  .chip .l { font-family: var(--sans); font-size: 11px; color: var(--t4); }
+  .phead { display: flex; flex-direction: column; gap: 10px; }
+  .phead h2 { font-size: 20px; line-height: 1.3; }
+  .hashrow { display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 4px 12px; font-size: 12.5px; }
+  .hashrow dt { color: var(--t4); }
+  .hashrow dd { margin: 0; font-family: var(--mono); color: var(--t2); overflow-wrap: anywhere; }
+  @media (max-width: 520px) { .hashrow { grid-template-columns: 1fr; } .hashrow dd { margin-bottom: 6px; } }
+  .decode dl { grid-template-columns: 150px minmax(0, 1fr); }
+  @media (max-width: 460px) { .decode dl { grid-template-columns: minmax(0, 1fr); } .decode dt { border-bottom: 0; padding-bottom: 0; } .decode dd { padding-top: 2px; } }
+  .conf { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 14px; align-items: center; padding: 12px 0; border-bottom: 1px solid rgba(148, 163, 184, 0.08); }
+  .conf:last-child { border-bottom: 0; }
+  .conf .meta { text-align: right; font-size: 12px; color: var(--t3); }
+  .conf .meta .mono { font-size: 11px; color: var(--t4); }
+  @media (max-width: 560px) { .conf { grid-template-columns: 1fr; } .conf .meta { text-align: left; } }
+  .conf.missing .auth .node { opacity: 0.55; }
+  .t td.num, .t th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .minus { color: var(--bad); }
+  .plus { color: var(--ok); }
+  .same { color: var(--t4); }
+  .danger-zone { border-color: rgba(248, 113, 113, 0.3); }
+  .risk-panel { border-color: rgba(248, 113, 113, 0.45); background: linear-gradient(180deg, rgba(239, 68, 68, 0.05), var(--s1) 120px); }
+  .cmp th:first-child { width: 150px; }
+  .cmp td { vertical-align: top; font-size: 12.5px; }
+  .ev { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+  .ev li { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 10px; padding: 8px 0; border-bottom: 1px solid rgba(148, 163, 184, 0.08); font-size: 12.5px; }
+  .ev li:last-child { border-bottom: 0; }
+  .ev .w { font-family: var(--mono); font-size: 11px; color: var(--t4); }
+  .big { font-size: 26px; font-weight: 300; font-variant-numeric: tabular-nums; }
+  .ack { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; color: var(--t2); }
+  .ack input { accent-color: var(--a500); width: 16px; height: 16px; margin-top: 2px; flex: none; }
+  .btn.block { width: 100%; }
+  .checks .st.info { background: var(--info-soft); color: var(--info); }
+  .flow { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; color: var(--t3); }
+  .flow b { color: var(--t2); }
+  details.rawd summary { cursor: pointer; font-size: 13px; color: var(--t3); padding: 4px 0; }
+  details.rawd summary:hover { color: var(--t1); }
+  .quote { border-left: 2px solid var(--line-strong); padding: 2px 0 2px 12px; color: var(--t2); font-size: 13.5px; }
+  .vh { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+  .banner a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+  .when-list { margin: 4px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 2px; }
+</style>
+</head>
+<body>
+<div class="mock-bar">
+  <span><b>MOCKUP</b> · Loreum app · Proposal #46 · state as of Mar 16, 2027 14:20 UTC</span>
+  <span><a href="index.html">All mockups</a> · <a href="_mock-data.md">Mock data</a></span>
+</div>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="row" style="gap:18px">
+      <a class="brand" href="index.html"><span class="brand-mark">L</span><span>Loreum</span></a>
+      <nav class="nav" aria-label="Main">
+        <a href="app-overview.html" class="on">My Chambers</a>
+        <a href="app-session-keys.html">Operators</a>
+        <a href="#">Deploy Chamber</a>
+        <a href="#">Compliance</a>
+        <a href="app-migrate.html">Migrate from Safe</a>
+        <a href="#">Docs</a>
+      </nav>
+    </div>
+    <div class="top-right">
+      <span class="chain"><i></i>Ethereum</span>
+      <span class="fresh" title="All data on this page comes from chamber-indexer"><i></i>Indexed 24 s ago · #27,184,300</span>
+      <span class="wallet"><span class="avatar"></span>lena.eth</span>
+    </div>
+  </div>
+</header>
+
+<main class="page">
+  <div class="ch-head">
+    <div class="ch-title">
+      <div class="ch-icon">LD</div>
+      <div>
+        <h1>Loreum DAO</h1>
+        <div class="ch-meta">
+          <span class="chain"><i></i>Ethereum</span>
+          <span class="badge acc">v1.2.0</span>
+          <span class="badge">5 seats · quorum 3</span>
+          <span class="mono faint">0x3F1c…A92e</span>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <a class="btn" href="app-queue.html">Open queue</a>
+      <a class="btn primary" href="app-proposal.html">New proposal</a>
+    </div>
+  </div>
+
+  <nav class="tabs" aria-label="Chamber">
+    <a href="app-overview.html">Overview</a>
+    <a href="app-board.html">Board &amp; delegation</a>
+    <a href="app-queue.html" class="on">Queue <span class="badge warn">3</span></a>
+    <a href="p2-multichain-treasury.html">Treasury</a>
+    <a href="app-supply-authority.html">Supply authority</a>
+    <a href="app-session-keys.html">Session keys</a>
+  </nav>
+
+  <div class="crumb"><a href="app-queue.html">Queue</a> / Proposal #46</div>
+
+  <!-- Proposal header -->
+  <div class="card raised" style="margin-bottom:16px">
+    <div class="phead">
+      <div class="row" style="gap:8px">
+        <span class="mono faint">#46</span>
+        <span class="badge ok"><span class="dot"></span>Ready to execute</span>
+        <span class="badge warn">Medium · treasury transfer</span>
+        <span class="badge">3 of 3 confirmations</span>
+      </div>
+      <h2>Fund Q2 grants round: transfer 120,000 USDC to Grants Safe</h2>
+      <p class="muted">3 live confirmations meet the quorum of 3. The simulation passes. Any director can execute it until <b style="color:var(--t1)">Apr 12, 2027 10:41 UTC</b>, but it should run before Mar 18. <span class="note">1</span></p>
+      <div class="banner warn">
+        <span class="ic">!</span>
+        <div><b>Execute before Mar 18, 09:30 UTC.</b> Two scheduled changes affect #46: <span class="note">2</span>
+          <ul class="when-list">
+            <li><b>Mar 18 09:30</b>: the 5 → 6 seat change can execute once it has a 3rd supporter. Quorum becomes 4, so #46 would need a 4th confirmation. <a href="app-board.html">Review the seat change</a></li>
+            <li><b>Mar 18 15:00</b>: the Grants Safe hands over to the Loreum Grants Chamber. USDC that arrives after that has to be moved again with a second Safe transaction. <a href="app-migrate.html">Open the migration</a></li>
+          </ul>
+        </div>
+      </div>
+      <ol class="steps" aria-label="Proposal lifecycle" style="margin-top:6px">
+        <li class="done">Submitted<span class="when">Mar 13 10:41</span></li>
+        <li class="done">2 of 3<span class="when">Mar 13 15:20</span></li>
+        <li class="done">Quorum 3 of 3<span class="when">Mar 14 09:30</span></li>
+        <li class="now">Execute<span class="when">now · you or any director</span></li>
+        <li>Indexed<span class="when">after the receipt</span></li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="grid main-side">
+    <!-- Main column -->
+    <div class="stack">
+
+      <!-- Decoded action -->
+      <section class="card" aria-labelledby="dec-h">
+        <div class="card-h">
+          <h2 id="dec-h">What executes <span class="note">3</span></h2>
+          <span class="src"><i></i>from indexer · proposal.data</span>
+        </div>
+        <div class="decode">
+          <div class="sum">Transfer <b>120,000 USDC</b> from the treasury to <b>Grants Safe</b> (<span class="mono">0x2c9F…d810</span>, Safe 3-of-5)</div>
+          <dl>
+            <dt>target</dt><dd>0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48 · USDC</dd>
+            <dt>function</dt><dd>transfer(address to, uint256 amount) · 0xa9059cbb</dd>
+            <dt>to</dt><dd>0x2c9F52662F101fE24b570DBde936E7754dAAd810 · Grants Safe (past recipient: #29, #38)</dd>
+            <dt>amount</dt><dd>120000000000 · 120,000.000000 USDC (6 decimals)</dd>
+            <dt>value</dt><dd>0 ETH</dd>
+            <dt>from</dt><dd>0x3F1c…A92e · Loreum DAO treasury (not vault assets)</dd>
+            <dt>nonce</dt><dd>46 · required quorum at submit: 3</dd>
+          </dl>
+        </div>
+
+        <details class="rawd" style="margin-top:12px" open>
+          <summary>Raw calldata (68 bytes)</summary>
+          <div class="raw" style="margin-top:6px">0xa9059cbb0000000000000000000000002c9f52662f101fe24b570dbde936e7754daad8100000000000000000000000000000000000000000000000000000001bf08eb000</div>
+        </details>
+
+        <div class="inset" style="margin-top:12px">
+          <div class="between" style="margin-bottom:8px">
+            <span class="lbl" style="margin:0">dataHash check <span class="note">4</span></span>
+            <span class="badge ok"><span class="dot"></span>Match</span>
+          </div>
+          <dl class="hashrow">
+            <dt>keccak256(calldata above)</dt><dd>0x6b7e2a3abbf35b0fdfc49686c614d5b88467f064a95b6026a676dca0af76eddc <span class="faint">· computed in your browser</span></dd>
+            <dt>On-chain dataHash for #46</dt><dd>0x6b7e2a3abbf35b0fdfc49686c614d5b88467f064a95b6026a676dca0af76eddc <span class="faint">· indexed from getTransaction(46) at block 27,161,607</span></dd>
+          </dl>
+          <p class="hint" style="margin-top:8px">Execute re-reads the dataHash via RPC before your wallet opens. If they ever differ, Execute is blocked, because the Chamber would revert with <code>DataHashMismatch</code>.</p>
+        </div>
+
+        <ul class="checks" style="margin-top:6px">
+          <li><span class="st pass" role="img" aria-label="Passed">✓</span><div><div>Title matches the decode</div><div class="hint">"120,000 USDC" and "Grants Safe" in the title match the amount and recipient in the calldata.</div></div><span class="src"><i></i>local</span></li>
+          <li><span class="st pass" role="img" aria-label="Passed">✓</span><div><div>Known recipient</div><div class="hint">Grants Safe has received 2 earlier transfers from this Chamber (#29, #38).</div></div><span class="src"><i></i>indexer</span></li>
+          <li><span class="st pass" role="img" aria-label="Passed">✓</span><div><div>Not a self-call, not a messenger or bridge target</div><div class="hint">No authority leaves this Chamber, and nothing crosses chains.</div></div><span class="src"><i></i>local</span></li>
+          <li><span class="st wait" role="img" aria-label="Warning">!</span><div><div>Recipient is migrating to a Chamber</div><div class="hint">The Grants Safe hands over to Loreum Grants (<span class="mono">0x5A0E…C7b4</span>) on Mar 18, 15:00 UTC. Execute before then, or cancel #46 and re-propose it to pay Loreum Grants.</div></div><a class="src" href="app-migrate.html"><i></i>indexer</a></li>
+        </ul>
+      </section>
+
+      <!-- Simulation -->
+      <section class="card" aria-labelledby="sim-h">
+        <div class="card-h">
+          <h2 id="sim-h">Simulation <span class="note">5</span></h2>
+          <span class="badge ok"><span class="dot"></span>Passes</span>
+        </div>
+        <div class="banner info" style="margin-bottom:12px">
+          <span class="ic">i</span>
+          <span><b>Simulated at block 27,184,300 via RPC just now</b>, as <code>executeTransaction(44, 46, calldata)</code> from lena.eth. That's the block this page is indexed at, so the diff matches what you see. Head is now 27,184,302. Execute runs the simulation again at head.</span>
+        </div>
+        <div class="tbl-wrap">
+          <table class="t">
+            <thead>
+              <tr><th>Account</th><th>Asset</th><th class="num">Before</th><th class="num">After</th><th class="num">Change</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Loreum DAO treasury<div class="mono faint">0x3F1c…A92e</div></td><td>USDC</td><td class="num">2,410,000</td><td class="num">2,290,000</td><td class="num minus">−120,000</td></tr>
+              <tr><td>Grants Safe<div class="mono faint">0x2c9F…d810</div></td><td>USDC</td><td class="num">84,500</td><td class="num">204,500</td><td class="num plus">+120,000</td></tr>
+              <tr><td>Loreum DAO treasury</td><td>ETH</td><td class="num">184.2</td><td class="num">184.2</td><td class="num same">0</td></tr>
+              <tr><td>Vault totalAssets</td><td>LORE</td><td class="num">7,712,450</td><td class="num">7,712,450</td><td class="num same">0</td></tr>
+              <tr><td>Board, quorum, session keys</td><td class="faint">·</td><td class="num faint">·</td><td class="num faint">·</td><td class="num same">unchanged</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="grid g2" style="margin-top:12px">
+          <div class="inset">
+            <div class="lbl">Events it emits</div>
+            <div class="diff" style="font-size:12px">
+              <span>USDC.Transfer(0x3F1c…A92e → 0x2c9F…d810, 120,000)</span>
+              <span>ExecuteTransaction(tokenId 44, nonce 46)</span>
+              <span>TransactionExecuted(46, 0x3c7B…aa15)</span>
+            </div>
+          </div>
+          <div class="inset">
+            <div class="lbl">Cost</div>
+            <p class="num" style="font-size:13px">≈ 78,400 gas · paid by you, not the treasury</p>
+            <p class="hint" style="margin-top:4px">From <span class="mono">eth_estimateGas</span> at the same block.</p>
+          </div>
+        </div>
+        <div class="row" style="margin-top:12px; justify-content:space-between">
+          <span class="src rpc"><i></i>RPC · on click only · 8 calls at block 27,184,300</span>
+          <button class="btn sm" type="button">Re-simulate at head</button>
+        </div>
+      </section>
+
+      <!-- Confirmations -->
+      <section class="card" aria-labelledby="conf-h">
+        <div class="card-h">
+          <h2 id="conf-h">Confirmations <span class="note">6</span></h2>
+          <span class="src"><i></i>from indexer · proposalVote</span>
+        </div>
+        <div class="inset" style="margin-bottom:6px">
+          <div class="between">
+            <div class="row" style="gap:10px">
+              <span class="pips" role="img" aria-label="3 of 3 confirmations"><i class="on"></i><i class="on"></i><i class="on"></i></span>
+              <span class="num"><b>3</b> live of <b>3</b> required</span>
+            </div>
+            <span class="hint">Required = max(3 at submit, 3 now). 4 if the 5 → 6 seat change executes first.</span>
+          </div>
+        </div>
+
+        <div class="conf">
+          <div class="auth vert-sm">
+            <div class="node seat"><span class="k">Seat</span><span class="v">Explorer #12 · rank 2</span></div>
+            <div class="node"><span class="k">Owner</span><span class="v" title="Safe 0x8b2d…11F0">kofi.eth · Safe 2-of-3</span></div>
+            <div class="node key"><span class="k">Session key</span><span class="v" title="Scope SUBMIT | REVOKE | CANCEL, expires Mar 28, 2027">0xA11c…04e5 · 0x31</span></div>
+          </div>
+          <div class="meta">Proposed, confirmed at submit<br><span class="mono">SUBMIT | REVOKE | CANCEL</span><br><span class="mono">Mar 13 10:41 · block 27,161,607</span></div>
+        </div>
+        <div class="conf">
+          <div class="auth vert-sm">
+            <div class="node seat"><span class="k">Seat</span><span class="v">Explorer #31 · rank 3</span></div>
+            <div class="node"><span class="k">Owner</span><span class="v" title="Policy Safe 0x9aB3…40d1">Treasury Agent · Safe</span></div>
+            <div class="node"><span class="k">Signed by</span><span class="v">policy account</span></div>
+          </div>
+          <div class="meta">Confirmed · grants mandate check passed<br><span class="mono">Mar 13 15:20 · block 27,163,002</span></div>
+        </div>
+        <div class="conf">
+          <div class="auth vert-sm">
+            <div class="node seat"><span class="k">Seat</span><span class="v">Explorer #44 · rank 4</span></div>
+            <div class="node"><span class="k">Owner</span><span class="v" title="EOA 0x3c7B…aa15">lena.eth (you) · EOA</span></div>
+            <div class="node"><span class="k">Signed by</span><span class="v">owner</span></div>
+          </div>
+          <div class="meta">Confirmed<br><span class="mono">Mar 14 09:30 · block 27,168,452</span></div>
+        </div>
+        <div class="conf missing">
+          <div class="auth compact">
+            <div class="node seat"><span class="k">Seat</span><span class="v">#7 · rank 1</span></div>
+            <div class="node"><span class="k">Owner</span><span class="v">aria.eth · EOA</span></div>
+          </div>
+          <div class="meta">Not confirmed</div>
+        </div>
+        <div class="conf missing">
+          <div class="auth compact">
+            <div class="node seat"><span class="k">Seat</span><span class="v">#58 · rank 5</span></div>
+            <div class="node"><span class="k">Owner</span><span class="v">marco.eth · EOA</span></div>
+          </div>
+          <div class="meta">Not confirmed</div>
+        </div>
+        <p class="hint" style="margin-top:8px">A confirmation counts only while its seat is in the top 5 and the NFT has the owner it had when it confirmed. kofi.eth's key has no CONFIRM scope, but submitting records the proposer's confirmation.</p>
+      </section>
+
+      <!-- Cancel votes + rationale -->
+      <div class="grid g2">
+        <section class="card" aria-labelledby="cv-h">
+          <div class="card-h"><h2 id="cv-h">Cancel votes</h2><span class="src"><i></i>indexer</span></div>
+          <div class="row" style="gap:10px; margin-bottom:8px">
+            <span class="pips" role="img" aria-label="0 of 3 cancel votes"><i></i><i></i><i></i></span>
+            <span class="num">0 of 3</span>
+          </div>
+          <p class="muted" style="font-size:13px">No director has voted to cancel. It's cancelled automatically when live cancel votes reach the current quorum (3).</p>
+        </section>
+        <section class="card" aria-labelledby="md-h">
+          <div class="card-h"><h2 id="md-h">Proposer's rationale <span class="note">7</span></h2><span class="src"><i></i>indexer · metadata</span></div>
+          <p class="quote">The board agreed the Q2 grants budget on the Mar 11 call. 9 grants of 5,000 to 20,000 USDC, paid out by the Grants Safe (3-of-5). Unspent funds return to the Chamber by Jul 15.</p>
+          <p class="hint" style="margin-top:8px">Written by the proposer and not verified. The decode above is what executes. <span class="mono">ipfs://bafkrei…q2grants</span></p>
+        </section>
+      </div>
+
+      <!-- High-risk comparison: #48 -->
+      <section class="card risk-panel" id="p48" aria-labelledby="up-h">
+        <div class="card-h">
+          <h2 id="up-h">How a high-risk upgrade differs: #48 <span class="note">8</span></h2>
+          <div class="row" style="gap:6px">
+            <span class="badge bad"><span class="dot"></span>High risk · self-call upgrade</span>
+            <span class="badge">1 of 3</span>
+          </div>
+        </div>
+
+        <div class="banner bad" style="margin-bottom:14px">
+          <span class="ic">!</span>
+          <span><b>This proposal calls this Chamber itself.</b> <code>upgradeImplementation</code> replaces the code behind the proxy. The new code would control the vault (7,712,450 LORE), the treasury (2,410,000 USDC, 184.2 ETH), the board and every session key. Review the implementation, not just the title.</span>
+        </div>
+
+        <div class="decode" style="margin-bottom:14px">
+          <div class="sum">Upgrade <b>Loreum DAO</b> from <b>v1.2.0</b> to <b>v1.2.1</b> at <span class="mono">0x5e7a…C21b</span>, no initializer call</div>
+          <dl>
+            <dt>target</dt><dd>0x3F1c…A92e · this Chamber (self-call)</dd>
+            <dt>function</dt><dd>upgradeImplementation(address,bytes) · 0xc89311b6</dd>
+            <dt>newImplementation</dt><dd>0x5e7a91C3D0F24B6E8A17c9d2B4f06E3a81D4C21b</dd>
+            <dt>data</dt><dd>0x (empty: no call after upgrade)</dd>
+            <dt>calldata</dt><dd>stored on-chain in full · getTransactionCalldata(48)</dd>
+            <dt>dataHash</dt><dd>0x017817bb…a398d6 · match</dd>
+          </dl>
+        </div>
+
+        <div class="lbl">New implementation checks</div>
+        <ul class="checks" style="margin-bottom:12px">
+          <li><span class="st pass" role="img" aria-label="Passed">✓</span><div><div>Verified source · Sourcify full match</div><div class="hint">Built from tag <span class="mono">chamber-v1.2.1</span>. The reproducible build hash matches.</div></div><span class="src"><i></i>indexer</span></li>
+          <li><span class="st pass" role="img" aria-label="Passed">✓</span><div><div>Storage layout compatible with v1.2.0</div><div class="hint">ERC-7201 namespaces unchanged, per the release CI layout report.</div></div><span class="src"><i></i>release</span></li>
+          <li><span class="st pass" role="img" aria-label="Passed">✓</span><div><div>Runtime 23,318 B, 1,258 B under EIP-170</div><div class="hint">Within the release target of at least 1,024 B headroom.</div></div><span class="src"><i></i>release</span></li>
+          <li><span class="st fail" role="img" aria-label="Failed">!</span><div><div>The v1.2.1 changes have not had an external review</div><div class="hint">Audit: [firm] · Jan 2027 · 0 open critical/high (placeholder). That covers v1.2.0 only. v1.2.1 changes 3 files in src/ (+41 −12 lines).</div></div><a class="hint" href="#">Source diff</a></li>
+          <li><span class="st wait" role="img" aria-label="Not checked yet">?</span><div><div>VERSION() returns "1.2.1" and ProxyAdmin stays owned by this Chamber</div><div class="hint">Simulate #48 runs <span class="mono">upgradeImplementation</span> as the Chamber at block 27,184,300, then reads <span class="mono">VERSION()</span> and <span class="mono">ProxyAdmin.owner()</span> in the same simulated block. It hasn't run yet.</div></div><span class="src rpc"><i></i>RPC on click</span></li>
+          <li><span class="st info" role="img" aria-label="Info">i</span><div><div>Factory default is still v1.2.0</div><div class="hint">New Chambers keep deploying v1.2.0 until the Team Safe timelock changes it. This upgrade affects only Loreum DAO.</div></div><span class="src"><i></i>indexer</span></li>
+        </ul>
+
+        <div class="tbl-wrap" style="margin-bottom:14px">
+          <table class="t cmp">
+            <thead><tr><th><span class="vh">Aspect</span></th><th>#46 treasury transfer</th><th>#48 self-call upgrade</th></tr></thead>
+            <tbody>
+              <tr><td class="muted">Target</td><td>USDC (external)</td><td>This Chamber</td></tr>
+              <tr><td class="muted">Calldata</td><td>Only the hash is on-chain; the indexer copy comes from the submit event</td><td>Stored on-chain in full, and indexed</td></tr>
+              <tr><td class="muted">Worst case</td><td>120,000 USDC goes to the wrong place</td><td>New code takes the vault, treasury and board</td></tr>
+              <tr><td class="muted">Simulation diff</td><td>Token balances</td><td>Implementation slot, VERSION, ProxyAdmin owner, board and vault spot checks</td></tr>
+              <tr><td class="muted">Before Confirm</td><td>Simulation optional</td><td>Simulation must pass, plus the review box below</td></tr>
+              <tr><td class="muted">Batch confirm</td><td>Allowed</td><td>Only through the batch review, which shows this panel</td></tr>
+              <tr><td class="muted">Deadline</td><td>30-day default</td><td>14 days, set by the proposer</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="inset deep">
+          <label class="ack"><input type="checkbox" id="ack48"> <span>I opened the <a href="#">bytecode diff v1.2.0 → v1.2.1</a> and read the v1.2.1 release notes.</span></label>
+          <div class="row" style="margin-top:12px; justify-content:space-between">
+            <span class="hint" id="why48">Confirm #48 unlocks after the upgrade simulation passes and you tick the box.</span>
+            <div class="row" style="gap:8px">
+              <button class="btn sm" type="button">Simulate #48</button>
+              <button class="btn primary sm" type="button" disabled aria-describedby="why48">Confirm #48</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Side column -->
+    <aside class="stack">
+      <section class="card accent" aria-labelledby="act-h">
+        <div class="card-h"><h2 id="act-h">Act on #46 <span class="note">9</span></h2></div>
+        <div class="lbl">You act as</div>
+        <div class="auth vert-sm" style="margin-bottom:14px">
+          <div class="node seat"><span class="k">Seat</span><span class="v">Explorer #44</span></div>
+          <div class="node"><span class="k">Owner</span><span class="v">lena.eth · EOA</span></div>
+          <div class="node"><span class="k">Signs as</span><span class="v">owner</span></div>
+        </div>
+
+        <ul class="checks" style="margin-bottom:12px">
+          <li><span class="st pass" role="img" aria-label="Passed">✓</span><div>Quorum met: 3 live of 3</div><span class="src"><i></i>indexer</span></li>
+          <li><span class="st pass" role="img" aria-label="Passed">✓</span><div>Not expired, not cancelled, not executed</div><span class="src"><i></i>indexer</span></li>
+          <li><span class="st pass" role="img" aria-label="Passed">✓</span><div>dataHash matches the calldata</div><span class="src"><i></i>indexer</span></li>
+          <li><span class="st pass" role="img" aria-label="Passed">✓</span><div>Simulation passes at 27,184,300</div><span class="src rpc"><i></i>RPC</span></li>
+          <li><span class="st pass" role="img" aria-label="Passed">✓</span><div>Chamber not paused · your seat is live (rank 4)</div><span class="src"><i></i>indexer</span></li>
+        </ul>
+
+        <button class="btn primary block" type="button">Execute #46</button>
+        <div class="row" style="margin-top:8px; gap:8px">
+          <button class="btn sm" type="button" disabled title="You confirmed #46 on Mar 14, 09:30 UTC" style="flex:1">Confirmed Mar 14</button>
+          <button class="btn ghost sm" type="button" style="flex:1">Revoke my confirmation</button>
+        </div>
+        <p class="hint" style="margin-top:6px">Revoking drops #46 to 2 of 3. You can confirm again any time before the deadline.</p>
+
+        <div class="divider"></div>
+        <div class="lbl">When you press Execute</div>
+        <ol class="flow">
+          <li><b>Preflight via RPC:</b> re-read the dataHash and re-simulate at head.</li>
+          <li><b>Wallet:</b> sign <span class="mono">executeTransaction(44, 46, calldata)</span>.</li>
+          <li><b>Receipt via RPC:</b> wait for 1 confirmation.</li>
+          <li><b>Indexer:</b> the queue updates once block ≥ the receipt block. No manual refresh.</li>
+        </ol>
+      </section>
+
+      <section class="card" aria-labelledby="dl-h">
+        <div class="card-h"><h2 id="dl-h">Deadline</h2><span class="src"><i></i>indexer head clock</span></div>
+        <div class="big">26 d 20 h 21 m</div>
+        <p class="hint" style="margin:2px 0 10px">Until Apr 12, 2027 10:41 UTC</p>
+        <div class="meter" aria-hidden="true"><span style="width:10.5%"></span></div>
+        <div class="between hint" style="margin-top:6px"><span>Submitted Mar 13</span><span>30-day max age</span></div>
+        <p class="hint" style="margin-top:10px">After the deadline, Confirm and Execute revert with <code>TransactionExpired</code>. Submit a new proposal to try again.</p>
+      </section>
+
+      <section class="card danger-zone" aria-labelledby="cx-h">
+        <div class="card-h"><h2 id="cx-h">Vote to cancel <span class="note">10</span></h2></div>
+        <p class="muted" style="font-size:13px; margin-bottom:12px">Your vote is recorded on-chain and <b style="color:var(--t1)">can't be withdrawn</b>. #46 is cancelled once 3 live directors have voted. A cancelled proposal can never execute. Funding the round would need a new proposal and a full quorum of new confirmations.</p>
+        <div class="confirm-box">
+          <div class="field">
+            <label for="cx">Type <span class="phrase">cancel #46</span> to enable the button</label>
+            <input id="cx" class="input mono" type="text" autocomplete="off" placeholder="cancel #46">
+          </div>
+          <button class="btn danger block" type="button" disabled style="margin-top:10px">Vote to cancel #46</button>
+          <p class="hint" style="margin-top:8px">Signs <span class="mono">cancelTransaction(44, 46)</span> after an RPC preflight.</p>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="det-h">
+        <div class="card-h"><h2 id="det-h">Details</h2><span class="src"><i></i>indexer</span></div>
+        <dl class="kv">
+          <dt>Nonce</dt><dd class="mono">46</dd>
+          <dt>Chamber</dt><dd>Loreum DAO · <span class="mono">0x3F1c…A92e</span></dd>
+          <dt>Proposer</dt><dd>#12 kofi.eth, via session key</dd>
+          <dt>Submitted</dt><dd>Mar 13, 2027 10:41 UTC · block <span class="num">27,161,607</span></dd>
+          <dt>Quorum at submit</dt><dd>3 of 5 seats</dd>
+          <dt>Required now</dt><dd>3 · 4 if the 5 → 6 seat change executes</dd>
+          <dt>Deadline</dt><dd>Apr 12, 2027 10:41 UTC</dd>
+          <dt>Metadata</dt><dd class="mono">ipfs://bafkrei…q2grants</dd>
+        </dl>
+      </section>
+
+      <section class="card" aria-labelledby="ev-h">
+        <div class="card-h"><h2 id="ev-h">Activity</h2><span class="src"><i></i>indexer</span></div>
+        <ul class="ev">
+          <li><span class="w">Mar 14 09:30</span><span>lena.eth confirmed (3 of 3). Ready to execute.</span></li>
+          <li><span class="w">Mar 13 15:20</span><span>Treasury Agent confirmed through its policy account (2 of 3).</span></li>
+          <li><span class="w">Mar 13 10:41</span><span>Deadline set to Apr 12, 10:41 UTC. Metadata attached.</span></li>
+          <li><span class="w">Mar 13 10:41</span><span>kofi.eth submitted with session key 0xA11c…04e5 (1 of 3).</span></li>
+        </ul>
+      </section>
+    </aside>
+  </div>
+
+  <section class="notes">
+    <h3>Design notes</h3>
+    <ol>
+      <li><b>Status in one sentence, lifecycle below it.</b> The step row uses the same states the queue uses. "Indexed" is its own step: after a write, the page waits for the indexer to pass the receipt block (<code>IndexerBehindError</code> retries) instead of reading the chain (<code>I-14</code>, <code>I-10</code>).</li>
+      <li><b>Timing risks come from other pages' state, shown where they bite.</b> "Ready" is true now, but two indexed, scheduled events change it: the 5 → 6 seat change (timelock ends Mar 18 09:30, 2 of 3 supporters; <code>SEAT_UPDATE_TIMELOCK</code> is 7 days) raises quorum to 1 + ⌊6 × 51 / 100⌋ = 4, and the Grants Safe hands over to Loreum Grants at 15:00 (#262 parallel run). The banner gives the exact time and the consequence, and links to the page where each decision is made. The recipient check repeats the handover because a reviewer may land on the decode first.</li>
+      <li><b>The decode is what executes.</b> It comes from the calldata the indexer stored from <code>SubmitTransaction</code>, run through the #260 decoder (<code>txDecoding.ts</code> <code>decodeTransactionAction</code>). Every row shows the raw value next to its human form: amount in base units and USDC, full addresses with labels the indexer can back up (a past recipient, a director, a Chamber-owned Safe). The checks below it catch the classic mismatches: title vs calldata, unknown recipient, self-call, and cross-chain targets (<code>P-30</code>).</li>
+      <li><b>The dataHash check is shown, not assumed.</b> For external targets only <code>keccak256(data)</code> is on-chain (<code>WalletLib</code>), and <code>executeTransaction</code> reverts <code>DataHashMismatch</code> when the supplied bytes differ. The page hashes the indexer copy in the browser and compares it to the indexed dataHash. Execute re-reads the dataHash via RPC as a transaction-time preflight. This settles the <code>M-16</code> risk about hash-only calldata without a <code>getLogs</code> display read.</li>
+      <li><b>Simulation is a labelled, transaction-time RPC read.</b> This extends #260 <code>TxSimulationPanel</code> in three ways: (a) it runs at the block the page is indexed at, so the balance diff agrees with the numbers on screen; (b) it shows the block and "via RPC"; (c) Execute re-runs it at head and shows both results if they differ. It never runs on page load (<code>I-21</code>).</li>
+      <li><b>Each confirmation shows its authority chain</b>, the signature element: seat → owner → signer (session key, policy account, Safe threshold or owner). Required confirmations are shown as <code>max(submit snapshot, live quorum)</code> (Chamber.sol <code>_requiredConfirmations</code>, audit finding M-04), with the pending seat change's effect next to it. Only live flags count: seat in the top set and the NFT owner unchanged since confirming (audit finding H-01, <code>confirmOwner</code>). The SUBMIT-includes-confirm behaviour is stated plainly (see the queue notes and <code>C-17</code>). Terminology follows <code>P-9</code>.</li>
+      <li><b>Rationale is marked as a claim.</b> Metadata can carry anything, including text written to mislead a reviewer or an AI director. It sits below the decode, is quoted, and is labelled unverified. The review calls for LLM drafting to write here, never into what gets signed.</li>
+      <li><b>The high-risk self-call pattern</b> (#48): a red banner says what the new code would control, in numbers. The decode shows <code>newImplementation</code> in full. Implementation checks come from the indexer (<code>I-7</code> <code>implementationSource</code>) and the release pipeline (<code>C-3</code>, <code>C-4</code> size gate). The audit line is an explicit placeholder and states that it covers v1.2.0 only. Confirm stays disabled until the simulation passes and the reviewer ticks the box. This is the per-Chamber quorum upgrade path that <code>C-18</code> rehearses for incident response.</li>
+      <li><b>Buttons say exactly what happens</b>, and the preflight checklist says where each check comes from (indexer or RPC). "When you press Execute" spells out the only four moments this page touches RPC: preflight, sign, receipt, then back to the indexer. Revoke is a plain ghost button because it can be undone.</li>
+      <li><b>Cancel uses the destructive pattern:</b> a ghost danger button behind a typed confirmation. <code>cancelTransaction</code> records a vote that can't be withdrawn (there is no revoke for cancel votes) and cancels automatically at quorum. The copy says both. The typed phrase includes the proposal number so a reviewer can't cancel the wrong one from a stale tab.</li>
+    </ol>
+  </section>
+</main>
+<footer class="foot">Mockup only. Addresses marked illustrative are placeholders. Loreum is the protocol; Chamber is the governance contract.</footer>
+</body>
+</html>

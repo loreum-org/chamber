@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cross-chain proposal #61 · Loreum app mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap">
+<link rel="stylesheet" href="assets/app.css">
+<style>
+  /* Page-only additions. Tokens come from assets/app.css. */
+  .grid > * { min-width: 0; } /* let single-column grids shrink below table width */
+  table.t .mono { white-space: nowrap; }
+  .fresh .short { display: none; }
+  .crumb { font-size: 12.5px; color: var(--t4); margin-bottom: 10px; }
+  .crumb a { color: var(--t3); }
+  .p-title { font-size: 20px; font-weight: 600; line-height: 1.3; }
+  .nest { border-left: 2px solid rgba(124, 92, 214, 0.45); margin-left: 10px; padding-left: 12px; }
+  .frame { background: var(--s2); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 10px 12px; margin-top: 10px; }
+  .frame.leaf { background: var(--a950); border-color: rgba(124, 92, 214, 0.4); }
+  .frame .fh { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 6px; }
+  .frame .hop { font-family: var(--mono); font-size: 10.5px; color: var(--t4); text-transform: uppercase; letter-spacing: 0.06em; }
+  .frame .call { font-family: var(--mono); font-size: 12.5px; color: var(--t1); overflow-wrap: anywhere; }
+  .frame .args { margin: 6px 0 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 3px 12px; font-family: var(--mono); font-size: 12px; }
+  .frame .args dt { color: var(--t4); }
+  .frame .args dd { margin: 0; color: var(--t2); overflow-wrap: anywhere; }
+  .frame .chk { margin-top: 6px; font-size: 12px; color: var(--ok); }
+  .frame .chk.warn { color: var(--warn); }
+  .chain-cell { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .chain-cell i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; background: var(--eth); }
+  .chain-cell.base i { background: var(--base); }
+  .xstates { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .xstates .badge { font-weight: 400; }
+  .timing td:first-child { white-space: nowrap; }
+  .who { display: flex; flex-direction: column; gap: 8px; }
+  details.rawd summary { cursor: pointer; font-size: 12px; color: var(--t4); margin-top: 12px; }
+  details.rawd summary:hover { color: var(--t2); }
+  .pips i { width: 22px; }
+  .conf { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  @media (max-width: 600px) {
+    .top-right .chain, .top-right .wallet { display: none; }
+    .fresh .long { display: none; }
+    .fresh .short { display: inline; }
+    .nest { margin-left: 4px; padding-left: 8px; }
+    .frame .args { grid-template-columns: 1fr; gap: 0 0; }
+    .frame .args dd { margin-bottom: 4px; }
+  }
+</style>
+</head>
+<body>
+<div class="mock-bar">
+  <span><b>MOCKUP</b> · Loreum app · Phase 2 preview · Cross-chain proposal #61 · state as of Sep 21, 2027 11:00 UTC</span>
+  <span><a href="index.html">All mockups</a> · <a href="_mock-data.md">Mock data</a></span>
+</div>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="row" style="gap:18px">
+      <a class="brand" href="index.html"><span class="brand-mark">L</span><span>Loreum</span></a>
+      <nav class="nav" aria-label="Main">
+        <a href="app-overview.html" class="on">My Chambers</a>
+        <a href="app-session-keys.html">Operators</a>
+        <a href="#">Deploy Chamber</a>
+        <a href="#">Compliance</a>
+        <a href="app-migrate.html">Migrate from Safe</a>
+        <a href="#">Docs</a>
+      </nav>
+    </div>
+    <div class="top-right">
+      <span class="chain"><i></i>Ethereum</span>
+      <span class="fresh" title="Per-chain indexer heads from chamber-indexer. Ethereum #28,544,100 (24 s), Base #63,412,871 (19 s). Display data on this page makes no RPC calls."><i></i><span class="long">ETH 24 s · Base 19 s</span><span class="short">2 chains · ≤24 s</span></span>
+      <span class="wallet"><span class="avatar"></span>lena.eth</span>
+    </div>
+  </div>
+</header>
+
+<main class="page">
+  <div class="gated-ribbon">
+    <b>Phase 2 preview</b>
+    <span>Gated on the Phase 2 go/no-go (P-7). Cross-chain actions always start as a quorum proposal on Ethereum; nothing on a spoke can act on its own.</span>
+  </div>
+
+  <div class="ch-head">
+    <div class="ch-title">
+      <div class="ch-icon">LD</div>
+      <div>
+        <h1>Loreum DAO</h1>
+        <div class="ch-meta">
+          <span class="chain"><i></i>Ethereum</span>
+          <span class="badge acc">v1.2.0</span>
+          <span class="badge">5 seats · quorum 3</span>
+          <span class="badge info">Home chain · 2 spokes</span>
+          <span class="mono faint">0x3F1c…A92e</span>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <a class="btn" href="app-queue.html">Open queue</a>
+      <a class="btn primary" href="app-proposal.html">New proposal</a>
+    </div>
+  </div>
+
+  <nav class="tabs" aria-label="Chamber">
+    <a href="app-overview.html">Overview</a>
+    <a href="app-board.html">Board &amp; delegation</a>
+    <a href="app-queue.html" class="on">Queue <span class="badge warn">2</span></a>
+    <a href="p2-multichain-treasury.html">Treasury</a>
+    <a href="app-supply-authority.html">Supply authority</a>
+    <a href="app-session-keys.html">Session keys</a>
+    <a href="p2-multichain-treasury.html#spokes">Spokes <span class="badge warn">Preview</span></a>
+  </nav>
+
+  <div class="crumb"><a href="app-queue.html">Queue</a> / Proposal #61</div>
+
+  <div class="card accent">
+    <div class="stack-sm" style="min-width:0">
+      <div class="row" style="gap:8px">
+        <span class="badge">#61</span>
+        <span class="badge info">Cross-chain</span>
+        <span class="chain base"><i></i>Executes on Base</span>
+        <span class="badge ok"><span class="dot"></span>Ready to execute on Base</span>
+      </div>
+      <p class="p-title">On Base: transfer 50,000 USDC to Base Grants Safe <span class="mono" style="font-size:14px;font-weight:400;color:var(--t3)">0xB6a2…1f04</span></p>
+      <p class="muted" style="font-size:13px">Approved on Ethereum, delivered to Base, and past its 72 h delay since Sep 21 09:16 UTC (1 h 44 m ago). Anyone can execute it now. It expires Sep 28 09:16 UTC.</p>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="grid g2">
+      <div class="who">
+        <span class="upper">Proposed by <span class="note">1</span></span>
+        <div class="auth compact">
+          <div class="node seat"><span class="k">Seat</span><span class="v">Explorer #7 · rank 1</span></div>
+          <div class="node"><span class="k">Owner</span><span class="v">aria.eth · EOA</span></div>
+          <div class="node key"><span class="k">Signed by</span><span class="v">Owner, no session key</span></div>
+        </div>
+        <span class="hint num">Sep 17, 11:47 UTC · deadline on Ethereum Sep 24, 11:47 UTC</span>
+        <span class="upper" style="margin-top:10px">Sent from Ethereum by</span>
+        <div class="auth compact">
+          <div class="node seat"><span class="k">Seat</span><span class="v">Explorer #58 · rank 5</span></div>
+          <div class="node"><span class="k">Owner</span><span class="v">marco.eth · EOA</span></div>
+          <div class="node key"><span class="k">Signed by</span><span class="v">Owner, no session key</span></div>
+        </div>
+        <span class="hint num">Sep 18, 09:14 UTC · executeTransaction on the home Chamber</span>
+      </div>
+      <div class="who">
+        <div class="between">
+          <span class="upper">Confirmed by · 3 of 3</span>
+          <span class="pips" role="img" aria-label="3 of 3 confirmations"><i class="on"></i><i class="on"></i><i class="on"></i></span>
+        </div>
+        <div class="conf">
+          <div class="auth compact">
+            <div class="node seat"><span class="k">Seat</span><span class="v">Explorer #7</span></div>
+            <div class="node"><span class="k">Owner</span><span class="v">aria.eth · EOA</span></div>
+            <div class="node key"><span class="k">Signed by</span><span class="v">Owner, at submit</span></div>
+          </div>
+          <span class="faint num">Sep 17 11:47</span>
+        </div>
+        <div class="conf">
+          <div class="auth compact">
+            <div class="node seat"><span class="k">Seat</span><span class="v">Explorer #44 (you)</span></div>
+            <div class="node"><span class="k">Owner</span><span class="v">lena.eth · EOA</span></div>
+            <div class="node key"><span class="k">Signed by</span><span class="v">Owner</span></div>
+          </div>
+          <span class="faint num">Sep 18 08:40</span>
+        </div>
+        <div class="conf">
+          <div class="auth compact">
+            <div class="node seat"><span class="k">Seat</span><span class="v">Explorer #58</span></div>
+            <div class="node"><span class="k">Owner</span><span class="v">marco.eth · EOA</span></div>
+            <div class="node key"><span class="k">Signed by</span><span class="v">Owner</span></div>
+          </div>
+          <span class="faint num">Sep 18 09:12</span>
+        </div>
+        <span class="hint">Quorum 3, snapshotted at submit. Execute on Ethereum needed the higher of that and the live quorum.</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <div class="card-h">
+      <h2>Lifecycle <span class="note">2</span></h2>
+      <span class="badge"><span class="dot" style="color:var(--ok)"></span>From indexer · key 1 : 0x3F1c…A92e : 61</span>
+    </div>
+    <ol class="steps">
+      <li class="done">Proposed<span class="when">Sep 17 11:47</span></li>
+      <li class="done">Approved<span class="when">Sep 18 09:12 · 3/3</span></li>
+      <li class="done">Sent (Ethereum)<span class="when">Sep 18 09:14</span></li>
+      <li class="done">Delivered (Base)<span class="when">Sep 18 09:16</span></li>
+      <li class="done">Queued<span class="when">Sep 18 09:16 · eta Sep 21 09:16</span></li>
+      <li class="now">Executed<span class="when">waiting · eta passed 1 h 44 m ago</span></li>
+    </ol>
+    <div class="xstates" aria-label="Exception states">
+      <span class="upper" style="align-self:center">Can also end as</span>
+      <span class="badge">Expired · not executed by Sep 28 09:16</span>
+      <span class="badge">Cancelled · guardian skipped it</span>
+      <span class="badge">Rejected · receiver check failed</span>
+      <span class="badge">Delivery failed · replayable on Base</span>
+    </div>
+  </div>
+
+  <div class="grid main-side" style="margin-top:16px">
+    <div class="stack">
+      <div class="card">
+        <div class="card-h">
+          <h2>What this does <span class="note">3</span></h2>
+          <span class="badge">Decoded from calldata</span>
+        </div>
+        <div class="decode">
+          <div class="sum">On <b>Base</b>, the spoke Safe <span class="mono">0xBa5e…77a1</span> sends <b class="num">50,000 USDC</b> to Base Grants Safe <span class="mono">0xB6a2…1f04</span>.</div>
+        </div>
+        <div class="banner warn" style="margin-top:10px">
+          <span class="ic">!</span>
+          <div><b>This call acts as this Chamber on Base.</b> The home transaction calls the OP Stack messenger, so Base sees Loreum DAO Chamber as the sender. The title above is proposal metadata and isn't trusted; everything below is rendered from the bytes.</div>
+        </div>
+
+        <div class="frame">
+          <div class="fh"><span class="hop">Hop 1</span><span class="chain-cell"><i></i>Ethereum</span><span class="badge">Chamber tx #61</span></div>
+          <div class="call">L1CrossDomainMessenger (Base) <span class="faint">0x866E…0Afa</span>.sendMessage(…)</div>
+          <dl class="args">
+            <dt>_target</dt><dd>Base spoke receiver 0xB5e1…0c33</dd>
+            <dt>_message</dt><dd>receiveMessage(…) · 836 bytes, see hop 2</dd>
+            <dt>_minGasLimit</dt><dd class="num">300,000</dd>
+            <dt>value</dt><dd>0 ETH</dd>
+          </dl>
+          <div class="chk">Hash-bound: the calldata hash was fixed at submit; execute supplied the matching bytes.</div>
+
+          <div class="nest">
+            <div class="frame">
+              <div class="fh"><span class="hop">Hop 2</span><span class="chain-cell base"><i></i>Base</span><span class="badge">Delivered by the protocol</span></div>
+              <div class="call">L2CrossDomainMessenger <span class="faint">0x4200…0007</span> → receiver <span class="faint">0xB5e1…0c33</span>.receiveMessage(SpokeMessage)</div>
+              <dl class="args">
+                <dt>homeChainId</dt><dd>1</dd>
+                <dt>homeChamber</dt><dd>0x3F1c…A92e (Loreum DAO)</dd>
+                <dt>homeNonce</dt><dd>61</dd>
+                <dt>dstChainId</dt><dd>8453</dd>
+                <dt>spokeSafe</dt><dd>0xBa5e…77a1</dd>
+                <dt>validUntil</dt><dd>Sep 24, 2027 11:47 UTC (home deadline)</dd>
+                <dt>messageId</dt><dd>0x9f2c…e41a = keccak256(domain, 1, chamber, 61, 8453, receiver, payloadHash)</dd>
+              </dl>
+              <div class="chk">Checked: sender is the messenger · xDomainMessageSender is the home Chamber · nonce 61 unused · delivered before validUntil.</div>
+
+              <div class="nest">
+                <div class="frame">
+                  <div class="fh"><span class="hop">Hop 3</span><span class="chain-cell base"><i></i>Base</span><span class="badge">Queued</span></div>
+                  <div class="call">receiver → Zodiac Delay.execTransactionFromModule(to, value, data, operation)</div>
+                  <dl class="args">
+                    <dt>to</dt><dd>USDC 0x8335…2913</dd>
+                    <dt>value</dt><dd>0</dd>
+                    <dt>operation</dt><dd>0 (CALL)</dd>
+                    <dt>Delay nonce</dt><dd>1 · eta Sep 21 09:16 · expires Sep 28 09:16</dd>
+                  </dl>
+
+                  <div class="nest">
+                    <div class="frame">
+                      <div class="fh"><span class="hop">Hop 4</span><span class="chain-cell base"><i></i>Base</span><span class="badge">On execute</span></div>
+                      <div class="call">Delay.executeNextTx → Roles v2.execTransactionFromModule → Safe <span class="faint">0xBa5e…77a1</span>.execTransactionFromModule</div>
+                      <div class="chk">Roles pair 1 applies: USDC.transfer, recipient is a registered payee, amount within the weekly allowance. Module path: no Safe signatures.</div>
+
+                      <div class="nest">
+                        <div class="frame leaf">
+                          <div class="fh"><span class="hop">Hop 5</span><span class="chain-cell base"><i></i>Base</span><span class="badge acc">Effect</span></div>
+                          <div class="call">USDC <span class="faint">0x8335…2913</span>.transfer(address,uint256)</div>
+                          <dl class="args">
+                            <dt>to</dt><dd>Base Grants Safe 0xB6a2…1f04</dd>
+                            <dt>amount</dt><dd class="num">50,000.000000 USDC (50000000000 base units, 6 decimals)</dd>
+                          </dl>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <details class="rawd">
+          <summary>Raw calldata for hop 1 · selector 0x3dbb202b · 996 bytes</summary>
+          <div class="raw" style="margin-top:8px">0x3dbb202b000000000000000000000000b5e1…0c330000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000493e0…a9059cbb000000000000000000000000b6a2…1f04000000000000000000000000000000000000000000000000000000000ba43b7400…</div>
+          <p class="hint" style="margin-top:6px">Commitment hash 0x5e0b…c7d2, stored on Ethereum at submit.</p>
+        </details>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <h2>How long this takes <span class="note">4</span></h2>
+          <span class="muted" style="font-size:12.5px">Real times for #61</span>
+        </div>
+        <div class="tbl-wrap">
+          <table class="t timing">
+            <thead><tr><th>Step</th><th>Typical</th><th>#61</th></tr></thead>
+            <tbody>
+              <tr><td>Board approval</td><td>Depends on directors</td><td class="num">21 h 25 m</td></tr>
+              <tr><td>Execute on Ethereum</td><td>Any director, after quorum</td><td class="num">2 m</td></tr>
+              <tr><td>Delivery to Base</td><td class="num">~1–3 min</td><td class="num">2 m</td></tr>
+              <tr><td>Spoke delay</td><td class="num">72 h, fixed</td><td class="num">72 h</td></tr>
+              <tr><td>Execute on Base</td><td>Anyone, after eta</td><td class="muted">Waiting</td></tr>
+            </tbody>
+            <tfoot>
+              <tr><td>So far</td><td></td><td class="num">3 d 23 h 13 m</td></tr>
+            </tfoot>
+          </table>
+        </div>
+        <p class="hint" style="margin-top:10px">A governed action on a spoke takes approval time, plus a few minutes of delivery, plus the 72 h delay. To move funds between chains quickly, use a bridge template: after approval a relayer fills it with its own funds.</p>
+      </div>
+    </div>
+
+    <div class="stack">
+      <div class="card raised">
+        <div class="card-h">
+          <h2>Execute on Base <span class="note">5</span></h2>
+          <span class="badge ok">Preflight passed</span>
+        </div>
+        <p class="mono" style="font-size:12px;color:var(--info)">Simulated at Base block 63,412,880 via RPC just now · 11:00:04 UTC · executeNextTx from your wallet</p>
+        <ul class="checks" style="margin-top:6px">
+          <li><span class="st pass">✓</span><div>eta passed<div class="hint">Sep 21 09:16 UTC</div></div><span></span></li>
+          <li><span class="st pass">✓</span><div>Head of the Delay queue<div class="hint">Delay nonce 1 is next; nonce 0 (#58 drill) was cancelled Sep 10</div></div><span></span></li>
+          <li><span class="st pass">✓</span><div>Matches home proposal #61<div class="hint">Queued hash equals the approved calldata hash</div></div><span></span></li>
+          <li><span class="st pass">✓</span><div>Roles allows the call<div class="hint">eth_call from Delay into Roles.execTransactionFromModule</div></div><span></span></li>
+          <li><span class="st pass">✓</span><div>Within allowance<div class="hint num">50,000 of 250,000 USDC this week</div></div><span></span></li>
+        </ul>
+        <div class="diff" style="margin-top:12px">
+          <span class="minus">− Spoke Safe USDC   310,000 → 260,000</span>
+          <span class="plus">+ Base Grants Safe USDC   0 → 50,000</span>
+          <span class="minus">− USDC allowance left   250,000 → 200,000</span>
+        </div>
+        <div class="divider"></div>
+        <span class="upper">You execute as</span>
+        <div class="auth compact" style="margin-top:6px">
+          <div class="node seat"><span class="k">Seat</span><span class="v">Explorer #44</span></div>
+          <div class="node"><span class="k">Owner</span><span class="v">lena.eth · EOA</span></div>
+          <div class="node key"><span class="k">Authority</span><span class="v">None needed</span></div>
+        </div>
+        <p class="hint" style="margin-top:8px">executeNextTx is open to anyone once eta passes; Delay checks the time and Roles checks the call. Your wallet switches to Base for this one write, and you pay Base gas.</p>
+        <button class="btn primary" type="button" style="width:100%;margin-top:12px">Execute #61 on Base</button>
+        <div class="row" style="margin-top:8px">
+          <button class="btn sm" type="button">Re-run preflight</button>
+          <span class="hint">Execute re-runs it right before your wallet opens.</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <h2>Guardian cancel window <span class="note">6</span></h2>
+          <span class="badge warn">Racing execution</span>
+        </div>
+        <dl class="kv">
+          <dt>Guaranteed</dt><dd class="num">Sep 18 09:16 → Sep 21 09:16 (72 h)</dd>
+          <dt>Now</dt><dd>Still possible until someone executes #61 or it expires Sep 28 09:16. Anyone can execute first.</dd>
+          <dt>Guardian</dt><dd>Loreum Guardian Safe, 3-of-5 (Base deployment)</dd>
+          <dt>Cancel call</dt><dd class="mono">Delay.setTxNonce(2) via the guardian's Roles role</dd>
+          <dt>Also skips</dt><dd>Every unexecuted entry below nonce 2. On Base today that's only #61.</dd>
+        </dl>
+        <div class="banner info" style="margin-top:12px">
+          <span class="ic">i</span>
+          <div>Directors can't cancel #61 any more: it executed on Ethereum on Sep 18 at 09:14. Only the guardian can stop it now.</div>
+        </div>
+        <div class="confirm-box" style="margin-top:12px">
+          <p style="font-size:13px">To prepare a cancel for the guardian signers, type <span class="phrase">cancel base 61</span></p>
+          <label class="hint" for="gc" style="display:block;margin-top:8px">Confirmation phrase</label>
+          <input class="input mono" id="gc" type="text" placeholder="cancel base 61" autocomplete="off" style="margin-top:4px">
+          <button class="btn danger" type="button" disabled style="margin-top:10px">Export guardian cancel for #61 (Safe JSON)</button>
+          <p class="hint" style="margin-top:8px">This exports a transaction for the Guardian Safe to sign. Nothing is cancelled until 3 of its 5 signers sign it.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><h2>Delivery and watch <span class="note">7</span></h2></div>
+        <dl class="kv">
+          <dt>Ethereum tx</dt><dd class="mono">0x7a3c…19e2 · block 28,521,970</dd>
+          <dt>Base tx</dt><dd class="mono">0xc41e…8b03 · block 63,280,160</dd>
+          <dt>Relayed by</dt><dd>The OP Stack itself (an L1 deposit). No relayer was needed.</dd>
+          <dt>Watcher</dt><dd><span class="badge ok">No alerts</span> Queued entry matches home proposal #61.</dd>
+        </dl>
+        <p class="hint" style="margin-top:10px">Relayers only provide liveness. Loreum's reference relayer replays failed messages and can call executeNextTx after eta, but it holds no role in Roles or the Safe. If it stops, any wallet can do both. Auto-execute is off for this spoke during the guarded launch.</p>
+      </div>
+    </div>
+  </div>
+
+  <section class="notes">
+    <h3>Design notes</h3>
+    <ol>
+      <li><b>Authority chain on every actor.</b> The proposer, each confirmer, the director who sent it from Ethereum and the Base executor each show the signature element. All four are EOA owners, which can't set session keys, so the third node says "Owner" rather than disappearing. Submitting counts as the proposer's confirmation (WalletLib), which is why aria.eth appears in both places. Quorum is snapshotted at submit, and execute needs the higher of that and the live quorum (Chamber.sol M-04).</li>
+      <li><b>One lifecycle, from the indexer.</b> The six states (Proposed → Approved → Sent → Delivered → Queued → Executed) and the four exception states come from one table keyed by home chain, Chamber and wallet nonce (I-27, P-24). Delivered and Queued happen in the same Base transaction but are shown separately, because they fail differently. The app makes no Base RPC calls to draw this.</li>
+      <li><b>Nested decode from bytes, never from prose.</b> The tree follows the path messenger → receiver → Delay → Roles → Safe → USDC.transfer (P-14 chain-aware decoder, P-25 recursive decoder through receiveMessage). USDC amounts use 6 decimals from the token list; the current decoder hardcodes 18 (P-14 review note). The warning banner is the P-30 messenger-target flag. The messageId binds source chain, Chamber, nonce, destination and payload, per the review's replay fix.</li>
+      <li><b>Honest timing.</b> This replaces the v1.0 "15–30 s" promise with each real step and its actual duration: approval, about 2 minutes of delivery, and the 72 h delay. It points to bridge templates for speed, where solver capital, not message speed, makes the move fast.</li>
+      <li><b>Preflight is the only RPC on this page.</b> It runs only when the director asks (the preflight button, or Execute, which re-runs it right before the wallet opens), never on page load: an eth_call on Base from Delay into Roles for the inner call, plus queue-head and allowance checks (P-25 preflight, P-15, P-29 on-demand Base client). The panel shows the block and says it used RPC. The Execute button needs a write-only Base wallet client, because production wagmi has only mainnet and Sepolia (P-17/P-25 review notes).</li>
+      <li><b>Guardian window, stated precisely.</b> The 72 h cooldown is the guaranteed window. After eta the guardian can still cancel, but it races any executor. setTxNonce skips every lower entry (phase 2 open question 5), so the card lists what else would be skipped. The guarded-launch drill #58 (P-27) exercised this exact path on Sep 10, which is why #61 sits at Delay nonce 1. Exporting the cancel is destructive in intent, so it uses the ghost danger button and a typed phrase, like the M-16 guardian cancel export.</li>
+      <li><b>Relayers are liveness only.</b> This follows the P-8 naming: the relayer isn't an "operator" and holds no authority (P-26 asserts that its key has no Roles or Safe role). Auto-execute is off during the guarded launch (P-27), so a director executes by hand, which is why #61 is still waiting after eta.</li>
+    </ol>
+  </section>
+</main>
+<footer class="foot">Mockup only. Addresses marked illustrative in the mock data are placeholders; token and messenger addresses are shortened public mainnet contracts. Loreum is the protocol; Chamber is the governance contract.</footer>
+</body>
+</html>

@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phase 2 gate · Loreum internal mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap">
+<link rel="stylesheet" href="assets/app.css">
+<style>
+  b, strong { font-weight: 600; }
+  .src { font-family: var(--mono); font-size: 11px; color: var(--t4); }
+  .cell-sub { display: block; font-size: 12px; color: var(--t4); margin-top: 3px; }
+  .int-icon { background: var(--s3); border-color: var(--line-strong); color: var(--warn); font-family: var(--mono); font-size: 13px; }
+  .verdict { display: flex; gap: 18px; align-items: flex-start; flex-wrap: wrap; }
+  .verdict .big { font-size: 40px; font-weight: 300; line-height: 1; color: var(--ok); letter-spacing: 0.02em; }
+  .crit td { vertical-align: top; }
+  .spark { display: flex; align-items: flex-end; gap: 2px; height: 30px; }
+  .spark span { width: 10px; border-radius: 4px 4px 0 0; background: var(--a500); display: block; }
+  .spark span.zero { height: 3px; background: var(--bad); border-radius: 2px; }
+  .spark span.h1 { height: 10px; }
+  .spark span.h2 { height: 20px; }
+  .spark span.h3 { height: 30px; }
+  .spark-axis { display: flex; gap: 2px; font: 400 9.5px/1 var(--mono); color: var(--t4); margin-top: 3px; }
+  .spark-axis span { width: 10px; text-align: center; }
+  .bars { display: flex; flex-direction: column; gap: 8px; }
+  .bar-row { display: grid; grid-template-columns: 170px minmax(0, 1fr) 28px; gap: 10px; align-items: center; font-size: 13px; }
+  @media (max-width: 480px) { .bar-row { grid-template-columns: 1fr 28px; } .bar-row .meter { grid-column: 1 / -1; grid-row: 2; } }
+  .ph { color: var(--t3); font-family: var(--mono); font-size: 12.5px; }
+  .tag-ok { color: var(--ok); }
+  .tag-bad { color: var(--bad); }
+  /* Page-level fixes: let grid columns shrink around wide tables; keep the shared top bar inside 400px */
+  .main-side > * { min-width: 0; }
+  @media (max-width: 560px) {
+    .top-right .chain { display: none; }
+    .top-right .wallet { font-size: 0; gap: 0; padding: 6px; }
+    .top-inner { gap: 10px; }
+  }
+</style>
+</head>
+<body>
+<div class="mock-bar">
+  <span><b>MOCKUP</b> · Loreum internal · Phase 2 gate dashboard · snapshot as of Mon Apr 26, 2027 09:00 UTC</span>
+  <span><a href="index.html">All mockups</a> · <a href="_mock-data.md">Mock data</a></span>
+</div>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="row" style="gap:18px">
+      <a class="brand" href="index.html"><span class="brand-mark">L</span><span>Loreum</span></a>
+      <nav class="nav" aria-label="Main">
+        <a href="app-overview.html">My Chambers</a>
+        <a href="app-session-keys.html">Operators</a>
+        <a href="#">Deploy Chamber</a>
+        <a href="#">Compliance</a>
+        <a href="app-migrate.html">Migrate from Safe</a>
+        <a href="#">Docs</a>
+      </nav>
+    </div>
+    <div class="top-right">
+      <span class="chain"><i></i>Ethereum</span>
+      <span class="fresh" title="Every number on this page comes from one chamber-indexer snapshot plus committed interview aggregates"><i></i>Snapshot · #27,477,912</span>
+      <span class="wallet" title="This page never signs anything"><span class="avatar"></span>Not connected</span>
+    </div>
+  </div>
+</header>
+
+<main class="page">
+  <div class="ch-head">
+    <div class="ch-title">
+      <div class="ch-icon int-icon">P2</div>
+      <div>
+        <div class="row" style="gap:8px;margin-bottom:4px"><span class="badge warn">Internal</span><span class="faint" style="font-size:12px">Team only. Not linked from the public app.</span></div>
+        <h1>Phase 2 gate review <span class="note">1</span></h1>
+        <div class="ch-meta">
+          <span class="badge">Snapshot 2027-W17</span>
+          <span class="badge">Window W09–W16 · Mar 1 – Apr 25, 2027</span>
+          <span class="badge ok">0 eth_* calls</span>
+          <span class="mono faint">product/metrics/snapshots/2027-W17.json</span>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <a class="btn ghost" href="#sources">How this was computed</a>
+      <a class="btn" href="#">Download snapshot JSON</a>
+      <a class="btn primary" href="#">Draft decision record</a>
+    </div>
+  </div>
+
+  <!-- Recommendation -->
+  <section class="card accent" aria-labelledby="rec-h" style="margin-bottom:16px">
+    <div class="verdict">
+      <div>
+        <div class="upper" style="margin-bottom:6px">Recommendation</div>
+        <div class="big">GO</div>
+      </div>
+      <div class="stack-sm" style="flex:1 1 360px;min-width:0">
+        <h2 id="rec-h">All 5 criteria pass. Start the gated Phase 2 build. <span class="note">2</span></h2>
+        <p class="muted" style="font-size:13px">GO moves <code>P-22</code> to <code>P-27</code> to ready: spoke receivers on Base and Arbitrum built from existing Safe and Zodiac modules, native messaging only, the spoke lifecycle in the indexer, the reference relayer and watcher, and a guarded launch with low caps where the LORE Chamber governs a Base spoke. Chamber.sol stays unchanged. Every spoke action still starts as a quorum proposal on Ethereum.</p>
+        <div class="row" style="margin-top:4px">
+          <span class="badge">Decision owner: Chad</span>
+          <span class="badge">Record: docs/decisions/phase2-gate-2027-04-26.md</span>
+          <span class="badge">Last date the gate can pass: May 21, 2027 · 25 days left</span>
+        </div>
+      </div>
+    </div>
+    <div class="banner warn" style="margin-top:14px">
+      <span class="ic">!</span>
+      <div><b>No margin on criterion 1.</b> Exactly 3 orgs qualify, and 3 are required. If any of them had missed a single week, the answer would be NO-GO. Harbor and Meridian each had 6 weeks with exactly one qualifying proposal. Re-run the snapshot the morning of the review.</div>
+    </div>
+  </section>
+
+  <div class="grid g4" style="margin-bottom:16px">
+    <div class="stat"><div class="upper">Orgs meeting all criteria</div><div class="v num">3 <small>of 3 needed</small></div><div class="s">4 external orgs on mainnet</div></div>
+    <div class="stat"><div class="upper">Interviews logged</div><div class="v num">12</div><div class="s">7 on 2+ chains · 5 asked unprompted</div></div>
+    <div class="stat"><div class="upper">Open critical/high</div><div class="v num">0</div><div class="s">Audit closed (placeholder firm)</div></div>
+    <div class="stat"><div class="upper">Bug bounty</div><div class="v num">87 <small>days live</small></div><div class="s">since Jan 29, 2027</div></div>
+  </div>
+
+  <!-- Criteria -->
+  <section class="card" aria-labelledby="crit-h" style="margin-bottom:16px">
+    <div class="card-h"><h2 id="crit-h">Criteria and evidence <span class="note">3</span></h2><span class="src">definitions: product/metrics/phase2-gate.md (P-4)</span></div>
+    <div class="tbl-wrap">
+      <table class="t crit">
+        <thead><tr><th>#</th><th>Criterion</th><th>Threshold</th><th>Actual</th><th>Evidence</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="num">1</td>
+            <td>External orgs running weekly on mainnet</td>
+            <td>≥ 3 orgs with ≥ 1 non-trivial executed proposal every week for 8 weeks</td>
+            <td class="num">3 of 4</td>
+            <td><span class="mono">proposal.executedAt</span>, <span class="mono">target</span>, <span class="mono">value</span><span class="cell-sub">indexer · P-5 columns</span></td>
+            <td><span class="badge ok"><span class="dot"></span>Pass</span></td>
+          </tr>
+          <tr>
+            <td class="num">2</td>
+            <td>Independent seated directors</td>
+            <td>≥ 3 per qualifying org, after dedupe and team exclusion</td>
+            <td class="num">6 · 5 · 4</td>
+            <td><span class="mono">boardSeat</span>, <span class="mono">proposal_vote.ownerAtVote</span><span class="cell-sub">indexer · team-addresses.json</span></td>
+            <td><span class="badge ok"><span class="dot"></span>Pass</span></td>
+          </tr>
+          <tr>
+            <td class="num">3</td>
+            <td>Multichain demand from buyers</td>
+            <td>≥ 3 with assets or admin roles on 2+ chains who asked for it</td>
+            <td class="num">5</td>
+            <td><span class="mono">manual.json → interviews.bothCriteria</span><span class="cell-sub">anonymized aggregates · P-2</span></td>
+            <td><span class="badge ok"><span class="dot"></span>Pass</span></td>
+          </tr>
+          <tr>
+            <td class="num">4</td>
+            <td>External audit closed</td>
+            <td>0 open critical or high findings</td>
+            <td class="num">0</td>
+            <td><span class="ph">Audit: [firm] · Jan 2027 · 0 open critical/high (placeholder)</span></td>
+            <td><span class="badge ok"><span class="dot"></span>Pass</span></td>
+          </tr>
+          <tr>
+            <td class="num">5</td>
+            <td>Bug bounty live</td>
+            <td>Live on the mainnet addresses</td>
+            <td>Since Jan 29</td>
+            <td><span class="ph">Bounty: [platform] · scope = verified mainnet addresses (placeholder)</span></td>
+            <td><span class="badge ok"><span class="dot"></span>Pass</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Orgs -->
+  <section class="card" aria-labelledby="orgs-h" style="margin-bottom:16px">
+    <div class="card-h">
+      <h2 id="orgs-h">External orgs on mainnet <span class="note">4</span></h2>
+      <span class="src">indexer · non-trivial executed proposals per ISO week</span>
+    </div>
+    <div class="tbl-wrap">
+      <table class="t">
+        <thead>
+          <tr><th>Chamber</th><th>Seats · quorum</th><th>Independent directors</th><th>W09 → W16</th><th class="r">Proposals</th><th class="r">Excluded</th><th class="r">Bridge templates</th><th>Result</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Kestrel Labs Council<span class="cell-sub mono">0x7C2a…E19b</span></td>
+            <td class="num">7 · 4</td>
+            <td class="num">6<span class="cell-sub">1 owner is on the team list</span></td>
+            <td>
+              <div class="spark" role="img" aria-label="Kestrel weekly counts W09 to W16: 2, 1, 3, 2, 2, 1, 2, 3">
+                <span class="h2" title="W09 · 2"></span><span class="h1" title="W10 · 1"></span><span class="h3" title="W11 · 3"></span><span class="h2" title="W12 · 2"></span><span class="h2" title="W13 · 2"></span><span class="h1" title="W14 · 1"></span><span class="h2" title="W15 · 2"></span><span class="h3" title="W16 · 3"></span>
+              </div>
+              <span class="cell-sub">8 of 8 weeks</span>
+            </td>
+            <td class="r num">16</td>
+            <td class="r num">2</td>
+            <td class="r num">2</td>
+            <td><span class="badge ok"><span class="dot"></span>Qualifies</span></td>
+          </tr>
+          <tr>
+            <td>Harbor Grants DAO<span class="cell-sub mono">0x41fD…08a6</span></td>
+            <td class="num">5 · 3</td>
+            <td class="num">5</td>
+            <td>
+              <div class="spark" role="img" aria-label="Harbor weekly counts W09 to W16: 1, 1, 2, 1, 1, 2, 1, 1">
+                <span class="h1" title="W09 · 1"></span><span class="h1" title="W10 · 1"></span><span class="h2" title="W11 · 2"></span><span class="h1" title="W12 · 1"></span><span class="h1" title="W13 · 1"></span><span class="h2" title="W14 · 2"></span><span class="h1" title="W15 · 1"></span><span class="h1" title="W16 · 1"></span>
+              </div>
+              <span class="cell-sub">8 of 8 weeks · 6 weeks at exactly 1</span>
+            </td>
+            <td class="r num">10</td>
+            <td class="r num">3</td>
+            <td class="r num">0</td>
+            <td><span class="badge ok"><span class="dot"></span>Qualifies</span></td>
+          </tr>
+          <tr>
+            <td>Meridian Protocol Admin<span class="cell-sub mono">0xD35e…9c70</span></td>
+            <td class="num">5 · 3</td>
+            <td class="num">4<span class="cell-sub">1 owner holds 2 seats, counted once</span></td>
+            <td>
+              <div class="spark" role="img" aria-label="Meridian weekly counts W09 to W16: 1, 2, 1, 1, 1, 1, 1, 2">
+                <span class="h1" title="W09 · 1"></span><span class="h2" title="W10 · 2"></span><span class="h1" title="W11 · 1"></span><span class="h1" title="W12 · 1"></span><span class="h1" title="W13 · 1"></span><span class="h1" title="W14 · 1"></span><span class="h1" title="W15 · 1"></span><span class="h2" title="W16 · 2"></span>
+              </div>
+              <span class="cell-sub">8 of 8 weeks · 6 weeks at exactly 1</span>
+            </td>
+            <td class="r num">10</td>
+            <td class="r num">2</td>
+            <td class="r num">1</td>
+            <td><span class="badge ok"><span class="dot"></span>Qualifies</span></td>
+          </tr>
+          <tr>
+            <td>Tessellate Collective<span class="cell-sub mono">0x0b8E…f2D4</span></td>
+            <td class="num">5 · 3</td>
+            <td class="num"><span class="tag-bad">2</span><span class="cell-sub">One Safe holds 3 seats (= quorum), another owner holds 2</span></td>
+            <td>
+              <div class="spark" role="img" aria-label="Tessellate weekly counts W09 to W16: 1, 0, 1, 1, 0, 2, 1, 1">
+                <span class="h1" title="W09 · 1"></span><span class="zero" title="W10 · 0"></span><span class="h1" title="W11 · 1"></span><span class="h1" title="W12 · 1"></span><span class="zero" title="W13 · 0"></span><span class="h2" title="W14 · 2"></span><span class="h1" title="W15 · 1"></span><span class="h1" title="W16 · 1"></span>
+              </div>
+              <span class="cell-sub"><span class="tag-bad">6 of 8 weeks</span> · missed W10, W13</span>
+            </td>
+            <td class="r num">7</td>
+            <td class="r num">2</td>
+            <td class="r num">0</td>
+            <td><span class="badge bad"><span class="dot"></span>Does not qualify</span><span class="cell-sub">Fails criteria 1 and 2</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <details style="margin-top:10px">
+      <summary class="hint" style="cursor:pointer">Weekly counts as a table</summary>
+      <div class="tbl-wrap" style="margin-top:8px">
+        <table class="t">
+          <thead><tr><th>Chamber</th><th class="r">W09</th><th class="r">W10</th><th class="r">W11</th><th class="r">W12</th><th class="r">W13</th><th class="r">W14</th><th class="r">W15</th><th class="r">W16</th></tr></thead>
+          <tbody>
+            <tr><td>Kestrel</td><td class="r num">2</td><td class="r num">1</td><td class="r num">3</td><td class="r num">2</td><td class="r num">2</td><td class="r num">1</td><td class="r num">2</td><td class="r num">3</td></tr>
+            <tr><td>Harbor</td><td class="r num">1</td><td class="r num">1</td><td class="r num">2</td><td class="r num">1</td><td class="r num">1</td><td class="r num">2</td><td class="r num">1</td><td class="r num">1</td></tr>
+            <tr><td>Meridian</td><td class="r num">1</td><td class="r num">2</td><td class="r num">1</td><td class="r num">1</td><td class="r num">1</td><td class="r num">1</td><td class="r num">1</td><td class="r num">2</td></tr>
+            <tr><td>Tessellate</td><td class="r num">1</td><td class="r num">0</td><td class="r num">1</td><td class="r num">1</td><td class="r num">0</td><td class="r num">2</td><td class="r num">1</td><td class="r num">1</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+    <p class="hint" style="margin-top:10px">Bars: executed proposals that pass the anti-gaming rules, per ISO week. A red stub marks a week with none. Hover a bar for its count. Bridge templates: executed bridge-template proposals in the window. P-6 reports them as a demand signal; they are not a gate criterion.</p>
+  </section>
+
+  <div class="grid g2" style="margin-bottom:16px">
+    <!-- Interviews -->
+    <section class="card" aria-labelledby="int-h">
+      <div class="card-h"><h2 id="int-h">Buyer interviews <span class="note">5</span></h2><span class="src">manual.json · asOf 2027-04-23</span></div>
+      <div class="grid g2" style="gap:10px;margin-bottom:14px">
+        <div class="stat"><div class="upper">Logged</div><div class="v num">12</div><div class="s">Target was 10–15</div></div>
+        <div class="stat"><div class="upper">Both criteria</div><div class="v num">5 <small>≥ 3 needed</small></div><div class="s">2+ chains and asked unprompted</div></div>
+      </div>
+      <div class="bars">
+        <div class="bar-row"><span>Assets or admin on 2+ chains</span><div class="meter" role="img" aria-label="7 of 12"><span style="width:58.3%"></span></div><span class="num r">7</span></div>
+        <div class="bar-row"><span>Asked for multichain unprompted</span><div class="meter" role="img" aria-label="5 of 12"><span style="width:41.7%"></span></div><span class="num r">5</span></div>
+        <div class="bar-row"><span>Single chain only</span><div class="meter" role="img" aria-label="5 of 12"><span style="width:41.7%"></span></div><span class="num r">5</span></div>
+      </div>
+      <div class="divider"></div>
+      <dl class="kv">
+        <dt>Chain buckets</dt><dd>1 chain: 5 · 2–3 chains: 5 · 4+ chains: 2</dd>
+        <dt>Design-partner leads</dt><dd>3 flagged for follow-up</dd>
+        <dt>Raw notes</dt><dd>Private store only. Not in the repo, not in this snapshot.</dd>
+      </dl>
+    </section>
+
+    <!-- Exclusions -->
+    <section class="card" aria-labelledby="ex-h">
+      <div class="card-h"><h2 id="ex-h">Exclusions and anti-gaming <span class="note">6</span></h2><span class="src">P-4 rules · unit-tested in P-6</span></div>
+      <dl class="kv" style="margin-bottom:12px">
+        <dt>Team list</dt><dd>product/metrics/team-addresses.json · 14 checksummed addresses, no names or labels</dd>
+        <dt>Chambers excluded</dt><dd>Loreum DAO (team) · Loreum Grants (team, migrated from the Grants Safe Mar 18) · 1 sandbox chamber created by a team address</dd>
+      </dl>
+      <div class="tbl-wrap">
+        <table class="t">
+          <thead><tr><th>Rule</th><th class="r">Proposals removed</th></tr></thead>
+          <tbody>
+            <tr><td>No-op (zero value and empty calldata, or a self-transfer)</td><td class="r num">4</td></tr>
+            <tr><td>Below the $1,000 minimum value</td><td class="r num">3</td></tr>
+            <tr><td>Self-dealing (recipient is a seated director's owner or a team address)</td><td class="r num">2</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="hint" style="margin-top:10px">Directors are counted by owner at vote time. An owner with several seats counts once, and an owner on the team list doesn't count as independent.</p>
+    </section>
+  </div>
+
+  <!-- Sources -->
+  <section class="card" id="sources" aria-labelledby="src-h">
+    <div class="card-h"><h2 id="src-h">Data sources and reproducibility <span class="note">7</span></h2><span class="badge ok">0 eth_* calls · asserted by test</span></div>
+    <div class="grid g3">
+      <div class="inset">
+        <div class="upper" style="margin-bottom:8px">chamber-indexer (mainnet)</div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;color:var(--t2);display:flex;flex-direction:column;gap:4px">
+          <li><span class="mono">proposal</span>: executed, executedAt, target, value, data</li>
+          <li><span class="mono">proposal_vote</span>: ownerAtVote, confirmedBy</li>
+          <li><span class="mono">boardSeat</span>, <span class="mono">membershipToken</span></li>
+          <li>Keys: (chainId, address)</li>
+        </ul>
+        <p class="src" style="margin-top:8px">GraphQL only, pinned to block #27,477,912</p>
+      </div>
+      <div class="inset">
+        <div class="upper" style="margin-bottom:8px">Committed manual inputs</div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;color:var(--t2);display:flex;flex-direction:column;gap:4px">
+          <li><span class="mono">manual.json → interviews</span>: aggregate counts only</li>
+          <li>Audit and bounty status: placeholder lines above</li>
+          <li><span class="mono">team-addresses.json</span>: bare addresses</li>
+        </ul>
+        <p class="src" style="margin-top:8px">Nothing that identifies a person or an interviewee</p>
+      </div>
+      <div class="inset">
+        <div class="upper" style="margin-bottom:8px">Reproduce</div>
+        <div class="raw">cd app &amp;&amp; npx tsx scripts/phase2-gate.ts --snapshot 2027-W17 --through 2027-W16 --block 27477912</div>
+        <dl class="kv" style="margin-top:8px">
+          <dt>sha256</dt><dd class="mono">3f9a…c21e</dd>
+          <dt>Generated</dt><dd>Apr 26, 2027 09:00 UTC</dd>
+        </dl>
+      </div>
+    </div>
+    <div class="banner info" style="margin-top:14px">
+      <span class="ic">i</span>
+      <div><b>If the review lands on NO-GO instead:</b> keep bridge templates, defer the spoke issues (<code>P-22</code> to <code>P-27</code>) with the reason recorded, and re-run the snapshot weekly. The last date the gate can pass is relative: 16 weeks after mainnet go-live (Jan 29), so May 21, 2027. If it still fails then, close the spoke issues.</div>
+    </div>
+  </section>
+
+  <section class="notes">
+    <h3>Design notes</h3>
+    <ol>
+      <li><b>Internal, and a snapshot rather than a live page.</b> The <code>P-6</code> review dropped a live <code>/internal/gate</code> route in favor of <code>app/scripts/phase2-gate.ts</code>, which writes <code>snapshots/YYYY-Www.{json,md}</code>. This mock shows that snapshot rendered in the app shell for the <code>P-7</code> review. The freshness chip shows the pinned indexer block instead of "Indexed N s ago", because the numbers are fixed on purpose. The "Internal" label replaces the chamber header, no top-nav item is selected, and the wallet chip reads "Not connected" because nothing here is signed.</li>
+      <li><b>The verdict comes first, with its margin next to it.</b> Criterion 1 passes with zero slack, so the page says so and names the orgs that could flip it. The GO scope is stated in plan terms (<code>P-7</code>: GO moves <code>P-22</code> to <code>P-27</code> to ready). It says Chamber.sol stays unchanged and that spoke actions still start as home-chain quorum proposals, per the review's recommended design. The kill date is labelled as what <code>P-4</code> asks for, "the latest date by which the gate can still pass", and it is relative to go-live, as the plan's risk section recommends. A fixed "end of Q1 2027" date could not be met with mainnet in late January. The date (16 weeks) is a proposed value for Chad to confirm.</li>
+      <li><b>Every criterion names its evidence: an indexer table and column, or "manual".</b> This is the <code>P-4</code> acceptance rule. The audit and bounty rows use the placeholder line format, because this mock must not claim a real audit.</li>
+      <li><b>Sparklines show the 8-week streak per org.</b> They use one hue for counts and a red stub for a missed week, with the counts in the tooltip, the ARIA label, and a table view. The weeks are ISO W09–W16 (Mar 1 – Apr 25, 2027), the last 8 complete weeks before the review. Independent-director counts show why a number is lower than the seat count (team list, multi-seat owner). The bridge-template column is there because the <code>P-6</code> acceptance lists bridge-template executions in the snapshot. It is labelled as a demand signal so nobody reads it as a sixth criterion.</li>
+      <li><b>Interviews appear only as aggregates.</b> The repo is public, and <code>P-2</code> keeps per-interview rows in a private store. The snapshot never links an interviewee to one of the named orgs above. The counts (7 multi-chain, 5 asked, 5 both) come from <code>manual.json</code>. These answer the review's finding that there was "no customer evidence".</li>
+      <li><b>Anti-gaming rules are visible.</b> The review warned that metrics like "100+ transactions" and "5 operators" are easy to game. This panel shows what was removed and why: no-ops, the minimum value, self-dealing, multi-seat dedupe. Loreum's own chambers, including the Loreum Grants Chamber from the Safe migration, are excluded by the team list.</li>
+      <li><b>Reproducible and tamper-evident.</b> The snapshot pins the indexer block and prints the exact command and its hash. A test stubs <code>fetch</code> and asserts no <code>eth_*</code> calls, per the standing rule that display data comes only from chamber-indexer (<code>P-6</code>, <code>I-21</code>). The existing <code>#261</code> compliance dashboard polls <code>getLogs</code> and is not reused.</li>
+    </ol>
+  </section>
+</main>
+<footer class="foot">Mockup only. Addresses marked illustrative are placeholders. Loreum is the protocol; Chamber is the governance contract.</footer>
+</body>
+</html>

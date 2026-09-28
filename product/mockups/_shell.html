@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shell template · Loreum app mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap">
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+<!--
+  TEMPLATE for app/ mockups. Copy this file, keep the mock bar, top bar and
+  chamber header/tabs, and replace the content inside <main>.
+  - Mark the active top-nav link and tab with class="on".
+  - Freshness chip states: .fresh (ok), .fresh.lag, .fresh.down.
+  - Put design notes as <span class="note">1</span> markers in the UI and a
+    matching <section class="notes"> list at the bottom (cite plan task IDs).
+  - Phase 2 pages add <div class="gated-ribbon"> at the top of <main> and the
+    "Spokes" tab.
+-->
+<div class="mock-bar">
+  <span><b>MOCKUP</b> · Loreum app · Chamber overview · state as of Mar 16, 2027 14:20 UTC</span>
+  <span><a href="index.html">All mockups</a> · <a href="_mock-data.md">Mock data</a></span>
+</div>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="row" style="gap:18px">
+      <a class="brand" href="index.html"><span class="brand-mark">L</span><span>Loreum</span></a>
+      <nav class="nav" aria-label="Main">
+        <a href="app-overview.html" class="on">My Chambers</a>
+        <a href="app-session-keys.html">Operators</a>
+        <a href="#">Deploy Chamber</a>
+        <a href="#">Compliance</a>
+        <a href="app-migrate.html">Migrate from Safe</a>
+        <a href="#">Docs</a>
+      </nav>
+    </div>
+    <div class="top-right">
+      <span class="chain"><i></i>Ethereum</span>
+      <span class="fresh" title="All data on this page comes from chamber-indexer"><i></i>Indexed 24 s ago · #27,184,300</span>
+      <span class="wallet"><span class="avatar"></span>lena.eth</span>
+    </div>
+  </div>
+</header>
+
+<main class="page">
+  <div class="ch-head">
+    <div class="ch-title">
+      <div class="ch-icon">LD</div>
+      <div>
+        <h1>Loreum DAO</h1>
+        <div class="ch-meta">
+          <span class="chain"><i></i>Ethereum</span>
+          <span class="badge acc">v1.2.0</span>
+          <span class="badge">5 seats · quorum 3</span>
+          <span class="mono faint">0x3F1c…A92e</span>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <a class="btn" href="app-queue.html">Open queue</a>
+      <a class="btn primary" href="app-proposal.html">New proposal</a>
+    </div>
+  </div>
+
+  <nav class="tabs" aria-label="Chamber">
+    <a href="app-overview.html" class="on">Overview</a>
+    <a href="app-board.html">Board &amp; delegation</a>
+    <a href="app-queue.html">Queue <span class="badge warn">3</span></a>
+    <a href="p2-multichain-treasury.html">Treasury</a>
+    <a href="app-supply-authority.html">Supply authority</a>
+    <a href="app-session-keys.html">Session keys</a>
+  </nav>
+
+  <!-- Page content goes here -->
+  <div class="card">
+    <div class="card-h"><h2>Example card</h2><span class="badge ok"><span class="dot"></span>Healthy</span></div>
+    <p class="muted">Replace with the page content.</p>
+  </div>
+
+  <section class="notes">
+    <h3>Design notes</h3>
+    <ol>
+      <li>Explain the decision and cite the plan task (for example <code>I-10</code>).</li>
+    </ol>
+  </section>
+</main>
+<footer class="foot">Mockup only. Addresses marked illustrative are placeholders. Loreum is the protocol; Chamber is the governance contract.</footer>
+</body>
+</html>

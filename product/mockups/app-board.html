@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Board &amp; delegation · Loreum DAO · Loreum app mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap">
+<link rel="stylesheet" href="assets/app.css">
+<style>
+  /* Narrow screens: let the top bar wrap instead of pushing the page sideways */
+  @media (max-width: 640px) {
+    .top-inner { height: auto; min-height: 56px; flex-wrap: wrap; padding-top: 8px; padding-bottom: 8px; }
+    .top-right { flex-wrap: wrap; }
+  }
+  .src { font-family: var(--mono); font-size: 11px; color: var(--t4); white-space: nowrap; }
+  /* Mid widths: the nav shrinks and scrolls inside the top bar instead of widening the page */
+  .top-inner > .row { flex-wrap: nowrap; min-width: 0; flex: 1 1 auto; }
+  .nav { min-width: 0; }
+  @media (min-width: 641px) { .top-right { flex: none; } }
+  /* Phones: keep the authority chain on one line; values ellipsize and inline addresses drop */
+  @media (max-width: 640px) {
+    .auth { flex-wrap: nowrap; }
+    .auth .node { flex: 1 1 0; min-width: 0; }
+    .auth .k { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .auth .v .mono { display: none; }
+  }
+  /* Keep single-column grids from growing to fit wide children (timelines, tables) */
+  .grid > * { min-width: 0; }
+  @media (max-width: 1000px) { .main-side { grid-template-columns: minmax(0, 1fr); } }
+  .you { color: var(--a300); font-weight: 600; }
+
+  /* Ranked seats table */
+  .rank-wrap { overflow: visible; }
+  @media (max-width: 1100px) and (min-width: 721px) { .rank-wrap { overflow-x: auto; } }
+  table.rank td { vertical-align: top; }
+  table.rank .rk { font-size: 18px; font-weight: 300; font-variant-numeric: tabular-nums; color: var(--t2); width: 40px; }
+  table.rank tr.me td { background: rgba(74, 47, 143, 0.07); }
+  table.rank .auth { min-width: 330px; }
+  table.rank tr.line td { padding: 6px 10px; border-bottom: 1px dashed rgba(251, 191, 36, 0.45); background: transparent; }
+  table.rank tr.out td { color: var(--t3); }
+  .wbar { position: relative; height: 4px; border-radius: 2px; background: var(--s3); margin-top: 7px; width: 140px; }
+  .wbar > span { display: block; height: 100%; border-radius: 2px; background: var(--a500); }
+  .wbar.out > span { background: var(--t4); }
+  .wbar::after { content: ""; position: absolute; left: 25.4%; top: -3px; bottom: -3px; width: 1px; background: var(--warn); }
+  .cell-s { font-size: 12px; color: var(--t4); margin-top: 3px; }
+
+  /* Tooltip (cLORE shares) */
+  .tip { position: relative; border-bottom: 1px dotted var(--t4); cursor: help; }
+  .tip .tt {
+    display: none; position: absolute; z-index: 6; left: 0; top: calc(100% + 8px); width: 260px;
+    padding: 9px 11px; background: var(--s4); border: 1px solid var(--line-strong); border-radius: var(--r-sm);
+    font: 400 12px/1.45 var(--sans); color: var(--t2); white-space: normal;
+  }
+  .tip .tt code { font-size: 11.5px; }
+  .tip:hover .tt, .tip:focus .tt { display: block; }
+
+  /* Stack the ranked table into cards on phones */
+  @media (max-width: 720px) {
+    table.rank thead { display: none; }
+    table.rank, table.rank tbody, table.rank tr, table.rank td { display: block; width: 100%; }
+    table.rank tr { padding: 10px 0; border-bottom: 1px solid var(--line); }
+    table.rank td { border: 0; padding: 4px 0; }
+    table.rank td[data-l]::before { content: attr(data-l); display: block; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--t4); font-weight: 600; margin-bottom: 2px; }
+    table.rank .auth { min-width: 0; }
+    table.rank tr.line td { padding: 6px 0; }
+    table.rank tr { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6px 14px; }
+    table.rank td { width: auto; }
+    table.rank td.rk, table.rank td:nth-child(2), table.rank td:last-child, table.rank tr.line td { grid-column: 1 / -1; }
+    table.rank td.rk { font-size: 15px; }
+    table.rank td.rk[data-l]::before { display: inline; margin-right: 8px; }
+    .wbar { width: 100%; }
+    table.rank tr.me { background: rgba(74, 47, 143, 0.07); border-radius: var(--r-sm); padding-left: 8px; padding-right: 8px; }
+    table.rank tr.me td, table.rank tr:hover td { background: transparent; }
+    .tip .tt { width: 220px; }
+  }
+
+  /* Quorum table */
+  table.q td, table.q th { text-align: center; }
+  table.q td.cur { background: var(--a-soft); color: var(--a300); font-weight: 600; }
+  table.q td.next { background: var(--info-soft); color: var(--info); font-weight: 600; }
+
+  /* Delegation form */
+  .amt { display: flex; gap: 8px; }
+  .amt .input { font-variant-numeric: tabular-nums; }
+  .ol { margin: 6px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; color: var(--t3); }
+  details.more { border-top: 1px solid var(--line); margin-top: 14px; padding-top: 12px; }
+  details.more summary { cursor: pointer; color: var(--t2); font-weight: 600; font-size: 13px; }
+  details.more summary:focus-visible { outline: 2px solid var(--a500); outline-offset: 2px; }
+</style>
+</head>
+<body>
+<div class="mock-bar">
+  <span><b>MOCKUP</b> · Loreum app · Board &amp; delegation · state as of Mar 16, 2027 14:20 UTC</span>
+  <span><a href="index.html">All mockups</a> · <a href="_mock-data.md">Mock data</a></span>
+</div>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="row" style="gap:18px">
+      <a class="brand" href="index.html"><span class="brand-mark">L</span><span>Loreum</span></a>
+      <nav class="nav" aria-label="Main">
+        <a href="app-overview.html" class="on">My Chambers</a>
+        <a href="app-session-keys.html">Operators</a>
+        <a href="#">Deploy Chamber</a>
+        <a href="#">Compliance</a>
+        <a href="app-migrate.html">Migrate from Safe</a>
+        <a href="#">Docs</a>
+      </nav>
+    </div>
+    <div class="top-right">
+      <span class="chain"><i></i>Ethereum</span>
+      <span class="fresh" title="All data on this page comes from chamber-indexer"><i></i>Indexed 24 s ago · #27,184,300</span>
+      <span class="wallet"><span class="avatar"></span>lena.eth</span>
+    </div>
+  </div>
+</header>
+
+<main class="page">
+  <div class="ch-head">
+    <div class="ch-title">
+      <div class="ch-icon">LD</div>
+      <div>
+        <h1>Loreum DAO</h1>
+        <div class="ch-meta">
+          <span class="chain"><i></i>Ethereum</span>
+          <span class="badge acc">v1.2.0</span>
+          <span class="badge">5 seats · quorum 3</span>
+          <span class="mono faint">0x3F1c…A92e</span>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <a class="btn" href="app-queue.html">Open queue</a>
+      <a class="btn primary" href="app-proposal.html">New proposal</a>
+    </div>
+  </div>
+
+  <nav class="tabs" aria-label="Chamber">
+    <a href="app-overview.html">Overview</a>
+    <a href="app-board.html" class="on">Board &amp; delegation</a>
+    <a href="app-queue.html">Queue <span class="badge warn">3</span></a>
+    <a href="p2-multichain-treasury.html">Treasury</a>
+    <a href="app-supply-authority.html">Supply authority</a>
+    <a href="app-session-keys.html">Session keys</a>
+  </nav>
+
+  <!-- Summary -->
+  <section class="grid g4" aria-label="Board summary">
+    <div class="stat">
+      <div class="upper">Seats</div>
+      <div class="v">5 <small>of 5 filled</small></div>
+      <div class="s">A change to 6 is in its 7-day timelock.</div>
+    </div>
+    <div class="stat">
+      <div class="upper">Quorum</div>
+      <div class="v">3 <small>of 5 reachable</small></div>
+      <div class="s">1 + ⌊5 × 51 / 100⌋ = 3</div>
+    </div>
+    <div class="stat">
+      <div class="upper">Seat line <span class="note">1</span></div>
+      <div class="v">612,000 <small>LORE</small></div>
+      <div class="s">Lowest seated weight (Explorer #58). Exceed it to take seat 5.</div>
+    </div>
+    <div class="stat">
+      <div class="upper">Independence</div>
+      <div class="v">5 <small>distinct owners</small></div>
+      <div class="s">Largest owner holds 1 seat. Quorum is 3.</div>
+    </div>
+  </section>
+
+  <!-- Ranked seats -->
+  <section class="card" style="margin-top:16px" aria-labelledby="rk-h">
+    <div class="card-h">
+      <div>
+        <h2 id="rk-h">Ranked seats <span class="note">2</span></h2>
+        <p class="muted" style="font-size:12.5px;margin-top:4px">The top 5 Explorers by delegated weight hold the seats. Ranking changes as soon as a delegation lands.</p>
+      </div>
+      <span class="src">from indexer · boardSeat · #27,184,300</span>
+    </div>
+    <div class="tbl-wrap rank-wrap">
+      <table class="t rank">
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Seat NFT → owner → session key</th>
+            <th>Delegated weight <span class="note">3</span></th>
+            <th>Seated since</th>
+            <th>Maturity <span class="note">4</span></th>
+            <th>Session key status <span class="note">5</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="rk" data-l="Rank">1</td>
+            <td data-l="Authority chain">
+              <div class="auth compact">
+                <div class="node seat"><span class="k">Seat</span><span class="v">Explorer #7</span></div>
+                <div class="node"><span class="k">Owner · EOA</span><span class="v">aria.eth <span class="mono faint">0x51a0…7C3e</span></span></div>
+                <div class="node key"><span class="k">Session key</span><span class="v muted">None</span></div>
+              </div>
+            </td>
+            <td data-l="Delegated weight">
+              <span class="tip num" tabindex="0">2,410,000 LORE<span class="tt" role="tooltip">2,410,000 cLORE delegated to Explorer #7, shown in LORE at the current share price. cLORE has 21 decimals (LORE's 18 + <code>_decimalsOffset</code> 3), so each LORE base unit is about 1,000 share units, and 1 cLORE is about 1 LORE.</span></span>
+              <div class="wbar"><span style="width:100%"></span></div>
+            </td>
+            <td data-l="Seated since">Feb 2, 2027<div class="cell-s mono">#26,882,428</div></td>
+            <td data-l="Maturity"><span class="badge ok"><span class="dot"></span>Mature</span><div class="cell-s">Can act since #26,882,429</div></td>
+            <td data-l="Session key status"><span class="muted">Not available</span><div class="cell-s">EOA owners sign directly. Only a contract owner can set a key.</div></td>
+          </tr>
+          <tr>
+            <td class="rk" data-l="Rank">2</td>
+            <td data-l="Authority chain">
+              <div class="auth compact">
+                <div class="node seat"><span class="k">Seat</span><span class="v">Explorer #12</span></div>
+                <div class="node"><span class="k">Owner · Safe 2-of-3</span><span class="v">kofi.eth <span class="mono faint">0x8b2d…11F0</span></span></div>
+                <div class="node key"><span class="k">Session key</span><span class="v mono">0xA11c…04e5</span></div>
+              </div>
+            </td>
+            <td data-l="Delegated weight">
+              <span class="tip num" tabindex="0">1,905,000 LORE<span class="tt" role="tooltip">1,905,000 cLORE delegated to Explorer #12, shown in LORE at the current share price.</span></span>
+              <div class="wbar"><span style="width:79%"></span></div>
+            </td>
+            <td data-l="Seated since">Feb 2, 2027<div class="cell-s mono">#26,882,612</div></td>
+            <td data-l="Maturity"><span class="badge ok"><span class="dot"></span>Mature</span><div class="cell-s">Can act since #26,882,613</div></td>
+            <td data-l="Session key status">
+              <span class="badge warn">Expires in 12 d</span>
+              <div class="scopes" style="margin-top:6px" aria-label="Scope 0x31">
+                <span class="scope on">SUBMIT</span><span class="scope">CONFIRM</span><span class="scope">EXECUTE</span><span class="scope">SEATS</span><span class="scope on">REVOKE</span><span class="scope on">CANCEL</span>
+              </div>
+              <div class="cell-s">Scope 0x31 · expires Mar 28, 2027 14:00 UTC</div>
+            </td>
+          </tr>
+          <tr>
+            <td class="rk" data-l="Rank">3</td>
+            <td data-l="Authority chain">
+              <div class="auth compact">
+                <div class="node seat"><span class="k">Seat</span><span class="v">Explorer #31</span></div>
+                <div class="node"><span class="k">Owner · policy Safe</span><span class="v">Treasury Agent <span class="mono faint">0x9aB3…40d1</span></span></div>
+                <div class="node key"><span class="k">Session key</span><span class="v mono">0x7E0f…19b2</span></div>
+              </div>
+              <div class="row" style="gap:6px;margin-top:6px">
+                <span class="badge acc">Agent director <span class="note">12</span></span>
+                <span class="faint" style="font-size:12px">ERC-8004 agent #212 (display only). Confirms through its policy account; its key has no CONFIRM bit.</span>
+              </div>
+            </td>
+            <td data-l="Delegated weight">
+              <span class="tip num" tabindex="0">1,120,000 LORE<span class="tt" role="tooltip">1,120,000 cLORE delegated to Explorer #31, shown in LORE at the current share price.</span></span>
+              <div class="wbar"><span style="width:46.5%"></span></div>
+            </td>
+            <td data-l="Seated since">Feb 5, 2027<div class="cell-s mono">#26,902,604</div></td>
+            <td data-l="Maturity"><span class="badge ok"><span class="dot"></span>Mature</span><div class="cell-s">Can act since #26,902,605</div></td>
+            <td data-l="Session key status">
+              <span class="badge ok"><span class="dot"></span>Live · 14 d left</span>
+              <div class="scopes" style="margin-top:6px" aria-label="Scope 0x35">
+                <span class="scope on">SUBMIT</span><span class="scope">CONFIRM</span><span class="scope on">EXECUTE</span><span class="scope">SEATS</span><span class="scope on">REVOKE</span><span class="scope on">CANCEL</span>
+              </div>
+              <div class="cell-s">Scope 0x35 · expires Mar 30, 2027 16:55 UTC</div>
+            </td>
+          </tr>
+          <tr class="me">
+            <td class="rk" data-l="Rank">4</td>
+            <td data-l="Authority chain">
+              <div class="auth compact">
+                <div class="node seat"><span class="k">Seat · <span class="you">You</span></span><span class="v">Explorer #44</span></div>
+                <div class="node"><span class="k">Owner · EOA</span><span class="v">lena.eth <span class="mono faint">0x3c7B…aa15</span></span></div>
+                <div class="node key"><span class="k">Session key</span><span class="v muted">None</span></div>
+              </div>
+            </td>
+            <td data-l="Delegated weight">
+              <span class="tip num" tabindex="0">980,000 LORE<span class="tt" role="tooltip">980,000 cLORE delegated to Explorer #44, including 180,000 of your own, shown in LORE at the current share price.</span></span>
+              <div class="wbar"><span style="width:40.7%"></span></div>
+            </td>
+            <td data-l="Seated since">Feb 9, 2027<div class="cell-s mono">#26,930,945</div></td>
+            <td data-l="Maturity"><span class="badge ok"><span class="dot"></span>Mature</span><div class="cell-s">Can act since #26,930,946</div></td>
+            <td data-l="Session key status"><span class="muted">Not available</span><div class="cell-s">You sign from lena.eth. To delegate signing, hold the NFT in a Safe first.</div></td>
+          </tr>
+          <tr>
+            <td class="rk" data-l="Rank">5</td>
+            <td data-l="Authority chain">
+              <div class="auth compact">
+                <div class="node seat"><span class="k">Seat</span><span class="v">Explorer #58</span></div>
+                <div class="node"><span class="k">Owner · EOA</span><span class="v">marco.eth <span class="mono faint">0xE2f0…6d3C</span></span></div>
+                <div class="node key"><span class="k">Session key</span><span class="v muted">None</span></div>
+              </div>
+            </td>
+            <td data-l="Delegated weight">
+              <span class="tip num" tabindex="0">612,000 LORE<span class="tt" role="tooltip">612,000 cLORE delegated to Explorer #58. This is the seat line: the weight to beat for seat 5.</span></span>
+              <div class="wbar"><span style="width:25.4%"></span></div>
+            </td>
+            <td data-l="Seated since">Feb 12, 2027<div class="cell-s mono">#26,952,372</div></td>
+            <td data-l="Maturity"><span class="badge ok"><span class="dot"></span>Mature</span><div class="cell-s">Can act since #26,952,373</div></td>
+            <td data-l="Session key status"><span class="muted">Not available</span><div class="cell-s">EOA owner</div></td>
+          </tr>
+          <tr class="line">
+            <td colspan="6"><span class="upper" style="color:var(--warn)">Seat line · 612,000 LORE</span> <span class="faint" style="font-size:12px">Ranks below this line hold no seat. A tie keeps the current holder.</span></td>
+          </tr>
+          <tr class="out">
+            <td class="rk" data-l="Rank">6</td>
+            <td data-l="Authority chain">
+              <div class="auth compact">
+                <div class="node"><span class="k">Explorer</span><span class="v">#63</span></div>
+                <div class="node"><span class="k">Owner</span><span class="v">nadia.eth</span></div>
+                <div class="node key"><span class="k">Session key</span><span class="v muted">None</span></div>
+              </div>
+            </td>
+            <td data-l="Delegated weight">
+              <span class="tip num" tabindex="0">540,000 LORE<span class="tt" role="tooltip">540,000 cLORE delegated to Explorer #63, including 60,000 of yours.</span></span>
+              <div class="wbar out"><span style="width:22.4%"></span></div>
+            </td>
+            <td data-l="Seated since"><span class="faint">Not seated</span></td>
+            <td data-l="Maturity"><span class="faint">1 block after seating</span></td>
+            <td data-l="Next in line">
+              <span class="badge">Next in line</span>
+              <div class="cell-s">Needs <span class="num">72,001</span> LORE more to take seat 5.</div>
+              <a class="btn sm" style="margin-top:6px" href="#delegate">Delegate to #63</a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="grid main-side" style="margin-top:16px">
+    <div class="stack">
+      <!-- Pending seat change -->
+      <section class="card accent" id="seat-change" aria-labelledby="sc-h">
+        <div class="card-h">
+          <div>
+            <h2 id="sc-h">Pending seat-count change <span class="note">6</span></h2>
+            <p class="muted" style="font-size:12.5px;margin-top:4px">Proposed by Explorer #12 on Mar 11, 2027 09:30 UTC. Changes wait 7 days after they're proposed.</p>
+          </div>
+          <span class="badge info">5 → 6 seats</span>
+        </div>
+
+        <ol class="steps" aria-label="Seat change lifecycle">
+          <li class="done">Proposed<span class="when">Mar 11 09:30</span></li>
+          <li class="now">Support 2 of 3<span class="when">needs 1 more</span></li>
+          <li>Timelock ends<span class="when">Mar 18 09:30</span></li>
+          <li>Any director executes<span class="when">with 3 supporters</span></li>
+          <li>Deletable<span class="when">after Mar 25 09:30</span></li>
+        </ol>
+
+        <div class="grid g2" style="margin-top:18px">
+          <div>
+            <div class="upper" style="margin-bottom:8px">Supporters · 2 of 3 required</div>
+            <div class="stack-sm">
+              <div class="auth compact">
+                <div class="node seat"><span class="k">Proposer</span><span class="v">Explorer #12</span></div>
+                <div class="node"><span class="k">Signed by</span><span class="v">kofi.eth Safe</span></div>
+              </div>
+              <div class="auth compact">
+                <div class="node seat"><span class="k">Supporter</span><span class="v">Explorer #7</span></div>
+                <div class="node"><span class="k">Signed by</span><span class="v">aria.eth · EOA</span></div>
+              </div>
+            </div>
+            <p class="faint" style="font-size:12px;margin-top:8px">3 was the live quorum when it was proposed, and that number is fixed. At execution, support counts only from seats still in the top 5 whose NFT still exists.</p>
+          </div>
+          <div>
+            <div class="upper" style="margin-bottom:8px">What changes when it executes</div>
+            <dl class="kv">
+              <dt>Seats</dt><dd>5 → 6</dd>
+              <dt>New director</dt><dd>Explorer #63 (nadia.eth) takes seat 6 and can act 1 block later.</dd>
+              <dt>Quorum</dt><dd>3 → 4 · 1 + ⌊6 × 51 / 100⌋</dd>
+              <dt>Open proposals</dt><dd>#46, #47 and #48 will need 4 confirmations.</dd>
+            </dl>
+          </div>
+        </div>
+
+        <div class="banner warn" style="margin-top:14px">
+          <span class="ic">!</span>
+          <div><b>#46 has 3 of 3 today.</b> A proposal needs the higher of its submit-time quorum and the live quorum. If this change executes first, #46 needs a 4th confirmation. Execute #46 before Mar 18, 09:30 UTC if the board still wants it.</div>
+        </div>
+
+        <div class="row" style="margin-top:14px;align-items:flex-start">
+          <div class="stack-sm" style="align-items:flex-start">
+            <button type="button" class="btn">Support 5 → 6 seats</button>
+            <span class="hint">Signs <code>updateSeats(44, 6)</code> from lena.eth. Simulated via RPC when you click.</span>
+          </div>
+          <div class="stack-sm" style="align-items:flex-start">
+            <button type="button" class="btn" disabled aria-describedby="sc-exec-why">Execute seat change</button>
+            <span class="hint" id="sc-exec-why">Available Mar 18, 09:30 UTC with 3 supporters.</span>
+          </div>
+        </div>
+        <p class="faint" style="font-size:12px;margin-top:12px">Only the proposer (Explorer #12) can cancel before Mar 25, 09:30 UTC. After that, any director can delete it.</p>
+      </section>
+
+      <!-- Quorum math -->
+      <section class="card" aria-labelledby="qm-h">
+        <div class="card-h">
+          <h2 id="qm-h">How quorum is counted <span class="note">7</span></h2>
+          <span class="src">BoardLib.quorumFor</span>
+        </div>
+        <p style="color:var(--t2)">Quorum = 1 + ⌊n × 51 / 100⌋, where <i>n</i> is the number of <b>reachable</b> directors among the top 5 seats. A seat is reachable when its NFT has an owner and that owner isn't the Chamber itself.</p>
+        <div class="inset deep" style="margin-top:12px">
+          <div class="mono" style="font-size:13px;color:var(--t1)">n = 5 reachable → 1 + ⌊255 / 100⌋ = 1 + 2 = <b style="color:var(--a300)">3</b></div>
+          <div class="faint" style="font-size:12px;margin-top:4px">All 5 seats are reachable: each NFT has an owner, and none is held by the Chamber.</div>
+        </div>
+        <div class="tbl-wrap" style="margin-top:12px">
+          <table class="t q" aria-label="Quorum by reachable directors">
+            <thead>
+              <tr><th>Reachable</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th></tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row" style="text-align:left">Quorum</th><td>1</td><td>2</td><td>2</td><td>3</td><td class="cur">3</td><td class="next">4</td><td>4</td><td>5</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="row" style="gap:14px;margin-top:8px;font-size:12px;color:var(--t3)">
+          <span><span class="badge acc">3</span> today</span>
+          <span><span class="badge info">4</span> after the 5 → 6 change</span>
+        </div>
+        <p class="muted" style="font-size:12.5px;margin-top:12px">Each proposal records the quorum when it's submitted. To execute, it needs the higher of that number and the live quorum. A seat decrease can't lower the bar for an old proposal, and an increase raises it for every open one.</p>
+      </section>
+    </div>
+
+    <!-- Side column -->
+    <div class="stack">
+      <section class="card" id="delegate" aria-labelledby="dl-h">
+        <div class="card-h">
+          <h2 id="dl-h">Your delegations <span class="note">8</span></h2>
+          <span class="src">from indexer</span>
+        </div>
+        <div class="grid g3" style="gap:8px">
+          <div class="stat" style="padding:10px"><div class="upper">Balance</div><div class="num" style="font-size:15px;margin-top:2px"><span class="tip" tabindex="0">300,000<span class="tt" role="tooltip">300,000 cLORE held by lena.eth, shown in LORE at the current share price.</span></span></div></div>
+          <div class="stat" style="padding:10px"><div class="upper">Delegated</div><div class="num" style="font-size:15px;margin-top:2px">240,000</div></div>
+          <div class="stat" style="padding:10px"><div class="upper">Available</div><div class="num" style="font-size:15px;margin-top:2px;color:var(--a300)">60,000</div></div>
+        </div>
+        <p class="faint" style="font-size:12px;margin-top:6px">Amounts in LORE. Delegation weight is held in cLORE shares.</p>
+
+        <table class="t" style="margin-top:10px" aria-label="Your current delegations">
+          <tbody>
+            <tr><td>Explorer #44 · <span class="you">you</span><div class="cell-s">Rank 4 · seated</div></td><td class="r num">180,000</td></tr>
+            <tr><td>Explorer #63 · nadia.eth<div class="cell-s">Rank 6 · not seated</div></td><td class="r num">60,000</td></tr>
+          </tbody>
+        </table>
+        <p class="hint" style="margin-top:8px">Delegated shares are locked. You can't transfer or withdraw them until you undelegate. <span class="note">9</span></p>
+
+        <div class="divider"></div>
+
+        <h3 id="dl-form-h">Delegate</h3>
+
+        <div class="stack" style="margin-top:10px" role="group" aria-labelledby="dl-form-h">
+          <div class="field">
+            <label for="dl-to">Delegate to</label>
+            <select id="dl-to" class="input">
+              <option selected>Explorer #63 · nadia.eth · rank 6, not seated</option>
+              <option>Explorer #44 · lena.eth (you) · rank 4</option>
+              <option>Explorer #58 · marco.eth · rank 5</option>
+              <option>Explorer #31 · Treasury Agent · rank 3</option>
+              <option>Explorer #12 · kofi.eth · rank 2</option>
+              <option>Explorer #7 · aria.eth · rank 1</option>
+              <option>Another Explorer by token ID…</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="dl-amt">Amount (LORE)</label>
+            <div class="amt">
+              <input id="dl-amt" class="input" type="text" inputmode="decimal" value="60,000">
+              <button type="button" class="btn sm">Max</button>
+            </div>
+            <span class="hint">= 60,000 cLORE (60,000 × 10<sup>21</sup> share units). Available: 60,000 LORE.</span>
+          </div>
+
+          <div class="inset">
+            <div class="upper" style="margin-bottom:6px">Preview · from indexer, #27,184,300</div>
+            <dl class="kv">
+              <dt>Explorer #63</dt><dd class="num">540,000 → 600,000 LORE</dd>
+              <dt>Rank</dt><dd>Stays 6. Still 12,001 LORE short of seat 5.</dd>
+              <dt>Board</dt><dd>No seat changes. Quorum stays 3.</dd>
+            </dl>
+          </div>
+
+          <div class="inset deep">
+            <div class="upper" style="margin-bottom:4px">When you click</div>
+            <ol class="ol">
+              <li>Simulate <code>delegate(63, 60000e21)</code>, 60,000 cLORE to Explorer #63, via RPC against the latest block.</li>
+              <li>Your wallet signs and sends it.</li>
+              <li>Wait for the receipt, then for the indexer to reach that block. The ranking updates from the indexer.</li>
+            </ol>
+          </div>
+
+          <button type="button" class="btn primary" style="width:100%">Delegate 60,000 LORE to Explorer #63</button>
+          <p class="hint">If a delegation changes who holds a seat, the new director can act 1 block later (<code>SEATING_DELAY</code> = 1 block).</p>
+        </div>
+
+        <details class="more">
+          <summary>Undelegate</summary>
+          <div class="stack" style="margin-top:12px">
+            <div class="field">
+              <label for="ud-from">Undelegate from</label>
+              <select id="ud-from" class="input">
+                <option selected>Explorer #44 · you · 180,000 LORE delegated</option>
+                <option>Explorer #63 · nadia.eth · 60,000 LORE delegated</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="ud-amt">Amount (LORE)</label>
+              <input id="ud-amt" class="input" type="text" inputmode="decimal" value="50,000">
+            </div>
+            <div class="inset">
+              <dl class="kv">
+                <dt>Explorer #44</dt><dd class="num">980,000 → 930,000 LORE</dd>
+                <dt>Rank</dt><dd>Stays 4. Explorer #44 keeps a seat unless its weight falls below 540,000, Explorer #63's weight.</dd>
+              </dl>
+            </div>
+            <button type="button" class="btn" style="width:100%">Undelegate 50,000 LORE from Explorer #44</button>
+            <p class="hint">Simulated via RPC when you click. Unlocked shares can be transferred or withdrawn right after the receipt.</p>
+          </div>
+        </details>
+      </section>
+
+      <section class="card" aria-labelledby="in-h">
+        <div class="card-h">
+          <h2 id="in-h">Independence <span class="note">10</span></h2>
+          <span class="badge ok"><span class="dot"></span>Passes</span>
+        </div>
+        <ul class="checks">
+          <li><span class="st pass">✓</span><div><b>5 distinct owners</b> across 5 seats<div class="cell-s">3 EOAs, 2 Safes</div></div><span></span></li>
+          <li><span class="st pass">✓</span><div><b>No owner holds 3 seats</b> <span class="note">11</span><div class="cell-s">Largest owner: 1 seat. Quorum is 3, so no owner can pass a proposal alone.</div></div><span></span></li>
+          <li><span class="st pass">✓</span><div><b>1 agent director of 5</b><div class="cell-s">Explorer #31 can't reach quorum alone. Its session key has no CONFIRM bit, but a submit through the key still records #31's confirmation (<code>C-17</code>).</div></div><span></span></li>
+          <li><span class="st wait">?</span><div><b>Safe signer overlap</b><div class="cell-s">Not indexed. Check the signers of kofi.eth's Safe and the Treasury Agent's policy Safe against the other directors yourself.</div></div><span></span></li>
+        </ul>
+        <p class="faint" style="font-size:12px;margin-top:10px">The indexer sees owner addresses, not people. Two EOAs can belong to one person.</p>
+      </section>
+    </div>
+  </div>
+
+  <section class="notes">
+    <h3>Design notes</h3>
+    <ol>
+      <li>The seat line is the number delegators care about: the weight to beat for the last seat. It's derived from indexed <code>boardSeat</code> rows. A tie keeps the incumbent, so the "needs" figure is always margin + 1 (612,000 − 540,000 + 1 = 72,001).</li>
+      <li>One ranked table replaces the decorative semicircle and the separate leaderboard in <code>BoardVisualization.tsx</code>. Each row shows the full authority chain (seat NFT → owner → session key), because that's what decides who can act. The rows come from <code>boardSeat</code>, <code>membershipToken</code> and <code>directorOperator</code> in chamber-indexer, with no <code>getTop</code>, <code>ownerOf</code> or <code>getDirectorOperator</code> calls (<code>I-13</code>, <code>I-6</code>).</li>
+      <li>Weight is stored in cLORE shares, and people think in LORE. The column shows LORE at the current share price, with the cLORE amount in a tooltip. cLORE has 21 decimals (18 + <code>_decimalsOffset</code> 3): about 1,000 share units per LORE base unit, which is about 1 cLORE per LORE in display units. The old leaderboard formatted shares with 18 decimals (<code>BoardVisualization.tsx:482</code>), so weights read 1,000 times too large, with a vault symbol that looked like a different token. The delegate form parses amounts with the share decimals, as <code>DelegationManager</code> already does.</li>
+      <li>Maturity comes from the contract's stored <code>seatedAt</code>, which is the seating block + <code>SEATING_DELAY</code> (1 block). A seat can act once the head reaches it, checked against the indexer head clock. An NFT transfer restarts the clock (<code>syncSeatingControl</code>, PMN-H01). "Seated since" shows the seating block and "Can act since" shows <code>seatedAt</code>. Today <code>useDirectorActionGate</code> polls <code>useBlockNumber</code> every 60 s for this (<code>I-10</code>, <code>I-13</code>).</li>
+      <li>The session key column says why a key is missing (EOA owners can't set one), shows scope bits as chips, and warns about expiry before a key lapses. Stale keys (NFT transferred, key cleared) come from the indexer's staleness view (<code>I-6</code>). Copy says "session key"; "Operators" survives only as the top-nav label (<code>P-8</code>, <code>P-9</code>).</li>
+      <li>Seat-count changes have their own card, not a line in the activity list. The lifecycle shows the 7-day timelock (<code>SEAT_UPDATE_TIMELOCK</code>) and the 14-day point (<code>SEAT_UPDATE_EXPIRY</code>) after which any director may delete it; before that only the proposer can. Support is a secondary button, not the primary one: supporting moves the board toward a change that would stall #46. The consequences are spelled out, including the effect on open proposals, because <code>_requiredConfirmations</code> = max(submit quorum, live quorum).</li>
+      <li>Quorum math is shown with the reachable count and a lookup row, so a director can predict the effect of a seat change or a burned NFT. Reachability follows <code>BoardLib.countReachableAuthorized</code> (PMN-M01).</li>
+      <li>The preview is computed locally from indexer rows and says so. The only RPC is at transaction time: <code>useSimulateDelegate</code> runs before signing, then the receipt. After the receipt, the freshness gate (<code>requireIndexerBlock</code>, keyed by chain and Chamber in <code>I-10</code>) holds the ranking until the indexer reaches that block, so the table never shows pre-write state. Simulate hooks move to <code>src/lib/tx/</code>, the only place the lint rule allows contract reads (<code>I-11</code>, <code>I-13</code>).</li>
+      <li>The lock is stated where people delegate. <code>Chamber._update</code> reverts with <code>ExceedsDelegatedAmount</code> when a transfer would dip into delegated shares. Public copy that implied otherwise is being removed (<code>D-6</code>).</li>
+      <li>Independence mirrors the seated-board precondition for the LORE handoff: a seated, mature board with quorum 3 or more and independent holders (review "Critical: the LORE handoff…", <code>M-10</code>, <code>M-23</code>). The card is honest about its limits. It checks owner addresses, not humans, and Safe signer overlap isn't indexed yet.</li>
+      <li>A seat change or delegation that would give one owner quorum-many seats would flip this card red and add a warning to the seat-change card. That's the concentration the review's 1-of-N finding warns about.</li>
+      <li>The AI seat is labelled as an agent director. Its owner is a policy Safe that checks each confirmation against the agent's mandate, and its session key deliberately lacks CONFIRM. Because a submit records the submitter's confirmation, a submit through that key still counts for seat #31, so the policy account should also vet what the key submits (<code>C-17</code>). ERC-8004 identity is display only; it isn't a security primitive (review "AI agents are directors, not relayers").</li>
+    </ol>
+  </section>
+</main>
+<footer class="foot">Mockup only. Addresses marked illustrative are placeholders. Loreum is the protocol; Chamber is the governance contract.</footer>
+</body>
+</html>

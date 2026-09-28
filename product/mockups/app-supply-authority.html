@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Supply authority · Loreum app mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap">
+<link rel="stylesheet" href="assets/app.css">
+<style>
+  b, strong { font-weight: 600; }
+  .subnav { display: flex; gap: 6px; flex-wrap: wrap; margin: -6px 0 18px; }
+  .subnav a { padding: 6px 12px; border-radius: 8px; font-size: 12.5px; color: var(--t3); border: 1px solid var(--line); background: var(--s1); }
+  .subnav a:hover { color: var(--t1); }
+  .subnav a.on { color: var(--t1); background: var(--s3); border-color: var(--line-strong); }
+  .auth .s { font-size: 11.5px; color: var(--t3); font-family: var(--mono); white-space: nowrap; }
+  .auth.own .node { min-width: 170px; flex: 1 1 170px; }
+  .guard { display: flex; gap: 12px; align-items: flex-start; margin-top: 10px; padding: 10px 12px; border: 1px dashed rgba(125, 211, 252, 0.35); border-radius: 8px; background: var(--s2); }
+  .guard .tag { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--info); font-weight: 600; }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: var(--t3); margin-top: 10px; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+  .src { font-size: 11.5px; color: var(--t4); font-family: var(--mono); }
+  .cd { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  .grid > * { min-width: 0; }
+  fieldset { min-width: 0; }
+  .pick { display: flex; flex-direction: column; gap: 6px; }
+  .pick label { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 10px; align-items: start; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--s2); cursor: pointer; font-size: 13px; }
+  .pick label.sel { border-color: rgba(124, 92, 214, 0.5); background: var(--a-soft); }
+  .pick label.blocked { cursor: not-allowed; border-color: rgba(248, 113, 113, 0.3); background: var(--bad-soft); }
+  .pick input { margin: 3px 0 0; accent-color: var(--a500); }
+  .pick .sub { display: block; font-size: 12px; color: var(--t3); }
+  .checks.sm li { padding: 7px 0; font-size: 12.5px; }
+  .ops td .stack-sm { gap: 3px; }
+  .ops tr.cur td { background: rgba(251, 191, 36, 0.04); }
+  details.ex summary { cursor: pointer; font-size: 12.5px; color: var(--t3); }
+  details.ex summary:hover { color: var(--t1); }
+  details.ex[open] summary { margin-bottom: 10px; }
+  .exits li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 9px 0; border-bottom: 1px solid rgba(148, 163, 184, 0.08); font-size: 13px; }
+  .exits { list-style: none; margin: 0; padding: 0; }
+  .feed { list-style: none; margin: 0; padding: 0; }
+  .feed li { padding: 8px 0; border-bottom: 1px solid rgba(148, 163, 184, 0.08); font-size: 12.5px; color: var(--t2); }
+  .feed .when { font-family: var(--mono); font-size: 11px; color: var(--t4); display: block; }
+  .st-legend { display: flex; gap: 6px 10px; flex-wrap: wrap; align-items: center; margin-top: 12px; font-size: 12px; color: var(--t4); }
+  /* Authority chains stack top-to-bottom on narrow screens instead of wrapping into a staircase */
+  @media (max-width: 720px) {
+    .auth { flex-direction: column; }
+    .auth .node, .auth.own .node { flex-basis: auto; border-radius: 0; }
+    .auth .node:first-child { border-radius: 8px 8px 0 0; }
+    .auth .node:last-child { border-radius: 0 0 8px 8px; }
+    .auth .node + .node { border-left: 1px solid var(--line); border-top: 0; }
+    .auth .node + .node::before { left: 18px; top: -6px; margin-top: 0; transform: rotate(135deg); }
+  }
+  @media (max-width: 640px) {
+    .top { position: static; }
+    .top-inner { height: auto; min-height: 60px; padding-top: 8px; padding-bottom: 8px; flex-wrap: wrap; }
+    .top-right { flex-wrap: wrap; }
+  }
+</style>
+</head>
+<body>
+<div class="mock-bar">
+  <span><b>MOCKUP</b> · Loreum app · Supply authority · state as of Mar 16, 2027 14:20 UTC</span>
+  <span><a href="index.html">All mockups</a> · <a href="_mock-data.md">Mock data</a></span>
+</div>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="row" style="gap:18px">
+      <a class="brand" href="index.html"><span class="brand-mark">L</span><span>Loreum</span></a>
+      <nav class="nav" aria-label="Main">
+        <a href="app-overview.html" class="on">My Chambers</a>
+        <a href="app-session-keys.html">Operators</a>
+        <a href="#">Deploy Chamber</a>
+        <a href="#">Compliance</a>
+        <a href="app-migrate.html">Migrate from Safe</a>
+        <a href="#">Docs</a>
+      </nav>
+    </div>
+    <div class="top-right">
+      <span class="chain"><i></i>Ethereum</span>
+      <span class="fresh" title="All data on this page comes from chamber-indexer"><i></i>Indexed 24 s ago · #27,184,300</span>
+      <span class="wallet"><span class="avatar"></span>lena.eth</span>
+    </div>
+  </div>
+</header>
+
+<main class="page">
+  <div class="ch-head">
+    <div class="ch-title">
+      <div class="ch-icon">LD</div>
+      <div>
+        <h1>Loreum DAO</h1>
+        <div class="ch-meta">
+          <span class="chain"><i></i>Ethereum</span>
+          <span class="badge acc">v1.2.0</span>
+          <span class="badge">5 seats · quorum 3</span>
+          <span class="mono faint">0x3F1c…A92e</span>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <a class="btn" href="app-queue.html">Open queue</a>
+      <a class="btn primary" href="app-proposal.html">New proposal</a>
+    </div>
+  </div>
+
+  <nav class="tabs" aria-label="Chamber">
+    <a href="app-overview.html">Overview</a>
+    <a href="app-board.html">Board &amp; delegation</a>
+    <a href="app-queue.html">Queue <span class="badge warn">3</span></a>
+    <a href="p2-multichain-treasury.html">Treasury</a>
+    <a href="app-supply-authority.html" class="on">Supply authority</a>
+    <a href="app-session-keys.html">Session keys</a>
+  </nav>
+
+  <nav class="subnav" aria-label="Supply authority">
+    <a href="app-supply-authority.html" class="on">LORE supply</a>
+    <a href="app-guardian.html">Guardian console</a>
+    <a href="app-handoff-preflight.html">Handoff preflight (archived Feb 19)</a>
+  </nav>
+
+  <!-- Watcher alert banners -->
+  <div class="stack" style="margin-bottom:18px">
+    <div class="banner warn" role="status">
+      <span class="ic">!</span>
+      <div class="stack-sm" style="flex:1">
+        <div><b>Mint queued · gate op #3:</b> 250,000 LORE to the Vesting contract <span class="mono">0x4dE2…9a07</span>. It can execute from <b class="num">Mar 19, 14:02 UTC</b> (in <span class="cd">2 d 23 h 42 m</span>) until <span class="num">Apr 2, 14:02 UTC</span>. The guardian can cancel it until it executes. <span class="note">1</span></div>
+        <div class="row" style="gap:14px"><a href="#op-3">Review op #3</a><a href="app-guardian.html">Guardian console</a><span class="src">Watcher alert · Mar 12 14:02 UTC · also raised by the independent second channel</span></div>
+      </div>
+    </div>
+    <div class="banner ok">
+      <span class="ic">OK</span>
+      <div>No exit operations pending. LORE owner is LoreMintGate and the Team Safe threshold is 4-of-7, both unchanged since the last weekly heartbeat (Mar 15). <span class="src">Watcher</span></div>
+    </div>
+  </div>
+
+  <div class="grid main-side">
+    <div class="stack">
+      <!-- Ownership chain -->
+      <section class="card accent" aria-labelledby="who-mints">
+        <div class="card-h">
+          <h2 id="who-mints">Who can mint LORE <span class="note">2</span></h2>
+          <span class="badge info">from indexer</span>
+        </div>
+        <div class="auth own" role="group" aria-label="LORE ownership chain">
+          <div class="node seat">
+            <span class="k">Token</span>
+            <span class="v">LORE</span>
+            <span class="s">0x7756…DC99 · max 100M</span>
+          </div>
+          <div class="node">
+            <span class="k">Owner</span>
+            <span class="v">LoreMintGate</span>
+            <span class="s">0x6c1D…3F8b · since Feb 19</span>
+          </div>
+          <div class="node key">
+            <span class="k">Proposer</span>
+            <span class="v">Loreum DAO Chamber</span>
+            <span class="s">quorum 3 of 5 · 0x3F1c…A92e</span>
+          </div>
+        </div>
+        <div class="guard">
+          <div class="stack-sm" style="flex:1">
+            <span class="tag">Guardian · veto only</span>
+            <div><b>Loreum Guardian Safe</b> <span class="mono faint">0x9C44…E01d</span> · 3-of-5, no signer is a Team Safe signer, director or large LORE holder</div>
+            <div class="row" style="gap:6px">
+              <span class="badge ok">Can cancel queued ops</span>
+              <span class="badge ok">Must approve exits</span>
+              <span class="badge bad">Cannot mint</span>
+              <span class="badge bad">Cannot queue or execute</span>
+            </div>
+          </div>
+        </div>
+        <div class="divider"></div>
+        <dl class="kv">
+          <dt>LORE.owner()</dt>
+          <dd>LoreMintGate <span class="badge ok"><span class="dot"></span>Matches</span> <span class="src">OwnershipTransferred at block 27,002,857 · Feb 19, 2027 09:31 UTC · from Team Safe</span></dd>
+          <dt>What the Chamber can do</dt>
+          <dd>Ask the gate to mint (queueMint), then execute after the 7-day delay. It never owns LORE and cannot call LORE.mint directly.</dd>
+          <dt>Team Safe</dt>
+          <dd><span class="mono">0x5d45…2095</span> · 4-of-7 · no mint power since the handoff</dd>
+        </dl>
+      </section>
+
+      <!-- Supply stats -->
+      <div class="grid g4">
+        <div class="stat">
+          <div class="upper">Total supply</div>
+          <div class="v">10,070,000</div>
+          <div class="s">of 100,000,000 max · 10.07%</div>
+        </div>
+        <div class="stat">
+          <div class="upper">Pending mints</div>
+          <div class="v">250,000</div>
+          <div class="s">1 op · executable Mar 19 14:02</div>
+        </div>
+        <div class="stat">
+          <div class="upper">Q1 cap left</div>
+          <div class="v">650,000</div>
+          <div class="s">of 1,000,000 · resets Apr 1</div>
+        </div>
+        <div class="stat">
+          <div class="upper">Headroom to max <span class="note">3</span></div>
+          <div class="v">89,930,000</div>
+          <div class="s">only through the gate, at most 1M a quarter</div>
+        </div>
+      </div>
+
+      <!-- Cap meter -->
+      <section class="card" aria-labelledby="cap-h">
+        <div class="card-h">
+          <h2 id="cap-h">Q1 2027 mint cap <span class="note">4</span></h2>
+          <span class="muted num" style="font-size:12.5px">1,000,000 LORE per quarter · 1% of max supply</span>
+        </div>
+        <div class="meter" role="img" aria-label="Q1 2027 cap: 100,000 executed, 250,000 queued, 650,000 remaining of 1,000,000">
+          <span style="width:10%"></span>
+          <span class="q" style="width:25%"></span>
+        </div>
+        <div class="legend">
+          <span><i style="background:var(--a500)"></i>Executed <b class="num">100,000</b> · op #2</span>
+          <span><i style="background:var(--warn)"></i>Queued <b class="num">250,000</b> · op #3</span>
+          <span><i style="background:var(--s3);border:1px solid var(--line-strong)"></i>Remaining <b class="num">650,000</b></span>
+        </div>
+        <p class="hint" style="margin-top:10px">Period Jan 1 to Mar 31, 2027 (UTC). Resets Apr 1, 00:00 UTC, in <span class="cd">15 d 9 h 40 m</span>. The cap is charged when an op is queued and refunded if the op is cancelled or expires, so a queued op cannot be squeezed past the cap later.</p>
+      </section>
+      <section class="card" aria-labelledby="params-h">
+        <div class="card-h"><h2 id="params-h">Gate parameters <span class="note">5</span></h2><span class="badge">Immutable</span></div>
+        <dl class="kv">
+          <dt>Mint delay</dt><dd>7 days after queueing</dd>
+          <dt>Execution window</dt><dd>14 days after the delay, then the op expires</dd>
+          <dt>Cap</dt><dd class="num">1,000,000 LORE per quarter</dd>
+          <dt>Exit delay</dt><dd>30 days, plus guardian approval</dd>
+          <dt>Who executes</dt><dd>Proposer only, so each mint takes two quorum proposals</dd>
+          <dt>Proposer quorum floor</dt><dd>3. A tripwire against using a thin board by accident, not a control: a Chamber upgrade can get around it.</dd>
+          <dt>Recipient rule</dt><dd>Never the proposer (reverts <span class="mono">InvalidAccount</span>)</dd>
+        </dl>
+      </section>
+    </div>
+
+    <!-- Side column -->
+    <aside class="stack">
+      <section class="card" aria-labelledby="exits-h">
+        <div class="card-h">
+          <h2 id="exits-h">Exits · dual control <span class="note">6</span></h2>
+          <span class="badge ok"><span class="dot"></span>None pending</span>
+        </div>
+        <p class="muted" style="font-size:12.5px;margin-bottom:6px">Each exit needs a Chamber proposal at quorum, <b>and</b> approval from the Guardian Safe, <b>and</b> a 30-day wait. Neither side can do it alone.</p>
+        <ul class="exits">
+          <li><div><b>TransferOwnership</b><div class="hint">Moves LORE ownership off the gate</div></div><span class="badge">None pending</span></li>
+          <li><div><b>Renounce</b><div class="hint">Gives up minting forever</div></div><span class="badge">None pending</span></li>
+          <li><div><b>SetGuardian</b><div class="hint">Replaces the Guardian Safe</div></div><span class="badge">None pending</span></li>
+          <li><div><b>SetProposer</b><div class="hint">Replaces the proposing Chamber</div></div><span class="badge">None pending</span></li>
+        </ul>
+        <details class="ex" style="margin-top:12px">
+          <summary>Example: how a pending exit would look</summary>
+          <div class="banner bad">
+            <span class="ic">!!</span>
+            <div><b>Exit queued · gate op #5:</b> TransferOwnership of LORE to <span class="mono">0x1F9e…b4C2</span>, an address with no Loreum role. Guardian approval: <b>not given</b>. Earliest effect: 30 days after approval. This banner shows on every Loreum DAO page until the op is cancelled or executes.</div>
+          </div>
+          <p class="hint" style="margin-top:6px">Example state only. Nothing like this is pending now.</p>
+        </details>
+      </section>
+
+      <section class="card" aria-labelledby="feed-h">
+        <div class="card-h"><h2 id="feed-h">Recent alerts</h2><a class="btn ghost sm" href="app-guardian.html">Full feed</a></div>
+        <ul class="feed">
+          <li><span class="when">Mar 14 03:10 UTC · resolved 03:22</span>Indexer lag above 30 blocks on Ethereum</li>
+          <li><span class="when">Mar 12 14:02 UTC</span>Gate op #3 queued: mint 250,000 LORE to Vesting (eta Mar 19)</li>
+          <li><span class="when">Feb 26 09:40 UTC</span>LORE totalSupply +100,000 (gate op #2 executed to Grants Safe)</li>
+        </ul>
+      </section>
+
+      <section class="inset" aria-labelledby="src-h">
+        <h3 id="src-h" class="upper" style="margin-bottom:6px">Where this data comes from <span class="note">7</span></h3>
+        <p style="font-size:12.5px" class="muted">Everything above is read from chamber-indexer: the LoreMintGate and LORE event sources, indexed to block #27,184,300. Countdowns use the indexer head time, not your clock. This page makes no RPC calls until you simulate or submit a proposal. <a href="app-indexer-states.html">What you see when the indexer lags</a></p>
+      </section>
+    </aside>
+  </div>
+
+  <!-- Gate operations -->
+  <section class="card" style="margin-top:16px" aria-labelledby="ops-h">
+    <div class="card-h">
+      <h2 id="ops-h">Gate operations <span class="note">8</span></h2>
+      <div class="row" style="gap:6px">
+        <span class="badge warn">1 queued</span>
+        <span class="badge">4 total</span>
+        <span class="badge info">from indexer</span>
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table class="t ops">
+        <thead>
+          <tr>
+            <th>Op</th>
+            <th>Action</th>
+            <th class="r">Amount</th>
+            <th>Recipient</th>
+            <th>Queued</th>
+            <th>Can execute</th>
+            <th>Status</th>
+            <th>Next step</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="cur" id="op-3">
+            <td class="mono">#3</td>
+            <td>Mint</td>
+            <td class="r num">250,000 LORE</td>
+            <td><div class="stack-sm"><span>Vesting contract</span><span class="mono faint">0x4dE2…9a07</span></div></td>
+            <td><div class="stack-sm"><span class="num">Mar 12 14:02</span><a class="mono" href="app-queue.html">Chamber tx #43</a></div></td>
+            <td><div class="stack-sm"><span class="num">Mar 19 14:02 → Apr 2 14:02</span><span class="hint">opens in <span class="cd">2 d 23 h 42 m</span></span></div></td>
+            <td><span class="badge warn"><span class="dot"></span>Queued · in delay</span></td>
+            <td>
+              <div class="stack-sm">
+                <a href="app-queue.html">Execute with tx #47 (2/3)</a>
+                <span class="hint">#47 reverts <span class="mono">NotReady</span> before Mar 19 14:02</span>
+                <div class="row" style="gap:6px"><a class="btn danger sm" href="#queue-mint">Propose cancel op #3</a><a class="btn ghost sm" href="app-guardian.html">Guardian cancel</a></div>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td class="mono">#2</td>
+            <td>Mint</td>
+            <td class="r num">100,000 LORE</td>
+            <td><div class="stack-sm"><span>Grants Safe</span><span class="mono faint">0x2c9F…d810</span></div></td>
+            <td><div class="stack-sm"><span class="num">Feb 19 09:39</span><span class="mono faint">Chamber tx #36</span></div></td>
+            <td><span class="num">Feb 26 09:39 → Mar 12 09:39</span></td>
+            <td><span class="badge ok"><span class="dot"></span>Executed Feb 26 09:40</span></td>
+            <td><span class="muted">Minted by Chamber tx #40</span></td>
+          </tr>
+          <tr>
+            <td class="mono">#1</td>
+            <td>Mint <span class="badge">Drill</span></td>
+            <td class="r num">1 LORE</td>
+            <td><div class="stack-sm"><span>Grants Safe</span><span class="mono faint">0x2c9F…d810</span></div></td>
+            <td><div class="stack-sm"><span class="num">Feb 12 16:00</span><span class="mono faint">Chamber tx #32</span></div></td>
+            <td><span class="faint">Cancelled before eta</span></td>
+            <td><span class="badge"><span class="dot"></span>Cancelled by Chamber · Feb 13</span></td>
+            <td><span class="muted">Drill: queue, then Chamber cancel (tx #33)</span></td>
+          </tr>
+          <tr>
+            <td class="mono">#0</td>
+            <td>Mint <span class="badge">Drill</span></td>
+            <td class="r num">1 LORE</td>
+            <td><div class="stack-sm"><span>Grants Safe</span><span class="mono faint">0x2c9F…d810</span></div></td>
+            <td><div class="stack-sm"><span class="num">Feb 10 15:20</span><span class="mono faint">Chamber tx #31</span></div></td>
+            <td><span class="faint">Cancelled before eta</span></td>
+            <td><span class="badge"><span class="dot"></span>Cancelled by guardian · Feb 11</span></td>
+            <td><span class="muted">Drill: queue, then guardian cancel</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="st-legend" role="group" aria-label="Op statuses">
+      <span>Every status an op can have:</span>
+      <span class="badge warn"><span class="dot"></span>Queued · in delay</span>
+      <span class="badge info"><span class="dot"></span>Ready · until expiry</span>
+      <span class="badge ok"><span class="dot"></span>Executed</span>
+      <span class="badge"><span class="dot"></span>Cancelled · cap refunded</span>
+      <span class="badge bad"><span class="dot"></span>Expired · cap refunded</span>
+      <span>No op is ready or expired today.</span>
+    </div>
+
+    <div class="inset" style="margin-top:14px">
+      <div class="between" style="margin-bottom:12px">
+        <h3>Op #3 lifecycle</h3>
+        <span class="src">times in UTC · from indexer events</span>
+      </div>
+      <ol class="steps" aria-label="Op #3 lifecycle">
+        <li class="done">Proposed<span class="when">tx #43 · Mar 10</span></li>
+        <li class="done">Approved 3/3<span class="when">Mar 12 13:58</span></li>
+        <li class="done">Queued on gate<span class="when">Mar 12 14:02</span></li>
+        <li class="now">7-day delay<span class="when">guardian can cancel</span></li>
+        <li>Can execute<span class="when">Mar 19 14:02</span></li>
+        <li>Expires<span class="when">Apr 2 14:02</span></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- Queue a mint template -->
+  <section class="card" style="margin-top:16px" id="queue-mint" aria-labelledby="qm-h">
+    <div class="card-h">
+      <h2 id="qm-h">Queue a mint <span class="note">9</span></h2>
+      <span class="badge acc">Creates Chamber proposal #49</span>
+    </div>
+
+    <div class="grid g2" style="align-items:start">
+      <!-- Form -->
+      <div class="stack">
+        <div class="field">
+          <label for="tpl">Gate template</label>
+          <select id="tpl" class="input">
+            <option selected>Mint LORE (queueMint)</option>
+            <option>Execute a queued op after its eta (execute)</option>
+            <option>Cancel a queued op (cancel)</option>
+            <option>Exit op, needs guardian approval (4 templates)</option>
+          </select>
+        </div>
+
+        <fieldset class="field" style="border:0;padding:0;margin:0">
+          <legend class="upper" style="margin-bottom:6px">Recipient <span class="note">10</span></legend>
+          <div class="pick">
+            <label class="sel"><input type="radio" name="rcpt" checked><span><b>Grants Safe</b> <span class="mono faint">0x2c9F…d810</span><span class="sub">End recipient · Safe 3-of-5 · received op #2</span></span></label>
+            <label><input type="radio" name="rcpt"><span><b>Vesting contract</b> <span class="mono faint">0x4dE2…9a07</span><span class="sub">End recipient · op #3 is already queued to it</span></span></label>
+            <label class="blocked"><input type="radio" name="rcpt" disabled><span><b>Loreum DAO Chamber vault</b> <span class="mono faint">0x3F1c…A92e</span><span class="sub" style="color:#fecaca">Blocked. The gate rejects its own proposer as a recipient (InvalidAccount).</span></span></label>
+            <label><input type="radio" name="rcpt"><span><b>Other address</b><span class="sub">Checked against the indexer's list of Chambers whose asset is LORE</span></span></label>
+          </div>
+        </fieldset>
+
+        <div class="banner warn">
+          <span class="ic">!</span>
+          <div><b>Never mint into a vault that holds LORE.</b> A mint into the Loreum DAO Chamber, or into any Chamber whose asset is LORE, is a donation to its cLORE holders. The share price jumps when it executes, and anyone watching the public 7-day queue can deposit before and redeem after. Mint to an end recipient or a Chamber-owned treasury Safe instead.</div>
+        </div>
+
+        <div class="field">
+          <label for="amt">Amount (LORE)</label>
+          <input id="amt" class="input mono num" value="150,000" inputmode="decimal">
+          <span class="hint">Quarter budget left: 650,000. After this op: <b class="num">500,000</b>. If the proposal executes after Mar 31, the op is charged to Q2 instead.</span>
+        </div>
+
+        <div class="field">
+          <label for="why">Rationale (stored in metadataURI)</label>
+          <textarea id="why" class="input" rows="3">Q2 contributor grants: 150,000 LORE to the Grants Safe for the April round, paid out under the published grants policy.</textarea>
+          <span class="hint">Directors read this for context. What they confirm is the decoded call on the right, not this text.</span>
+        </div>
+
+        <ul class="checks sm" aria-label="Pre-submit checks from indexer">
+          <li><span class="st pass">✓</span><span>Amount is within the Q1 budget (150,000 ≤ 650,000)</span><span class="src">indexer</span></li>
+          <li><span class="st pass">✓</span><span>Recipient is not the proposer</span><span class="src">rule</span></li>
+          <li><span class="st pass">✓</span><span>Recipient is not a Chamber whose asset is LORE</span><span class="src">indexer</span></li>
+          <li><span class="st pass">✓</span><span>Recipient is a contract: Safe 1.3.0, 3-of-5</span><span class="src">indexer</span></li>
+        </ul>
+      </div>
+
+      <!-- Preview -->
+      <div class="stack">
+        <div class="decode">
+          <div class="sum">Ask LoreMintGate to <b>queue a mint of 150,000 LORE</b> to <b>Grants Safe</b>. Nothing is minted until a second proposal executes it after the 7-day delay.</div>
+          <dl>
+            <dt>target</dt><dd>LoreMintGate 0x6c1D286e5f86e64805e3D1e33B3d804c0f813F8b</dd>
+            <dt>function</dt><dd>queueMint(address to, uint256 amount)</dd>
+            <dt>to</dt><dd>0x2c9F52662F101fE24b570DBde936E7754dAAd810 · Grants Safe</dd>
+            <dt>amount</dt><dd>150000000000000000000000 · 150,000 LORE (18 decimals)</dd>
+            <dt>value</dt><dd>0 ETH</dd>
+            <dt>deadline</dt><dd>Apr 15, 2027 14:20 UTC (30-day maximum)</dd>
+          </dl>
+        </div>
+        <div class="raw" role="group" aria-label="Raw calldata">0x79ba14530000000000000000000000002c9f52662f101fe24b570dbde936e7754daad810000000000000000000000000000000000000000000001fc3842bd1f071c00000</div>
+
+        <div class="inset">
+          <div class="between" style="margin-bottom:8px">
+            <h3>Simulation <span class="note">11</span></h3>
+            <span class="badge ok"><span class="dot"></span>Passes</span>
+          </div>
+          <p class="src" style="margin-bottom:8px">Simulated at block 27,184,302 via RPC just now, as the Chamber calling the gate</p>
+          <div class="diff">
+            <span>Q1 cap remaining <span class="minus">650,000</span> → <span class="plus">500,000</span></span>
+            <span>Pending gate ops <span class="minus">1</span> → <span class="plus">2 (new op #4)</span></span>
+            <span>LORE totalSupply 10,070,000 → 10,070,000 (unchanged until execute)</span>
+          </div>
+        </div>
+
+        <div class="inset">
+          <h3 style="margin-bottom:10px">What happens next</h3>
+          <ol class="steps" aria-label="Mint path">
+            <li class="now">#49 needs 3 confirmations<span class="when">yours is 1 of 3</span></li>
+            <li>Op #4 queued<span class="when">7-day delay</span></li>
+            <li>Execute proposal<span class="when">quorum again</span></li>
+            <li>Minted<span class="when">within 14 days</span></li>
+          </ol>
+        </div>
+
+        <div class="stack-sm">
+          <span class="upper">You submit as <span class="note">12</span></span>
+          <div class="auth compact" role="group" aria-label="Your authority chain">
+            <div class="node seat"><span class="k">Seat</span><span class="v">Explorer #44 · rank 4</span></div>
+            <div class="node"><span class="k">Owner</span><span class="v">lena.eth · EOA 0x3c7B…aa15</span></div>
+            <div class="node key"><span class="k">Session key</span><span class="v">None · signs directly</span></div>
+          </div>
+        </div>
+
+        <div class="row">
+          <button class="btn primary" type="button">Submit proposal #49</button>
+          <button class="btn ghost" type="button">Save draft</button>
+        </div>
+        <p class="hint">Submitting also counts as your confirmation (1 of 3). Your wallet shows the same target and calldata as above.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="notes">
+    <h3>Design notes</h3>
+    <ol>
+      <li>Watcher banners are pinned above the tab content on every Loreum DAO page while an op is live. Queued mints are amber; exit ops are red (<code>M-15</code> acceptance: the banner appears for admin ops). They come from the indexer-driven watcher (<code>M-17</code>). The independent third-party channel (<code>M-21</code>) raises the same gate events without the indexer, and the banner says so, so nobody reads the indexer as the only alarm. The copy gives the exact window and who can stop it.</li>
+      <li>The ownership chain answers "who can mint" in one line, using the <code>.auth</code> chain pattern: LORE, then LoreMintGate, then the proposing Chamber, with the guardian as a separate veto-only branch. The Chamber is never the LORE owner. This is the fix for the review's Critical finding, where the Safe-to-Chamber handoff let one person mint about 90M LORE within 2 blocks (<code>M-1</code>, <code>M-3</code>). The owner check is matched against the indexed <code>OwnershipTransferred</code> event (<code>M-14</code>).</li>
+      <li>Headroom is stated honestly. 89.93M is mintable in principle, but only through the gate at up to 1M a quarter, and moving ownership needs dual control. This matches the capture analysis in <code>M-12</code>.</li>
+      <li>The cap is charged at queue time and refunded on cancel or expiry. That matches the Halmos property <code>symbolicCancelRefundsReservation</code> in <code>M-6</code>, so the meter shows queued amounts as reserved (striped) and not yet minted.</li>
+      <li>Parameters are shown as immutable. The quorum floor is labelled a tripwire and not a security control, per the plan's corrected facts: a Chamber that owns its ProxyAdmin can be upgraded to report any quorum. Proposer-only execution explains why each mint takes two proposals (open question in the <code>M-3</code> ADR).</li>
+      <li>Exits follow the dual-control option in <code>M-3</code>(i): a Chamber proposal, guardian approval and 30 days. Showing "None pending" as an explicit green state is the reassurance directors and holders need. The collapsed example shows what the red state looks like, without implying it is live.</li>
+      <li>This page makes zero display-time RPC calls (<code>I-11</code>, <code>I-21</code>, <code>M-15</code> ESLint ban on wagmi read hooks in mint-gate files). Countdowns use the indexer head clock from <code>I-10</code> instead of <code>useBlockNumber</code>. Lag and outage states are in <a href="app-indexer-states.html">app-indexer-states.html</a>.</li>
+      <li><code>M-15</code> must render five op states: queued, ready, expired, cancelled and executed. Today's ops cover three of them, so the legend under the table shows all five badges, including the two with no op today. Expired and cancelled both say "cap refunded", matching note 4. The "#47 reverts NotReady" hint is worked out from the indexed eta, not from a display-time simulation. The drill ops stay visible and tagged: they are the public proof that both cancel paths work (<code>M-13</code>, <code>M-20</code> step 4). Directors cancel with a quorum proposal; the guardian cancels from its own console.</li>
+      <li>The template builds a normal Chamber proposal (<code>M-16</code>). The preview is rendered from the calldata using the #260 decoder, so what directors confirm is always decoded calldata. The rationale goes to metadataURI. The path shows the two quorum proposals and the 30-day transaction maximum age (<code>WalletTypes</code>).</li>
+      <li>The recipient policy from <code>M-7</code>: the vault is disabled in the picker because the gate rejects it on-chain (<code>InvalidAccount</code>). Any other Chamber whose asset is LORE triggers a warning, checked against the indexer (<code>M-7</code>(d)). The warning spells out the sniping risk in plain words.</li>
+      <li>RPC appears only at transaction time, and the page says so with the block number (#260 simulation gate, reused as is). The diff shows that queueing changes the cap but not the supply.</li>
+      <li>The authority chain appears wherever a seat acts. lena.eth owns her seat from an EOA, so she has no session key: only contract owners can set keys (<code>Chamber.sol</code> session scope rules).</li>
+    </ol>
+  </section>
+</main>
+<footer class="foot">Mockup only. Addresses marked illustrative are placeholders. Loreum is the protocol; Chamber is the governance contract.</footer>
+</body>
+</html>
