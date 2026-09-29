@@ -1215,7 +1215,6 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
                 hasSeatProposal={hasSeatProposal}
                 boardEmpty={boardEmpty}
                 registryUpgradeDraft={registryUpgradeDraft}
-                implSync={implSync}
                 {...writeReporters}
               />
             ) : (
@@ -2242,7 +2241,6 @@ interface NewTransactionFormProps extends QueueWriteReporters {
     registryVersionLabel?: string
     implSourceLabel: PreferredImplSource
   }
-  implSync: ReturnType<typeof useChamberRegistryImplementationSync>
 }
 
 // Helper to get placeholder text for different parameter types
@@ -2330,7 +2328,6 @@ function NewTransactionForm({
   hasSeatProposal,
   boardEmpty,
   registryUpgradeDraft,
-  implSync,
   onWriteStart,
   onWriteSent,
   onWriteClear,
