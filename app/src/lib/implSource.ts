@@ -40,3 +40,39 @@ export function implMismatchBannerCopy(source: PreferredImplSource): {
     }
   }
 }
+
+export function implQueueUpgradeCopy(source: PreferredImplSource): {
+  alreadyMatchesToast: string
+  availableTitle: string
+  availableLead: string
+  proposalTitle: (versionLabel?: string) => string
+  prefilledTitle: string
+  prefilledImplLead: string
+} {
+  switch (source) {
+    case 'Factory':
+      return {
+        alreadyMatchesToast: 'This chamber already matches the Factory’s default implementation.',
+        availableTitle: 'Factory upgrade available',
+        availableLead: 'Align this Chamber proxy with the Factory’s default implementation',
+        proposalTitle: (versionLabel) =>
+          `Upgrade Chamber to Factory implementation${versionLabel ? ` v${versionLabel}` : ''}`,
+        prefilledTitle: 'Prefilled Factory upgrade proposal',
+        prefilledImplLead: 'the Factory’s default implementation',
+      }
+    case 'Registry':
+      return {
+        alreadyMatchesToast: 'This chamber already matches the Registry’s default implementation.',
+        availableTitle: 'Registry upgrade available',
+        availableLead: 'Align this Chamber proxy with the Registry’s default implementation',
+        proposalTitle: (versionLabel) =>
+          `Upgrade Chamber to Registry implementation${versionLabel ? ` v${versionLabel}` : ''}`,
+        prefilledTitle: 'Prefilled Registry upgrade proposal',
+        prefilledImplLead: 'the Registry’s default implementation',
+      }
+    default: {
+      const _exhaustive: never = source
+      throw new Error(`Unhandled impl source: ${_exhaustive}`)
+    }
+  }
+}
