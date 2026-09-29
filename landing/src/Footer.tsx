@@ -9,7 +9,7 @@ const itemClass = 'hover:text-white transition-colors';
 
 /**
  * Landing footer. Every link is a live destination — Team, Blog, Chambers,
- * X, GitHub, and docs.loreum.org. Dead stubs (Agents, Roadmap, Security,
+ * X, GitHub, and /docs (www.loreum.org/docs). Dead stubs (Agents, Roadmap, Security,
  * Discord, Privacy, Terms) are omitted until real pages exist.
  */
 function Footer() {
@@ -62,7 +62,7 @@ function Footer() {
             </li>
             <li>
               <a
-                href="https://docs.loreum.org"
+                href="/docs"
                 target="_blank"
                 rel="noopener noreferrer"
                 className={itemClass}
