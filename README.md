@@ -80,7 +80,7 @@ These demo tokens are recorded in `contracts/deployments/sepolia.txt` and are wh
 
 ## Documentation
 
-For detailed documentation, visit [www.loreum.org/docs](https://www.loreum.org/docs)
+For detailed documentation, visit [app.loreum.org/docs](https://app.loreum.org/docs)
 
 ## Community
 
