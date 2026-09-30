@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Allow: /blog
+Allow: /team
+Allow: /whitepaper
+
+Sitemap: https://www.loreum.org/sitemap.xml
