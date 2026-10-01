@@ -84,7 +84,6 @@ For detailed documentation, visit [docs.loreum.org](https://docs.loreum.org)
 
 ## Community
 
-- Discord: [Join our Discord](https://discord.gg/Pb3d5hRV)
 - Twitter: [@loreumdao](https://twitter.com/loreumdao)
 - GitHub: [loreum-org](https://github.com/loreum-org)
 
