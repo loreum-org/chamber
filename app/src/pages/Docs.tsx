@@ -334,7 +334,6 @@ export default function Docs() {
           className="panel p-4 sm:p-8 md:p-12"
         >
             <div className="prose prose-invert prose-slate max-w-none prose-headings:font-heading prose-headings:font-bold prose-h1:text-3xl sm:prose-h1:text-4xl prose-h1:mb-6 sm:prose-h1:mb-8 prose-h2:text-xl sm:prose-h2:text-2xl prose-h2:mt-8 sm:prose-h2:mt-12 prose-h2:mb-4 prose-h3:text-lg sm:prose-h3:text-xl prose-h3:mt-6 sm:prose-h3:mt-8 prose-h3:mb-3 prose-p:text-slate-400 prose-p:leading-relaxed prose-a:text-accent-400 prose-a:no-underline hover:prose-a:underline prose-strong:text-slate-100 prose-code:text-accent-300 prose-code:bg-slate-800/50 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none prose-ul:list-disc prose-ol:list-decimal">
-            <div className="hidden">Debug: content length {content.length}</div>
             <ReactMarkdown 
               remarkPlugins={[remarkGfm]}
               components={{
