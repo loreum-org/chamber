@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://app.loreum.org/</loc>
+  </url>
+  <url>
+    <loc>https://app.loreum.org/docs</loc>
+  </url>
+  <url>
+    <loc>https://app.loreum.org/docs/introduction/overview</loc>
+  </url>
+  <url>
+    <loc>https://app.loreum.org/docs/introduction/why-not-multisig</loc>
+  </url>
+  <url>
+    <loc>https://app.loreum.org/docs/introduction/getting-started</loc>
+  </url>
+  <url>
+    <loc>https://app.loreum.org/docs/protocol/governance</loc>
+  </url>
+  <url>
+    <loc>https://app.loreum.org/docs/guides/app-routes</loc>
+  </url>
+  <url>
+    <loc>https://app.loreum.org/docs/reference/api-reference</loc>
+  </url>
+  <url>
+    <loc>https://app.loreum.org/docs/security/security-review</loc>
+  </url>
+  <url>
+    <loc>https://app.loreum.org/deploy</loc>
+  </url>
+  <url>
+    <loc>https://app.loreum.org/operators</loc>
+  </url>
+</urlset>
