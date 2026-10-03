@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Governance Power Calculator — Loreum</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.3/p5.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bellefair&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --space-900: #0b0d17;
+      --space-800: #151932;
+      --space-accent: #d0d6f9;
+      --blue-500: #3080ff;
+      --blue-400: #5a9aff;
+      --purple-500: #ac4bff;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: transparent;
+      color: var(--space-accent);
+      overflow-x: hidden;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    #bg-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+    }
+
+    #bg-canvas canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .content {
+      position: relative;
+      z-index: 2;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 6rem 2rem 4rem;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 4rem;
+    }
+
+    .header h1 {
+      font-family: 'Bellefair', serif;
+      font-size: clamp(2.5rem, 6vw, 4rem);
+      font-weight: 400;
+      margin-bottom: 1rem;
+      color: var(--space-accent);
+      letter-spacing: -0.02em;
+      text-shadow: 0 0 20px rgba(208, 214, 249, 0.5), 0 2px 4px rgba(0, 0, 0, 0.8);
+    }
+
+    .header p {
+      color: rgba(208, 214, 249, 0.7);
+      font-size: 1.1rem;
+      max-width: 700px;
+      margin: 0 auto;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9);
+    }
+
+    .calculator {
+      background: rgba(21, 25, 50, 0.6);
+      border: 1px solid rgba(208, 214, 249, 0.1);
+      border-radius: 16px;
+      padding: 3rem;
+      backdrop-filter: blur(20px);
+      margin-bottom: 3rem;
+    }
+
+    .input-section {
+      margin-bottom: 3rem;
+    }
+
+    .input-group {
+      margin-bottom: 2rem;
+    }
+
+    .input-group label {
+      display: block;
+      font-size: 0.9rem;
+      color: rgba(208, 214, 249, 0.7);
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .slider-container {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    input[type="range"] {
+      flex: 1;
+      height: 6px;
+      border-radius: 3px;
+      background: rgba(208, 214, 249, 0.1);
+      outline: none;
+      -webkit-appearance: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--blue-500);
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    input[type="range"]::-webkit-slider-thumb:hover {
+      background: var(--blue-400);
+      transform: scale(1.1);
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--blue-500);
+      cursor: pointer;
+      border: none;
+    }
+
+    .slider-value {
+      font-family: 'Bellefair', serif;
+      font-size: 2rem;
+      color: var(--blue-500);
+      min-width: 100px;
+      text-align: right;
+    }
+
+    .results {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 2rem;
+      margin-bottom: 3rem;
+    }
+
+    .result-card {
+      background: rgba(208, 214, 249, 0.03);
+      border: 1px solid rgba(208, 214, 249, 0.1);
+      border-radius: 12px;
+      padding: 2rem;
+      text-align: center;
+      transition: all 0.3s;
+    }
+
+    .result-card:hover {
+      border-color: rgba(48, 128, 255, 0.3);
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    }
+
+    .result-value {
+      font-family: 'Bellefair', serif;
+      font-size: 3rem;
+      color: var(--blue-500);
+      margin-bottom: 0.5rem;
+    }
+
+    .result-label {
+      color: rgba(208, 214, 249, 0.6);
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+    }
+
+    .visualization {
+      background: rgba(208, 214, 249, 0.02);
+      border: 1px solid rgba(208, 214, 249, 0.1);
+      border-radius: 12px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+    }
+
+    .board-visualization {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      min-height: 200px;
+    }
+
+    .director {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: rgba(48, 128, 255, 0.1);
+      border: 2px solid rgba(48, 128, 255, 0.3);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s;
+      position: relative;
+    }
+
+    .director.you {
+      background: rgba(48, 128, 255, 0.3);
+      border-color: var(--blue-500);
+      box-shadow: 0 0 20px rgba(48, 128, 255, 0.4);
+    }
+
+    .director-icon {
+      font-size: 1.5rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .director-power {
+      font-size: 0.75rem;
+      color: rgba(208, 214, 249, 0.7);
+    }
+
+    .delegation-info {
+      background: rgba(172, 75, 255, 0.05);
+      border: 1px solid rgba(172, 75, 255, 0.2);
+      border-radius: 12px;
+      padding: 2rem;
+      margin-top: 2rem;
+    }
+
+    .delegation-info h3 {
+      font-family: 'Bellefair', serif;
+      font-size: 1.5rem;
+      color: var(--purple-500);
+      margin-bottom: 1rem;
+    }
+
+    .delegation-info p {
+      color: rgba(208, 214, 249, 0.8);
+      line-height: 1.7;
+      margin-bottom: 1rem;
+    }
+
+    .quorum-meter {
+      background: rgba(208, 214, 249, 0.05);
+      border: 1px solid rgba(208, 214, 249, 0.1);
+      border-radius: 12px;
+      padding: 2rem;
+      margin-top: 2rem;
+    }
+
+    .quorum-meter h3 {
+      font-family: 'Bellefair', serif;
+      font-size: 1.5rem;
+      color: var(--space-accent);
+      margin-bottom: 1.5rem;
+    }
+
+    .meter-bar {
+      height: 30px;
+      background: rgba(208, 214, 249, 0.1);
+      border-radius: 15px;
+      overflow: hidden;
+      position: relative;
+      margin-bottom: 1rem;
+    }
+
+    .meter-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--blue-500), var(--blue-400));
+      border-radius: 15px;
+      transition: width 0.5s ease;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding-right: 1rem;
+      color: white;
+      font-weight: 600;
+    }
+
+    .meter-labels {
+      display: flex;
+      justify-content: space-between;
+      color: rgba(208, 214, 249, 0.6);
+      font-size: 0.85rem;
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--blue-500);
+      text-decoration: none;
+      font-size: 0.9rem;
+      margin-bottom: 2rem;
+      transition: color 0.3s;
+    }
+
+    .back-link:hover {
+      color: var(--blue-400);
+    }
+
+    @media (max-width: 768px) {
+      .content {
+        padding: 4rem 1.5rem 3rem;
+      }
+
+      .calculator {
+        padding: 2rem 1.5rem;
+      }
+
+      .slider-container {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .slider-value {
+        text-align: center;
+      }
+
+      .results {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="bg-canvas"></div>
+
+  <div class="content">
+    <a href="index.html" class="back-link">
+      ← Back to Landing Page
+    </a>
+
+    <div class="header">
+      <h1>Governance Power Calculator</h1>
+      <p>Understand your influence in the Chamber Protocol. See how voting power, liquid delegation, and quorum requirements work in practice.</p>
+    </div>
+
+    <div class="calculator">
+      <div class="input-section">
+        <div class="input-group">
+          <label>Your Membership NFTs</label>
+          <div class="slider-container">
+            <input type="range" id="nft-slider" min="1" max="100" value="10">
+            <div class="slider-value" id="nft-count">10</div>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label>Delegate to Director (Optional)</label>
+          <div class="slider-container">
+            <input type="range" id="delegate-slider" min="0" max="5" value="0" step="1">
+            <div class="slider-value" id="delegate-target">None</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="results">
+        <div class="result-card">
+          <div class="result-value" id="voting-power">10</div>
+          <div class="result-label">Your Voting Power</div>
+        </div>
+        <div class="result-card">
+          <div class="result-value" id="influence-pct">2.0%</div>
+          <div class="result-label">Board Influence</div>
+        </div>
+        <div class="result-card">
+          <div class="result-value" id="quorum-needed">3</div>
+          <div class="result-label">Directors for Quorum</div>
+        </div>
+      </div>
+
+      <div class="visualization">
+        <h3 style="font-family: 'Bellefair', serif; font-size: 1.5rem; margin-bottom: 1.5rem; text-align: center;">Ranked Board Visualization</h3>
+        <div class="board-visualization" id="board-viz">
+          <!-- Directors will be rendered here -->
+        </div>
+      </div>
+
+      <div class="quorum-meter">
+        <h3>Quorum Progress</h3>
+        <div class="meter-bar">
+          <div class="meter-fill" id="quorum-fill" style="width: 60%;">
+            <span id="quorum-text">3/5</span>
+          </div>
+        </div>
+        <div class="meter-labels">
+          <span>0 Directors</span>
+          <span>Quorum: 5 Directors</span>
+          <span>10 Directors</span>
+        </div>
+        <p style="margin-top: 1rem; color: rgba(208, 214, 249, 0.7); font-size: 0.9rem;">
+          A quorum of <strong id="quorum-count">5</strong> directors must agree to execute treasury transactions or protocol upgrades.
+        </p>
+      </div>
+
+      <div class="delegation-info" id="delegation-info" style="display: none;">
+        <h3>Liquid Delegation Active</h3>
+        <p id="delegation-text">
+          You've delegated your voting power to Director 1. They now represent your interests on the board.
+        </p>
+        <p style="color: rgba(208, 214, 249, 0.6); font-size: 0.9rem;">
+          You can revoke delegation at any time and vote directly with your NFTs.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // === Generative Background (simplified) ===
+    const CONFIG = {
+      seed: 42,
+      nodeCount: 60,
+      starCount: 200,
+      connectionDistance: 140,
+      flowSpeed: 0.0006,
+      mouseInfluence: 0.12,
+      pulseSpeed: 0.015,
+      coreSize: 3,
+      blackHoleRadius: 150,
+      accretionDiskRadius: 250,
+    };
+
+    const PALETTE = {
+      bg: '#000000',
+      accent: '#d0d6f9',
+      blue: '#3080ff',
+      lightBlue: '#5a9aff',
+      purple: '#ac4bff',
+    };
+
+    let nodes = [];
+    let stars = [];
+    let flowField;
+    let cols, rows;
+    let scl = 25;
+    let zoff = 0;
+    let perlinScale = 0.04;
+    let blackHoleX, blackHoleY;
+
+    function setup() {
+      const canvas = createCanvas(windowWidth, windowHeight);
+      canvas.parent('bg-canvas');
+      pixelDensity(1);
+      randomSeed(CONFIG.seed);
+      noiseSeed(CONFIG.seed);
+      colorMode(HSB, 360, 100, 100, 100);
+      
+      blackHoleX = width / 2;
+      blackHoleY = height / 2;
+      
+      cols = floor(width / scl);
+      rows = floor(height / scl);
+      flowField = new Array(cols * rows);
+      
+      for (let i = 0; i < CONFIG.starCount; i++) {
+        stars.push({
+          x: random(width),
+          y: random(height),
+          size: random(0.5, 2),
+          brightness: random(30, 80),
+          twinkleSpeed: random(0.01, 0.03),
+          phase: random(TWO_PI)
+        });
+      }
+      
+      for (let i = 0; i < CONFIG.nodeCount; i++) {
+        nodes.push(new Node(random(width), random(height)));
+      }
+      
+      frameRate(30);
+    }
+
+    function draw() {
+      background(0);
+      
+      drawStars();
+      drawBlackHole();
+      drawAccretionDisk();
+      
+      let yoff = 0;
+      for (let y = 0; y < rows; y++) {
+        let xoff = 0;
+        for (let x = 0; x < cols; x++) {
+          let index = x + y * cols;
+          let angle = noise(xoff, yoff, zoff) * TWO_PI * 3;
+          let v = p5.Vector.fromAngle(angle);
+          v.setMag(0.4);
+          flowField[index] = v;
+          xoff += perlinScale;
+        }
+        yoff += perlinScale;
+      }
+      zoff += CONFIG.flowSpeed;
+      
+      for (let node of nodes) {
+        node.update();
+        node.display();
+      }
+      
+      for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+          let d = dist(nodes[i].pos.x, nodes[i].pos.y, nodes[j].pos.x, nodes[j].pos.y);
+          if (d < CONFIG.connectionDistance) {
+            let alpha = map(d, 0, CONFIG.connectionDistance, 35, 0);
+            let pulse = sin(frameCount * CONFIG.pulseSpeed + i * 0.1) * 0.5 + 0.5;
+            
+            stroke(color(PALETTE.accent), alpha * pulse);
+            strokeWeight(0.6);
+            line(nodes[i].pos.x, nodes[i].pos.y, nodes[j].pos.x, nodes[j].pos.y);
+          }
+        }
+      }
+      
+      for (let node of nodes) {
+        node.drawCore();
+      }
+    }
+
+    function drawStars() {
+      noStroke();
+      for (let star of stars) {
+        let twinkle = sin(frameCount * star.twinkleSpeed + star.phase) * 0.5 + 0.5;
+        let brightness = star.brightness * (0.5 + twinkle * 0.5);
+        fill(0, 0, brightness, 90);
+        ellipse(star.x, star.y, star.size);
+      }
+    }
+
+    function drawBlackHole() {
+      noStroke();
+      fill(0, 0, 0);
+      ellipse(blackHoleX, blackHoleY, CONFIG.blackHoleRadius * 2);
+      
+      for (let i = 0; i < 20; i++) {
+        let radius = CONFIG.blackHoleRadius + i * 3;
+        let alpha = map(i, 0, 20, 30, 0);
+        noFill();
+        stroke(240, 20, 100, alpha);
+        strokeWeight(1);
+        ellipse(blackHoleX, blackHoleY, radius * 2);
+      }
+    }
+
+    function drawAccretionDisk() {
+      let time = frameCount * 0.01;
+      
+      for (let i = 0; i < 60; i++) {
+        let angle = (i / 60) * TWO_PI + time;
+        let radius = CONFIG.blackHoleRadius + random(20, CONFIG.accretionDiskRadius - CONFIG.blackHoleRadius);
+        let x = blackHoleX + cos(angle) * radius;
+        let y = blackHoleY + sin(angle) * radius * 0.3;
+        
+        let distFromCenter = dist(x, y, blackHoleX, blackHoleY);
+        let alpha = map(distFromCenter, CONFIG.blackHoleRadius, CONFIG.accretionDiskRadius, 60, 10);
+        
+        let t = map(distFromCenter, CONFIG.blackHoleRadius, CONFIG.accretionDiskRadius, 0, 1);
+        let c = lerpColor(color(PALETTE.lightBlue), color(PALETTE.blue), t);
+        
+        noStroke();
+        fill(red(c), green(c), blue(c), alpha);
+        ellipse(x, y, 3, 2);
+      }
+    }
+
+    class Node {
+      constructor(x, y) {
+        this.pos = createVector(x, y);
+        this.vel = createVector(0, 0);
+        this.acc = createVector(0, 0);
+        this.maxSpeed = 1.2;
+        this.size = random(CONFIG.coreSize, CONFIG.coreSize + 2);
+        this.phase = random(TWO_PI);
+        
+        let r = random();
+        if (r < 0.6) {
+          this.hue = color(PALETTE.accent);
+        } else if (r < 0.85) {
+          this.hue = color(PALETTE.lightBlue);
+        } else if (r < 0.95) {
+          this.hue = color(PALETTE.blue);
+        } else {
+          this.hue = color(PALETTE.purple);
+        }
+      }
+      
+      update() {
+        let x = floor(this.pos.x / scl);
+        let y = floor(this.pos.y / scl);
+        let index = constrain(x + y * cols, 0, flowField.length - 1);
+        let force = flowField[index];
+        if (force) {
+          this.acc.add(force.copy().mult(0.25));
+        }
+        
+        let toBlackHole = createVector(blackHoleX - this.pos.x, blackHoleY - this.pos.y);
+        let distToBH = toBlackHole.mag();
+        if (distToBH > CONFIG.blackHoleRadius && distToBH < 500) {
+          toBlackHole.normalize();
+          toBlackHole.mult(0.5 / (distToBH * 0.01));
+          this.acc.add(toBlackHole);
+        }
+        
+        let mouse = createVector(mouseX, mouseY);
+        let toMouse = p5.Vector.sub(mouse, this.pos);
+        let d = toMouse.mag();
+        if (d < 180) {
+          toMouse.normalize();
+          toMouse.mult(CONFIG.mouseInfluence * (1 - d / 180));
+          this.acc.add(toMouse);
+        }
+        
+        this.vel.add(this.acc);
+        this.vel.limit(this.maxSpeed);
+        this.pos.add(this.vel);
+        this.acc.mult(0);
+        
+        if (this.pos.x < 0) this.pos.x = width;
+        if (this.pos.x > width) this.pos.x = 0;
+        if (this.pos.y < 0) this.pos.y = height;
+        if (this.pos.y > height) this.pos.y = 0;
+        
+        if (distToBH < CONFIG.blackHoleRadius * 0.8) {
+          this.pos.x = random(width);
+          this.pos.y = random(height);
+          this.vel.mult(0);
+        }
+      }
+      
+      display() {
+        let pulse = sin(frameCount * CONFIG.pulseSpeed + this.phase) * 0.5 + 0.5;
+        let size = this.size * (1 + pulse * 0.25);
+        
+        noStroke();
+        fill(this.hue, 50, 15);
+        ellipse(this.pos.x, this.pos.y, size * 3);
+      }
+      
+      drawCore() {
+        let pulse = sin(frameCount * CONFIG.pulseSpeed + this.phase) * 0.5 + 0.5;
+        let size = this.size * (1 + pulse * 0.4);
+        
+        noStroke();
+        fill(this.hue, 70, 90, 75);
+        ellipse(this.pos.x, this.pos.y, size);
+        
+        fill(color(PALETTE.accent), 85);
+        ellipse(this.pos.x, this.pos.y, size * 0.35);
+      }
+    }
+
+    function windowResized() {
+      resizeCanvas(windowWidth, windowHeight);
+      blackHoleX = width / 2;
+      blackHoleY = height / 2;
+      cols = floor(width / scl);
+      rows = floor(height / scl);
+      flowField = new Array(cols * rows);
+    }
+
+    // === Calculator Logic ===
+    const TOTAL_DIRECTORS = 10;
+    const QUORUM_THRESHOLD = 5;
+    
+    // Simulated board state
+    let boardState = [
+      { id: 1, power: 15, delegated: 0 },
+      { id: 2, power: 12, delegated: 0 },
+      { id: 3, power: 10, delegated: 0 },
+      { id: 4, power: 8, delegated: 0 },
+      { id: 5, power: 7, delegated: 0 },
+      { id: 6, power: 6, delegated: 0 },
+      { id: 7, power: 5, delegated: 0 },
+      { id: 8, power: 4, delegated: 0 },
+      { id: 9, power: 3, delegated: 0 },
+      { id: 10, power: 2, delegated: 0 },
+    ];
+
+    const nftSlider = document.getElementById('nft-slider');
+    const nftCount = document.getElementById('nft-count');
+    const delegateSlider = document.getElementById('delegate-slider');
+    const delegateTarget = document.getElementById('delegate-target');
+    const votingPower = document.getElementById('voting-power');
+    const influencePct = document.getElementById('influence-pct');
+    const quorumNeeded = document.getElementById('quorum-needed');
+    const boardViz = document.getElementById('board-viz');
+    const delegationInfo = document.getElementById('delegation-info');
+    const delegationText = document.getElementById('delegation-text');
+    const quorumFill = document.getElementById('quorum-fill');
+    const quorumText = document.getElementById('quorum-text');
+    const quorumCount = document.getElementById('quorum-count');
+
+    function updateCalculator() {
+      const yourNFTs = parseInt(nftSlider.value);
+      const delegateTo = parseInt(delegateSlider.value);
+      
+      // Update display values
+      nftCount.textContent = yourNFTs;
+      delegateTarget.textContent = delegateTo === 0 ? 'None' : `Director ${delegateTo}`;
+      
+      // Calculate voting power
+      let yourPower = yourNFTs;
+      let totalPower = yourNFTs;
+      
+      // Reset board state
+      boardState.forEach(d => {
+        d.delegated = 0;
+      });
+      
+      // Apply delegation
+      if (delegateTo > 0) {
+        boardState[delegateTo - 1].delegated = yourNFTs;
+        totalPower += boardState.reduce((sum, d) => sum + d.power + d.delegated, 0);
+      } else {
+        totalPower += boardState.reduce((sum, d) => sum + d.power, 0);
+      }
+      
+      // Update results
+      votingPower.textContent = yourPower;
+      const influence = (yourPower / totalPower * 100).toFixed(1);
+      influencePct.textContent = `${influence}%`;
+      quorumNeeded.textContent = QUORUM_THRESHOLD;
+      quorumCount.textContent = QUORUM_THRESHOLD;
+      
+      // Update board visualization
+      renderBoard(delegateTo);
+      
+      // Update quorum meter
+      const currentQuorum = Math.min(QUORUM_THRESHOLD, TOTAL_DIRECTORS);
+      const quorumPct = (currentQuorum / TOTAL_DIRECTORS) * 100;
+      quorumFill.style.width = `${quorumPct}%`;
+      quorumText.textContent = `${currentQuorum}/${TOTAL_DIRECTORS}`;
+      
+      // Show/hide delegation info
+      if (delegateTo > 0) {
+        delegationInfo.style.display = 'block';
+        delegationText.textContent = `You've delegated your ${yourNFTs} NFT${yourNFTs > 1 ? 's' : ''} to Director ${delegateTo}. They now represent your interests on the board with combined voting power of ${boardState[delegateTo - 1].power + yourNFTs}.`;
+      } else {
+        delegationInfo.style.display = 'none';
+      }
+    }
+
+    function renderBoard(delegateTo) {
+      boardViz.innerHTML = '';
+      
+      boardState.forEach((director, index) => {
+        const div = document.createElement('div');
+        div.className = 'director';
+        
+        const totalPower = director.power + director.delegated;
+        
+        div.innerHTML = `
+          <div class="director-icon">👤</div>
+          <div class="director-power">${totalPower}</div>
+        `;
+        
+        if (index + 1 === delegateTo) {
+          div.classList.add('you');
+        }
+        
+        boardViz.appendChild(div);
+      });
+    }
+
+    nftSlider.addEventListener('input', updateCalculator);
+    delegateSlider.addEventListener('input', updateCalculator);
+
+    // Initial render
+    updateCalculator();
+  </script>
+</body>
+</html>
