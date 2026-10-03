@@ -1,6 +1,6 @@
 import { StrictMode, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useLocation, useParams } from 'react-router-dom'
 import './index.css'
 import App from './App.tsx'
 import Whitepaper from './Whitepaper.tsx'
@@ -17,14 +17,15 @@ const chamberAppUrl =
  * Send users to the Chamber app docs, preserving any path suffix.
  */
 function DocsRedirect() {
-  const { pathname } = useLocation()
+  // Take the suffix from the router (route matching is case-insensitive, so
+  // string-stripping "/docs" from the pathname breaks on /Docs).
+  const { '*': rest = '' } = useParams()
+  const { search, hash } = useLocation()
   useEffect(() => {
-    const suffix = pathname.replace(/^\/docs\/?/, '')
-    const target = suffix
-      ? `${chamberAppUrl}/docs/${suffix}`
-      : `${chamberAppUrl}/docs`
-    window.location.replace(target)
-  }, [pathname])
+    const base = chamberAppUrl.replace(/\/+$/, '')
+    const path = rest ? `${base}/docs/${rest}` : `${base}/docs`
+    window.location.replace(`${path}${search}${hash}`)
+  }, [rest, search, hash])
   return null
 }
 
