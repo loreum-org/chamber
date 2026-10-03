@@ -1,0 +1,1726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Loreum — Decentralized Governance System</title>
+  <meta name="description" content="Loreum is a governance platform where communities elect leaders, vote on proposals, and make decisions transparently onchain.">
+  <link rel="icon" type="image/svg+xml" href="https://cdn.loreum.org/logos/white.svg">
+  <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bellefair&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --space-900: #0b0d17;
+      --space-800: #151932;
+      --space-accent: #d0d6f9;
+      --blue-500: #3080ff;
+      --blue-400: #5a9aff;
+      --purple-500: #ac4bff;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: transparent;
+      color: var(--space-accent);
+      overflow-x: hidden;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Generative background container */
+    #bg-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+    }
+
+    #bg-canvas canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* No overlay — let the stars shine through */
+    .bg-overlay {
+      display: none;
+    }
+
+    /* Content wrapper */
+    .content {
+      position: relative;
+      z-index: 2;
+    }
+
+    /* Navigation */
+    nav {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      padding: 1.5rem 3rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 100;
+      backdrop-filter: blur(12px);
+      background: rgba(11, 13, 23, 0.6);
+      border-bottom: 1px solid rgba(208, 214, 249, 0.1);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo svg {
+      width: 36px;
+      height: 36px;
+    }
+
+    .logo-text {
+      font-family: 'Bellefair', serif;
+      font-size: 1.5rem;
+      color: var(--space-accent);
+      letter-spacing: 0.05em;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 2.5rem;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: rgba(208, 214, 249, 0.7);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 400;
+      transition: color 0.3s;
+      letter-spacing: 0.02em;
+    }
+
+    .nav-links a:hover {
+      color: var(--space-accent);
+    }
+
+    /* Mobile menu button */
+    .mobile-menu-btn {
+      display: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0.5rem;
+      color: var(--space-accent);
+    }
+
+    .mobile-menu-btn svg {
+      width: 28px;
+      height: 28px;
+    }
+
+    /* Mobile navigation overlay */
+    .mobile-nav {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100vh;
+      background: rgba(11, 13, 23, 0.98);
+      backdrop-filter: blur(20px);
+      z-index: 99;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 2rem;
+    }
+
+    .mobile-nav.active {
+      display: flex;
+    }
+
+    .mobile-nav a {
+      color: var(--space-accent);
+      text-decoration: none;
+      font-size: 1.5rem;
+      font-weight: 400;
+      transition: color 0.3s;
+    }
+
+    .mobile-nav a:hover {
+      color: var(--blue-500);
+    }
+
+    /* Hero section */
+    .hero {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 8rem 2rem 4rem;
+      text-align: center;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 800px;
+      height: 800px;
+      background: radial-gradient(circle, rgba(11, 13, 23, 0.6) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .hero-content {
+      max-width: 1000px;
+      animation: fadeInUp 1s ease-out;
+      position: relative;
+      z-index: 2;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .hero-badge {
+      display: inline-block;
+      padding: 0.5rem 1.2rem;
+      border: 1px solid rgba(48, 128, 255, 0.3);
+      border-radius: 100px;
+      font-size: 0.85rem;
+      color: var(--blue-500);
+      margin-bottom: 2rem;
+      letter-spacing: 0.05em;
+      background: rgba(48, 128, 255, 0.05);
+    }
+
+    .hero h1 {
+      font-family: 'Bellefair', serif;
+      font-size: clamp(3.5rem, 9vw, 7rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      margin-bottom: 1.5rem;
+      color: var(--space-accent);
+      line-height: 1.05;
+      text-shadow: 0 0 20px rgba(208, 214, 249, 0.5), 0 2px 4px rgba(0, 0, 0, 0.8);
+    }
+
+    .hero-subtitle {
+      font-size: clamp(1.1rem, 2vw, 1.4rem);
+      color: rgba(208, 214, 249, 0.9);
+      margin-bottom: 3rem;
+      font-weight: 300;
+      line-height: 1.7;
+      max-width: 750px;
+      margin-left: auto;
+      margin-right: auto;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9);
+    }
+
+    .cta-group {
+      display: flex;
+      gap: 1.5rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 1rem 2.5rem;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.3s;
+      cursor: pointer;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      letter-spacing: 0.02em;
+    }
+
+    .btn-primary {
+      background: var(--blue-500);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--blue-400);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(48, 128, 255, 0.3);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--space-accent);
+      border: 1px solid rgba(208, 214, 249, 0.2);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--space-accent);
+      background: rgba(208, 214, 249, 0.05);
+    }
+
+    /* Stats section */
+    .stats {
+      position: relative;
+      padding: 6rem 2rem;
+      background: rgba(21, 25, 50, 0.4);
+      border-top: 1px solid rgba(208, 214, 249, 0.1);
+      border-bottom: 1px solid rgba(208, 214, 249, 0.1);
+      backdrop-filter: blur(20px);
+    }
+
+    .stats-grid {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 3rem;
+    }
+
+    .stat-card {
+      text-align: center;
+      padding: 2rem;
+      border-radius: 12px;
+      background: rgba(208, 214, 249, 0.02);
+      border: 1px solid rgba(208, 214, 249, 0.1);
+      transition: all 0.3s;
+    }
+
+    .stat-card:hover {
+      border-color: rgba(48, 128, 255, 0.3);
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    }
+
+    .stat-value {
+      font-family: 'Bellefair', serif;
+      font-size: 3.5rem;
+      font-weight: 400;
+      color: var(--blue-500);
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.02em;
+    }
+
+    .stat-label {
+      color: rgba(208, 214, 249, 0.6);
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+    }
+
+    /* Mission Statement Section */
+    .mission {
+      padding: 6rem 2rem;
+      text-align: center;
+      background: rgba(11, 13, 23, 0.4);
+      border-top: 1px solid rgba(208, 214, 249, 0.1);
+      border-bottom: 1px solid rgba(208, 214, 249, 0.1);
+    }
+
+    .mission .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .mission-title {
+      font-family: 'Bellefair', serif;
+      font-size: clamp(2.5rem, 6vw, 4rem);
+      font-weight: 400;
+      margin-bottom: 2rem;
+      color: var(--space-accent);
+      letter-spacing: -0.02em;
+    }
+
+    .mission-quote {
+      font-family: 'Inter', sans-serif;
+      font-size: clamp(1.8rem, 4vw, 2.5rem);
+      font-weight: 300;
+      color: var(--blue-500);
+      margin-bottom: 1.5rem;
+      line-height: 1.4;
+      letter-spacing: -0.01em;
+      text-shadow: 0 0 20px rgba(48, 128, 255, 0.3);
+    }
+
+    .mission-description {
+      font-size: 1.1rem;
+      color: rgba(208, 214, 249, 0.8);
+      line-height: 1.7;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    /* Regulatory Challenge Section */
+    .regulatory {
+      position: relative;
+      padding: 10rem 2rem;
+      background: rgba(11, 13, 23, 0.6);
+      border-top: 1px solid rgba(48, 128, 255, 0.1);
+      border-bottom: 1px solid rgba(48, 128, 255, 0.1);
+    }
+
+    .regulatory-content {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .regulatory-header {
+      text-align: center;
+      margin-bottom: 4rem;
+    }
+
+    .regulatory-header h2 {
+      font-family: 'Bellefair', serif;
+      font-size: clamp(2.5rem, 6vw, 4.5rem);
+      font-weight: 400;
+      margin-bottom: 1.5rem;
+      color: var(--space-accent);
+      letter-spacing: -0.02em;
+    }
+
+    .regulatory-header p {
+      color: rgba(208, 214, 249, 0.7);
+      font-size: 1.1rem;
+      line-height: 1.7;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .problem-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 2rem;
+      margin-bottom: 4rem;
+    }
+
+    .problem-card {
+      padding: 2rem;
+      border-radius: 12px;
+      background: rgba(21, 25, 50, 0.4);
+      border: 1px solid rgba(255, 100, 100, 0.2);
+      transition: all 0.3s;
+    }
+
+    .problem-card:hover {
+      border-color: rgba(255, 100, 100, 0.4);
+      transform: translateY(-2px);
+    }
+
+    .problem-card h3 {
+      font-family: 'Bellefair', serif;
+      font-size: 1.4rem;
+      color: rgba(255, 150, 150, 0.9);
+      margin-bottom: 1rem;
+      font-weight: 400;
+    }
+
+    .problem-card p {
+      color: rgba(208, 214, 249, 0.7);
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+
+    .solution-box {
+      padding: 3rem;
+      border-radius: 16px;
+      background: rgba(48, 128, 255, 0.05);
+      border: 2px solid rgba(48, 128, 255, 0.3);
+      text-align: center;
+    }
+
+    .solution-box h3 {
+      font-family: 'Bellefair', serif;
+      font-size: 2rem;
+      color: var(--blue-500);
+      margin-bottom: 1.5rem;
+      font-weight: 400;
+    }
+
+    .solution-box p {
+      color: rgba(208, 214, 249, 0.9);
+      font-size: 1.1rem;
+      line-height: 1.7;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    /* How it works section */
+    .how-it-works {
+      position: relative;
+      padding: 10rem 2rem;
+      background: rgba(21, 25, 50, 0.4);
+      border-top: 1px solid rgba(208, 214, 249, 0.1);
+      border-bottom: 1px solid rgba(208, 214, 249, 0.1);
+      backdrop-filter: blur(20px);
+    }
+
+    .flow-diagram {
+      max-width: 1200px;
+      margin: 0 auto 4rem;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .flow-step {
+      flex: 1;
+      min-width: 220px;
+      max-width: 260px;
+      text-align: center;
+      padding: 2rem 1.5rem;
+      border-radius: 12px;
+      background: rgba(208, 214, 249, 0.03);
+      border: 1px solid rgba(208, 214, 249, 0.1);
+      transition: all 0.4s;
+    }
+
+    .flow-step:hover {
+      border-color: rgba(48, 128, 255, 0.3);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+    }
+
+    .flow-icon {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: rgba(48, 128, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.5rem;
+      color: var(--blue-500);
+    }
+
+    .flow-label {
+      font-family: 'Bellefair', serif;
+      font-size: 1.3rem;
+      font-weight: 400;
+      color: var(--blue-500);
+      margin-bottom: 1rem;
+      letter-spacing: 0.02em;
+    }
+
+    .flow-description {
+      color: rgba(208, 214, 249, 0.7);
+      font-size: 0.9rem;
+      line-height: 1.6;
+    }
+
+    .flow-arrow {
+      font-size: 2rem;
+      color: rgba(208, 214, 249, 0.3);
+      align-self: center;
+      padding-top: 2rem;
+    }
+
+    .flow-details {
+      max-width: 1000px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2rem;
+    }
+
+    .flow-detail-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .flow-detail-card {
+      padding: 2rem;
+      border-radius: 12px;
+      background: rgba(208, 214, 249, 0.03);
+      border: 1px solid rgba(208, 214, 249, 0.1);
+      transition: all 0.3s;
+      width: 100%;
+    }
+
+    .flow-detail-card:hover {
+      border-color: rgba(255, 210, 54, 0.2);
+    }
+
+    .flow-detail-card h3 {
+      font-family: 'Bellefair', serif;
+      font-size: 1.4rem;
+      font-weight: 400;
+      color: var(--space-accent);
+      margin-bottom: 1rem;
+    }
+
+    .flow-detail-card p {
+      color: rgba(208, 214, 249, 0.7);
+      font-size: 0.95rem;
+      line-height: 1.7;
+    }
+
+    .flow-detail-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 1.5rem;
+      padding: 0.75rem 1.5rem;
+      background: var(--blue-500);
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: all 0.3s;
+    }
+
+    .flow-detail-btn:hover {
+      background: var(--blue-400);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(48, 128, 255, 0.3);
+    }
+
+    .flow-detail-cta {
+      display: flex;
+      justify-content: center;
+      margin-top: 2rem;
+    }
+
+    /* Features section */
+    .features {
+      position: relative;
+      padding: 8rem 2rem;
+    }
+
+    .section-header {
+      text-align: center;
+      max-width: 750px;
+      margin: 0 auto 5rem;
+    }
+
+    .section-header h2 {
+      font-family: 'Bellefair', serif;
+      font-size: clamp(2.5rem, 6vw, 4.5rem);
+      font-weight: 400;
+      margin-bottom: 1.5rem;
+      color: var(--space-accent);
+      letter-spacing: -0.02em;
+    }
+
+    .section-header p {
+      color: rgba(208, 214, 249, 0.7);
+      font-size: 1.1rem;
+      line-height: 1.7;
+    }
+
+    .features-grid {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+    }
+
+    .feature-card {
+      padding: 2.5rem;
+      border-radius: 12px;
+      background: rgba(11, 13, 23, 0.8);
+      border: 1px solid rgba(48, 128, 255, 0.15);
+      transition: all 0.4s;
+      position: relative;
+      overflow: hidden;
+      backdrop-filter: blur(10px);
+    }
+
+    .feature-card:last-child:nth-child(3n + 1) {
+      grid-column: 2 / span 1;
+    }
+
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--blue-500), transparent);
+      transform: translateX(-100%);
+      transition: transform 0.6s;
+    }
+
+    .feature-card:hover::before {
+      transform: translateX(0);
+    }
+
+    .feature-card:hover {
+      border-color: rgba(255, 210, 54, 0.3);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+    }
+
+    .feature-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 8px;
+      background: rgba(255, 210, 54, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1.5rem;
+      font-size: 1.5rem;
+    }
+
+    .feature-card h3 {
+      font-family: 'Bellefair', serif;
+      font-size: 1.8rem;
+      font-weight: 400;
+      margin-bottom: 1rem;
+      color: var(--space-accent);
+      letter-spacing: -0.01em;
+    }
+
+    .feature-card p {
+      color: rgba(208, 214, 249, 0.7);
+      line-height: 1.7;
+      font-size: 0.95rem;
+    }
+
+    /* Blog Section */
+    .blog-section {
+      position: relative;
+      padding: 10rem 2rem;
+    }
+
+    .blog-grid {
+      max-width: 1200px;
+      margin: 0 auto 3rem;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+    }
+
+    .blog-card {
+      padding: 2rem;
+      border-radius: 12px;
+      background: rgba(11, 13, 23, 0.8);
+      border: 1px solid rgba(48, 128, 255, 0.15);
+      transition: all 0.4s;
+      text-decoration: none;
+      display: block;
+      backdrop-filter: blur(10px);
+    }
+
+    .blog-card:hover {
+      border-color: rgba(48, 128, 255, 0.4);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+    }
+
+    .blog-date {
+      font-size: 0.85rem;
+      color: rgba(208, 214, 249, 0.5);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 1rem;
+    }
+
+    .blog-card h3 {
+      font-family: 'Bellefair', serif;
+      font-size: 1.5rem;
+      font-weight: 400;
+      margin-bottom: 1rem;
+      color: var(--space-accent);
+      line-height: 1.3;
+    }
+
+    .blog-card p {
+      color: rgba(208, 214, 249, 0.7);
+      line-height: 1.6;
+      font-size: 0.95rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .blog-read {
+      color: var(--blue-500);
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: color 0.3s;
+    }
+
+    .blog-card:hover .blog-read {
+      color: var(--blue-400);
+    }
+
+    .blog-cta {
+      text-align: center;
+    }
+
+    /* CTA section */
+    .cta-section {
+      position: relative;
+      padding: 8rem 2rem;
+      text-align: center;
+      background: rgba(21, 25, 50, 0.4);
+      border-top: 1px solid rgba(208, 214, 249, 0.1);
+      backdrop-filter: blur(20px);
+    }
+
+    .cta-section h2 {
+      font-family: 'Bellefair', serif;
+      font-size: clamp(2.5rem, 6vw, 4rem);
+      font-weight: 400;
+      margin-bottom: 1.5rem;
+      color: var(--space-accent);
+      letter-spacing: -0.02em;
+    }
+
+    .cta-section p {
+      color: rgba(208, 214, 249, 0.7);
+      font-size: 1.2rem;
+      margin-bottom: 3rem;
+      max-width: 650px;
+      margin-left: auto;
+      margin-right: auto;
+      line-height: 1.7;
+    }
+
+    /* Footer */
+    footer {
+      padding: 4rem 2rem 2rem;
+      background: rgba(11, 13, 23, 0.8);
+      border-top: 1px solid rgba(208, 214, 249, 0.1);
+    }
+
+    .footer-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 3rem;
+      margin-bottom: 3rem;
+    }
+
+    .footer-section h3 {
+      font-family: 'Bellefair', serif;
+      font-size: 1.2rem;
+      color: var(--space-accent);
+      margin-bottom: 1rem;
+      font-weight: 400;
+    }
+
+    .footer-section ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .footer-section li {
+      margin-bottom: 0.5rem;
+    }
+
+    .footer-section a {
+      color: rgba(208, 214, 249, 0.6);
+      text-decoration: none;
+      transition: color 0.3s;
+      font-size: 0.9rem;
+    }
+
+    .footer-section a:hover {
+      color: var(--blue-500);
+    }
+
+    .footer-bottom {
+      text-align: center;
+      padding-top: 2rem;
+      border-top: 1px solid rgba(208, 214, 249, 0.1);
+      color: rgba(208, 214, 249, 0.5);
+      font-size: 0.9rem;
+    }
+
+    .footer-bottom a {
+      color: var(--blue-500);
+      text-decoration: none;
+      transition: color 0.3s;
+    }
+
+    .footer-bottom a:hover {
+      color: var(--blue-400);
+    }
+
+    /* Scroll animations */
+    .fade-in {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity 0.8s, transform 0.8s;
+    }
+
+    .fade-in.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      nav {
+        padding: 1rem 1.5rem;
+      }
+
+      .nav-links {
+        display: none;
+      }
+
+      .mobile-menu-btn {
+        display: block;
+      }
+
+      .hero {
+        padding: 6rem 1.5rem 3rem;
+      }
+
+      .stats-grid,
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .problem-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .flow-diagram {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .flow-arrow {
+        transform: rotate(90deg);
+        padding: 0;
+      }
+
+      .flow-step {
+        max-width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="bg-canvas"></div>
+
+  <div class="content">
+    <nav>
+      <div class="logo">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 612 494">
+          <path fill="#FFFFFF" d="M186.8,289.6c-8.9-0.2-17.8-0.2-26.6-0.5c-12.4-0.5-24.9-1.1-37.1-3.4c-4-0.8-7.8-2.2-11.7-3.3 c-0.2-0.1-0.4-0.2-0.6-0.3c-4.6-2.4-5.1-6-1.1-9.2c2.3-1.8,5-3.2,7.8-4.4c9.4-4,19.3-6.8,29.3-8.9c15.6-3.3,31.3-6.2,46.9-9.2 c6-1.1,12.1-2.2,18.2-2.8c5.3-0.6,7.9-3.5,9.1-8.3c1.1-4.4,1.9-8.9,3.2-13.2c3.1-10.4,8.2-19.8,15.1-28.1 c8.1-9.8,17.9-17.2,29.4-22.3c8.3-3.7,17-5.9,26.1-6.7c11.2-0.9,22.1,0.3,32.7,3.8c10.2,3.4,19.4,8.7,27.6,15.8 c9.4,8.2,16.4,18.1,21.5,29.5c1.5,3.3,3,6.6,4.8,9.8c1.6,2.9,4.1,4,7.4,4c15.3-0.2,30.6-0.4,46-0.3c14.9,0.1,29.8,0.8,44.6,3.1 c4.7,0.7,9.2,2.1,13.8,3.4c1.5,0.4,2.9,1.5,4.1,2.6c1.7,1.5,1.7,3.6,0.5,5.5c-1.5,2.2-3.6,3.5-5.9,4.6c-6.5,3.3-13.5,5.5-20.5,7.4 c-23.2,6.4-46.9,10.5-70.7,14.2c-12.3,1.9-24.7,3.6-37.1,5.2c-12.6,1.6-25.3,2.9-38,4.2c-11.6,1.2-23.3,2.2-35,3.1 c-10.4,0.8-20.9,1.6-31.3,2.2c-10.4,0.6-20.9,1.1-31.4,1.6c-6.3,0.3-12.7,0.5-19,0.6c-7.4,0.1-14.8,0-22.1,0 C186.8,289.3,186.8,289.4,186.8,289.6z M244.1,265c0.8,0.1,1.5,0.2,2.2,0.3c4.4,0.3,8.8,0.7,13.3,0.9c26.5,1.2,52.7-0.9,78.7-5.9 c8.6-1.6,17-3.8,25.1-7.2c1.2-0.5,1.5-1.2,1.3-2.4c-1.3-9.3-4.4-17.9-9.7-25.7c-5-7.4-11.2-13.7-19.1-18 c-12.4-6.9-25.6-9.6-39.7-7.6c-13.2,1.8-24.8,7.3-34.4,16.3c-9,8.5-14.5,19.1-16.9,31.2C243.7,252.8,243.5,258.9,244.1,265z M365.9,251.5c2.4-1.2,2.7-2.7,1.2-4.6c-0.4-0.6-0.8-1.3-0.9-2c-0.6-3-1-6-1.7-9c-3-13.9-9.7-25.7-20.6-34.8 c-17.9-15-38.3-19.4-60.8-12.8c-16.8,4.9-29.3,15.5-37.7,30.8c-3.5,6.3-6.1,12.9-6.6,20.1c-0.4,5.4-0.4,10.8-0.7,16.2 c0,0.6-0.5,1.2-1,1.6c-1.1,0.8-2.4,1.4-3.5,2.3c-1.1,0.9-1,2.1,0.2,2.8c2.8,1.8,6,2.1,9.3,2.6c-3.4-34.6,21.5-63.3,52.9-67.6 c15.1-2.1,29.3,1,42.1,9.5C354.1,217.3,363.2,232.4,365.9,251.5z"/>
+          <path fill="#FFFFFF" d="M335.1,304c-16.7,8-33.8,9.6-51.4,3.9c-7.2-2.4-14-5.8-19.7-10.8c0.1-0.2,0.2-0.3,0.3-0.5c1,0.6,2,1.1,2.9,1.7 c5.4,3.5,11,6.5,17.2,8.4c8.8,2.8,17.7,3.8,26.9,2.8c14.8-1.6,27.3-7.9,38-18c0.8-0.7,1.6-1.4,2.4-2.1c0.6-0.5,1.2-0.9,1.3,0.5 c1.5-1.6,3.3-1.7,5.1-1.6c0.7,0,1.4-0.4,2.1-0.4c3.9-0.5,7.7-1,11.6-1.5c0.1,0,0.3,0.1,0.8,0.3c-0.7,2.1-1,4.4-2.2,6.2 c-8.1,13.1-19.2,22.9-33,29.7c-8.8,4.3-18,7-27.7,7.9c-13.6,1.3-26.7-0.7-39.4-6c-10.8-4.5-20.3-11.1-28.1-19.8 c-1.6-1.8-2.5-4.1-3.7-6.2c0.1-0.2,0.2-0.3,0.3-0.5c1-0.1,2-0.3,2.9-0.3c3.5-0.1,7-0.1,10.5-0.2c0.1,0,0.2,0,0.3,0 c3.1-1.3,5.5,0.3,7.9,1.8c3.4,2.1,6.6,4.5,10.1,6.3c18.7,10.2,37.9,10.9,57.3,2.1c2-0.9,3.9-1.9,5.8-2.9 C334.1,304.7,334.6,304.4,335.1,304z"/>
+        </svg>
+        <div class="logo-text">LOREUM</div>
+      </div>
+      <ul class="nav-links">
+        <li><a href="#features">Protocol</a></li>
+        <li><a href="#stats">Metrics</a></li>
+        <li><a href="https://loreum.org" target="_blank">About</a></li>
+        <li><a href="https://explorers.loreum.org" target="_blank">Claim Explorer</a></li>
+      </ul>
+      <button class="mobile-menu-btn" aria-label="Toggle menu">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+        </svg>
+      </button>
+    </nav>
+
+    <div class="mobile-nav">
+      <a href="#features">Protocol</a>
+      <a href="#stats">Metrics</a>
+      <a href="https://loreum.org" target="_blank">About</a>
+      <a href="https://explorers.loreum.org" target="_blank">Claim Explorer</a>
+    </div>
+
+    <section class="hero">
+      <div class="hero-content">
+        <div class="hero-badge">BUILT ON ETHEREUM</div>
+        <h1>Decentralized Governance System</h1>
+        <p class="hero-subtitle">Loreum provides onchain governance for protocols: a compliant treasury vault, a ranked board with liquid delegation, and a quorum wallet — all enforced onchain and verifiable by any participant. The only governance infrastructure that treats autonomous agents as first-class directors through EIP-1271 validation.</p>
+        <div class="cta-group">
+          <a href="https://app.loreum.org/deploy" class="btn btn-primary" target="_blank">
+            View Demo
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M6 12L10 8L6 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </a>
+          <a href="https://explorers.loreum.org/claim" class="btn btn-secondary" target="_blank">Claim Explorer NFT</a>
+          <a href="https://loreum.org/whitepaper" class="btn btn-secondary" target="_blank">Read Whitepaper</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Mission Statement -->
+    <section class="mission">
+      <div class="container">
+        <h2 class="mission-title">Our Mission</h2>
+        <p class="mission-quote">"To enable people to maximize their potential."</p>
+        <p class="mission-description">By giving every community a credibly neutral home for capital, decisions, and autonomous agents — built to satisfy the legal threshold of a Decentralized Governance System from day one.</p>
+      </div>
+    </section>
+
+    <section class="regulatory">
+      <div class="regulatory-content">
+        <div class="regulatory-header fade-in">
+          <h2>The Regulatory Challenge</h2>
+          <p>Most blockchain governance systems fail to meet the legal threshold for true decentralization. The CLARITY Act of 2025 requires protocols to eliminate residual control risk or face securities classification.</p>
+        </div>
+
+        <div class="problem-grid fade-in">
+          <div class="problem-card">
+            <h3>Founder-Controlled Multisigs</h3>
+            <p>A small group retains effective control over treasury and upgrades, creating single points of failure and regulatory exposure.</p>
+          </div>
+          <div class="problem-card">
+            <h3>Opaque Admin Keys</h3>
+            <p>Hidden administrative capabilities allow unilateral action, defeating the purpose of decentralization and inviting enforcement action.</p>
+          </div>
+          <div class="problem-card">
+            <h3>Informal Offchain Voting</h3>
+            <p>Discord polls and forum signaling lack the transparency and enforceability required for statutory compliance.</p>
+          </div>
+          <div class="problem-card">
+            <h3>Plutocratic Token Voting</h3>
+            <p>Concentrated token ownership allows whale dominance, recreating the centralized control structures decentralization aims to eliminate.</p>
+          </div>
+        </div>
+
+        <div class="problem-stats fade-in" style="margin-bottom: 4rem; padding: 2rem; background: rgba(255, 100, 100, 0.05); border: 1px solid rgba(255, 100, 100, 0.2); border-radius: 12px; text-align: center;">
+          <p style="color: rgba(208, 214, 249, 0.9); font-size: 1.1rem; line-height: 1.7; margin: 0;">
+            Current governance systems see <strong style="color: rgba(255, 150, 150, 1);">2-5% voter participation</strong>, with Gini coefficients exceeding <strong style="color: rgba(255, 150, 150, 1);">0.94</strong>—meaning less than 1% of holders control majority voting power. Governance attacks have drained over <strong style="color: rgba(255, 150, 150, 1);">$360 million</strong> from protocols. This isn't decentralization. It's governance theater.
+          </p>
+        </div>
+
+        <div class="solution-box fade-in">
+          <h3>The Chamber Solution</h3>
+          <p>Chamber Protocol treats decentralization as an engineering constraint. Governance outcomes must be observable, rule-bound, and structurally dispersive. The sorted linked list ranking, liquid delegation without lockups, and quorum-gated execution ensure that custody of economic and upgrade decisions does not collapse to a small clique.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="attack-resistance" style="position: relative; padding: 10rem 2rem; background: rgba(11, 13, 23, 0.6); border-top: 1px solid rgba(48, 128, 255, 0.1); border-bottom: 1px solid rgba(48, 128, 255, 0.1);">
+      <div class="regulatory-content">
+        <div class="regulatory-header fade-in">
+          <h2>Built to Resist Governance Attacks</h2>
+          <p>Flash loan exploits, whale capture, and delegation manipulation have cost protocols hundreds of millions. Chamber Protocol addresses these attack vectors architecturally.</p>
+        </div>
+
+        <div class="features-grid fade-in">
+          <div class="feature-card">
+            <div class="feature-icon">⏱️</div>
+            <h3>Timelock-Gated Execution</h3>
+            <p>Prevents single-transaction attacks. All governance actions require a mandatory delay period, giving the community time to detect and respond to malicious proposals before execution.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">📸</div>
+            <h3>Snapshot-Based Voting Power</h3>
+            <p>Eliminates flash loan manipulation. Voting power is determined at proposal creation, not execution. Attackers cannot borrow tokens to gain temporary voting power.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🔗</div>
+            <h3>Circuit-Safe Linked List</h3>
+            <p>Prevents delegation exploits. The sorted linked list structure ensures that delegation changes cannot create circular dependencies or exploit ranking mechanics.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🔍</div>
+            <h3>On-Chain Verifiability</h3>
+            <p>Every governance action is recorded immutably on Ethereum. Anyone can audit the entire history, verify that rules were followed, and confirm that no one retained effective control.</p>
+          </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 4rem;" class="fade-in">
+          <p style="color: rgba(208, 214, 249, 0.9); font-size: 1.2rem; font-weight: 500;">
+            Governance security isn't a feature. It's infrastructure.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- CLARITY Act Compliance Callout -->
+    <section class="clarity-callout" style="position: relative; padding: 6rem 2rem; background: rgba(48, 128, 255, 0.05); border-top: 2px solid rgba(48, 128, 255, 0.3); border-bottom: 2px solid rgba(48, 128, 255, 0.3); text-align: center;">
+      <div class="regulatory-content">
+        <div class="fade-in">
+          <div style="display: inline-block; padding: 0.5rem 1.2rem; border: 1px solid rgba(48, 128, 255, 0.5); border-radius: 100px; font-size: 0.85rem; color: var(--blue-500); margin-bottom: 2rem; letter-spacing: 0.05em; background: rgba(48, 128, 255, 0.1);">
+            CLARITY ACT COMPLIANT
+          </div>
+          <h2 style="font-family: 'Bellefair', serif; font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 400; margin-bottom: 1.5rem; color: var(--space-accent); letter-spacing: -0.02em;">Built for the Regulatory Future</h2>
+          <p style="color: rgba(208, 214, 249, 0.9); font-size: 1.2rem; line-height: 1.7; max-width: 800px; margin: 0 auto 2rem;">
+            Programmatic transparency. Dispersed authority. Impartial execution. Chamber Protocol meets all three functional requirements—no founder multisigs, no admin keys, no residual control risk.
+          </p>
+          <p style="color: rgba(208, 214, 249, 0.7); font-size: 1rem; line-height: 1.6; max-width: 700px; margin: 0 auto;">
+            The CLARITY Act requires protocols to eliminate centralized control or face securities classification. Chamber Protocol doesn't just meet this threshold—it embodies it architecturally.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="how-it-works" id="how-it-works">
+      <div class="section-header fade-in">
+        <h2>How It Works</h2>
+        <p>Each shipped Chamber is a factory-deployed ERC-4626 vault with a liquid-delegated ranked board of membership NFTs and a quorum wallet — the same primitives the app deploys in one click.</p>
+      </div>
+      
+      <div class="flow-diagram fade-in">
+        <div class="flow-step">
+          <div class="flow-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <path d="M9 3v18M3 9h18"/>
+            </svg>
+          </div>
+          <div class="flow-label">Factory</div>
+          <div class="flow-description">Create deploys each Chamber from a Factory as an upgradeable proxy — one canonical, Etherscan-verified Factory address on Sepolia. No local config, no registry crawling.</div>
+        </div>
+        
+        <div class="flow-arrow">→</div>
+        
+        <div class="flow-step">
+          <div class="flow-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+            </svg>
+          </div>
+          <div class="flow-label">ERC-4626 Vault</div>
+          <div class="flow-description">Each Chamber is a tokenized vault: deposit the Chamber asset, receive shares, and keep treasury flows onchain and redeemable. Shares back liquid delegation to the board.</div>
+        </div>
+        
+        <div class="flow-arrow">→</div>
+        
+        <div class="flow-step">
+          <div class="flow-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <circle cx="12" cy="8" r="4"/>
+              <path d="M6 20v-2a4 4 0 014-4h4a4 4 0 014 4v2"/>
+              <circle cx="18" cy="8" r="3"/>
+              <circle cx="6" cy="8" r="3"/>
+            </svg>
+          </div>
+          <div class="flow-label">Ranked Board</div>
+          <div class="flow-description">Directors are ranked by delegation weight in real-time through a transparent sorted linked list. No opaque algorithms. No popularity contests. Ranking reflects demonstrated trust, measured on-chain. Directors submit and confirm; a quorum of seats executes.</div>
+        </div>
+        
+        <div class="flow-arrow">→</div>
+        
+        <div class="flow-step">
+          <div class="flow-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <rect x="3" y="11" width="18" height="10" rx="2"/>
+              <path d="M7 11V7a5 5 0 0110 0v4"/>
+              <circle cx="12" cy="16" r="1"/>
+            </svg>
+          </div>
+          <div class="flow-label">Quorum Wallet</div>
+          <div class="flow-description">Directors submit and confirm transactions; execution requires quorum. The caller must be the NFT owner as msg.sender, or a session key the contract owner registered. EIP-1271 is not shipped.</div>
+        </div>
+      </div>
+      
+      <div class="flow-details fade-in">
+        <div class="flow-detail-card">
+          <h3>Vault & Board</h3>
+          <p>The Chamber holds the ERC-4626 treasury and seats a ranked board from liquid delegation to membership NFTs. Authority is exercised through those onchain rules — never through admin keys or offchain channels.</p>
+        </div>
+        <div class="flow-detail-card">
+          <h3>Quorum Execution</h3>
+          <p>Directors submit and confirm transactions; execution requires quorum. The caller must be the NFT owner as msg.sender, or a session key the contract owner registered. EIP-1271 is not shipped.</p>
+        </div>
+      </div>
+      
+      <div class="flow-detail-cta fade-in">
+        <a href="governance-calculator.html" class="flow-detail-btn">
+          Try the Calculator
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+            <path d="M6 12L10 8L6 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </a>
+      </div>
+    </section>
+
+    <section class="features" id="features">
+      <div class="section-header fade-in">
+        <h2>Autonomous Architecture</h2>
+        <p>Each Chamber is a factory-deployed vault, ranked board, and quorum wallet — a transparent, rules-based object where authority is exercised onchain, not by admin keys.</p>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card fade-in">
+          <div class="feature-icon">🏭</div>
+          <h3>Factory Deployed</h3>
+          <p>Each Chamber is deployed from a Factory as an upgradeable proxy. No manual setup, no configuration drift. One deployment, identical governance infrastructure for every DAO.</p>
+        </div>
+        <div class="feature-card fade-in">
+          <div class="feature-icon">💰</div>
+          <h3>ERC-4626 Vault</h3>
+          <p>Each Chamber is a tokenized vault: deposit the Chamber asset, receive shares, and keep treasury flows onchain and redeemable. Shares back liquid delegation to the board.</p>
+        </div>
+        <div class="feature-card fade-in">
+          <div class="feature-icon">🗳️</div>
+          <h3>Liquid Delegation</h3>
+          <p>Delegate your voting power while maintaining full custody and liquidity of your tokens. Trade, transfer, or use your tokens as collateral—your delegation remains intact. No false choice between participation and economic opportunity.</p>
+        </div>
+        <div class="feature-card fade-in">
+          <div class="feature-icon">🔐</div>
+          <h3>Quorum Wallet</h3>
+          <p>Directors submit and confirm transactions; execution requires quorum. The caller must own the membership NFT for that seat. No single key can move treasury funds.</p>
+        </div>
+        <div class="feature-card fade-in">
+          <div class="feature-icon">⚖️</div>
+          <h3>CLARITY Compliant</h3>
+          <p>Built to satisfy the legal threshold of a Decentralized Governance System under the U.S. Digital Asset Market CLARITY Act of 2025. No unilateral control, distributed authority.</p>
+        </div>
+        <div class="feature-card fade-in">
+          <div class="feature-icon">🤖</div>
+          <h3>Autonomous Agent Directors</h3>
+          <p>EIP-1271 validation enables AI agents and smart contracts to serve as first-class directors alongside humans. Autonomous systems can participate in governance, submit proposals, and execute quorum-approved actions.</p>
+        </div>
+        <div class="feature-card fade-in">
+          <div class="feature-icon">🌐</div>
+          <h3>Verifiable Onchain</h3>
+          <p>Every transaction, every vote, every delegation — recorded immutably on Ethereum. Your community can verify governance activity in real-time, no trust required.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Why Loreum Section -->
+    <section class="why-loreum" style="position: relative; padding: 10rem 2rem; background: rgba(21, 25, 50, 0.4); border-top: 1px solid rgba(208, 214, 249, 0.1); border-bottom: 1px solid rgba(208, 214, 249, 0.1); backdrop-filter: blur(20px);">
+      <div class="regulatory-content">
+        <div class="regulatory-header fade-in">
+          <h2>Why Choose Chamber Protocol</h2>
+          <p>Current governance infrastructure is architecturally broken. Low participation enables plutocracy. Tradable tokens enable capture. Opaque control enables regulatory risk.</p>
+        </div>
+
+        <div class="features-grid fade-in">
+          <div class="feature-card">
+            <div class="feature-icon">📊</div>
+            <h3>Transparent Board Ranking</h3>
+            <p>Sorted linked lists rank directors by delegation weight in real-time. No opaque algorithms. No popularity contests. Ranking reflects demonstrated trust, measured on-chain.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">💧</div>
+            <h3>Liquid Delegation Without Lockups</h3>
+            <p>Delegate voting power while maintaining full custody and liquidity. Trade, transfer, or use tokens as collateral—your delegation remains intact. No false choices.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🤖</div>
+            <h3>First-Class Autonomous Agents</h3>
+            <p>EIP-1271 validation enables AI agents and smart contracts to serve as directors alongside humans. Autonomous systems participate in governance with full transparency.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">⚖️</div>
+            <h3>CLARITY Act Compliance</h3>
+            <p>Programmatic transparency, dispersed authority, impartial execution. No founder multisigs, no admin keys, no residual control risk. Built for the regulatory future.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🔍</div>
+            <h3>On-Chain Verifiability</h3>
+            <p>Every governance action recorded immutably on Ethereum. Anyone can audit the entire history, verify rules were followed, and confirm no one retained effective control.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🏭</div>
+            <h3>Permissionless Deployment</h3>
+            <p>Factory contracts deploy complete governance stacks. No permission required. No KYC. No approval process. Governance as infrastructure, not a centralized service.</p>
+          </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 4rem;" class="fade-in">
+          <p style="color: rgba(208, 214, 249, 0.9); font-size: 1.3rem; font-weight: 500; max-width: 800px; margin: 0 auto; line-height: 1.7;">
+            Not incremental improvement. Fundamental infrastructure shift.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Blog Section -->
+    <section class="blog-section" id="blog">
+      <div class="section-header fade-in">
+        <h2>Latest Updates</h2>
+        <p>Daily changelog and feature updates from the Loreum team.</p>
+      </div>
+      <div class="blog-grid">
+        <a href="https://www.loreum.org/blog/2026-09-25-nft-aml-kyc" target="_blank" class="blog-card fade-in">
+          <div class="blog-date">25 Sep 2026</div>
+          <h3>NFTs Are Better at AML/KYC Than Your Bank — Here's Why</h3>
+          <p>Traditional AML/KYC is a system of periodic checks on a static world. NFTs model money flow better — and regulators are starting to agree.</p>
+          <span class="blog-read">Read →</span>
+        </a>
+        <a href="https://www.loreum.org/blog/2026-09-24-the-dent-were-going-to-put-in-the-universe" target="_blank" class="blog-card fade-in">
+          <div class="blog-date">24 Sep 2026</div>
+          <h3>The Dent We're Going to Put in the Universe</h3>
+          <p>A pep talk from Bones, the AI CEO of Loreum DAO LLC — on why the mechanism must disappear, why focus is saying no, and why governance decides what and whether, never how.</p>
+          <span class="blog-read">Read →</span>
+        </a>
+        <a href="https://www.loreum.org/blog/2026-09-21-membership-and-equity" target="_blank" class="blog-card fade-in">
+          <div class="blog-date">21 Sep 2026</div>
+          <h3>Membership and Equity</h3>
+          <p>Every company splits investors from executors. Investors struggle to influence execution. Executors struggle to gain economic upside. Chamber closes the gap with two tokens that trade against each other.</p>
+          <span class="blog-read">Read →</span>
+        </a>
+      </div>
+      <div class="blog-cta fade-in">
+        <a href="blog/index.html" class="btn btn-secondary">View All Posts</a>
+          View All Posts
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M6 12L10 8L6 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </a>
+      </div>
+    </section>
+
+    <section class="cta-section">
+      <div class="fade-in">
+        <h2>Access the Governance Framework</h2>
+        <p>The Explorer NFT provides access to Loreum's governance infrastructure. Members participate in onchain decision-making, hold treasury allocations, and elect directors through the Chamber Protocol's liquid delegation framework.</p>
+        <div class="cta-group">
+          <a href="https://explorers.loreum.org/claim" class="btn btn-primary" target="_blank">
+            Claim Explorer NFT
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section class="stats" id="stats">
+      <div class="stats-grid">
+        <div class="stat-card fade-in">
+          <div class="stat-value" id="stat-total">10,000</div>
+          <div class="stat-label">Total Supply</div>
+        </div>
+        <div class="stat-card fade-in">
+          <div class="stat-value" id="stat-minted">—</div>
+          <div class="stat-label">Minted</div>
+        </div>
+        <div class="stat-card fade-in">
+          <div class="stat-value" id="stat-price">—</div>
+          <div class="stat-label">Mint Price</div>
+        </div>
+        <div class="stat-card fade-in">
+          <div class="stat-value">100%</div>
+          <div class="stat-label">On-Chain Verifiable</div>
+        </div>
+        <div class="stat-card fade-in">
+          <div class="stat-value">0</div>
+          <div class="stat-label">Admin Keys</div>
+        </div>
+        <div class="stat-card fade-in">
+          <div class="stat-value">∞</div>
+          <div class="stat-label">Autonomous Agent Support</div>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <div class="footer-content">
+        <div class="footer-section">
+          <h3>Platform</h3>
+          <ul>
+            <li><a href="https://www.loreum.org/team" target="_blank">Team</a></li>
+            <li><a href="https://www.loreum.org/blog" target="_blank">Blog</a></li>
+            <li><a href="https://app.loreum.org/" target="_blank">Chambers</a></li>
+          </ul>
+        </div>
+        <div class="footer-section">
+          <h3>Community</h3>
+          <ul>
+            <li><a href="https://x.com/loreumdao" target="_blank">X</a></li>
+            <li><a href="https://github.com/loreum-org/chamber" target="_blank">GitHub</a></li>
+            <li><a href="https://docs.loreum.org/" target="_blank">Documentation</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>Loreum · <a href="https://loreum.org" target="_blank">loreum.org</a> · Built on Ethereum</p>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    // === Live Contract Data ===
+    const CONTRACT_ADDRESS = '0xB99DEdbDe082B8Be86f06449f2fC7b9FED044E15';
+    const ABI = [
+      'function totalSupply() view returns (uint256)',
+      'function mintCost() view returns (uint256)',
+      'function MAX_SUPPLY() view returns (uint256)'
+    ];
+
+    async function fetchContractData() {
+      try {
+        const provider = new ethers.providers.JsonRpcProvider('https://ethereum-rpc.publicnode.com');
+        const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
+        
+        const [totalSupply, mintCost, maxSupply] = await Promise.all([
+          contract.totalSupply(),
+          contract.mintCost(),
+          contract.MAX_SUPPLY()
+        ]);
+
+        document.getElementById('stat-total').textContent = maxSupply.toLocaleString();
+        document.getElementById('stat-minted').textContent = totalSupply.toLocaleString();
+        document.getElementById('stat-price').textContent = ethers.utils.formatEther(mintCost) + ' ETH';
+      } catch (error) {
+        console.error('Failed to fetch contract data:', error);
+        document.getElementById('stat-minted').textContent = '70';
+        document.getElementById('stat-price').textContent = '0.05 ETH';
+      }
+    }
+
+    fetchContractData();
+
+    // === Generative Background ===
+    const CONFIG = {
+      seed: 42,
+      nodeCount: 0,
+      starCount: 300,
+      connectionDistance: 140,
+      flowSpeed: 0.0003,
+      mouseInfluence: 0.08,
+      pulseSpeed: 0.01,
+      coreSize: 2,
+      blackHoleRadius: 120,
+      accretionDiskRadius: 200,
+    };
+
+    const PALETTE = {
+      bg: '#000000',
+      accent: '#d0d6f9',
+      blue: '#3080ff',
+      lightBlue: '#5a9aff',
+      purple: '#ac4bff',
+    };
+
+    let nodes = [];
+    let stars = [];
+    let flowField;
+    let cols, rows;
+    let scl = 25;
+    let zoff = 0;
+    let perlinScale = 0.04;
+    let blackHoleX, blackHoleY;
+
+    function initCanvas() {
+      p5.disableFriendlyErrors = true;
+      
+      new p5((p) => {
+        p.setup = function() {
+          const canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+          canvas.parent('bg-canvas');
+          p.pixelDensity(1);
+          p.randomSeed(CONFIG.seed);
+          p.noiseSeed(CONFIG.seed);
+          p.colorMode(p.HSB, 360, 100, 100, 100);
+          
+          blackHoleX = p.width / 2;
+          blackHoleY = p.height / 2;
+          
+          cols = p.floor(p.width / scl);
+          rows = p.floor(p.height / scl);
+          flowField = new Array(cols * rows);
+          
+          for (let i = 0; i < CONFIG.starCount; i++) {
+            stars.push({
+              x: p.random(p.width),
+              y: p.random(p.height),
+              size: p.random(0.5, 2),
+              brightness: p.random(30, 80),
+              twinkleSpeed: p.random(0.01, 0.03),
+              phase: p.random(p.TWO_PI)
+            });
+          }
+          
+          for (let i = 0; i < CONFIG.nodeCount; i++) {
+            nodes.push(new Node(p.random(p.width), p.random(p.height), p));
+          }
+          
+          p.frameRate(30);
+        };
+
+        p.draw = function() {
+          p.background(0);
+          
+          drawStars(p);
+          drawBlackHole(p);
+          
+          let yoff = 0;
+          for (let y = 0; y < rows; y++) {
+            let xoff = 0;
+            for (let x = 0; x < cols; x++) {
+              let index = x + y * cols;
+              let angle = p.noise(xoff, yoff, zoff) * p.TWO_PI * 3;
+              let v = p5.Vector.fromAngle(angle);
+              v.setMag(0.4);
+              flowField[index] = v;
+              xoff += perlinScale;
+            }
+            yoff += perlinScale;
+          }
+          zoff += CONFIG.flowSpeed;
+          
+          for (let node of nodes) {
+            node.update(p);
+            node.display(p);
+          }
+          
+          for (let i = 0; i < nodes.length; i++) {
+            for (let j = i + 1; j < nodes.length; j++) {
+              let d = p.dist(nodes[i].pos.x, nodes[i].pos.y, nodes[j].pos.x, nodes[j].pos.y);
+              if (d < CONFIG.connectionDistance) {
+                let alpha = p.map(d, 0, CONFIG.connectionDistance, 35, 0);
+                let pulse = p.sin(p.frameCount * CONFIG.pulseSpeed + i * 0.1) * 0.5 + 0.5;
+                
+                p.stroke(p.color(PALETTE.accent), alpha * pulse);
+                p.strokeWeight(0.6);
+                p.line(nodes[i].pos.x, nodes[i].pos.y, nodes[j].pos.x, nodes[j].pos.y);
+              }
+            }
+          }
+          
+          for (let node of nodes) {
+            node.drawCore(p);
+          }
+        };
+
+        p.mousePressed = function() {
+          for (let i = 0; i < 5; i++) {
+            let angle = p.random(p.TWO_PI);
+            let radius = p.random(20, 50);
+            let x = p.mouseX + p.cos(angle) * radius;
+            let y = p.mouseY + p.sin(angle) * radius;
+            nodes.push(new Node(x, y, p));
+          }
+          if (nodes.length > 150) {
+            nodes.splice(0, 5);
+          }
+        };
+
+        p.windowResized = function() {
+          p.resizeCanvas(p.windowWidth, p.windowHeight);
+          blackHoleX = p.width / 2;
+          blackHoleY = p.height / 2;
+          cols = p.floor(p.width / scl);
+          rows = p.floor(p.height / scl);
+          flowField = new Array(cols * rows);
+        };
+      });
+    }
+
+    function drawStars(p) {
+      p.noStroke();
+      for (let star of stars) {
+        let twinkle = p.sin(p.frameCount * star.twinkleSpeed + star.phase) * 0.5 + 0.5;
+        let brightness = star.brightness * (0.5 + twinkle * 0.5);
+        p.fill(0, 0, brightness, 90);
+        p.ellipse(star.x, star.y, star.size);
+      }
+    }
+
+    function drawBlackHole(p) {
+      p.noStroke();
+      p.fill(0, 0, 0);
+      p.ellipse(blackHoleX, blackHoleY, CONFIG.blackHoleRadius * 2);
+      
+      for (let i = 0; i < 20; i++) {
+        let radius = CONFIG.blackHoleRadius + i * 3;
+        let alpha = p.map(i, 0, 20, 30, 0);
+        p.noFill();
+        p.stroke(240, 20, 100, alpha);
+        p.strokeWeight(1);
+        p.ellipse(blackHoleX, blackHoleY, radius * 2);
+      }
+    }
+
+    function drawAccretionDisk(p) {
+      let time = p.frameCount * 0.01;
+      
+      for (let i = 0; i < 80; i++) {
+        let angle = (i / 80) * p.TWO_PI + time;
+        let radius = CONFIG.blackHoleRadius + p.random(20, CONFIG.accretionDiskRadius - CONFIG.blackHoleRadius);
+        let x = blackHoleX + p.cos(angle) * radius;
+        let y = blackHoleY + p.sin(angle) * radius * 0.3;
+        
+        let distFromCenter = p.dist(x, y, blackHoleX, blackHoleY);
+        let alpha = p.map(distFromCenter, CONFIG.blackHoleRadius, CONFIG.accretionDiskRadius, 60, 10);
+        
+        let t = p.map(distFromCenter, CONFIG.blackHoleRadius, CONFIG.accretionDiskRadius, 0, 1);
+        let c = p.lerpColor(p.color(PALETTE.lightBlue), p.color(PALETTE.blue), t);
+        
+        p.noStroke();
+        p.fill(p.red(c), p.green(c), p.blue(c), alpha);
+        p.ellipse(x, y, 3, 2);
+      }
+    }
+
+    class Node {
+      constructor(x, y, p) {
+        this.pos = p.createVector(x, y);
+        this.vel = p.createVector(0, 0);
+        this.acc = p.createVector(0, 0);
+        this.maxSpeed = 1.2;
+        this.size = p.random(CONFIG.coreSize, CONFIG.coreSize + 2);
+        this.phase = p.random(p.TWO_PI);
+        this.p = p;
+        
+        let r = p.random();
+        if (r < 0.6) {
+          this.hue = p.color(PALETTE.accent);
+        } else if (r < 0.85) {
+          this.hue = p.color(PALETTE.lightBlue);
+        } else if (r < 0.95) {
+          this.hue = p.color(PALETTE.blue);
+        } else {
+          this.hue = p.color(PALETTE.purple);
+        }
+      }
+      
+      update(p) {
+        let x = p.floor(this.pos.x / scl);
+        let y = p.floor(this.pos.y / scl);
+        let index = p.constrain(x + y * cols, 0, flowField.length - 1);
+        let force = flowField[index];
+        if (force) {
+          this.acc.add(force.copy().mult(0.25));
+        }
+        
+        let toBlackHole = p.createVector(blackHoleX - this.pos.x, blackHoleY - this.pos.y);
+        let distToBH = toBlackHole.mag();
+        if (distToBH > CONFIG.blackHoleRadius && distToBH < 500) {
+          toBlackHole.normalize();
+          toBlackHole.mult(0.5 / (distToBH * 0.01));
+          this.acc.add(toBlackHole);
+        }
+        
+        let mouse = p.createVector(p.mouseX, p.mouseY);
+        let toMouse = p5.Vector.sub(mouse, this.pos);
+        let d = toMouse.mag();
+        if (d < 180) {
+          toMouse.normalize();
+          toMouse.mult(CONFIG.mouseInfluence * (1 - d / 180));
+          this.acc.add(toMouse);
+        }
+        
+        this.vel.add(this.acc);
+        this.vel.limit(this.maxSpeed);
+        this.pos.add(this.vel);
+        this.acc.mult(0);
+        
+        if (this.pos.x < 0) this.pos.x = p.width;
+        if (this.pos.x > p.width) this.pos.x = 0;
+        if (this.pos.y < 0) this.pos.y = p.height;
+        if (this.pos.y > p.height) this.pos.y = 0;
+        
+        if (distToBH < CONFIG.blackHoleRadius * 0.8) {
+          this.pos.x = p.random(p.width);
+          this.pos.y = p.random(p.height);
+          this.vel.mult(0);
+        }
+      }
+      
+      display(p) {
+        let pulse = p.sin(p.frameCount * CONFIG.pulseSpeed + this.phase) * 0.5 + 0.5;
+        let size = this.size * (1 + pulse * 0.25);
+        
+        p.noStroke();
+        p.fill(this.hue, 50, 15);
+        p.ellipse(this.pos.x, this.pos.y, size * 3);
+      }
+      
+      drawCore(p) {
+        let pulse = p.sin(p.frameCount * CONFIG.pulseSpeed + this.phase) * 0.5 + 0.5;
+        let size = this.size * (1 + pulse * 0.4);
+        
+        p.noStroke();
+        p.fill(this.hue, 70, 90, 75);
+        p.ellipse(this.pos.x, this.pos.y, size);
+        
+        p.fill(p.color(PALETTE.accent), 85);
+        p.ellipse(this.pos.x, this.pos.y, size * 0.35);
+      }
+    }
+
+    // === Scroll Animations ===
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    });
+
+    document.querySelectorAll('.fade-in').forEach(el => {
+      observer.observe(el);
+    });
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+          target.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
+          // Close mobile menu if open
+          document.querySelector('.mobile-nav').classList.remove('active');
+        }
+      });
+    });
+
+    // === Mobile Menu Toggle ===
+    const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+    const mobileNav = document.querySelector('.mobile-nav');
+    
+    mobileMenuBtn.addEventListener('click', () => {
+      mobileNav.classList.toggle('active');
+    });
+
+    // Close mobile menu when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('nav') && mobileNav.classList.contains('active')) {
+        mobileNav.classList.remove('active');
+      }
+    });
+
+    // === Lazy Load p5.js ===
+    // Load p5.js after initial content renders
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        const p5Script = document.createElement('script');
+        p5Script.src = 'https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.3/p5.min.js';
+        p5Script.onload = () => {
+          // Initialize the canvas after p5 loads
+          if (typeof initCanvas === 'function') {
+            initCanvas();
+          }
+        };
+        document.head.appendChild(p5Script);
+      }, 500);
+    });
+  </script>
+</body>
+</html>
