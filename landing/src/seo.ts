@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 
-export const SITE_URL = 'https://loreum.org'
+export const SITE_URL = 'https://www.loreum.org'
 
 export const DEFAULT_TITLE = 'Loreum — Decentralized Governance System'
 
