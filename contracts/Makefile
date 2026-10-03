@@ -44,7 +44,7 @@ rehearse-mainnet-lore-handoff-script :
 	forge script script/RehearseMainnetLoreHandoff.s.sol:RehearseMainnetLoreHandoff --fork-url $$rpc -vvv
 
 # Human-run Ethereum mainnet Factory + createChamber package (print / verify only).
-# Never broadcasts. Deploy remains blocked on #210 / #211 until accepted or fixed.
+# Never broadcasts. Review blockers are merged; remaining broadcast is Chad-only.
 # See docs/mainnet-verified-deploy.md and deployments/mainnet.txt (TBD until receipt).
 print-mainnet-factory-deploy :; bash script/print-mainnet-factory-deploy.sh
 
