@@ -28,6 +28,39 @@
     <loc>https://app.loreum.org/docs/security/security-review</loc>
   </url>
   <url>
+    <loc>https://app.loreum.org/docs/introduction/chamber-and-sub-chambers</loc>
+  </url>
+  <url>
+    <loc>https://app.loreum.org/docs/introduction/founder-exit</loc>
+  </url>
+  <url>
+    <loc>https://app.loreum.org/docs/protocol/vision</loc>
+  </url>
+  <url>
+    <loc>https://app.loreum.org/docs/protocol/architecture</loc>
+  </url>
+  <url>
+    <loc>https://app.loreum.org/docs/protocol/director-authorization</loc>
+  </url>
+  <url>
+    <loc>https://app.loreum.org/docs/protocol/vaults</loc>
+  </url>
+  <url>
+    <loc>https://app.loreum.org/docs/protocol/multisig</loc>
+  </url>
+  <url>
+    <loc>https://app.loreum.org/docs/protocol/design-notes</loc>
+  </url>
+  <url>
+    <loc>https://app.loreum.org/docs/guides/deployment</loc>
+  </url>
+  <url>
+    <loc>https://app.loreum.org/docs/reference/sequence-diagrams</loc>
+  </url>
+  <url>
+    <loc>https://app.loreum.org/docs/whitepaper/read-online</loc>
+  </url>
+  <url>
     <loc>https://app.loreum.org/deploy</loc>
   </url>
   <url>
