@@ -2,7 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { useAccount, useConnections } from 'wagmi'
 import Layout from '@/components/Layout'
-import { Dashboard, DeployChamber, ChamberDetail, TransactionQueue, Docs, DirectorProfile, Migrate, Operators, OperatorWizard, Compliance } from '@/pages'
+import { Dashboard, DeployChamber, ChamberDetail, TransactionQueue, Docs, DirectorProfile, Migrate, Operators, OperatorWizard, Compliance, NotFound } from '@/pages'
 
 /**
  * `/` shows the Dashboard for connected wallets and sends everyone else to
@@ -59,6 +59,7 @@ function App() {
           <Route path="migrate" element={<Migrate />} />
           <Route path="operators" element={<Operators />} />
           <Route path="operators/wizard" element={<OperatorWizard />} />
+          <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>
     </>
