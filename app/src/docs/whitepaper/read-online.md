@@ -2,7 +2,7 @@
 
 The full **Chamber Protocol** paper — design goals, formal context, security discussion, and version history — is published here:
 
-**[https://loreum.org/whitepaper](https://loreum.org/whitepaper)**
+**[https://www.loreum.org/whitepaper](https://www.loreum.org/whitepaper)**
 
 ## How this relates to in-app docs
 
@@ -12,6 +12,6 @@ The full **Chamber Protocol** paper — design goals, formal context, security d
 | Chamber vs multisig | **[Why not just a multisig?](../introduction/why-not-multisig.md)** |
 | Using the web app | **[Getting started](../introduction/getting-started.md)** |
 | Contract behavior in depth | **[Governance](../protocol/governance.md)**, **[Architecture](../protocol/architecture.md)** |
-| Authoritative long-form thesis | **[Whitepaper (online)](https://loreum.org/whitepaper)** |
+| Authoritative long-form thesis | **[Whitepaper (online)](https://www.loreum.org/whitepaper)** |
 
 > **Disclaimer:** The whitepaper is for transparency, not legal advice. Statutes and supervisory practice evolve independently of this repository.

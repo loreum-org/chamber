@@ -36,4 +36,4 @@ Then, as you need detail:
 
 ## Full protocol paper
 
-The long-form **[Chamber Protocol whitepaper](https://loreum.org/whitepaper)** on [loreum.org](https://loreum.org) goes deeper on design intent and formal framing. The in-app docs focus on **everyday use** and **plain-language mechanics**.
+The long-form **[Chamber Protocol whitepaper](https://www.loreum.org/whitepaper)** on [loreum.org](https://www.loreum.org) goes deeper on design intent and formal framing. The in-app docs focus on **everyday use** and **plain-language mechanics**.
