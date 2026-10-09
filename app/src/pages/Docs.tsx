@@ -1,11 +1,12 @@
 import { useState, useMemo, useEffect, type HTMLAttributes, type ReactNode } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import Mermaid from '@/components/Mermaid'
 import { FiChevronRight, FiChevronDown, FiFileText, FiFolder } from 'react-icons/fi'
 import { motion, AnimatePresence } from 'framer-motion'
 import { resolveDocsHref, stripMdExtension } from '@/lib/docsLinks'
+import { hashToId, rehypeHeadingIds } from '@/lib/headingSlug'
 
 // Import all markdown files in the docs folder
 const docFiles = import.meta.glob('../docs/**/*.md', { as: 'raw', eager: true })
@@ -276,6 +277,32 @@ export default function Docs() {
     return { content: String(doc), docPath: resolvedDocPath }
   }, [activePath, keys])
 
+  // Scroll to the heading named by the URL hash once the doc has rendered: covers
+  // deep links (`/docs/reference/sequence-diagrams#delegation-flow`) and in-app
+  // `x.md#anchor` navigations from `resolveDocsHref`. Plain in-page `#anchor`
+  // clicks use native anchor behavior (headings carry matching ids).
+  const { hash } = useLocation()
+  useEffect(() => {
+    const id = hashToId(hash)
+    if (!id) return
+    const scroll = () => document.getElementById(id)?.scrollIntoView({ block: 'start' })
+    const frame = requestAnimationFrame(scroll)
+    // Mermaid diagrams render asynchronously and grow the page above the target;
+    // keep the heading pinned while layout settles, until the reader scrolls.
+    const observer = new ResizeObserver(() => scroll())
+    observer.observe(document.body)
+    const stop = () => observer.disconnect()
+    const timer = window.setTimeout(stop, 4000)
+    const userEvents = ['wheel', 'touchstart', 'keydown', 'mousedown'] as const
+    userEvents.forEach((type) => window.addEventListener(type, stop, { passive: true, once: true }))
+    return () => {
+      cancelAnimationFrame(frame)
+      window.clearTimeout(timer)
+      stop()
+      userEvents.forEach((type) => window.removeEventListener(type, stop))
+    }
+  }, [hash, content])
+
   return (
     <div className="flex flex-col md:flex-row gap-4 md:gap-8 min-h-[calc(100vh-12rem)]">
       {/* Desktop sidebar */}
@@ -349,25 +376,26 @@ export default function Docs() {
             <div className="prose prose-invert prose-slate max-w-none prose-headings:font-heading prose-headings:font-bold prose-h1:text-3xl sm:prose-h1:text-4xl prose-h1:mb-6 sm:prose-h1:mb-8 prose-h2:text-xl sm:prose-h2:text-2xl prose-h2:mt-8 sm:prose-h2:mt-12 prose-h2:mb-4 prose-h3:text-lg sm:prose-h3:text-xl prose-h3:mt-6 sm:prose-h3:mt-8 prose-h3:mb-3 prose-p:text-slate-400 prose-p:leading-relaxed prose-a:text-accent-400 prose-a:no-underline hover:prose-a:underline prose-strong:text-slate-100 prose-code:text-accent-300 prose-code:bg-slate-800/50 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none prose-ul:list-disc prose-ol:list-decimal">
             <ReactMarkdown 
               remarkPlugins={[remarkGfm]}
+              rehypePlugins={[rehypeHeadingIds]}
               components={{
-                h1({ children }) {
+                h1({ id, children }) {
                   return (
-                    <h1 className="text-3xl sm:text-4xl font-heading font-bold text-slate-100 mb-6 sm:mb-8 pb-4 border-b border-slate-800/50">
+                    <h1 id={id} className="scroll-mt-24 text-3xl sm:text-4xl font-heading font-bold text-slate-100 mb-6 sm:mb-8 pb-4 border-b border-slate-800/50">
                       {children}
                     </h1>
                   )
                 },
-                h2({ children }) {
+                h2({ id, children }) {
                   return (
-                    <h2 className="text-xl sm:text-2xl font-heading font-bold text-slate-100 mt-8 sm:mt-12 mb-4 flex items-center gap-3">
+                    <h2 id={id} className="scroll-mt-24 text-xl sm:text-2xl font-heading font-bold text-slate-100 mt-8 sm:mt-12 mb-4 flex items-center gap-3">
                       <span className="w-1.5 h-6 bg-accent-500 rounded-full shrink-0" />
                       {children}
                     </h2>
                   )
                 },
-                h3({ children }) {
+                h3({ id, children }) {
                   return (
-                    <h3 className="text-lg sm:text-xl font-heading font-bold text-slate-200 mt-6 sm:mt-8 mb-3">
+                    <h3 id={id} className="scroll-mt-24 text-lg sm:text-xl font-heading font-bold text-slate-200 mt-6 sm:mt-8 mb-3">
                       {children}
                     </h3>
                   )
@@ -380,6 +408,13 @@ export default function Docs() {
                 },
                 ol({ children }) {
                   return <ol className="list-decimal list-outside ml-6 mb-6 space-y-2 text-slate-400">{children}</ol>
+                },
+                h4({ id, children }) {
+                  return (
+                    <h4 id={id} className="scroll-mt-24">
+                      {children}
+                    </h4>
+                  )
                 },
                 li({ children }) {
                   return <li className="pl-1">{children}</li>
