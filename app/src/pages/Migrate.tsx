@@ -483,10 +483,14 @@ function PhaseConnect({
 
         <div className="space-y-4">
           <div>
-            <label className="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-1.5">
+            <label
+              htmlFor="migrate-safe-address"
+              className="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-1.5"
+            >
               Safe Address
             </label>
             <input
+              id="migrate-safe-address"
               type="text"
               value={safeAddress}
               onChange={(e) => setSafeAddress(e.target.value)}
@@ -544,14 +548,19 @@ function PhaseConnect({
       <div className="panel p-6">
         <h3 className="text-sm font-heading font-medium text-white mb-3">Board Configuration</h3>
         <div className="flex items-center gap-4">
-          <label className="text-xs font-mono uppercase tracking-wider text-slate-400">
+          <label
+            htmlFor="migrate-seats"
+            className="text-xs font-mono uppercase tracking-wider text-slate-400"
+          >
             Seats
           </label>
           <input
+            id="migrate-seats"
             type="range"
             min={3}
             max={Math.max(3, (Array.isArray(safeOwners) ? safeOwners.length : 5))}
             value={seats}
+            aria-valuetext={`${seats} seats`}
             onChange={(e) => setSeats(Number(e.target.value))}
             className="flex-1 accent-accent-500"
           />
@@ -634,7 +643,7 @@ interface PhaseParallelProps {
   onPrev: () => void
 }
 
-function PhaseParallel({
+export function PhaseParallel({
   cooldownDays,
   setCooldownDays,
   parallelRun,
@@ -671,15 +680,20 @@ function PhaseParallel({
           </p>
 
           <div className="mb-6">
-            <label className="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-1.5">
+            <label
+              htmlFor="migrate-cooldown"
+              className="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-1.5"
+            >
               Cooldown Period
             </label>
             <div className="flex items-center gap-4">
               <input
+                id="migrate-cooldown"
                 type="range"
                 min={1}
                 max={30}
                 value={cooldownDays}
+                aria-valuetext={`${cooldownDays} days`}
                 onChange={(e) => setCooldownDays(Number(e.target.value))}
                 className="flex-1 accent-accent-500"
               />
