@@ -251,6 +251,7 @@ export default function Compliance() {
           >
             <input
               className="input bg-slate-800/60 text-sm w-56"
+              aria-label="Chamber address"
               placeholder="Paste chamber address…"
               value={manualAddress}
               onChange={(e) => setManualAddress(e.target.value)}
