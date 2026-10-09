@@ -63,12 +63,21 @@ const markdownComponents = {
   ),
 };
 
-function BlogChrome({
+/** Shared page chrome (starfield, nav, footer) for blog and other secondary landing pages. */
+export function BlogChrome({
   title,
   description = 'Changelog and research notes from the Loreum team.',
   path = '/blog',
+  highlightBlog = true,
   children,
-}: { title: string; description?: string; path?: string; children: React.ReactNode }) {
+}: {
+  title: string;
+  description?: string;
+  path?: string;
+  /** Highlight BLOG in the nav (off for non-blog pages such as NotFound). */
+  highlightBlog?: boolean;
+  children: React.ReactNode;
+}) {
   useSeo(title, description, path);
 
   return (
@@ -93,7 +102,12 @@ function BlogChrome({
           <a href="/#technology" className="hover:text-space-accent transition-colors">TECHNOLOGY</a>
           <a href="/#governance" className="hover:text-space-accent transition-colors">GOVERNANCE</a>
           <Link to="/team" className="hover:text-space-accent transition-colors">TEAM</Link>
-          <Link to="/blog" className="text-space-accent transition-colors">BLOG</Link>
+          <Link
+            to="/blog"
+            className={highlightBlog ? 'text-space-accent transition-colors' : 'hover:text-space-accent transition-colors'}
+          >
+            BLOG
+          </Link>
         </div>
         <a
           href={chamberAppUrl}
