@@ -47,4 +47,4 @@ Agents, analytics, and dashboards sit **around** these interfaces. They do not r
 - **[What is a Chamber?](../introduction/overview.md)**  
 - **[Why not just a multisig?](../introduction/why-not-multisig.md)**  
 - **[Architecture](./architecture.md)** — contracts and Factory (builders)  
-- **[Whitepaper](https://loreum.org/whitepaper)** — long-form narrative
+- **[Whitepaper](https://www.loreum.org/whitepaper)** — long-form narrative

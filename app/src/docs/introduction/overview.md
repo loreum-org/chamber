@@ -41,7 +41,7 @@ Teams that outgrow a single founder multisig often hit the same walls:
 
 Chamber pushes those answers into **onchain state**: delegation totals, seat ranking, quorum, and proposal hashes. That is **structural clarity** — useful for communities, contributors, and regulators who ask how governance actually works.
 
-> **Not legal advice.** Statutes and supervisory guidance change. For formal protocol framing, see the **[Chamber Protocol whitepaper](https://loreum.org/whitepaper)**.
+> **Not legal advice.** Statutes and supervisory guidance change. For formal protocol framing, see the **[Chamber Protocol whitepaper](https://www.loreum.org/whitepaper)**.
 
 ## The three parts (simple mental model)
 

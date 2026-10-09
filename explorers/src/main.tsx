@@ -20,7 +20,7 @@ root.render(
         <RainbowKitProvider
           appInfo={{
             appName: 'Loreum Explorers',
-            learnMoreUrl: 'https://loreum.org',
+            learnMoreUrl: 'https://www.loreum.org',
           }}
           theme={darkTheme({
             accentColor: '#2563eb',

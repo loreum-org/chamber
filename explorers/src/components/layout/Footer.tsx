@@ -7,7 +7,7 @@ const INTERNAL = [
 ]
 
 const EXTERNAL = [
-  { href: 'https://loreum.org', label: 'loreum.org' },
+  { href: 'https://www.loreum.org', label: 'loreum.org' },
   { href: 'https://github.com/loreum-org', label: 'GitHub' },
 ]
 
