@@ -1,10 +1,11 @@
 import { useState, useMemo, useEffect, type HTMLAttributes, type ReactNode } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import Mermaid from '@/components/Mermaid'
 import { FiChevronRight, FiChevronDown, FiFileText, FiFolder } from 'react-icons/fi'
 import { motion, AnimatePresence } from 'framer-motion'
+import { resolveDocsHref, stripMdExtension } from '@/lib/docsLinks'
 
 // Import all markdown files in the docs folder
 const docFiles = import.meta.glob('../docs/**/*.md', { as: 'raw', eager: true })
@@ -211,7 +212,8 @@ function formatDocLabel(activePath: string): string {
 
 export default function Docs() {
   const { '*': path } = useParams()
-  const activePath = path || ''
+  // Tolerate shared/legacy URLs like `/docs/introduction/why-not-multisig.md`.
+  const activePath = stripMdExtension(path || '')
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   
   const docTree = useMemo(() => buildDocTree(docFiles), [])
@@ -221,9 +223,12 @@ export default function Docs() {
     setMobileNavOpen(false)
   }, [activePath])
   
-  const content = useMemo(() => {
+  const { content, docPath } = useMemo(() => {
     if (keys.length === 0) {
-      return '# No Documentation Found\n\nThe documentation folder seems to be empty or could not be loaded.'
+      return {
+        content: '# No Documentation Found\n\nThe documentation folder seems to be empty or could not be loaded.',
+        docPath: activePath,
+      }
     }
     
     let targetKey = ''
@@ -251,16 +256,24 @@ export default function Docs() {
 
     const doc = docFiles[targetKey]
     if (!doc) {
-      return `# Document Not Found\n\nThe requested document could not be found.`
+      return {
+        content: `# Document Not Found\n\nThe requested document could not be found.`,
+        docPath: activePath,
+      }
     }
-    
+
+    // Docs-root-relative path of the file actually shown (e.g. `introduction/overview`
+    // for `/docs`, `protocol/README` for `/docs/protocol`); relative links resolve against it.
+    const keyMatch = targetKey.split('?')[0].match(/docs\/(.+)\.md$/)
+    const resolvedDocPath = keyMatch ? keyMatch[1] : activePath
+
     // With as: 'raw', doc should be the string content directly
-    if (typeof doc === 'string') return doc
+    if (typeof doc === 'string') return { content: doc, docPath: resolvedDocPath }
     if (doc && typeof doc === 'object' && 'default' in doc) {
       const fallback = (doc as { default?: unknown }).default
-      if (typeof fallback === 'string') return fallback
+      if (typeof fallback === 'string') return { content: fallback, docPath: resolvedDocPath }
     }
-    return String(doc)
+    return { content: String(doc), docPath: resolvedDocPath }
   }, [activePath, keys])
 
   return (
@@ -372,6 +385,18 @@ export default function Docs() {
                   return <li className="pl-1">{children}</li>
                 },
                 a({ href, children }) {
+                  // Relative `.md` links (e.g. `../protocol/governance.md#roles`) navigate in-app.
+                  const docsRoute = resolveDocsHref(href, docPath)
+                  if (docsRoute) {
+                    return (
+                      <Link
+                        to={docsRoute}
+                        className="text-accent-400 hover:text-accent-300 transition-colors underline decoration-accent-500/30 underline-offset-4"
+                      >
+                        {children}
+                      </Link>
+                    )
+                  }
                   return (
                     <a 
                       href={href} 
