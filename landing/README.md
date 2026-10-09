@@ -1,6 +1,6 @@
 # Loreum landing site
 
-Marketing site for [loreum.org](https://loreum.org) (React + Vite).
+Marketing site for [www.loreum.org](https://www.loreum.org) (React + Vite).
 
 ## Development
 
