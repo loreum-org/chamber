@@ -1,8 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useSeo } from './seo';
+import Nav from './Nav.tsx';
 
 const FadeIn = ({ children, delay = 0, className = "" }: { children: React.ReactNode, delay?: number, className?: string }) => (
   <motion.div
@@ -27,35 +27,7 @@ function Whitepaper() {
     <div className="min-h-screen bg-space-900 text-white selection:bg-space-accent selection:text-space-900 overflow-hidden relative">
       
       {/* Background Stars Effect */}
-      <div className="fixed inset-0 z-0 opacity-40 pointer-events-none">
-        <div className="absolute top-10 left-20 w-1 h-1 bg-white rounded-full animate-pulse-slow"></div>
-        <div className="absolute top-40 right-40 w-2 h-2 bg-space-accent rounded-full animate-pulse"></div>
-        <div className="absolute bottom-20 left-1/3 w-1 h-1 bg-white rounded-full opacity-50"></div>
-        <div className="absolute top-1/4 right-10 w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse-slow delay-700"></div>
-        {/* Glowing Orb */}
-        <div className="absolute top-[-20%] right-[-10%] w-[800px] h-[800px] bg-blue-900/20 rounded-full blur-[120px]"></div>
-        <div className="absolute bottom-[-20%] left-[-10%] w-[600px] h-[600px] bg-purple-900/20 rounded-full blur-[100px]"></div>
-      </div>
-
-      {/* Navigation */}
-      <nav className="relative z-50 flex items-center justify-between px-8 py-6 max-w-7xl mx-auto">
-        <Link to="/" className="flex items-center gap-2">
-          <img src="https://cdn.loreum.org/logos/white.svg" alt="Loreum Logo" className="w-8 h-8" />
-          <span className="text-2xl font-display tracking-wider">LOREUM</span>
-        </Link>
-        <div className="flex items-center gap-6">
-          <Link to="/blog" className="text-sm tracking-wide hover:text-space-accent transition-colors">
-            BLOG
-          </Link>
-          <Link 
-            to="/"
-            className="flex items-center gap-2 border border-white/20 px-6 py-2 rounded-full hover:bg-white/10 transition-all text-sm tracking-wide"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            BACK TO HOME
-          </Link>
-        </div>
-      </nav>
+      <Nav active="whitepaper" />
 
       {/* Whitepaper Content */}
       <div className="relative z-10 max-w-4xl mx-auto px-6 py-16">
