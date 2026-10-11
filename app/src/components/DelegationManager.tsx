@@ -5,7 +5,6 @@ import { useAccount } from 'wagmi'
 import { formatUnits, parseUnits, zeroAddress } from 'viem'
 import {
   FiSend,
-  FiArrowRight,
   FiArrowLeft,
   FiUser,
   FiLoader,
@@ -15,6 +14,7 @@ import {
 } from 'react-icons/fi'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import toast from 'react-hot-toast'
+import { Stat, StatRow } from '@/components/ui'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   useDelegate,
@@ -273,48 +273,24 @@ export default function DelegationManager({
           </Link>
         </div>
       )}
-      {/* Balance Overview */}
-      <div className="grid md:grid-cols-3 gap-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="panel p-5"
-        >
-          <div className="text-slate-500 text-xs mb-1.5">Total Balance</div>
-          <div className="font-heading text-xl font-bold text-slate-100">
-            {userBalance !== undefined
-              ? parseFloat(formatUnits(userBalance, shareDecimals)).toFixed(4)
-              : '0.0000'}
-            {vaultSymbol && <span className="text-lg text-slate-400 ml-1">{vaultSymbol}</span>}
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="panel p-5"
-        >
-          <div className="text-slate-500 text-xs mb-1.5">Delegated</div>
-          <div className="font-heading text-xl font-bold gradient-text">
-            {parseFloat(formatUnits(totalDelegated, shareDecimals)).toFixed(4)}
-            {vaultSymbol && <span className="text-lg text-slate-400 ml-1">{vaultSymbol}</span>}
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="panel p-5"
-        >
-          <div className="text-slate-500 text-xs mb-1.5">Available</div>
-          <div className="font-heading text-xl font-bold text-emerald-400">
-            {parseFloat(formatUnits(availableBalance, shareDecimals)).toFixed(4)}
-            {vaultSymbol && <span className="text-lg text-slate-400 ml-1">{vaultSymbol}</span>}
-          </div>
-        </motion.div>
-      </div>
+      <StatRow cols={3}>
+        <Stat
+          label="Total balance"
+          value={userBalance !== undefined ? parseFloat(formatUnits(userBalance, shareDecimals)).toFixed(4) : '0.0000'}
+          unit={vaultSymbol}
+        />
+        <Stat
+          label="Delegated"
+          value={parseFloat(formatUnits(totalDelegated, shareDecimals)).toFixed(4)}
+          unit={vaultSymbol}
+        />
+        <Stat
+          label="Available"
+          value={parseFloat(formatUnits(availableBalance, shareDecimals)).toFixed(4)}
+          unit={vaultSymbol}
+          tone="ok"
+        />
+      </StatRow>
 
       {/* Delegate / Undelegate */}
       <div className="grid md:grid-cols-2 gap-5">
@@ -326,9 +302,6 @@ export default function DelegationManager({
           className="panel p-6"
         >
           <div className="flex items-center gap-3 mb-6">
-            <div className="icon-container-accent">
-              <FiArrowRight className="w-5 h-5" />
-            </div>
             <div>
               <h3 className="font-heading font-semibold text-slate-100">Delegate</h3>
               <p className="text-slate-500 text-xs">Point your shares at a member to give them a board seat</p>
@@ -466,9 +439,6 @@ export default function DelegationManager({
           className="panel p-6"
         >
           <div className="flex items-center gap-3 mb-6">
-            <div className="icon-container bg-red-500/15 text-red-400">
-              <FiArrowLeft className="w-5 h-5" />
-            </div>
             <div>
               <h3 className="font-heading font-semibold text-slate-100">Undelegate</h3>
               <p className="text-slate-500 text-xs">Reclaim voting power</p>

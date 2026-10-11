@@ -117,20 +117,11 @@ export default function BoardVisualization({
         </div>
       )}
       {/* Board Visualization */}
-      <div className="relative panel p-8 overflow-hidden">
-        {/* Background decoration */}
-        <div className="absolute inset-0 bg-mesh-gradient pointer-events-none" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-2xl">
-          <div className="h-px bg-gradient-to-r from-transparent via-accent-500/50 to-transparent" />
-        </div>
-        
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h3 className="font-heading text-2xl font-bold text-slate-100 mb-2 tracking-tight">
-            Board of Directors
-          </h3>
-          <p className="text-slate-400 text-sm">
-            {seats} seats • {filledSeatCount} filled • Directors are the top {seats} members by delegated shares. Ranking changes the moment delegation changes.
+      <div className="panel p-6 sm:p-8">
+        <div className="mb-8">
+          <h3 className="section-title">Board of directors</h3>
+          <p className="text-slate-500 text-xs mt-0.5">
+            {seats} seats · {filledSeatCount} filled · the top {seats} members by delegated shares. Ranking changes the moment delegation changes.
           </p>
         </div>
 
@@ -440,7 +431,7 @@ function MemberRow({
             <div className="w-full h-full animate-pulse bg-slate-600/70" aria-hidden />
           ) : (
             <span
-              className={`text-xs font-bold ${
+              className={`text-xs font-semibold ${
                 rank === 2 ? 'text-slate-900' : rank >= 4 ? 'text-slate-300' : 'text-white'
               }`}
             >
@@ -451,7 +442,7 @@ function MemberRow({
         {hasAvatar ? (
           <span
             className={`
-            absolute -bottom-0.5 -right-0.5 min-w-[1.125rem] h-[1.125rem] px-0.5 rounded-full flex items-center justify-center text-[9px] font-bold border border-slate-900 shadow-sm
+            absolute -bottom-0.5 -right-0.5 min-w-[1.125rem] h-[1.125rem] px-0.5 rounded-full flex items-center justify-center text-[9px] font-semibold border border-slate-900 shadow-sm
             ${rank === 1 ? 'bg-accent-600 text-white' : 'bg-slate-800 text-slate-100'}
           `}
           >

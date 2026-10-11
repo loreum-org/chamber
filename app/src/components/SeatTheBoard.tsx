@@ -123,7 +123,7 @@ export default function SeatTheBoard({
           <FiUsers className="w-5 h-5 text-accent-400" />
         </div>
         <div className="min-w-0">
-          <h3 className="font-heading text-xl font-bold text-slate-100">Seat the board</h3>
+          <h3 className="font-heading text-xl font-semibold text-slate-100">Seat the board</h3>
           <p className="text-slate-400 text-sm mt-1 leading-relaxed">
             This chamber has no directors. Submit, confirm, and execute stay locked until a membership token
             receives delegation and seating matures.

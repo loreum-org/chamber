@@ -43,6 +43,7 @@ import {
   switchToSupportedChainLabel,
 } from '@/lib/supportedChain'
 import { useMyChambers } from '@/hooks/useMyChambers'
+import { PageHeader } from '@/components/ui'
 import { formatTimestamp, formatWalletSendError, shortenAddress } from '@/lib/utils'
 import type { OperatorSeatView } from '@/hooks/useOperatorConsole'
 
@@ -141,28 +142,18 @@ export default function Operators() {
         </div>
       )}
 
-      {/* Header */}
-      <div className="relative overflow-hidden panel px-5 py-4">
-        <div className="absolute inset-0 bg-mesh-gradient pointer-events-none opacity-[0.85]" />
-        <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="min-w-0">
-            <Overline>Operator console</Overline>
-            <h1 className="font-heading text-2xl font-bold text-slate-100 tracking-tight">
-              Operators
-            </h1>
-            <p className="text-slate-500 text-sm mt-1">
-              Who acts under each director seat — assignment, scope, and the instant plug.
-            </p>
-          </div>
+      <PageHeader
+        title="Operators"
+        description="Who acts under each director seat: assignment, scope, and the instant plug."
+        actions={
           <Link
             to={chamber ? `/operators/wizard?chamber=${chamber}` : '/operators/wizard'}
-            className={`btn btn-primary shrink-0 ${!chamber ? 'pointer-events-none opacity-50' : ''}`}
+            className={`btn btn-primary ${!chamber ? 'pointer-events-none opacity-50' : ''}`}
           >
-            <FiKey className="w-4 h-4" />
             Assign operator
           </Link>
-        </div>
-      </div>
+        }
+      />
 
       {/* Chamber selector */}
       <div className="panel p-4 flex flex-col sm:flex-row gap-3 sm:items-end">
@@ -375,7 +366,7 @@ function StatCard({
   return (
     <div className="stat-card">
       <Overline>{label}</Overline>
-      <p className="font-heading text-xl font-bold text-slate-100 tabular-nums font-mono">{value}</p>
+      <p className="font-heading text-xl font-semibold text-slate-100 tabular-nums font-mono">{value}</p>
       {hint && <p className="text-slate-500 text-[11px] mt-1">{hint}</p>}
     </div>
   )

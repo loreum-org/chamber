@@ -58,7 +58,7 @@ function TotalAumPanel({
       <div className="rounded-2xl border border-slate-700/50 bg-slate-800/20 p-5 sm:p-6 h-full">
         <div className="flex items-center gap-2 text-slate-400 mb-2">
           <FiTrendingUp className="w-5 h-5" />
-          <span className="text-[10px] font-bold uppercase tracking-widest">Total AUM (USD)</span>
+          <span className="text-[10px] font-semibold uppercase tracking-widest">Total AUM (USD)</span>
         </div>
         <p className="text-slate-500 text-sm">Load indexed assets to estimate market value.</p>
       </div>
@@ -70,7 +70,7 @@ function TotalAumPanel({
       <div className="rounded-2xl border border-slate-700/50 bg-slate-800/20 p-5 sm:p-6 h-full">
         <div className="flex items-center gap-2 text-slate-400 mb-2">
           <FiTrendingUp className="w-5 h-5" />
-          <span className="text-[10px] font-bold uppercase tracking-widest">Total AUM (USD)</span>
+          <span className="text-[10px] font-semibold uppercase tracking-widest">Total AUM (USD)</span>
         </div>
         <p className="text-slate-500 text-xs leading-relaxed">
           USD marks use live spot prices on Ethereum, Base, and Arbitrum. They are not available on Sepolia; use
@@ -94,7 +94,7 @@ function TotalAumPanel({
       <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-5 sm:p-6 h-full">
         <div className="flex items-center gap-2 text-red-400/90 mb-2">
           <FiTrendingUp className="w-5 h-5" />
-          <span className="text-[10px] font-bold uppercase tracking-widest">Total AUM (USD)</span>
+          <span className="text-[10px] font-semibold uppercase tracking-widest">Total AUM (USD)</span>
         </div>
         <p className="text-red-300/90 text-sm">{usdError.message}</p>
       </div>
@@ -122,7 +122,7 @@ function TotalAumPanel({
     <div className="rounded-2xl border border-accent-500/20 bg-accent-500/5 p-5 sm:p-6 h-full">
       <div className="flex items-center gap-2 text-accent-400/90 mb-3">
         <FiTrendingUp className="w-5 h-5 shrink-0" />
-        <span className="text-[10px] font-bold uppercase tracking-widest">Total AUM (USD)</span>
+        <span className="text-[10px] font-semibold uppercase tracking-widest">Total AUM (USD)</span>
       </div>
       <p className="text-slate-500 text-xs mb-4 leading-relaxed">
         Combined spot value of native gas token and ERC-20s (DefiLlama). NFTs are not valued here.
@@ -274,7 +274,7 @@ export default function ChamberAssetsAlchemy({
         <div className="grid grid-cols-1 lg:grid-cols-2 lg:divide-x lg:divide-slate-700/40">
           <div className="p-4 space-y-6 min-w-0">
             <div>
-              <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">
+              <h4 className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-2">
                 Native
               </h4>
               <div className="rounded-xl border border-slate-700/50 bg-slate-800/30 px-3 py-2.5 font-mono text-sm text-slate-200">
@@ -286,7 +286,7 @@ export default function ChamberAssetsAlchemy({
             </div>
 
             <div>
-              <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">
+              <h4 className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-2">
                 ERC-20 ({data.erc20.length})
               </h4>
               {data.erc20.length === 0 ? (
@@ -352,7 +352,7 @@ export default function ChamberAssetsAlchemy({
             </div>
 
             <div>
-              <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">
+              <h4 className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-2">
                 NFTs ({data.nfts.length})
               </h4>
               {data.nfts.length === 0 ? (
