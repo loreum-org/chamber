@@ -1,82 +1,53 @@
 import { Link } from 'react-router-dom';
-
-/** Production default so CTAs work when env is unset in a static build. */
-const chamberAppUrl =
-  (import.meta.env.VITE_CHAMBER_APP_URL as string | undefined)?.trim() ||
-  'https://app.loreum.org';
+import { chamberAppUrl } from './config.ts';
 
 const itemClass = 'hover:text-white transition-colors';
 
 /**
- * Landing footer. Every link is a live destination — Team, Blog, Chambers,
- * X, GitHub, and app docs (`${chamberAppUrl}/docs`). Dead stubs (Agents,
+ * Landing footer. Every link is a live destination. Dead stubs (Agents,
  * Roadmap, Security, Discord, Privacy, Terms) are omitted until real pages exist.
  * Do not link docs.loreum.org (broken TLS) or landing /docs (no SPA route).
  */
 function Footer() {
   return (
-    <footer className="relative z-10 bg-space-900 pt-20 pb-10 border-t border-white/10 w-full min-w-0 overflow-x-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 grid md:grid-cols-4 gap-12 mb-16 w-full min-w-0 box-border">
-        <div className="col-span-1 md:col-span-2">
-          <div className="flex items-center gap-2 mb-6">
-            <img src="https://cdn.loreum.org/logos/white.svg" alt="Loreum Logo" className="w-6 h-6" />
-            <span className="text-2xl font-display tracking-wider">LOREUM</span>
+    <footer className="relative z-10 border-t border-line w-full min-w-0 overflow-x-hidden">
+      <div className="container-x py-14 grid gap-10 md:grid-cols-[1.4fr_1fr_1fr]">
+        <div>
+          <div className="flex items-center gap-2.5 mb-4">
+            <img src="https://cdn.loreum.org/logos/white.svg" alt="" className="w-6 h-6" />
+            <span className="font-semibold tracking-[0.02em] text-slate-100">Loreum</span>
           </div>
-          <p className="text-gray-500 max-w-xs font-light">
-            Loreum — enterprise treasury infrastructure. Chambers are corporate
-            entities onchain: an elected board, a treasury vault, and quorum
-            governance, enforced by contract code.
+          <p className="text-slate-500 text-sm max-w-xs leading-relaxed">
+            Open-source contracts that give a shared treasury an elected board. Non-custodial,
+            enforced on Ethereum.
           </p>
         </div>
 
         <div>
-          <h4 className="font-bold tracking-widest text-sm mb-6">PLATFORM</h4>
-          <ul className="space-y-4 text-sm text-gray-400 font-light">
-            <li><Link to="/team" className={itemClass}>Team</Link></li>
+          <h4 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 mb-4">Product</h4>
+          <ul className="space-y-2.5 text-sm text-slate-400">
+            <li><a href={chamberAppUrl} className={itemClass}>Open the app</a></li>
+            <li><a href={`${chamberAppUrl}/docs`} target="_blank" rel="noopener noreferrer" className={itemClass}>Documentation</a></li>
+            <li><Link to="/whitepaper" className={itemClass}>Whitepaper</Link></li>
             <li><Link to="/blog" className={itemClass}>Blog</Link></li>
-            <li><a href={chamberAppUrl} className={itemClass}>Chambers</a></li>
           </ul>
         </div>
 
         <div>
-          <h4 className="font-bold tracking-widest text-sm mb-6">COMMUNITY</h4>
-          <ul className="space-y-4 text-sm text-gray-400 font-light">
-            <li>
-              <a
-                href="https://x.com/loreumdao"
-                target="_blank"
-                rel="noopener noreferrer"
-                className={itemClass}
-              >
-                X
-              </a>
-            </li>
-            <li>
-              <a
-                href="https://github.com/loreum-org/chamber"
-                target="_blank"
-                rel="noopener noreferrer"
-                className={itemClass}
-              >
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a
-                href={`${chamberAppUrl}/docs`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={itemClass}
-              >
-                Documentation
-              </a>
-            </li>
+          <h4 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 mb-4">Company</h4>
+          <ul className="space-y-2.5 text-sm text-slate-400">
+            <li><Link to="/team" className={itemClass}>Team</Link></li>
+            <li><a href="https://github.com/loreum-org/chamber" target="_blank" rel="noopener noreferrer" className={itemClass}>GitHub</a></li>
+            <li><a href="https://x.com/loreumdao" target="_blank" rel="noopener noreferrer" className={itemClass}>X</a></li>
           </ul>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-8 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-gray-600 w-full min-w-0 box-border text-center md:text-start">
-        <div>© 2026 LOREUM DAO LLC. ALL RIGHTS RESERVED.</div>
+      <div className="container-x pb-10 flex flex-col md:flex-row md:items-center md:justify-between gap-3 text-xs text-slate-600">
+        <div>© 2026 Loreum DAO LLC</div>
+        <p className="max-w-xl leading-relaxed">
+          Loreum is non-custodial governance software, not legal, tax, investment, broker, dealer, exchange, or custodial advice.
+        </p>
       </div>
     </footer>
   );
