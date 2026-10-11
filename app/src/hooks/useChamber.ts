@@ -387,7 +387,7 @@ export function useTransaction(chamberAddress: `0x${string}` | undefined, transa
 }
 
 export function useSeatUpdate(chamberAddress: `0x${string}` | undefined) {
-  const { data, refetch } = useReadContract({
+  const { data, refetch, isFetched } = useReadContract({
     address: chamberAddress,
     abi: chamberAbi,
     functionName: 'getSeatUpdate',
@@ -405,7 +405,7 @@ export function useSeatUpdate(chamberAddress: `0x${string}` | undefined) {
     }
   }
 
-  return { seatUpdate, refetch }
+  return { seatUpdate, refetch, isFetched }
 }
 
 /**

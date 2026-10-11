@@ -96,7 +96,7 @@ function StatCard({ icon: Icon, label, value, sub }: {
         <Icon className="w-3.5 h-3.5" />
         {label}
       </div>
-      <div className="font-heading text-xl font-bold text-slate-100">{value}</div>
+      <div className="font-heading text-xl font-semibold text-slate-100">{value}</div>
       {sub && <div className="text-slate-500 text-xs mt-0.5">{sub}</div>}
     </div>
   )
@@ -258,7 +258,7 @@ function DirectorProfileContent({
     return (
       <div className="flex flex-col items-center justify-center min-h-64 gap-4 text-center">
         <FiAlertTriangle className="w-12 h-12 text-red-400" />
-        <h2 className="font-heading text-xl font-bold text-slate-100">Invalid URL</h2>
+        <h2 className="font-heading text-xl font-semibold text-slate-100">Invalid URL</h2>
         <p className="text-slate-400">Token ID is missing.</p>
         <Link to="/" className="btn btn-primary">Back to Dashboard</Link>
       </div>
@@ -288,7 +288,6 @@ function DirectorProfileContent({
 
       {/* Header card */}
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="panel p-6 relative overflow-hidden">
-        <div className="absolute inset-0 bg-mesh-gradient pointer-events-none opacity-70" />
         <div className="relative z-10 space-y-6">
           <div className="flex flex-col md:flex-row md:items-center gap-6">
             {/* Avatar / NFT image placeholder */}
@@ -309,7 +308,7 @@ function DirectorProfileContent({
 
             <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-2 mb-1">
-                <h1 className="font-heading text-2xl font-bold text-slate-100">
+                <h1 className="font-heading text-2xl font-semibold text-slate-100">
                   {chamberInfo.name || 'Chamber'} · Member #{tokenIdParam}
                 </h1>
                 {isDirector && (
@@ -358,7 +357,7 @@ function DirectorProfileContent({
                   />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-sm font-bold text-slate-100">{votingPower.toFixed(1)}%</span>
+                  <span className="text-sm font-semibold text-slate-100">{votingPower.toFixed(1)}%</span>
                 </div>
               </div>
               <span className="text-xs text-slate-500">Voting power</span>

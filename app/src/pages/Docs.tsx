@@ -373,21 +373,21 @@ export default function Docs() {
           animate={{ opacity: 1, y: 0 }}
           className="panel p-4 sm:p-8 md:p-12"
         >
-            <div className="prose prose-invert prose-slate max-w-none prose-headings:font-heading prose-headings:font-bold prose-h1:text-3xl sm:prose-h1:text-4xl prose-h1:mb-6 sm:prose-h1:mb-8 prose-h2:text-xl sm:prose-h2:text-2xl prose-h2:mt-8 sm:prose-h2:mt-12 prose-h2:mb-4 prose-h3:text-lg sm:prose-h3:text-xl prose-h3:mt-6 sm:prose-h3:mt-8 prose-h3:mb-3 prose-p:text-slate-400 prose-p:leading-relaxed prose-a:text-accent-400 prose-a:no-underline hover:prose-a:underline prose-strong:text-slate-100 prose-code:text-accent-300 prose-code:bg-slate-800/50 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none prose-ul:list-disc prose-ol:list-decimal">
+            <div className="prose prose-invert prose-slate max-w-none prose-headings:font-heading prose-headings:font-semibold prose-h1:text-3xl sm:prose-h1:text-4xl prose-h1:mb-6 sm:prose-h1:mb-8 prose-h2:text-xl sm:prose-h2:text-2xl prose-h2:mt-8 sm:prose-h2:mt-12 prose-h2:mb-4 prose-h3:text-lg sm:prose-h3:text-xl prose-h3:mt-6 sm:prose-h3:mt-8 prose-h3:mb-3 prose-p:text-slate-400 prose-p:leading-relaxed prose-a:text-accent-400 prose-a:no-underline hover:prose-a:underline prose-strong:text-slate-100 prose-code:text-accent-300 prose-code:bg-slate-800/50 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none prose-ul:list-disc prose-ol:list-decimal">
             <ReactMarkdown 
               remarkPlugins={[remarkGfm]}
               rehypePlugins={[rehypeHeadingIds]}
               components={{
                 h1({ id, children }) {
                   return (
-                    <h1 id={id} className="scroll-mt-24 text-3xl sm:text-4xl font-heading font-bold text-slate-100 mb-6 sm:mb-8 pb-4 border-b border-slate-800/50">
+                    <h1 id={id} className="scroll-mt-24 text-3xl sm:text-4xl font-heading font-semibold text-slate-100 mb-6 sm:mb-8 pb-4 border-b border-slate-800/50">
                       {children}
                     </h1>
                   )
                 },
                 h2({ id, children }) {
                   return (
-                    <h2 id={id} className="scroll-mt-24 text-xl sm:text-2xl font-heading font-bold text-slate-100 mt-8 sm:mt-12 mb-4 flex items-center gap-3">
+                    <h2 id={id} className="scroll-mt-24 text-xl sm:text-2xl font-heading font-semibold text-slate-100 mt-8 sm:mt-12 mb-4 flex items-center gap-3">
                       <span className="w-1.5 h-6 bg-accent-500 rounded-full shrink-0" />
                       {children}
                     </h2>
@@ -395,7 +395,7 @@ export default function Docs() {
                 },
                 h3({ id, children }) {
                   return (
-                    <h3 id={id} className="scroll-mt-24 text-lg sm:text-xl font-heading font-bold text-slate-200 mt-6 sm:mt-8 mb-3">
+                    <h3 id={id} className="scroll-mt-24 text-lg sm:text-xl font-heading font-semibold text-slate-200 mt-6 sm:mt-8 mb-3">
                       {children}
                     </h3>
                   )

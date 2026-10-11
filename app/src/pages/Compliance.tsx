@@ -10,7 +10,6 @@ import {
   FiFileText,
   FiHelpCircle,
   FiRefreshCw,
-  FiShield,
   FiUsers,
 } from 'react-icons/fi'
 import { useMyChambers } from '@/hooks'
@@ -193,10 +192,7 @@ export default function Compliance() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-heading font-semibold text-slate-100 flex items-center gap-3">
-            <FiShield className="text-accent-400" aria-hidden />
-            Compliance
-          </h1>
+          <h1 className="page-title">Compliance</h1>
           <p className="text-slate-400 text-sm mt-1">
             Governance health and audit-ready exports for one chamber — computed directly from
             on-chain events over the trailing {metrics?.windowDays ?? 30} days.

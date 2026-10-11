@@ -953,7 +953,7 @@ function PageIntro({ chamber }: { chamber: `0x${string}` }) {
   return (
     <div>
       <Overline>Operator assignment</Overline>
-      <h1 className="font-heading text-2xl font-bold text-slate-100 tracking-tight">
+      <h1 className="font-heading text-2xl font-semibold text-slate-100 tracking-tight">
         Assign an operator
       </h1>
       <p className="text-slate-500 text-sm font-mono mt-1">{shortenAddress(chamber, 10)}</p>

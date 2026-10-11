@@ -56,6 +56,8 @@ import {
 } from '@/lib/utils'
 import { implQueueUpgradeCopy, type PreferredImplSource } from '@/lib/implSource'
 import { ChamberRouteGate } from '@/components/ChamberRouteGate'
+import { ChamberHeader } from '@/components/ChamberHeader'
+import { Banner, Segmented } from '@/components/ui'
 import { DirectorCallerStatus } from '@/components/DirectorCallerStatus'
 import { SeatTheBoardLink } from '@/components/SeatTheBoard'
 import {
@@ -158,7 +160,7 @@ function PendingTxBanner({
   const explorerUrl = hash && chainId !== 31337 ? getBlockExplorerTxUrl(hash, chainId) : undefined
 
   return (
-    <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-200">
+    <div className="banner banner-warn">
       <div className="flex items-start gap-2">
         <FiLoader className="w-4 h-4 mt-0.5 shrink-0 animate-spin text-amber-400" />
         <div className="min-w-0">
@@ -783,185 +785,128 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
 
   const actionTokenId = canAct ? userTokenId : undefined
 
+  const chamberVersionLabel = implSync.chamberVersionLabel
+  const chamberVersionTag =
+    chamberVersionLabel == null || chamberVersionLabel === ''
+      ? undefined
+      : chamberVersionLabel.startsWith('v')
+        ? chamberVersionLabel
+        : `v${chamberVersionLabel}`
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="panel p-6"
-      >
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-4">
-            <Link
-              to={`/chamber/${chamberAddress}`}
-              className="p-2.5 rounded-xl bg-slate-800/80 text-slate-400 hover:text-accent-400 hover:bg-slate-800 transition-all"
-            >
-              <FiArrowLeft className="w-5 h-5" />
-            </Link>
-            <div>
-              <h1 className="font-heading text-2xl font-bold text-slate-100 tracking-tight">
-                Proposals & Queue
-              </h1>
-              <p className="text-slate-500 text-sm">
-                {chamberInfo.name} • {chamberInfo.quorum} of {chamberInfo.seats} confirmations required
-              </p>
-            </div>
-          </div>
-
-          {canAct ? (
-            <button
-              onClick={() => setActiveTab('new')}
-              className="btn btn-primary"
-            >
-              <FiPlus className="w-4 h-4" />
-              New Proposal
-            </button>
+      <ChamberHeader
+        chamberAddress={chamberAddress}
+        chainId={chainId}
+        name={chamberInfo.name}
+        symbol={chamberInfo.symbol}
+        versionTag={chamberVersionTag}
+        seats={chamberInfo.seats}
+        quorum={chamberInfo.quorum}
+        activeTab="proposals"
+        proposalCount={queueCount}
+        actions={
+          canAct ? (
+            activeTab === 'new' ? (
+              <button type="button" onClick={() => setActiveTab('queue')} className="btn btn-secondary">
+                Back to queue
+              </button>
+            ) : (
+              <button type="button" onClick={() => setActiveTab('new')} className="btn btn-primary">
+                <FiPlus className="w-4 h-4" aria-hidden />
+                New proposal
+              </button>
+            )
           ) : (
-            <div className="text-slate-500 text-sm italic hidden md:block">
+            <span className="text-slate-500 text-sm">
               {directorGate.seatingPending ? 'Director seating is not mature yet' : 'Director access required'}
-            </div>
-          )}
-        </div>
-
-        {chamberInfo.paused && (
-          <div className="mt-4 rounded-xl border border-red-500/30 bg-red-500/5 px-4 py-3 text-sm text-red-200">
-            This chamber is paused. Deposits, withdrawals, and execute are halted. Directors can still submit and confirm an unpause proposal.{' '}
-            <Link to="/docs/protocol/governance" className="text-accent-400 hover:underline">
-              How governance works →
-            </Link>
-          </div>
-        )}
+            </span>
+          )
+        }
+      >
         <DirectorCallerStatus
           role={directorGate.role}
           tokenId={directorGate.tokenId}
           nftOwner={directorGate.nftOwner}
           sessionOperator={directorGate.sessionOperator}
         />
-        {directorGate.seatingPending && (
-          <div className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-200">
-            You hold a live board seat, but director actions unlock at block {directorGate.seatedAt?.toString() ?? '…'}.
-          </div>
-        )}
-        {inFlight && (
-          <div className="mt-4">
-            <PendingTxBanner kind={inFlight.kind} hash={inFlight.hash} chainId={chainId} />
-          </div>
-        )}
-        {boardEmpty && (
-          <div className="mt-4 rounded-xl border border-accent-500/30 bg-accent-500/5 px-4 py-3 text-sm text-slate-200">
-            <p className="font-medium">No directors seated</p>
-            <p className="text-slate-400 mt-1">
-              Submit, confirm, and execute stay locked until you seat the board. Hold a membership NFT and delegate shares to it.
-            </p>
-            <SeatTheBoardLink
-              chamberAddress={chamberAddress}
-              nftToken={chamberInfo.nftToken}
-              className="text-accent-400 text-sm hover:underline mt-2 inline-block"
-            >
-              Seat the board →
-            </SeatTheBoardLink>
-            <Link
-              to="/docs/introduction/getting-started"
-              className="text-accent-400 text-sm hover:underline mt-2 ml-4 inline-block"
-            >
-              Getting started →
-            </Link>
-          </div>
-        )}
+      </ChamberHeader>
 
-        {/* Actionable header — Cancelled / Executed live under History */}
-        <div className="mt-6 pt-6 border-t border-slate-700/30 space-y-4">
-          <p className="text-slate-300 text-sm">
-            {queueHeaderCta(needsYourConfirmation, readyToExecute)}
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="stat-card text-center">
-              <div className="font-heading text-xl font-bold text-amber-400">
-                {needsYourConfirmation}
-              </div>
-              <div className="text-slate-500 text-xs mt-1">Needs your confirmation</div>
-            </div>
-            <div className="stat-card text-center">
-              <div className="font-heading text-xl font-bold text-emerald-400">
-                {readyToExecute}
-              </div>
-              <div className="text-slate-500 text-xs mt-1">Ready to execute</div>
-            </div>
-            <div className="stat-card text-center">
-              <div className="font-heading text-xl font-bold text-slate-300">
-                {everythingElse}
-              </div>
-              <div className="text-slate-500 text-xs mt-1">Everything else</div>
-            </div>
-          </div>
-          <details className="text-sm text-slate-500">
-            <summary className="cursor-pointer select-none hover:text-slate-300">
-              History
-              {historyCount > 0 && (
-                <span>
-                  {' '}· {cancelledTransactions.length} cancelled · {executedTransactions.length} executed
-                </span>
-              )}
-            </summary>
-            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
-              <span>Cancelled {cancelledTransactions.length}</span>
-              <span>Executed {executedTransactions.length}</span>
-              <button
-                type="button"
-                onClick={() => setActiveTab('history')}
-                className="text-accent-400 hover:underline"
-              >
-                View history
-              </button>
-            </div>
-          </details>
-        </div>
-      </motion.div>
-
-      {!rpcQueue && indexed.isError && !(indexed.error instanceof IndexerBehindError) && (
-        <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-200">
-          Proposals could not be loaded from the indexer. The list below may be empty or out of date.{' '}
-          <button type="button" className="underline" onClick={() => void indexed.refetch()}>
-            Retry
-          </button>
-        </div>
+      {chamberInfo.paused && (
+        <Banner tone="danger" title="Chamber paused">
+          Deposits, withdrawals, and execute are halted. Directors can still submit and confirm an unpause proposal.{' '}
+          <Link to="/docs/protocol/governance" className="text-accent-300 hover:text-accent-200 font-semibold">
+            How governance works →
+          </Link>
+        </Banner>
+      )}
+      {directorGate.seatingPending && (
+        <Banner tone="warn">
+          You hold a live board seat, but director actions unlock at block {directorGate.seatedAt?.toString() ?? '…'}.
+        </Banner>
+      )}
+      {inFlight && <PendingTxBanner kind={inFlight.kind} hash={inFlight.hash} chainId={chainId} />}
+      {boardEmpty && (
+        <Banner
+          tone="accent"
+          title="No directors seated"
+          actions={
+            <>
+              <SeatTheBoardLink chamberAddress={chamberAddress} nftToken={chamberInfo.nftToken} className="btn btn-primary btn-sm">
+                Seat the board
+              </SeatTheBoardLink>
+              <Link to="/docs/introduction/getting-started" className="btn btn-ghost btn-sm">
+                Getting started
+              </Link>
+            </>
+          }
+        >
+          Submit, confirm, and execute stay locked until you seat the board. Hold a membership NFT and delegate shares
+          to it.
+        </Banner>
       )}
 
-      {/* Tabs */}
-      <div className="flex gap-1 p-1 bg-slate-900/80 rounded-xl border border-slate-700/50">
-        {[
-          { id: 'queue', label: 'Queue', count: queueCount },
-          { id: 'history', label: 'History', count: historyCount },
-          { id: 'new', label: 'New Proposal', count: 0 },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id as TabType)}
-            className={`
-              relative flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all flex-1 justify-center text-sm font-medium
-              ${activeTab === tab.id ? 'text-accent-400' : 'text-slate-400 hover:text-slate-200'}
-            `}
-          >
-            <span>{tab.label}</span>
-            {tab.count > 0 && (
-              <span className={`
-                px-1.5 py-0.5 rounded-lg text-xs
-                ${activeTab === tab.id ? 'bg-accent-500/20 text-accent-400' : 'bg-slate-800 text-slate-500'}
-              `}>
-                {tab.count}
+      {!rpcQueue && indexed.isError && !(indexed.error instanceof IndexerBehindError) && (
+        <Banner
+          tone="warn"
+          actions={
+            <button type="button" className="btn btn-secondary btn-sm" onClick={() => void indexed.refetch()}>
+              Retry
+            </button>
+          }
+        >
+          Proposals could not be loaded from the indexer. The list below may be empty or out of date.
+        </Banner>
+      )}
+
+      {activeTab === 'new' ? (
+        <div>
+          <h2 className="section-title">New proposal</h2>
+          <p className="text-slate-500 text-xs mt-0.5">
+            Proposal #{transactionCount} · {chamberInfo.quorum} of {chamberInfo.seats} confirmations to execute
+          </p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <Segmented
+            ariaLabel="Proposal lists"
+            items={[
+              { id: 'queue' as const, label: 'Queue', count: queueCount },
+              { id: 'history' as const, label: 'History', count: historyCount },
+            ]}
+            active={activeTab}
+            onChange={(id) => setActiveTab(id)}
+          />
+          <p className="text-sm text-slate-400">
+            {queueHeaderCta(needsYourConfirmation, readyToExecute)}
+            {(needsYourConfirmation > 0 || readyToExecute > 0 || everythingElse > 0) && (
+              <span className="text-slate-500 tabular-nums">
+                {' '}· {needsYourConfirmation} need you · {readyToExecute} ready · {everythingElse} other
               </span>
             )}
-            {activeTab === tab.id && (
-              <motion.div
-                layoutId="tab-indicator-tx"
-                className="absolute inset-0 bg-accent-500/10 border border-accent-500/30 rounded-lg"
-                transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
-              />
-            )}
-          </button>
-        ))}
-      </div>
+          </p>
+        </div>
+      )}
 
       {/* Tab Content */}
       <AnimatePresence mode="wait">
@@ -1064,8 +1009,7 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
             )}
 
             {pendingTransactions.length === 0 && readyTransactions.length === 0 && expiredTransactions.length === 0 && !hasSeatProposal && (
-              <div className="panel p-12 text-center">
-                <FiShield className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+              <div className="panel px-6 py-12 text-center">
                 {boardEmpty ? (
                   <>
                     <h3 className="font-heading text-xl font-semibold text-slate-300 mb-2">
@@ -1093,7 +1037,7 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
                 ) : (
                   <>
                     <h3 className="font-heading text-xl font-semibold text-slate-300 mb-2">
-                      No Pending Proposals
+                      No pending proposals
                     </h3>
                     <p className="text-slate-500 mb-6 max-w-sm mx-auto">
                       Create a proposal with a title and description. Directors can confirm and execute once quorum is reached.
@@ -1103,7 +1047,7 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
                       className="btn btn-primary inline-flex"
                     >
                       <FiPlus className="w-4 h-4" />
-                      New Proposal
+                      New proposal
                     </button>
                   </>
                 )}
@@ -1561,7 +1505,7 @@ function TransactionCard({
       <div className="flex items-start gap-4">
         {/* Transaction ID */}
         <div className={`
-          w-12 h-12 rounded-xl flex items-center justify-center text-sm font-bold shrink-0
+          w-10 h-10 rounded-md flex items-center justify-center text-xs font-mono font-semibold shrink-0 tabular-nums
           ${isCancelled
             ? 'bg-slate-600/30 text-slate-500'
             : isExpired
@@ -2053,7 +1997,7 @@ function BoardProposalCard({
     >
       <div className="flex items-start gap-4">
         <div className={`
-          w-12 h-12 rounded-xl flex items-center justify-center text-sm font-bold shrink-0
+          w-10 h-10 rounded-md flex items-center justify-center text-xs font-mono font-semibold shrink-0 tabular-nums
           ${ready ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}
         `}>
           <FiUsers className="w-5 h-5" />
@@ -2718,19 +2662,19 @@ function NewTransactionForm({
                   type="button"
                   onClick={() => setSeatDraft((s) => String(Math.max(1, Number(s) - 1)))}
                   disabled={busy || Number(seatDraft) <= 1}
-                  className="w-10 h-10 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition-colors text-xl font-bold disabled:opacity-40"
+                  className="w-10 h-10 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition-colors text-xl font-semibold disabled:opacity-40"
                 >
                   −
                 </button>
                 <div className="flex-1 text-center">
-                  <span className="font-heading text-3xl font-bold text-slate-100">{seatDraft}</span>
+                  <span className="font-heading text-3xl font-semibold text-slate-100">{seatDraft}</span>
                   <span className="text-slate-500 text-sm ml-2">seats</span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setSeatDraft((s) => String(Math.min(MAX_BOARD_SEATS, Number(s) + 1)))}
                   disabled={busy || Number(seatDraft) >= MAX_BOARD_SEATS}
-                  className="w-10 h-10 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition-colors text-xl font-bold disabled:opacity-40"
+                  className="w-10 h-10 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition-colors text-xl font-semibold disabled:opacity-40"
                 >
                   +
                 </button>

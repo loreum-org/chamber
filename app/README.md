@@ -23,11 +23,11 @@ A decentralized treasury governance application for Loreum Chambers. This applic
 
 ## Design
 
-The application features a "Futuristic Western Civilization" design aesthetic:
-- Dark theme with marble and gold accents
-- Classical architectural elements (columns, pediments)
-- Modern glowing effects and gradients
-- Serif typography for headers, sans-serif for content
+The app follows Chamber Design System v1.0 (see `product/mockups/assets/app.css`):
+- Dark only, flat layered surfaces (`surface-0` … `surface-4`); depth comes from layering, not blur or shadows
+- IBM Plex Sans / Mono at weights 300 / 400 / 600; no bold
+- One accent, Chamber Purple, used for controls and governance weight only
+- One primary action per view; shared primitives live in `src/components/ui.tsx` and `src/components/ChamberHeader.tsx`
 
 ## Getting Started
 
