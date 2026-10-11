@@ -3,6 +3,7 @@ import { Toaster } from 'react-hot-toast'
 import { useAccount, useConnections } from 'wagmi'
 import Layout from '@/components/Layout'
 import { Dashboard, DeployChamber, ChamberDetail, TransactionQueue, Docs, DirectorProfile, Migrate, Operators, OperatorWizard, Compliance, NotFound } from '@/pages'
+import { COMPLIANCE_ENABLED } from '@/lib/features'
 
 /**
  * `/` shows the Dashboard for connected wallets and sends everyone else to
@@ -53,7 +54,7 @@ function App() {
           <Route path="chamber/:address/:tab" element={<ChamberDetail />} />
           <Route path="chamber/:address/transactions" element={<TransactionQueue />} />
           <Route path="chamber/:address/director/:tokenId" element={<DirectorProfile />} />
-          <Route path="compliance" element={<Compliance />} />
+          {COMPLIANCE_ENABLED && <Route path="compliance" element={<Compliance />} />}
           <Route path="docs" element={<Docs />} />
           <Route path="docs/*" element={<Docs />} />
           <Route path="migrate" element={<Migrate />} />

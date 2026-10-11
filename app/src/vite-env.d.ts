@@ -6,6 +6,7 @@ declare module '*.txt?raw' {
 }
 
 interface ImportMetaEnv {
+  readonly VITE_ENABLE_COMPLIANCE?: string
   readonly VITE_INDEXER_URL?: string
   readonly VITE_INDEXER_CHAIN_ID?: string
   readonly VITE_SEPOLIA_FACTORY_START_BLOCK?: string

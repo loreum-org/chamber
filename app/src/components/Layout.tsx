@@ -8,6 +8,7 @@ import { sepolia } from 'wagmi/chains'
 import { simulateContract } from 'wagmi/actions'
 import { zeroAddress, parseEther } from 'viem'
 import { config, getContractAddresses, LOCAL_CHAIN_ID } from '@/lib/wagmi'
+import { COMPLIANCE_ENABLED } from '@/lib/features'
 import { erc721Abi, erc20Abi } from '@/contracts'
 import { formatLocalTestMintToast, formatWalletSendError } from '@/lib/utils'
 import toast from 'react-hot-toast'
@@ -16,7 +17,7 @@ const navItems = [
   { path: '/', label: 'My Chambers', icon: FiHome },
   { path: '/operators', label: 'Operators', icon: FiUsers },
   { path: '/deploy', label: 'Deploy Chamber', icon: FiPlus },
-  { path: '/compliance', label: 'Compliance', icon: FiShield },
+  ...(COMPLIANCE_ENABLED ? [{ path: '/compliance', label: 'Compliance', icon: FiShield }] : []),
   { path: '/docs', label: 'Docs', icon: FiBook },
 ]
 

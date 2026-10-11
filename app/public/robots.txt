@@ -3,6 +3,5 @@ Allow: /
 Allow: /docs
 Allow: /deploy
 Allow: /operators
-Allow: /compliance
 
 Sitemap: https://app.loreum.org/sitemap.xml
