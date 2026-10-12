@@ -52,16 +52,16 @@ Three onchain components separate **capital ownership** from **operational contr
 
 ```mermaid
 flowchart LR
-  V[Vault<br/>ERC-4626 treasury<br/>Shares = ownership]
-  B[Board<br/>Dynamic directors<br/>Top N delegators]
-  Q[Tx queue<br/>Submit → confirm → execute<br/>Quorum: 1 + (seats × 51) / 100]
+  V["Vault<br/>ERC-4626 treasury<br/>Shares = ownership"]
+  B["Board<br/>Dynamic directors<br/>Top N delegators"]
+  Q["Tx queue<br/>Submit → confirm → execute<br/>Quorum: 1 + (seats × 51) / 100"]
 
   V -.->|Proposes| B
   B -->|Approves| Q
 
-  FH[Founder<br/>Token holder<br/>Keeps 100% stake]
-  D[Directors<br/>N seats<br/>Earn via delegation]
-  TR[Treasury<br/>Executes approved txs]
+  FH["Founder<br/>Token holder<br/>Keeps 100% stake"]
+  D["Directors<br/>N seats<br/>Earn via delegation"]
+  TR["Treasury<br/>Executes approved txs"]
 
   FH -.-> V
   D -.-> B

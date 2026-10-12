@@ -581,7 +581,7 @@ sequenceDiagram
     Chamber->>Chamber: Check balance >= totalValue
     
     loop For each transaction
-        Chamber->>Chamber: Validate target != 0; if target==Chamber only upgradeImplementation selector
+        Chamber->>Chamber: Validate target != 0, if target==Chamber only upgradeImplementation selector
         Chamber->>Wallet: _submitTransaction(tokenId, target[i], value[i], data[i])
         Wallet->>Wallet: Create Transaction
         Wallet->>Wallet: Auto-confirm tokenId
