@@ -1,0 +1,7 @@
+{
+  "filter_paths": "lib/|test/|script/",
+  "exclude_dependencies": true,
+  "exclude_informational": true,
+  "detectors_to_exclude": "unused-return,uninitialized-local,incorrect-equality",
+  "fail_on": "medium"
+}
