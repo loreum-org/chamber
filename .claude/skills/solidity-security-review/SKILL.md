@@ -75,7 +75,8 @@ aderyn contracts --path-excludes test/,script/,lib/ -o /tmp/aderyn-all.json
 Triage every Medium/High result into one of: **fix**, **test-proven safe**
 (name the test), or **false positive** (one-line reason tied to the code).
 Write the table into the report. Only add a detector to an exclusion list when
-every instance is a false positive, and put the reason next to it in the config.
+every instance is a false positive, and record the reason in the baseline table
+below (`slither.config.json` cannot hold comments; `aderyn.toml` can).
 
 ### Known baseline (2026-10-12, main @ 376b79e)
 
@@ -149,8 +150,7 @@ A finding without a test is a hypothesis.
 - **Properties**: stateful invariants live in `contracts/test/invariant/`
   (handler + `invariant_*`). Add an invariant whenever a finding is about
   accounting drift. Run deeper than default when reviewing:
-  `forge test --match-path 'test/invariant/*' --fuzz-runs 1000` and
-  `FOUNDRY_INVARIANT_RUNS=512 FOUNDRY_INVARIANT_DEPTH=50`.
+  `FOUNDRY_INVARIANT_RUNS=512 FOUNDRY_INVARIANT_DEPTH=50 forge test --match-path 'test/invariant/*'`.
 - **Fuzz**: `forge test --match-path 'test/fuzz/*' --fuzz-runs 10000`.
   Use `bound()`, not `vm.assume()`.
 - **Symbolic (Halmos)**: `make halmos` (CI: `make ci-halmos`). Tests are
@@ -170,7 +170,7 @@ A finding without a test is a hypothesis.
 
 1. Fix in `src/`, smallest change that makes the finding test pass.
 2. Re-run: `forge test`, both static-analysis passes, `make ci-halmos`.
-3. Update the triage table above and the config exclusion comments if the
+3. Update the baseline table above (and the `aderyn.toml` comments) if the
    baseline changed.
 4. Comment-only edits to `src/` still change bytecode metadata. Do not touch
    `src/` just to add suppression comments; prefer config-level triage.
