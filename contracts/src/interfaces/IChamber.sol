@@ -132,15 +132,14 @@ interface IChamber is IERC4626, IBoard, IWallet {
     function syncSeating(uint256 tokenId) external;
 
     /**
-     * @notice Top-seat tokenIds that can still authorize (`ownerOf` succeeds, owner is not the chamber).
-     * @dev Denominator for {getQuorum} (PMN-M01). Does not compact leaderboard rank; use
-     *      {cleanupInertSeat} to drop a burned id (PMN-M02 B).
+     * @notice Occupied top seats (`min(seats, size)`), the denominator for {getQuorum}.
+     * @dev Burned or chamber-held ids count until {cleanupInertSeat} drops them (R-1012-G1).
      */
     function getReachableDirectorCount() external view returns (uint256);
 
     /**
-     * @notice Removes a burned membership `tokenId` from the leaderboard (PMN-M02 Solution B).
-     * @dev Permissionless. `ownerOf` must revert (or otherwise fail). `refreshSeating` on a later
+     * @notice Removes a burned or chamber-held membership `tokenId` from the leaderboard (PMN-M02 B).
+     * @dev Permissionless. `ownerOf` must revert (or otherwise fail), or return this chamber. `refreshSeating` on a later
      *      delegate/undelegate does not put the id back while it stays inert. Reminting the same
      *      `tokenId` is not required. Live tokens revert {IBoard.SeatNotInert}.
      * @param tokenId Membership token to drop from the top set

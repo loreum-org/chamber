@@ -120,6 +120,9 @@ library BoardLib {
         }
 
         delete $.nodes[tokenId];
+        unchecked {
+            ++$.nodeEpoch[tokenId];
+        }
         if ($.seatedAt[tokenId] != 0) {
             delete $.seatedAt[tokenId];
         }
@@ -197,6 +200,65 @@ library BoardLib {
         }
     }
 
+    /// @dev Records `amount` as live in `tokenId`'s current node (R-1012-M1). Weight from an earlier
+    ///      node epoch stays in `holderDelegation` but is no longer live. `holderEpoch` stores
+    ///      `nodeEpoch + 1`; 0 means untracked (pre-upgrade), which seeds live weight from what
+    ///      the node can actually hold.
+    function trackLiveDelegation(
+        BoardTypes.BoardStorage storage $,
+        mapping(address => mapping(uint256 => uint256)) storage holderEpoch,
+        mapping(address => mapping(uint256 => uint256)) storage liveDelegation,
+        address holder,
+        uint256 tokenId,
+        uint256 priorDelegation,
+        uint256 amount
+    ) external {
+        uint256 epoch = $.nodeEpoch[tokenId] + 1;
+        uint256 stored = holderEpoch[holder][tokenId];
+        uint256 live = liveDelegation[holder][tokenId];
+        if (stored != epoch) {
+            live = 0;
+            if (stored == 0 && priorDelegation != 0 && $.nodes[tokenId].tokenId == tokenId) {
+                uint256 nodeAmount = $.nodes[tokenId].amount;
+                live = priorDelegation < nodeAmount ? priorDelegation : nodeAmount;
+            }
+            holderEpoch[holder][tokenId] = epoch;
+        }
+        liveDelegation[holder][tokenId] = live + amount;
+    }
+
+    /// @dev How much of an `amount` undelegation comes off the current node (live weight first).
+    ///      Stranded weight (evicted or cleaned-up node) returns 0 and never touches the board.
+    function consumeLiveDelegation(
+        BoardTypes.BoardStorage storage $,
+        mapping(address => mapping(uint256 => uint256)) storage holderEpoch,
+        mapping(address => mapping(uint256 => uint256)) storage liveDelegation,
+        address holder,
+        uint256 tokenId,
+        uint256 amount
+    ) external returns (uint256 boardAmount) {
+        if ($.nodes[tokenId].tokenId != tokenId) return 0;
+        uint256 nodeAmount = $.nodes[tokenId].amount;
+        uint256 stored = holderEpoch[holder][tokenId];
+        if (stored == 0) {
+            // Pre-upgrade holder: best effort, capped by the node so the call cannot revert.
+            return amount < nodeAmount ? amount : nodeAmount;
+        }
+        if (stored != $.nodeEpoch[tokenId] + 1) return 0;
+        uint256 live = liveDelegation[holder][tokenId];
+        boardAmount = amount < live ? amount : live;
+        if (boardAmount > nodeAmount) boardAmount = nodeAmount;
+        liveDelegation[holder][tokenId] = live - boardAmount;
+    }
+
+    /// @dev Occupied top seats: `min(seats, size)`. Inert ids count until {cleanupInertSeat}
+    ///      removes them, so pushing chamber-held or burned ids up cannot lower quorum (R-1012-G1).
+    function countFilledSeats(BoardTypes.BoardStorage storage $) public view returns (uint256) {
+        uint256 s = $.seats;
+        uint256 n = $.size;
+        return n < s ? n : s;
+    }
+
     function getSeats(BoardTypes.BoardStorage storage $) external view returns (uint256) {
         return $.seats;
     }
@@ -245,6 +307,14 @@ library BoardLib {
     }
 
     function executeSeatsUpdate(BoardTypes.BoardStorage storage $, uint256 tokenId, IERC721 nft) external {
+        executeSeatsUpdate($, tokenId, nft, 0);
+    }
+
+    /// @dev Support must meet `max(proposal.requiredQuorum, liveQuorum)` so a board that grew
+    ///      during the timelock is not outvoted by the proposal-time bar (same rule as M-04).
+    function executeSeatsUpdate(BoardTypes.BoardStorage storage $, uint256 tokenId, IERC721 nft, uint256 liveQuorum)
+        public
+    {
         uint256[] memory prevTop = topTokenIds($);
         BoardTypes.SeatUpdate storage proposal = $.seatUpdate;
 
@@ -282,7 +352,8 @@ library BoardLib {
             }
         }
 
-        if (validSupport < proposal.requiredQuorum) {
+        uint256 required = proposal.requiredQuorum > liveQuorum ? proposal.requiredQuorum : liveQuorum;
+        if (validSupport < required) {
             revert IBoard.InsufficientVotes();
         }
 
@@ -476,10 +547,13 @@ library BoardLib {
         return owner == recorded;
     }
 
-    /// @dev Permissionless rank drop for a burned / `ownerOf`-failing node (PMN-M02 B).
+    /// @dev Permissionless rank drop for a burned / `ownerOf`-failing node (PMN-M02 B), or one the
+    ///      chamber itself owns (it can never act as a director). Runs in the chamber's context,
+    ///      so `address(this)` is the chamber. Holders' delegations stay recorded but leave the board.
     function cleanupInertSeat(BoardTypes.BoardStorage storage $, IERC721 nft, uint256 tokenId) external {
         if ($.nodes[tokenId].tokenId != tokenId) revert IBoard.NodeDoesNotExist();
-        if (tryOwnerOf(nft, tokenId) != address(0)) revert IBoard.SeatNotInert();
+        address owner = tryOwnerOf(nft, tokenId);
+        if (owner != address(0) && owner != address(this)) revert IBoard.SeatNotInert();
         uint256[] memory prevTop = topTokenIds($);
         remove($, tokenId);
         refreshSeating($, prevTop);

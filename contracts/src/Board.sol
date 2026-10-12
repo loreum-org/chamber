@@ -76,6 +76,37 @@ abstract contract Board is ReentrancyGuardTransientUpgradeable {
         return BoardLib.getQuorum(_getBoardStorage(), nft, excludeOwner);
     }
 
+    function _trackLiveDelegation(
+        mapping(address => mapping(uint256 => uint256)) storage holderEpoch,
+        mapping(address => mapping(uint256 => uint256)) storage liveDelegation,
+        address holder,
+        uint256 tokenId,
+        uint256 priorDelegation,
+        uint256 amount
+    ) internal {
+        BoardLib.trackLiveDelegation(
+            _getBoardStorage(), holderEpoch, liveDelegation, holder, tokenId, priorDelegation, amount
+        );
+    }
+
+    function _consumeLiveDelegation(
+        mapping(address => mapping(uint256 => uint256)) storage holderEpoch,
+        mapping(address => mapping(uint256 => uint256)) storage liveDelegation,
+        address holder,
+        uint256 tokenId,
+        uint256 amount
+    ) internal returns (uint256) {
+        return BoardLib.consumeLiveDelegation(_getBoardStorage(), holderEpoch, liveDelegation, holder, tokenId, amount);
+    }
+
+    function _countFilledSeats() internal view returns (uint256) {
+        return BoardLib.countFilledSeats(_getBoardStorage());
+    }
+
+    function _filledSeatQuorum() internal view returns (uint256) {
+        return BoardLib.quorumFor(BoardLib.countFilledSeats(_getBoardStorage()));
+    }
+
     function _countReachableAuthorized(IERC721 nft, address excludeOwner) internal view returns (uint256) {
         return BoardLib.countReachableAuthorized(_getBoardStorage(), nft, excludeOwner);
     }
@@ -98,6 +129,10 @@ abstract contract Board is ReentrancyGuardTransientUpgradeable {
 
     function _executeSeatsUpdate(uint256 tokenId, IERC721 nft) internal {
         BoardLib.executeSeatsUpdate(_getBoardStorage(), tokenId, nft);
+    }
+
+    function _executeSeatsUpdate(uint256 tokenId, IERC721 nft, uint256 liveQuorum) internal {
+        BoardLib.executeSeatsUpdate(_getBoardStorage(), tokenId, nft, liveQuorum);
     }
 
     function _cancelSeatUpdate(uint256 tokenId) internal {

@@ -79,6 +79,10 @@ abstract contract Wallet {
         return WalletLib.resolveDeadline(deadline);
     }
 
+    function _requireNoThirdPartyPull(bytes memory data) internal view {
+        WalletLib.requireNoThirdPartyPull(data);
+    }
+
     function _submitTransaction(uint256 tokenId, address target, uint256 value, bytes memory data) internal {
         _submitTransaction(tokenId, target, value, data, 0);
     }

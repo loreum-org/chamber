@@ -90,8 +90,13 @@ contract FindingPMNM01ReachableQuorumTest is Test {
         nft.burn(2);
         nft.burn(3);
 
+        // R-1012-G1: burned ids keep counting until anyone drops them with cleanupInertSeat.
+        assertEq(chamber.getReachableDirectorCount(), 3, "burned ids count until cleaned up");
+        chamber.cleanupInertSeat(2);
+        chamber.cleanupInertSeat(3);
+
         assertEq(chamber.getSeats(), 3, "configured seats unchanged");
-        assertEq(chamber.getReachableDirectorCount(), 1, "burned ownerOf slots drop from denominator");
+        assertEq(chamber.getReachableDirectorCount(), 1, "cleaned-up burned slots drop from denominator");
         assertEq(chamber.getQuorum(), 1, "reachable quorum, not the old configured 2");
         assertFalse(chamber.isTokenAuthorized(2, user2), "burned token cannot authorize");
         assertFalse(chamber.isTokenAuthorized(3, user3));

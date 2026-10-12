@@ -302,7 +302,7 @@ contract ChamberSymTest is Test, SymTest {
         assertFalse(success);
     }
 
-    /// @dev Live session key may submit after seating; NFT transfer drops that right
+    /// @dev Live session key may submit after liveAt; NFT transfer drops that right
     function symbolicSessionKeyCanSubmitUntilTransfer() public {
         address sessionKey = svm.createAddress("sessionKey");
         vm.assume(sessionKey != address(0) && sessionKey != address(sessionOwner) && sessionKey != USER);
@@ -312,6 +312,7 @@ contract ChamberSymTest is Test, SymTest {
         _rollDelay();
 
         sessionOwner.execute(address(chamber), _setOperator(1, sessionKey));
+        _rollDelay();
 
         vm.prank(sessionKey);
         chamber.submitTransaction(1, TARGET, 0, "");
@@ -325,7 +326,7 @@ contract ChamberSymTest is Test, SymTest {
         assertEq(chamber.getDirectorOperator(1), address(0));
     }
 
-    /// @dev PMN-M04 C: a newly set key can submit immediately but cannot confirm until liveAt
+    /// @dev PMN-M04 C: a newly set key cannot confirm until liveAt
     function symbolicSessionKeyConfirmWaitsLiveAt() public {
         address sessionKey = svm.createAddress("sessionKey");
         vm.assume(sessionKey != address(0) && sessionKey != address(sessionOwner) && sessionKey != USER);
@@ -363,9 +364,23 @@ contract ChamberSymTest is Test, SymTest {
         vm.prank(USER2);
         nft.transferFrom(USER2, address(chamber), 2);
 
+        // R-1012-G1: a chamber-held seat keeps counting until it is cleaned up.
+        assertEq(chamber.getQuorum(), 2);
+        chamber.cleanupInertSeat(2);
         assertEq(chamber.getReachableDirectorCount(), 1);
         assertEq(chamber.getQuorum(), 1);
         assertEq(chamber.getSeats(), 2);
+    }
+
+    /// @dev R-1012-G1: weight cannot be delegated to a chamber-held token
+    function symbolicCannotDelegateToChamberHeld(uint256 amount) public {
+        vm.assume(amount > 0 && amount <= 1e18);
+        _fundAndDelegate(USER, 1, 2e18, 1e18);
+        vm.prank(USER);
+        nft.transferFrom(USER, address(chamber), 1);
+        vm.prank(USER);
+        (bool ok,) = address(chamber).call(abi.encodeCall(chamber.delegate, (uint256(1), amount)));
+        assertFalse(ok);
     }
 
     /// @dev PMN-H01: after ownerOf changes, the new controller waits until syncSeating + delay

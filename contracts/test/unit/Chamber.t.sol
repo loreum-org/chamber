@@ -1779,6 +1779,7 @@ contract ChamberTest is Test {
         assertTrue(chamber.isTokenAuthorized(tokenId, sessionKey));
         assertTrue(chamber.isTokenAuthorized(tokenId, address(wallet)));
 
+        vm.roll(vm.getBlockNumber() + 1);
         vm.prank(sessionKey);
         chamber.submitTransaction(tokenId, address(0x9999), 0, "");
 

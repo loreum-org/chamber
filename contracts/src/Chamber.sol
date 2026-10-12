@@ -65,6 +65,11 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
         mapping(uint256 nonce => mapping(uint256 tokenId => address)) confirmOwner;
         /// @dev `ownerOf` when the cancel bit was last written. Mismatch is ignored for quorum (PMN-H01 A).
         mapping(uint256 nonce => mapping(uint256 tokenId => address)) cancelOwner;
+        /// @dev `nodeEpoch + 1` when `liveDelegation` was last written; 0 = not tracked (pre-upgrade).
+        mapping(address => mapping(uint256 => uint256)) holderEpoch;
+        /// @dev Part of `holderDelegation` that sits in the current board node for that tokenId.
+        ///      The rest was stranded by an eviction or inert cleanup and never touches the board.
+        mapping(address => mapping(uint256 => uint256)) liveDelegation;
     }
 
     /// @dev keccak256(abi.encode(uint256(keccak256("erc7201:loreum.Chamber")) - 1)) & ~bytes32(uint256(0xff))
@@ -169,8 +174,10 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
 
         ChamberStorage storage $ = _getChamberStorage();
 
-        try $.nft.ownerOf(tokenId) returns (address) {}
-        catch {
+        try $.nft.ownerOf(tokenId) returns (address owner) {
+            // Chamber-held ids can never act as directors; weight on them only blocks seats (R-1012-G1).
+            if (owner == address(this)) revert IChamber.InvalidTokenId();
+        } catch {
             revert IChamber.InvalidTokenId();
         }
 
@@ -178,7 +185,8 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
         uint256 senderBalance = balanceOf(msg.sender);
         if (senderBalance < amount) revert IChamber.InsufficientChamberBalance();
 
-        $.holderDelegation[msg.sender][tokenId] += amount;
+        uint256 priorDelegation = $.holderDelegation[msg.sender][tokenId];
+        $.holderDelegation[msg.sender][tokenId] = priorDelegation + amount;
         $.totalHolderDelegations[msg.sender] += amount;
         $.holderDelegatedTokenIds[msg.sender].add(tokenId);
 
@@ -187,6 +195,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
             revert IChamber.InsufficientChamberBalance();
         }
 
+        _trackLiveDelegation($.holderEpoch, $.liveDelegation, msg.sender, tokenId, priorDelegation, amount);
         _delegate(tokenId, amount, $.nft);
         _syncTrackedDelegations($.holderDelegation, $.totalHolderDelegations, $.holderDelegatedTokenIds, msg.sender);
 
@@ -213,10 +222,11 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
             $.holderDelegatedTokenIds[msg.sender].remove(tokenId);
         }
 
-        // Only update board if node still exists (handles evicted nodes — Fix Finding 11)
-        BoardTypes.BoardStorage storage $b = _getBoardStorage();
-        if ($b.nodes[tokenId].tokenId == tokenId) {
-            _undelegate(tokenId, amount, $.nft);
+        // Only take weight the caller holds in the current node: evicted nodes (Finding 11) and
+        // weight stranded before a re-insertion never touch the board.
+        uint256 boardAmount = _consumeLiveDelegation($.holderEpoch, $.liveDelegation, msg.sender, tokenId, amount);
+        if (boardAmount != 0) {
+            _undelegate(tokenId, boardAmount, $.nft);
         }
 
         _syncTrackedDelegations($.holderDelegation, $.totalHolderDelegations, $.holderDelegatedTokenIds, msg.sender);
@@ -256,8 +266,9 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
 
     /**
      * @notice Retrieves the current quorum (minimum distinct director-token confirmations to execute)
-     * @dev Integer formula `1 + (n * 51) / 100` where `n` is {getReachableDirectorCount} (PMN-M01).
-     *      Empty seats and burned, uncallable, or chamber-held tokenIds do not inflate `n`.
+     * @dev Integer formula `1 + (n * 51) / 100` where `n` is {getReachableDirectorCount}: occupied
+     *      top seats (PMN-M01 keeps empty seats out). Burned or chamber-held ids still count until
+     *      {cleanupInertSeat} drops them, so same-block rank changes cannot lower quorum (R-1012-G1).
      *      One- and two-director boards require all reachable directors. Quorum is token-weighted:
      *      it counts distinct top-seat `tokenId`s, not unique addresses. One owner of `quorum`
      *      membership NFTs in the top seats can submit, self-confirm, and execute — a single-actor
@@ -265,16 +276,16 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
      * @return The current quorum value
      */
     function getQuorum() public view override returns (uint256) {
-        return _liveQuorum(_getChamberStorage().nft, address(this));
+        return _filledSeatQuorum();
     }
 
     /**
-     * @notice Top-seat tokenIds that can still authorize a caller (PMN-M01).
-     * @dev `ownerOf` succeeds and the owner is not this chamber. Session keys do not add extra
-     *      tokenIds: if `ownerOf` fails the session is stale. Rank occupancy is unchanged (#210).
+     * @notice Occupied top seats, the quorum denominator.
+     * @dev `min(seats, size)`. Burned or chamber-held ids count until {cleanupInertSeat} removes
+     *      them; excluding them let same-block delegation push them up to lower quorum (R-1012-G1).
      */
     function getReachableDirectorCount() public view override returns (uint256) {
-        return _countReachableAuthorized(_getChamberStorage().nft, address(this));
+        return _countFilledSeats();
     }
 
     /**
@@ -461,7 +472,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
     function recoverSeats(uint256 tokenId, uint256 newSeats) public override nonReentrant isDirector(tokenId) {
         ChamberStorage storage $ = _getChamberStorage();
         uint256 currentSeats = _getSeats();
-        uint256 filled = _countReachableAuthorized($.nft, address(this));
+        uint256 filled = _countFilledSeats();
         if (filled >= _getQuorum()) revert IChamber.SeatRecoveryUnavailable();
         if (newSeats == 0) revert IChamber.ZeroSeats();
         if (newSeats > MAX_SEATS) revert IChamber.TooManySeats();
@@ -475,7 +486,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
      * @param tokenId The tokenId executing the update
      */
     function executeSeatsUpdate(uint256 tokenId) public override nonReentrant isDirector(tokenId) {
-        _executeSeatsUpdate(tokenId, _getChamberStorage().nft);
+        _executeSeatsUpdate(tokenId, _getChamberStorage().nft, getQuorum());
     }
 
     /**
@@ -690,6 +701,8 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
 
             if (targets[i] == address(this)) {
                 _requireAllowedSelfCall(data[i]);
+            } else {
+                _requireNoThirdPartyPull(data[i]);
             }
 
             _submitTransaction(tokenId, targets[i], values[i], data[i]);
@@ -721,6 +734,8 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
 
         if (target == address(this)) {
             _requireAllowedSelfCall(data);
+        } else {
+            _requireNoThirdPartyPull(data);
         }
 
         if (value > 0 && address(this).balance < value) {
@@ -910,10 +925,12 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
         (uint32 bit, bool delayed) = _sessionScopeForSelector(selector);
         if (delayed && block.number < session.liveAt) return false;
         if (session.scope == SESSION_SCOPE_UNSCOPED) return true;
-        return bit != 0 && (session.scope & bit) != 0;
+        return bit != 0 && (session.scope & bit) == bit;
     }
 
-    /// @dev Maps Chamber director entry points to a scope bit and the C delay flag.
+    /// @dev Maps Chamber director entry points to required scope bits and the C delay flag.
+    ///      Submit auto-confirms for the submitting token, so it needs SUBMIT and CONFIRM and
+    ///      waits `liveAt` like confirm.
     function _sessionScopeForSelector(bytes4 selector) internal pure returns (uint32 bit, bool delayed) {
         if (
             selector == bytes4(keccak256("submitTransaction(uint256,address,uint256,bytes)"))
@@ -923,7 +940,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
                     == bytes4(keccak256("submitTransactionWithMetadata(uint256,address,uint256,bytes,string,uint256)"))
                 || selector == bytes4(keccak256("submitBatchTransactions(uint256,address[],uint256[],bytes[])"))
         ) {
-            return (SESSION_SCOPE_SUBMIT, false);
+            return (SESSION_SCOPE_SUBMIT | SESSION_SCOPE_CONFIRM, true);
         }
         if (selector == IWallet.confirmTransaction.selector || selector == IWallet.confirmBatchTransactions.selector) {
             return (SESSION_SCOPE_CONFIRM, true);

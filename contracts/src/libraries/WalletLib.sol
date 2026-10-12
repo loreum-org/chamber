@@ -10,6 +10,25 @@ import {WalletTypes} from "src/types/WalletTypes.sol";
  * @dev Extracted to keep `Chamber` implementation under the EIP-170 size limit.
  */
 library WalletLib {
+    /// @dev Pull-style token calls must move the chamber's own tokens (R-1012-M3). Depositors
+    ///      approve the chamber on the asset, so `transferFrom(depositor, ...)` would spend funds
+    ///      they never deposited. Covers ERC-20/721 `transferFrom`, ERC-721/1155
+    ///      `safeTransferFrom`, ERC-1155 `safeBatchTransferFrom`, and `burnFrom`; `from` is the
+    ///      first argument. Runs in the chamber's context, so `address(this)` is the chamber.
+    function requireNoThirdPartyPull(bytes memory data) external view {
+        if (data.length < 36) return;
+        bytes4 selector = bytes4(data);
+        if (
+            selector != 0x23b872dd && selector != 0x42842e0e && selector != 0xb88d4fde && selector != 0xf242432a
+                && selector != 0x2eb2c2d6 && selector != 0x79cc6790
+        ) return;
+        uint256 from;
+        assembly {
+            from := mload(add(data, 36))
+        }
+        if (from != uint256(uint160(address(this)))) revert IWallet.InvalidTarget();
+    }
+
     using WalletTypes for WalletTypes.WalletStorage;
 
     function txExists(WalletTypes.WalletStorage storage $, uint256 nonce) internal view {
