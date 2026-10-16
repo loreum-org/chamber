@@ -58,9 +58,23 @@ contract FindingR1012ApprovalPullTest is Test {
         chamber.submitBatchTransactions(1, t, v, d);
     }
 
-    function test_transferFromChamberItselfStillAllowed() public {
+    /// Calls to the vault asset are limited to `transfer` / `approve`, so no pull alias reaches it.
+    function test_assetOnlyAllowsTransferAndApprove() public {
         bytes memory d = abi.encodeCall(IERC20.transferFrom, (address(chamber), address(0x1), 0));
         vm.prank(address(0x1));
+        vm.expectRevert(IWallet.InvalidTarget.selector);
         chamber.submitTransaction(1, address(token), 0, d);
+
+        vm.startPrank(address(0x1));
+        chamber.submitTransaction(1, address(token), 0, abi.encodeCall(IERC20.transfer, (address(0x1), 0)));
+        chamber.submitTransaction(1, address(token), 0, abi.encodeCall(IERC20.approve, (address(0x1), 0)));
+        vm.stopPrank();
+    }
+
+    function test_transferFromChamberItselfStillAllowedOnOtherTokens() public {
+        MockERC20 other = new MockERC20("O", "O", 0);
+        bytes memory d = abi.encodeCall(IERC20.transferFrom, (address(chamber), address(0x1), 0));
+        vm.prank(address(0x1));
+        chamber.submitTransaction(1, address(other), 0, d);
     }
 }

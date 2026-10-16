@@ -302,7 +302,7 @@ contract ChamberSymTest is Test, SymTest {
         assertFalse(success);
     }
 
-    /// @dev Live session key may submit after liveAt; NFT transfer drops that right
+    /// @dev Live session key may submit after seating; NFT transfer drops that right
     function symbolicSessionKeyCanSubmitUntilTransfer() public {
         address sessionKey = svm.createAddress("sessionKey");
         vm.assume(sessionKey != address(0) && sessionKey != address(sessionOwner) && sessionKey != USER);
@@ -312,7 +312,6 @@ contract ChamberSymTest is Test, SymTest {
         _rollDelay();
 
         sessionOwner.execute(address(chamber), _setOperator(1, sessionKey));
-        _rollDelay();
 
         vm.prank(sessionKey);
         chamber.submitTransaction(1, TARGET, 0, "");
@@ -326,7 +325,7 @@ contract ChamberSymTest is Test, SymTest {
         assertEq(chamber.getDirectorOperator(1), address(0));
     }
 
-    /// @dev PMN-M04 C: a newly set key cannot confirm until liveAt
+    /// @dev PMN-M04 C: a newly set key can submit immediately but cannot confirm until liveAt
     function symbolicSessionKeyConfirmWaitsLiveAt() public {
         address sessionKey = svm.createAddress("sessionKey");
         vm.assume(sessionKey != address(0) && sessionKey != address(sessionOwner) && sessionKey != USER);

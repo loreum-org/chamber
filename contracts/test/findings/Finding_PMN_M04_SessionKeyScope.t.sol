@@ -343,14 +343,10 @@ contract FindingPMNM04SessionKeyScopeTest is Test {
         targets[0] = address(0x4);
         uint256[] memory values = new uint256[](1);
         bytes[] memory data = new bytes[](1);
-        // Submit auto-confirms, so it waits liveAt too (R-1012-SK1).
         vm.prank(sessionKey);
-        vm.expectRevert(IChamber.NotDirector.selector);
         chamber.submitBatchTransactions(TOKEN_WALLET, targets, values, data);
 
         vm.roll(block.number + SEATING_DELAY);
-        vm.prank(sessionKey);
-        chamber.submitBatchTransactions(TOKEN_WALLET, targets, values, data);
         vm.prank(sessionKey);
         chamber.confirmBatchTransactions(TOKEN_WALLET, ids);
         assertTrue(chamber.getConfirmation(TOKEN_WALLET, 0));

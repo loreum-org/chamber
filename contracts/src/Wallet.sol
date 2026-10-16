@@ -79,8 +79,8 @@ abstract contract Wallet {
         return WalletLib.resolveDeadline(deadline);
     }
 
-    function _requireNoThirdPartyPull(bytes memory data) internal view {
-        WalletLib.requireNoThirdPartyPull(data);
+    function _requireNoThirdPartyPull(address target, address asset, bytes memory data) internal view {
+        WalletLib.requireNoThirdPartyPull(target, asset, data);
     }
 
     function _submitTransaction(uint256 tokenId, address target, uint256 value, bytes memory data) internal {
@@ -120,12 +120,18 @@ abstract contract Wallet {
             metadataURI,
             deadline,
             _submitQuorum(),
-            address(this)
+            address(this),
+            _submitAutoConfirms(tokenId)
         );
     }
 
     function _submitQuorum() internal view virtual returns (uint256) {
         return 0;
+    }
+
+    /// @dev Whether a submit also records the submitting token's confirmation.
+    function _submitAutoConfirms(uint256) internal view virtual returns (bool) {
+        return true;
     }
 
     function _confirmTransaction(uint256 tokenId, uint256 nonce) internal virtual {

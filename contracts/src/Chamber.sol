@@ -107,7 +107,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
      *      (length word + data word) and incurs an SLOAD on every read. A bytes32 constant is
      *      inlined at compile time: zero runtime gas, zero storage slots.
      */
-    bytes32 public constant VERSION = "1.1.9";
+    bytes32 public constant VERSION = "1.2.0";
 
     /// @notice Function selector for upgradeImplementation(address,bytes)
     bytes4 private constant UPGRADE_SELECTOR = 0xc89311b6;
@@ -702,7 +702,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
             if (targets[i] == address(this)) {
                 _requireAllowedSelfCall(data[i]);
             } else {
-                _requireNoThirdPartyPull(data[i]);
+                _requireNoThirdPartyPull(targets[i], asset(), data[i]);
             }
 
             _submitTransaction(tokenId, targets[i], values[i], data[i]);
@@ -735,7 +735,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
         if (target == address(this)) {
             _requireAllowedSelfCall(data);
         } else {
-            _requireNoThirdPartyPull(data);
+            _requireNoThirdPartyPull(target, asset(), data);
         }
 
         if (value > 0 && address(this).balance < value) {
@@ -929,8 +929,8 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
     }
 
     /// @dev Maps Chamber director entry points to required scope bits and the C delay flag.
-    ///      Submit auto-confirms for the submitting token, so it needs SUBMIT and CONFIRM and
-    ///      waits `liveAt` like confirm.
+    ///      Submit needs only SUBMIT and is not delayed; whether it also votes is decided by
+    ///      {_submitAutoConfirms} (R-1012-M2).
     function _sessionScopeForSelector(bytes4 selector) internal pure returns (uint32 bit, bool delayed) {
         if (
             selector == bytes4(keccak256("submitTransaction(uint256,address,uint256,bytes)"))
@@ -940,7 +940,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
                     == bytes4(keccak256("submitTransactionWithMetadata(uint256,address,uint256,bytes,string,uint256)"))
                 || selector == bytes4(keccak256("submitBatchTransactions(uint256,address[],uint256[],bytes[])"))
         ) {
-            return (SESSION_SCOPE_SUBMIT | SESSION_SCOPE_CONFIRM, true);
+            return (SESSION_SCOPE_SUBMIT, false);
         }
         if (selector == IWallet.confirmTransaction.selector || selector == IWallet.confirmBatchTransactions.selector) {
             return (SESSION_SCOPE_CONFIRM, true);
@@ -1011,7 +1011,17 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
         uint256 deadline
     ) internal override {
         super._submitTransactionWithMetadata(tokenId, target, value, data, metadataURI, deadline);
-        _getChamberStorage().confirmOwner[getNextTransactionId() - 1][tokenId] = _ownerOfOrZero(tokenId);
+        uint256 nonce = getNextTransactionId() - 1;
+        if (_getWalletStorage().isConfirmed[nonce][tokenId]) {
+            _getChamberStorage().confirmOwner[nonce][tokenId] = _ownerOfOrZero(tokenId);
+        }
+    }
+
+    /// @dev Submit votes for the owner, and for a session key only when it could confirm right
+    ///      now (CONFIRM scope and past `liveAt`). A propose-only key submits without a vote (R-1012-M2).
+    function _submitAutoConfirms(uint256 tokenId) internal view override returns (bool) {
+        if (_getChamberStorage().nft.ownerOf(tokenId) == msg.sender) return true;
+        return _sessionMayAct(tokenId, IWallet.confirmTransaction.selector);
     }
 
     function _confirmTransaction(uint256 tokenId, uint256 nonce) internal override {

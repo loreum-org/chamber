@@ -22,8 +22,9 @@ contract SessionOwner {
 
 /**
  * @title R-1012-SK1: a SUBMIT-only session key also casts the seat's confirm vote
- * @notice Submitting auto-confirms for the submitting token, so submit must need the
- *         CONFIRM scope bit and the post-set `liveAt` delay, same as `confirmTransaction`.
+ * @notice Submitting auto-confirms for the submitting token. A session key keeps SUBMIT-only
+ *         (propose-only) use, but its submit only votes when the key could confirm right now:
+ *         CONFIRM scope and past `liveAt`, same as `confirmTransaction`.
  */
 contract FindingR1012SessionSubmitConfirmsTest is Test {
     Chamber public chamber;
@@ -64,27 +65,44 @@ contract FindingR1012SessionSubmitConfirmsTest is Test {
         );
     }
 
-    /// A key without CONFIRM must not be able to add a confirmation by submitting.
-    function test_submitOnlyKeyCannotVoteBySubmitting() public {
+    /// A propose-only key (no CONFIRM) can still submit, but the submit casts no vote.
+    function test_submitOnlyKeySubmitsWithoutVoting() public {
         _setKey(chamber.SESSION_SCOPE_SUBMIT());
-        vm.roll(block.number + BoardTypes.SEATING_DELAY);
 
         vm.prank(sessionKey);
-        vm.expectRevert(IChamber.NotDirector.selector);
         chamber.submitTransaction(TOKEN_OWNER, address(0xCAFE), 0, "");
+        assertFalse(chamber.getConfirmation(TOKEN_OWNER, 0));
+
+        // Still no vote after liveAt: the key never had CONFIRM.
+        vm.roll(block.number + BoardTypes.SEATING_DELAY);
+        vm.prank(sessionKey);
+        chamber.submitTransaction(TOKEN_OWNER, address(0xCAFE), 0, "");
+        assertFalse(chamber.getConfirmation(TOKEN_OWNER, 1));
+
+        // And it cannot confirm separately.
+        vm.prank(sessionKey);
+        vm.expectRevert(IChamber.NotDirector.selector);
+        chamber.confirmTransaction(TOKEN_OWNER, 1);
     }
 
-    /// A freshly set key must not vote (via submit) before `liveAt`.
-    function test_newKeyCannotSubmitBeforeLiveAt() public {
+    /// A freshly set key with CONFIRM submits before `liveAt` without a vote, and votes after.
+    function test_newKeySubmitVotesOnlyAfterLiveAt() public {
         _setKey(chamber.SESSION_SCOPE_SUBMIT() | chamber.SESSION_SCOPE_CONFIRM());
 
         vm.prank(sessionKey);
-        vm.expectRevert(IChamber.NotDirector.selector);
         chamber.submitTransaction(TOKEN_OWNER, address(0xCAFE), 0, "");
+        assertFalse(chamber.getConfirmation(TOKEN_OWNER, 0));
 
         vm.roll(block.number + BoardTypes.SEATING_DELAY);
         vm.prank(sessionKey);
         chamber.submitTransaction(TOKEN_OWNER, address(0xCAFE), 0, "");
-        assertTrue(chamber.getConfirmation(TOKEN_OWNER, 0));
+        assertTrue(chamber.getConfirmation(TOKEN_OWNER, 1));
+    }
+
+    /// The NFT owner itself always votes when submitting.
+    function test_ownerSubmitStillVotes() public {
+        vm.prank(user1);
+        chamber.submitTransaction(1, address(0xCAFE), 0, "");
+        assertTrue(chamber.getConfirmation(1, 0));
     }
 }

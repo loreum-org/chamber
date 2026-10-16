@@ -1618,7 +1618,7 @@ contract ChamberTest is Test {
     }
 
     function test_Chamber_Version() public view {
-        assertEq(chamber.VERSION(), bytes32("1.1.9"));
+        assertEq(chamber.VERSION(), bytes32("1.2.0"));
     }
 
     // ─── acceptAdmin (no-op) ───────────────────────────────────────────
@@ -1779,7 +1779,6 @@ contract ChamberTest is Test {
         assertTrue(chamber.isTokenAuthorized(tokenId, sessionKey));
         assertTrue(chamber.isTokenAuthorized(tokenId, address(wallet)));
 
-        vm.roll(vm.getBlockNumber() + 1);
         vm.prank(sessionKey);
         chamber.submitTransaction(tokenId, address(0x9999), 0, "");
 

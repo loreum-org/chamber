@@ -253,7 +253,15 @@ contract ChamberAuthHarness is Board, Wallet {
         uint256 deadline
     ) internal override {
         super._submitTransactionWithMetadata(tokenId, target, value, data, metadataURI, deadline);
-        confirmOwner[getNextTransactionId() - 1][tokenId] = _ownerOfOrZero(tokenId);
+        uint256 nonce = getNextTransactionId() - 1;
+        if (_getWalletStorage().isConfirmed[nonce][tokenId]) {
+            confirmOwner[nonce][tokenId] = _ownerOfOrZero(tokenId);
+        }
+    }
+
+    function _submitAutoConfirms(uint256 tokenId) internal view override returns (bool) {
+        if (nft.ownerOf(tokenId) == msg.sender) return true;
+        return _sessionMayAct(tokenId, IWallet.confirmTransaction.selector);
     }
 
     function _confirmTransaction(uint256 tokenId, uint256 nonce) internal override {
@@ -313,7 +321,7 @@ contract ChamberAuthHarness is Board, Wallet {
                     == bytes4(keccak256("submitTransactionWithMetadata(uint256,address,uint256,bytes,string,uint256)"))
                 || selector == bytes4(keccak256("submitBatchTransactions(uint256,address[],uint256[],bytes[])"))
         ) {
-            return (SESSION_SCOPE_SUBMIT | SESSION_SCOPE_CONFIRM, true);
+            return (SESSION_SCOPE_SUBMIT, false);
         }
         if (selector == IWallet.confirmTransaction.selector || selector == IWallet.confirmBatchTransactions.selector) {
             return (SESSION_SCOPE_CONFIRM, true);

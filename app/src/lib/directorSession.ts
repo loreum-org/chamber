@@ -28,7 +28,7 @@ export const SESSION_SCOPE_BITS = [
     bit: SESSION_SCOPE_SUBMIT,
     id: 'submit',
     label: 'Submit',
-    detail: 'Submit transactions (including batch and metadata). Not delayed by liveAt.',
+    detail: 'Submit transactions (including batch and metadata). Not delayed by liveAt. Only counts as a vote with Confirm, after liveAt.',
   },
   {
     bit: SESSION_SCOPE_CONFIRM,
