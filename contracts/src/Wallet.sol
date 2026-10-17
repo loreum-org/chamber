@@ -174,15 +174,18 @@ abstract contract Wallet {
         );
     }
 
-    function getTransactionMetadata(uint256 nonce) public view virtual txExists(nonce) returns (string memory) {
+    function getTransactionMetadata(uint256 nonce) public view virtual returns (string memory) {
+        _txExists(nonce);
         return _getWalletStorage().transactionMetadataURI[nonce];
     }
 
-    function getTransactionCalldata(uint256 nonce) public view virtual txExists(nonce) returns (bytes memory) {
+    function getTransactionCalldata(uint256 nonce) public view virtual returns (bytes memory) {
+        _txExists(nonce);
         return _getWalletStorage().transactionCalldata[nonce];
     }
 
-    function getTransactionRequiredQuorum(uint256 nonce) public view virtual txExists(nonce) returns (uint256) {
+    function getTransactionRequiredQuorum(uint256 nonce) public view virtual returns (uint256) {
+        _txExists(nonce);
         return _getWalletStorage().transactionRequiredQuorum[nonce];
     }
 
@@ -194,11 +197,13 @@ abstract contract Wallet {
         return _getWalletStorage().cancelled[nonce];
     }
 
-    function getTransactionDeadline(uint256 nonce) public view virtual txExists(nonce) returns (uint256 deadline) {
+    function getTransactionDeadline(uint256 nonce) public view virtual returns (uint256 deadline) {
+        _txExists(nonce);
         return _getWalletStorage().transactionDeadline[nonce];
     }
 
-    function isTransactionExpired(uint256 nonce) public view virtual txExists(nonce) returns (bool) {
+    function isTransactionExpired(uint256 nonce) public view virtual returns (bool) {
+        _txExists(nonce);
         uint256 deadline = _getWalletStorage().transactionDeadline[nonce];
         return deadline != 0 && block.timestamp > deadline;
     }
