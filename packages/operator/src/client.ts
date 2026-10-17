@@ -23,6 +23,7 @@ import {
   asUint32,
   defaultSessionExpiry,
   directorSessionStatus,
+  isLiveSession,
   isValidSessionExpiry,
   isZeroAddress,
   type DirectorOperatorSnapshot,
@@ -426,21 +427,28 @@ export class ChamberOperator {
   }
 
   /**
-   * Raw session plus whether its operator is live right now. Live means
-   * `isTokenAuthorized(tokenId, operator)`: same owner, owner is a contract,
-   * not expired. Chamber never consults ERC-1271.
+   * Raw session plus whether its operator is live right now: both the stored
+   * `sessionOwner` and `operator` pass `isTokenAuthorized` (see {@link isLiveSession}).
+   * Chamber never consults ERC-1271.
    */
   private async liveSession(tokenId: bigint): Promise<{ raw: DirectorSessionRaw; live: boolean }> {
     const raw = await this.getDirectorSession(tokenId)
     if (isZeroAddress(raw.operator)) return { raw, live: false }
     try {
-      const live = await this.publicClient.readContract({
-        address: this.chamber,
-        abi: chamberAbi,
-        functionName: 'isTokenAuthorized',
-        args: [tokenId, raw.operator],
-      })
-      return { raw, live }
+      const [operatorAuthorized, sessionOwnerAuthorized] = await Promise.all(
+        [raw.operator, raw.sessionOwner].map((account) =>
+          this.publicClient.readContract({
+            address: this.chamber,
+            abi: chamberAbi,
+            functionName: 'isTokenAuthorized',
+            args: [tokenId, account],
+          }),
+        ),
+      )
+      return {
+        raw,
+        live: isLiveSession({ rawOperator: raw.operator, operatorAuthorized, sessionOwnerAuthorized }),
+      }
     } catch (error) {
       throw wrapChamberError(error, 'Failed to read director operator')
     }

@@ -15,6 +15,7 @@ import {
   describeSessionScope,
   directorSessionStatus,
   directorSessionStatusLabel,
+  isLiveSession,
   isValidSessionExpiry,
 } from '../src/session.ts'
 
@@ -210,4 +211,58 @@ test('README documents 4-arg session keys, defaults, EOA rejection, and no 1271'
   assert.match(readme, /30-day/)
   assert.match(readme, /SESSION_SCOPE_UNSCOPED/)
   assert.match(readme, /confirm\/execute wait until `liveAt`/i)
+})
+
+/**
+ * Fake chamber for the live-session read path. `isTokenAuthorized` mirrors the contract:
+ * owner, or the stored operator while `sessionOwner == owner` and unexpired.
+ */
+function fakeOperator(state: { owner: string; sessionOwner: string; operator: string; scope: number; liveAt: bigint }) {
+  const eq = (a: string, b: string) => a.toLowerCase() === b.toLowerCase()
+  const publicClient = {
+    async readContract({ functionName, args }: { functionName: string; args: readonly unknown[] }) {
+      if (functionName === 'getDirectorSession') {
+        return [state.sessionOwner, state.operator, 1_900_000_000n, state.scope, state.liveAt]
+      }
+      if (functionName === 'isTokenAuthorized') {
+        const account = args[1] as string
+        if (eq(account, ZERO)) return false
+        if (eq(account, state.owner)) return true
+        return eq(state.sessionOwner, state.owner) && eq(account, state.operator)
+      }
+      throw new Error(`unexpected read ${functionName}`)
+    },
+    async getBlockNumber() {
+      return 100n
+    },
+  }
+  const Ctor = ChamberOperator as unknown as new (opts: Record<string, unknown>) => ChamberOperator
+  return new Ctor({ rpcUrl: 'http://fake', chamber: '0x00000000000000000000000000000000000000C1', publicClient })
+}
+
+test('isLiveSession needs both the operator and the stored session owner authorized', () => {
+  assert.equal(isLiveSession({ rawOperator: SESSION, operatorAuthorized: true, sessionOwnerAuthorized: true }), true)
+  assert.equal(isLiveSession({ rawOperator: SESSION, operatorAuthorized: true, sessionOwnerAuthorized: false }), false)
+  assert.equal(isLiveSession({ rawOperator: SESSION, operatorAuthorized: false, sessionOwnerAuthorized: true }), false)
+  assert.equal(isLiveSession({ rawOperator: ZERO, operatorAuthorized: true, sessionOwnerAuthorized: true }), false)
+})
+
+test('live session reads report the key while the setting owner still holds the NFT', async () => {
+  const OWNER_A = '0x00000000000000000000000000000000000000A1'
+  const op = fakeOperator({ owner: OWNER_A, sessionOwner: OWNER_A, operator: SESSION, scope: SESSION_SCOPE_CONFIRM, liveAt: 50n })
+  assert.equal((await op.getDirectorOperator(3n)).toLowerCase(), SESSION.toLowerCase())
+  assert.equal(await op.getDirectorOperatorScope(3n), SESSION_SCOPE_CONFIRM)
+  assert.equal(await op.getDirectorOperatorLiveAt(3n), 50n)
+})
+
+test('session is not live after the NFT moves to the operator itself', async () => {
+  // Contract A set key X, then transferred the NFT to X. X now acts as owner, not as A's key.
+  const OWNER_A = '0x00000000000000000000000000000000000000A1'
+  const op = fakeOperator({ owner: SESSION, sessionOwner: OWNER_A, operator: SESSION, scope: SESSION_SCOPE_CONFIRM, liveAt: 50n })
+  assert.equal(await op.getDirectorOperator(3n), ZERO)
+  assert.equal(await op.getDirectorOperatorScope(3n), 0)
+  assert.equal(await op.getDirectorOperatorLiveAt(3n), 0n)
+  const state = await op.getDirectorOperatorState(3n)
+  assert.equal(state.operator, ZERO)
+  assert.equal(state.status, 'stale')
 })

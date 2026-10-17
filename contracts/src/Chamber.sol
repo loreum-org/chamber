@@ -118,6 +118,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
     /// @notice Function selector for unpause()
     bytes4 private constant UNPAUSE_SELECTOR = 0x3f4ba83a;
     /// @dev OpenZeppelin `ReentrancyGuardTransient` slot, shared with every `nonReentrant` function.
+    ///      `test_M02_DelegateRevertsOnReenter` fails if the two ever drift apart.
     bytes32 private constant _REENTRANCY_GUARD_SLOT =
         0x9b779b17422d0df92223018b32b4d1fa46e071723d6817e2486d003becc55f00;
     /// @dev ERC-1967 admin slot

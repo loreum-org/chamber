@@ -8,7 +8,7 @@ import { isSeatingMature } from '@/lib/chamberGovernance'
 import { getAlchemyApiKeyFromEnv } from '@/lib/alchemy'
 import { listOwnedErc721TokenIds } from '@/lib/ownedErc721'
 import { isOnchainContractBytecode } from '@/lib/address'
-import { asUint32 } from '@/lib/directorSession'
+import { asUint32, isLiveSession } from '@/lib/directorSession'
 import type { Transaction, BoardMember, SeatUpdate } from '@/types'
 import { useInvalidateOnReceipt } from './invalidateChamberQueries'
 
@@ -973,8 +973,8 @@ export type DirectorSessionView = {
 type RawDirectorSession = readonly [`0x${string}`, `0x${string}`, bigint, number | bigint, bigint]
 
 /**
- * Raw `getDirectorSession` per tokenId plus its live operator. Live means
- * `isTokenAuthorized(tokenId, operator)`: same contract owner that set it, not expired.
+ * Raw `getDirectorSession` per tokenId plus its live operator. Live means both the
+ * stored operator and the stored session owner pass `isTokenAuthorized` (see `isLiveSession`).
  */
 export function useLiveDirectorSessions(
   chamberAddress: `0x${string}` | undefined,
@@ -994,24 +994,29 @@ export function useLiveDirectorSessions(
   const raws = tokenIds.map((_, i) =>
     rawResults?.[i]?.status === 'success' ? (rawResults[i].result as RawDirectorSession) : undefined,
   )
+  // Two reads per token: operator, then the stored session owner (see `isLiveSession`).
   const { data: authResults, refetch: refetchAuth, isFetched: authFetched } = useReadContracts({
-    contracts: tokenIds.map((tokenId, i) => ({
-      address: chamberAddress,
-      abi: chamberAbi,
-      functionName: 'isTokenAuthorized' as const,
-      args: [tokenId, raws[i]?.[1] ?? zeroAddress] as const,
-    })),
+    contracts: tokenIds.flatMap((tokenId, i) =>
+      [raws[i]?.[1], raws[i]?.[0]].map((account) => ({
+        address: chamberAddress,
+        abi: chamberAbi,
+        functionName: 'isTokenAuthorized' as const,
+        args: [tokenId, account ?? zeroAddress] as const,
+      })),
+    ),
     query: { enabled: enabled && rawResults !== undefined, staleTime: 0, retry: false },
   })
+  const authorized = (index: number) =>
+    authResults?.[index]?.status === 'success' && authResults[index].result === true
 
   const sessions = tokenIds.map((_, i) => {
     const raw = raws[i]
     const rawOperator = raw?.[1]
-    const live =
-      !!rawOperator &&
-      rawOperator !== zeroAddress &&
-      authResults?.[i]?.status === 'success' &&
-      authResults[i].result === true
+    const live = isLiveSession({
+      rawOperator,
+      operatorAuthorized: authorized(i * 2),
+      sessionOwnerAuthorized: authorized(i * 2 + 1),
+    })
     const liveOperator: `0x${string}` | undefined = raw === undefined ? undefined : live ? rawOperator : zeroAddress
     return { raw, liveOperator, isLive: live }
   })
