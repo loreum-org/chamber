@@ -101,6 +101,20 @@ export function isValidSessionExpiry(expiry: bigint, nowSec = Math.floor(Date.no
   return expiry > 0n && expiry <= SESSION_EXPIRY_MAX && expiry > BigInt(nowSec)
 }
 
+/**
+ * Whether a raw `getDirectorSession` row is live, from two `isTokenAuthorized` reads.
+ * `sessionOwner` is authorized only while it is still `ownerOf(tokenId)` (a session's
+ * owner cannot also be its live key). `operator` is authorized as the owner or as the
+ * live key. Requiring both drops a session whose NFT moved to the operator itself.
+ */
+export function isLiveSession(args: {
+  rawOperator: `0x${string}` | undefined
+  operatorAuthorized: boolean
+  sessionOwnerAuthorized: boolean
+}): boolean {
+  return isNonZeroAddress(args.rawOperator) && args.operatorAuthorized && args.sessionOwnerAuthorized
+}
+
 export function directorSessionStatus(args: {
   liveOperator: `0x${string}` | undefined
   rawOperator: `0x${string}` | undefined

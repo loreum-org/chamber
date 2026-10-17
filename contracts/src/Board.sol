@@ -40,7 +40,7 @@ abstract contract Board is ReentrancyGuardTransientUpgradeable {
     }
 
     function _getNode(uint256 tokenId) internal view returns (Node memory) {
-        BoardTypes.Node memory node = BoardLib.getNode(_getBoardStorage(), tokenId);
+        BoardTypes.Node storage node = _getBoardStorage().nodes[tokenId];
         return Node({tokenId: node.tokenId, amount: node.amount, next: node.next, prev: node.prev});
     }
 
@@ -68,8 +68,13 @@ abstract contract Board is ReentrancyGuardTransientUpgradeable {
         return BoardLib.getTop(_getBoardStorage(), count);
     }
 
+    /// @dev Same formula as {BoardLib.quorumFor}, without the library call.
+    function _quorumFor(uint256 n) internal pure returns (uint256) {
+        return 1 + (n * 51) / 100;
+    }
+
     function _getQuorum() internal view returns (uint256) {
-        return BoardLib.getQuorum(_getBoardStorage());
+        return _quorumFor(_getBoardStorage().seats);
     }
 
     function _liveQuorum(IERC721 nft, address excludeOwner) internal view returns (uint256) {
@@ -100,11 +105,14 @@ abstract contract Board is ReentrancyGuardTransientUpgradeable {
     }
 
     function _countFilledSeats() internal view returns (uint256) {
-        return BoardLib.countFilledSeats(_getBoardStorage());
+        BoardTypes.BoardStorage storage $ = _getBoardStorage();
+        uint256 s = $.seats;
+        uint256 n = $.size;
+        return n < s ? n : s;
     }
 
     function _filledSeatQuorum() internal view returns (uint256) {
-        return BoardLib.quorumFor(BoardLib.countFilledSeats(_getBoardStorage()));
+        return _quorumFor(_countFilledSeats());
     }
 
     function _countReachableAuthorized(IERC721 nft, address excludeOwner) internal view returns (uint256) {
@@ -112,7 +120,7 @@ abstract contract Board is ReentrancyGuardTransientUpgradeable {
     }
 
     function _getSeats() internal view returns (uint256) {
-        return BoardLib.getSeats(_getBoardStorage());
+        return _getBoardStorage().seats;
     }
 
     function _setSeats(uint256 tokenId, uint256 numOfSeats) internal {
@@ -144,7 +152,7 @@ abstract contract Board is ReentrancyGuardTransientUpgradeable {
     }
 
     function _getSeatedAt(uint256 tokenId) internal view returns (uint256) {
-        return BoardLib.getSeatedAt(_getBoardStorage(), tokenId);
+        return _getBoardStorage().seatedAt[tokenId];
     }
 
     function _isSeatingMature(uint256 tokenId) internal view returns (bool) {

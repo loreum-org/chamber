@@ -8,6 +8,7 @@ import {IERC1271} from "lib/openzeppelin-contracts/contracts/interfaces/IERC1271
 import {MockERC20} from "test/mock/MockERC20.sol";
 import {MockERC721} from "test/mock/MockERC721.sol";
 import {DeployChamber} from "test/utils/DeployChamber.sol";
+import {ChamberReads} from "test/utils/ChamberReads.sol";
 
 /// @dev Contract NFT owner used to register a session key (same pattern as Chamber.t.sol).
 contract MockERC1271Wallet {
@@ -114,14 +115,14 @@ contract FindingPMNH01ControlTransferTest is Test {
                 (4, sessionKey, block.timestamp + 30 days, chamber.SESSION_SCOPE_UNSCOPED())
             )
         );
-        assertEq(chamber.getDirectorOperator(4), sessionKey);
+        assertEq(ChamberReads.directorOperator(chamber, 4), sessionKey);
         assertTrue(chamber.isTokenAuthorized(4, sessionKey));
 
         MockERC1271Wallet newWallet = new MockERC1271Wallet(address(0xBEEF));
         vm.prank(address(wallet));
         nft.transferFrom(address(wallet), address(newWallet), 4);
 
-        assertEq(chamber.getDirectorOperator(4), address(0), "session key is stale after transfer");
+        assertEq(ChamberReads.directorOperator(chamber, 4), address(0), "session key is stale after transfer");
         assertFalse(chamber.isTokenAuthorized(4, sessionKey));
         assertTrue(chamber.isTokenAuthorized(4, address(newWallet)), "only the new owner is authorized");
 
@@ -141,7 +142,7 @@ contract FindingPMNH01ControlTransferTest is Test {
                 chamber.setDirectorOperator, (4, newKey, block.timestamp + 30 days, chamber.SESSION_SCOPE_UNSCOPED())
             )
         );
-        assertEq(chamber.getDirectorOperator(4), newKey, "only the new owner can register a session key");
+        assertEq(ChamberReads.directorOperator(chamber, 4), newKey, "only the new owner can register a session key");
     }
 
     /// @notice Solution A: transferring a mature seated token resets the seating clock.

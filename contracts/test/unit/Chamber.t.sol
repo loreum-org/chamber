@@ -12,6 +12,7 @@ import {MockERC20} from "test/mock/MockERC20.sol";
 import {MockERC721} from "test/mock/MockERC721.sol";
 import {DeployChamber} from "test/utils/DeployChamber.sol";
 import {Clones} from "lib/openzeppelin-contracts/contracts/proxy/Clones.sol";
+import {ChamberReads} from "test/utils/ChamberReads.sol";
 
 /// @dev A minimal ERC-1271 contract that authorises a single address
 contract MockERC1271Wallet {
@@ -106,7 +107,7 @@ contract ChamberTest is Test {
         vm.stopPrank();
 
         // Check user delegation amount
-        assertEq(chamber.getHolderDelegation(user1, tokenId), amount);
+        assertEq(ChamberReads.holderDelegation(chamber, user1, tokenId), amount);
 
         // Check node amount
         (uint256 nodeTokenId, uint256 nodeAmount,,) = chamber.getMember(tokenId);
@@ -136,7 +137,7 @@ contract ChamberTest is Test {
         vm.stopPrank();
 
         // Check user delegation amount
-        assertEq(chamber.getHolderDelegation(user1, tokenId), 0);
+        assertEq(ChamberReads.holderDelegation(chamber, user1, tokenId), 0);
 
         // Check node amount
         (, uint256 nodeAmount,,) = chamber.getMember(tokenId);
@@ -447,13 +448,13 @@ contract ChamberTest is Test {
         chamber.delegate(tokenId1, amount);
 
         // Check delegation
-        assertEq(chamber.getHolderDelegation(user1, tokenId1), amount);
+        assertEq(ChamberReads.holderDelegation(chamber, user1, tokenId1), amount);
 
         // Undelegate tokens
         chamber.undelegate(tokenId1, amount);
 
         // Check undelegation
-        assertEq(chamber.getHolderDelegation(user1, tokenId1), 0);
+        assertEq(ChamberReads.holderDelegation(chamber, user1, tokenId1), 0);
         vm.stopPrank();
     }
 
@@ -474,14 +475,14 @@ contract ChamberTest is Test {
         chamber.delegate(tokenId1, amount);
 
         // Check delegation
-        assertEq(chamber.getHolderDelegation(user1, tokenId1), amount);
+        assertEq(ChamberReads.holderDelegation(chamber, user1, tokenId1), amount);
 
         // Undelegate part of the tokens
         uint256 undelegateAmount = 500;
         chamber.undelegate(tokenId1, undelegateAmount);
 
         // Check updated delegation
-        assertEq(chamber.getHolderDelegation(user1, tokenId1), amount - undelegateAmount);
+        assertEq(ChamberReads.holderDelegation(chamber, user1, tokenId1), amount - undelegateAmount);
 
         // Check node amount
         (, uint256 nodeAmount,,) = chamber.getMember(tokenId1);
@@ -506,13 +507,13 @@ contract ChamberTest is Test {
         chamber.delegate(tokenId1, amount);
 
         // Check delegation
-        assertEq(chamber.getHolderDelegation(user1, tokenId1), amount);
+        assertEq(ChamberReads.holderDelegation(chamber, user1, tokenId1), amount);
 
         // Undelegate all tokens
         chamber.undelegate(tokenId1, amount);
 
         // Check updated delegation
-        assertEq(chamber.getHolderDelegation(user1, tokenId1), 0);
+        assertEq(ChamberReads.holderDelegation(chamber, user1, tokenId1), 0);
         vm.stopPrank();
     }
 
@@ -836,7 +837,7 @@ contract ChamberTest is Test {
         vm.stopPrank();
 
         // Check total delegated weight across tokenIds for this holder
-        uint256 totalDelegations = chamber.getTotalHolderDelegations(user1);
+        uint256 totalDelegations = ChamberReads.totalHolderDelegations(chamber, user1);
         assertEq(totalDelegations, amount1 + amount2);
     }
 
@@ -1502,14 +1503,14 @@ contract ChamberTest is Test {
     }
 
     function test_Chamber_GetNextTransactionId() public {
-        assertEq(chamber.getNextTransactionId(), 0);
+        assertEq(chamber.getTransactionCount(), 0);
 
         addDirectors();
 
         vm.prank(user1);
         chamber.submitTransaction(1, address(0x3), 0, "");
 
-        assertEq(chamber.getNextTransactionId(), 1);
+        assertEq(chamber.getTransactionCount(), 1);
     }
 
     function test_Chamber_GetConfirmation() public {
@@ -1619,13 +1620,6 @@ contract ChamberTest is Test {
 
     function test_Chamber_Version() public view {
         assertEq(chamber.VERSION(), bytes32("1.2.0"));
-    }
-
-    // ─── acceptAdmin (no-op) ───────────────────────────────────────────
-
-    function test_Chamber_AcceptAdmin_NoOp() public {
-        // acceptAdmin is a no-op; calling it should not revert
-        chamber.acceptAdmin();
     }
 
     // ─── submitTransaction: short data when target == self ─────────────
@@ -1775,7 +1769,7 @@ contract ChamberTest is Test {
                 (tokenId, sessionKey, block.timestamp + 30 days, chamber.SESSION_SCOPE_UNSCOPED())
             )
         );
-        assertEq(chamber.getDirectorOperator(tokenId), sessionKey);
+        assertEq(ChamberReads.directorOperator(chamber, tokenId), sessionKey);
         assertTrue(chamber.isTokenAuthorized(tokenId, sessionKey));
         assertTrue(chamber.isTokenAuthorized(tokenId, address(wallet)));
 
@@ -1878,7 +1872,7 @@ contract ChamberTest is Test {
         vm.prank(address(wallet));
         nft.transferFrom(address(wallet), user1, tokenId);
 
-        assertEq(chamber.getDirectorOperator(tokenId), address(0));
+        assertEq(ChamberReads.directorOperator(chamber, tokenId), address(0));
         assertFalse(chamber.isTokenAuthorized(tokenId, sessionKey));
 
         vm.prank(sessionKey);
@@ -1907,7 +1901,7 @@ contract ChamberTest is Test {
         );
         wallet.execute(address(chamber), abi.encodeCall(chamber.setDirectorOperator, (tokenId, address(0), 0, 0)));
 
-        assertEq(chamber.getDirectorOperator(tokenId), address(0));
+        assertEq(ChamberReads.directorOperator(chamber, tokenId), address(0));
         vm.prank(sessionKey);
         vm.expectRevert(IChamber.NotDirector.selector);
         chamber.submitTransaction(tokenId, address(0x9999), 0, "");

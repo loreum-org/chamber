@@ -9,7 +9,7 @@ import {
 } from 'wagmi'
 import { decodeEventLog, zeroAddress } from 'viem'
 import { chamberAbi } from '@/contracts/abis'
-import { useBoardMembers, useChamberInfo, useMembershipTokenOwners } from './useChamber'
+import { useBoardMembers, useChamberInfo, useLiveDirectorSessions, useMembershipTokenOwners } from './useChamber'
 import { asUint32 } from '@/lib/directorSession'
 
 /**
@@ -38,7 +38,7 @@ export type OperatorSeatView = {
 /**
  * Every seated membership token in a chamber with its live operator session.
  * Mirrors the seat-management read path used by `useDirectorActionGate`:
- * `getDirectors` + `getTop(seats)` + per-seat operator getters.
+ * `getDirectors` + `getTop(seats)` + per-seat `getDirectorSession` / `isTokenAuthorized`.
  */
 export function useOperatorSeats(chamberAddress: `0x${string}` | undefined) {
   const { seats: seatCount, directors, nftToken } = useChamberInfo(chamberAddress)
@@ -57,55 +57,29 @@ export function useOperatorSeats(chamberAddress: `0x${string}` | undefined) {
 
   const { owners } = useMembershipTokenOwners(nftToken, seatedTokenIds)
 
-  const { data: sessionResults, refetch } = useReadContracts({
-    contracts: seatedTokenIds.flatMap((tokenId) => [
-      {
-        address: chamberAddress,
-        abi: chamberAbi,
-        functionName: 'getDirectorOperator' as const,
-        args: [tokenId] as const,
-      },
-      {
-        address: chamberAddress,
-        abi: chamberAbi,
-        functionName: 'getDirectorSession' as const,
-        args: [tokenId] as const,
-      },
-    ]),
-    query: {
-      enabled: !!chamberAddress && seatedTokenIds.length > 0,
-      staleTime: 0,
-      retry: false,
-    },
-  })
+  const { sessions, refetch, isFetched: sessionsFetched } = useLiveDirectorSessions(chamberAddress, seatedTokenIds)
 
   const seats: OperatorSeatView[] = useMemo(() => {
-    if (sessionResults === undefined || sessionResults.length !== seatedTokenIds.length * 2) {
+    if (sessions.length !== seatedTokenIds.length || sessions.some((session) => session.raw === undefined)) {
       return []
     }
     return seatedTokenIds.map((tokenId, index) => {
-      const liveResult = sessionResults[index * 2]
-      const rawResult = sessionResults[index * 2 + 1]
-      const operator =
-        liveResult?.status === 'success' ? (liveResult.result as `0x${string}`) : undefined
-      const raw = rawResult?.status === 'success'
-        ? (rawResult.result as readonly [`0x${string}`, `0x${string}`, bigint, number | bigint, bigint])
-        : undefined
+      const { raw, liveOperator, isLive } = sessions[index]
       const member = seatedMembers[index]
       return {
         tokenId,
         rank: member?.rank ?? index + 1,
         delegation: member?.amount ?? 0n,
         owner: owners[index],
-        operator,
+        operator: liveOperator,
         rawOperator: (raw?.[1] ?? zeroAddress) as `0x${string}`,
         expiry: raw?.[2] ?? 0n,
         scope: asUint32(raw?.[3]),
         liveAt: raw?.[4] ?? 0n,
-        isLive: !!operator && operator !== zeroAddress,
+        isLive,
       }
     })
-  }, [sessionResults, seatedTokenIds, seatedMembers, owners])
+  }, [sessions, seatedTokenIds, seatedMembers, owners])
 
   return {
     seats,
@@ -113,7 +87,7 @@ export function useOperatorSeats(chamberAddress: `0x${string}` | undefined) {
     directorCount,
     nftToken,
     refetch,
-    isFetched: seatCount !== undefined && (seatedTokenIds.length === 0 || sessionResults !== undefined),
+    isFetched: seatCount !== undefined && (seatedTokenIds.length === 0 || sessionsFetched),
   }
 }
 

@@ -22,6 +22,7 @@ import {
 } from "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {StorageSlot} from "lib/openzeppelin-contracts/contracts/utils/StorageSlot.sol";
 import {EnumerableSet} from "lib/openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
+import {TransientSlot} from "lib/openzeppelin-contracts/contracts/utils/TransientSlot.sol";
 
 /**
  * @title Chamber Contract
@@ -30,6 +31,7 @@ import {EnumerableSet} from "lib/openzeppelin-contracts/contracts/utils/structs/
  */
 contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, IChamber, IERC721Receiver {
     using EnumerableSet for EnumerableSet.UintSet;
+    using TransientSlot for *;
 
     /// @dev Bound to the approving contract owner so an NFT transfer drops the key.
     ///      Packed into two slots: `owner`/`expiry`/`scope` then `operator`/`liveAt`.
@@ -115,6 +117,12 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
     bytes4 private constant PAUSE_SELECTOR = 0x8456cb59;
     /// @notice Function selector for unpause()
     bytes4 private constant UNPAUSE_SELECTOR = 0x3f4ba83a;
+    /// @dev OpenZeppelin `ReentrancyGuardTransient` slot, shared with every `nonReentrant` function.
+    ///      `test_M02_DelegateRevertsOnReenter` fails if the two ever drift apart.
+    bytes32 private constant _REENTRANCY_GUARD_SLOT =
+        0x9b779b17422d0df92223018b32b4d1fa46e071723d6817e2486d003becc55f00;
+    /// @dev ERC-1967 admin slot
+    bytes32 private constant _ADMIN_SLOT = 0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
 
     constructor() {
         _disableInitializers();
@@ -174,12 +182,9 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
 
         ChamberStorage storage $ = _getChamberStorage();
 
-        try $.nft.ownerOf(tokenId) returns (address owner) {
-            // Chamber-held ids can never act as directors; weight on them only blocks seats (R-1012-G1).
-            if (owner == address(this)) revert IChamber.InvalidTokenId();
-        } catch {
-            revert IChamber.InvalidTokenId();
-        }
+        // Chamber-held ids can never act as directors; weight on them only blocks seats (R-1012-G1).
+        address tokenOwner = _ownerOfOrZero(tokenId);
+        if (tokenOwner == address(0) || tokenOwner == address(this)) revert IChamber.InvalidTokenId();
 
         // Cache balance to avoid multiple SLOADs
         uint256 senderBalance = balanceOf(msg.sender);
@@ -197,7 +202,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
 
         _trackLiveDelegation($.holderEpoch, $.liveDelegation, msg.sender, tokenId, priorDelegation, amount);
         _delegate(tokenId, amount, $.nft);
-        _syncTrackedDelegations($.holderDelegation, $.totalHolderDelegations, $.holderDelegatedTokenIds, msg.sender);
+        _syncCallerDelegations();
 
         emit IChamber.DelegationUpdated(msg.sender, tokenId, $.holderDelegation[msg.sender][tokenId]);
     }
@@ -229,9 +234,14 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
             _undelegate(tokenId, boardAmount, $.nft);
         }
 
-        _syncTrackedDelegations($.holderDelegation, $.totalHolderDelegations, $.holderDelegatedTokenIds, msg.sender);
+        _syncCallerDelegations();
 
         emit IChamber.DelegationUpdated(msg.sender, tokenId, newDelegation);
+    }
+
+    function _syncCallerDelegations() private {
+        ChamberStorage storage $ = _getChamberStorage();
+        _syncTrackedDelegations($.holderDelegation, $.totalHolderDelegations, $.holderDelegatedTokenIds, msg.sender);
     }
 
     /// BOARD ///
@@ -266,7 +276,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
 
     /**
      * @notice Retrieves the current quorum (minimum distinct director-token confirmations to execute)
-     * @dev Integer formula `1 + (n * 51) / 100` where `n` is {getReachableDirectorCount}: occupied
+     * @dev Integer formula `1 + (n * 51) / 100` where `n` is `min(seats, size)`: occupied
      *      top seats (PMN-M01 keeps empty seats out). Burned or chamber-held ids still count until
      *      {cleanupInertSeat} drops them, so same-block rank changes cannot lower quorum (R-1012-G1).
      *      One- and two-director boards require all reachable directors. Quorum is token-weighted:
@@ -279,14 +289,6 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
         return _filledSeatQuorum();
     }
 
-    /**
-     * @notice Occupied top seats, the quorum denominator.
-     * @dev `min(seats, size)`. Burned or chamber-held ids count until {cleanupInertSeat} removes
-     *      them; excluding them let same-block delegation push them up to lower quorum (R-1012-G1).
-     */
-    function getReachableDirectorCount() public view override returns (uint256) {
-        return _countFilledSeats();
-    }
 
     /**
      * @notice Retrieves the current number of seats
@@ -306,11 +308,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
         address[] memory topOwners = new address[](topTokenIds.length);
 
         for (uint256 i = 0; i < topTokenIds.length;) {
-            try _getChamberStorage().nft.ownerOf(topTokenIds[i]) returns (address owner) {
-                topOwners[i] = owner;
-            } catch {
-                topOwners[i] = address(0);
-            }
+            topOwners[i] = _ownerOfOrZero(topTokenIds[i]);
             unchecked {
                 ++i;
             }
@@ -339,24 +337,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
         return _collectDelegations($c.holderDelegation, $c.totalHolderDelegations, $c.holderDelegatedTokenIds, holder);
     }
 
-    /**
-     * @notice Returns the amount delegated by a holder to a specific membership tokenId
-     * @param holder The delegating holder address
-     * @param tokenId The token ID
-     * @return amount The amount delegated
-     */
-    function getHolderDelegation(address holder, uint256 tokenId) external view override returns (uint256) {
-        return _getChamberStorage().holderDelegation[holder][tokenId];
-    }
 
-    /**
-     * @notice Returns the total amount delegated by a holder across all tokenIds
-     * @param holder The delegating holder address
-     * @return amount The total amount delegated
-     */
-    function getTotalHolderDelegations(address holder) external view override returns (uint256) {
-        return _getChamberStorage().totalHolderDelegations[holder];
-    }
 
     /**
      * @notice Registers or clears the session key for a contract-owned membership NFT.
@@ -370,7 +351,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
         nonReentrant
     {
         if (tokenId == 0) revert IChamber.NotDirector();
-        address owner = _getChamberStorage().nft.ownerOf(tokenId);
+        address owner = _ownerOf(tokenId);
         if (owner != msg.sender) revert IChamber.NotDirector();
         if (owner.code.length == 0) revert IChamber.NotDirector();
 
@@ -393,31 +374,8 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
         emit IChamber.DirectorOperatorSet(tokenId, owner, operator, expiry, scope);
     }
 
-    /**
-     * @notice Live session key for `tokenId`, or zero if unset, stale, expired, or EOA-owned.
-     */
-    function getDirectorOperator(uint256 tokenId) public view override returns (address) {
-        (bool authorized, address operator) = _liveSessionKey(tokenId);
-        return authorized ? operator : address(0);
-    }
 
-    /**
-     * @notice `scope` of the live session, or `0` if none / stale / expired / burned.
-     */
-    function getDirectorOperatorScope(uint256 tokenId) public view override returns (uint32) {
-        (bool live,) = _liveSessionKey(tokenId);
-        if (!live) return 0;
-        return _getChamberStorage().directorSession[tokenId].scope;
-    }
 
-    /**
-     * @notice Confirm/execute unlock block of the live session, or `0` if none / stale / expired / burned.
-     */
-    function getDirectorOperatorLiveAt(uint256 tokenId) public view override returns (uint256) {
-        (bool live,) = _liveSessionKey(tokenId);
-        if (!live) return 0;
-        return _getChamberStorage().directorSession[tokenId].liveAt;
-    }
 
     /**
      * @notice Stored session fields for `tokenId` (raw; not liveness-filtered).
@@ -456,7 +414,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
      * @param tokenId The tokenId proposing the update
      * @param numOfSeats The new number of seats
      */
-    function updateSeats(uint256 tokenId, uint256 numOfSeats) public override nonReentrant isDirector(tokenId) {
+    function updateSeats(uint256 tokenId, uint256 numOfSeats) public override directorCall(tokenId) {
         if (numOfSeats == 0) revert IChamber.ZeroSeats();
         if (numOfSeats > MAX_SEATS) revert IChamber.TooManySeats();
         _setSeats(tokenId, numOfSeats, getQuorum());
@@ -469,7 +427,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
      * @param tokenId Director token authorizing the recovery
      * @param newSeats Seat count after recovery
      */
-    function recoverSeats(uint256 tokenId, uint256 newSeats) public override nonReentrant isDirector(tokenId) {
+    function recoverSeats(uint256 tokenId, uint256 newSeats) public override directorCall(tokenId) {
         ChamberStorage storage $ = _getChamberStorage();
         uint256 currentSeats = _getSeats();
         uint256 filled = _countFilledSeats();
@@ -485,7 +443,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
      * @notice Executes a pending seat update proposal if it has enough support and the timelock has expired
      * @param tokenId The tokenId executing the update
      */
-    function executeSeatsUpdate(uint256 tokenId) public override nonReentrant isDirector(tokenId) {
+    function executeSeatsUpdate(uint256 tokenId) public override directorCall(tokenId) {
         _executeSeatsUpdate(tokenId, _getChamberStorage().nft, getQuorum());
     }
 
@@ -493,7 +451,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
      * @notice Deletes the pending seat-update proposal
      * @param tokenId The tokenId requesting cancellation
      */
-    function cancelSeatUpdate(uint256 tokenId) public override nonReentrant isDirector(tokenId) {
+    function cancelSeatUpdate(uint256 tokenId) public override directorCall(tokenId) {
         _cancelSeatUpdate(tokenId);
     }
 
@@ -509,12 +467,9 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
     function submitTransaction(uint256 tokenId, address target, uint256 value, bytes memory data)
         public
         override
-        nonReentrant
-        isDirector(tokenId)
+        directorCall(tokenId)
     {
-        _validateTransaction(target, value, data);
-        _submitTransaction(tokenId, target, value, data);
-        emit IChamber.TransactionSubmitted(getNextTransactionId() - 1, target, value);
+        _submitOne(tokenId, target, value, data, "", 0);
     }
 
     /**
@@ -528,12 +483,9 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
     function submitTransaction(uint256 tokenId, address target, uint256 value, bytes memory data, uint256 deadline)
         public
         override
-        nonReentrant
-        isDirector(tokenId)
+        directorCall(tokenId)
     {
-        _validateTransaction(target, value, data);
-        _submitTransaction(tokenId, target, value, data, deadline);
-        emit IChamber.TransactionSubmitted(getNextTransactionId() - 1, target, value);
+        _submitOne(tokenId, target, value, data, "", deadline);
     }
 
     /**
@@ -550,10 +502,8 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
         uint256 value,
         bytes memory data,
         string memory metadataURI
-    ) public override nonReentrant isDirector(tokenId) {
-        _validateTransaction(target, value, data);
-        _submitTransactionWithMetadata(tokenId, target, value, data, metadataURI);
-        emit IChamber.TransactionSubmitted(getNextTransactionId() - 1, target, value);
+    ) public override directorCall(tokenId) {
+        _submitOne(tokenId, target, value, data, metadataURI, 0);
     }
 
     /**
@@ -572,10 +522,8 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
         bytes memory data,
         string memory metadataURI,
         uint256 deadline
-    ) public override nonReentrant isDirector(tokenId) {
-        _validateTransaction(target, value, data);
-        _submitTransactionWithMetadata(tokenId, target, value, data, metadataURI, deadline);
-        emit IChamber.TransactionSubmitted(getNextTransactionId() - 1, target, value);
+    ) public override directorCall(tokenId) {
+        _submitOne(tokenId, target, value, data, metadataURI, deadline);
     }
 
     /**
@@ -586,17 +534,9 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
     function confirmTransaction(uint256 tokenId, uint256 transactionId)
         public
         override
-        nonReentrant
-        isDirector(tokenId)
+        directorCall(tokenId)
     {
-        WalletTypes.WalletStorage storage $w = _getWalletStorage();
-        if (transactionId >= $w.transactions.length) revert IWallet.TransactionDoesNotExist();
-        WalletTypes.Transaction storage transaction = $w.transactions[transactionId];
-        if (transaction.executed) revert IWallet.TransactionAlreadyExecuted();
-        if ($w.isConfirmed[transactionId][tokenId]) revert IWallet.TransactionAlreadyConfirmed();
-
-        _confirmTransaction(tokenId, transactionId);
-        emit IChamber.TransactionConfirmed(transactionId, msg.sender);
+        _confirmOne(tokenId, transactionId);
     }
 
     /**
@@ -613,9 +553,20 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
     function executeTransaction(uint256 tokenId, uint256 transactionId, bytes calldata data)
         public
         override
-        nonReentrant
-        isDirector(tokenId)
+        directorCall(tokenId)
     {
+        _executeOne(tokenId, transactionId, data);
+    }
+
+    /// @dev Shared by single and batch confirm. WalletLib checks exists / executed / cancelled /
+    ///      expired / already confirmed.
+    function _confirmOne(uint256 tokenId, uint256 transactionId) private {
+        _confirmTransaction(tokenId, transactionId);
+        emit IChamber.TransactionConfirmed(transactionId, msg.sender);
+    }
+
+    /// @dev Shared by single and batch execute.
+    function _executeOne(uint256 tokenId, uint256 transactionId, bytes calldata data) private {
         WalletTypes.WalletStorage storage $w = _getWalletStorage();
         if (transactionId >= $w.transactions.length) revert IWallet.TransactionDoesNotExist();
         WalletTypes.Transaction storage transaction = $w.transactions[transactionId];
@@ -651,8 +602,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
     function cancelTransaction(uint256 tokenId, uint256 transactionId)
         public
         override
-        nonReentrant
-        isDirector(tokenId)
+        directorCall(tokenId)
     {
         WalletTypes.WalletStorage storage $w = _getWalletStorage();
         if (transactionId >= $w.transactions.length) revert IWallet.TransactionDoesNotExist();
@@ -679,7 +629,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
         address[] memory targets,
         uint256[] memory values,
         bytes[] memory data
-    ) public override nonReentrant isDirector(tokenId) {
+    ) public override directorCall(tokenId) {
         if (targets.length != values.length || values.length != data.length) {
             revert IChamber.ArrayLengthsMustMatch();
         }
@@ -697,20 +647,25 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
         }
 
         for (uint256 i = 0; i < targets.length;) {
-            if (targets[i] == address(0)) revert IChamber.ZeroAddress();
-
-            if (targets[i] == address(this)) {
-                _requireAllowedSelfCall(data[i]);
-            } else {
-                _requireNoThirdPartyPull(targets[i], asset(), data[i]);
-            }
-
-            _submitTransaction(tokenId, targets[i], values[i], data[i]);
-            emit IChamber.TransactionSubmitted(getNextTransactionId() - 1, targets[i], values[i]);
+            _submitOne(tokenId, targets[i], values[i], data[i], "", 0);
             unchecked {
                 ++i;
             }
         }
+    }
+
+    /// @dev Shared by every submit entry point: validate, record, emit.
+    function _submitOne(
+        uint256 tokenId,
+        address target,
+        uint256 value,
+        bytes memory data,
+        string memory metadataURI,
+        uint256 deadline
+    ) private {
+        _validateTransaction(target, value, data);
+        _submitTransactionWithMetadata(tokenId, target, value, data, metadataURI, deadline);
+        emit IChamber.TransactionSubmitted(getTransactionCount() - 1, target, value);
     }
 
     /// @dev Snapshot live quorum onto each newly submitted wallet transaction (M-04).
@@ -776,22 +731,12 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
     function confirmBatchTransactions(uint256 tokenId, uint256[] memory transactionIds)
         public
         override
-        nonReentrant
-        isDirector(tokenId)
+        directorCall(tokenId)
     {
         if (transactionIds.length == 0) revert IChamber.ZeroAmount();
 
-        WalletTypes.WalletStorage storage $w = _getWalletStorage();
         for (uint256 i = 0; i < transactionIds.length;) {
-            uint256 transactionId = transactionIds[i];
-            if (transactionId >= $w.transactions.length) revert IWallet.TransactionDoesNotExist();
-            WalletTypes.Transaction storage transaction = $w.transactions[transactionId];
-
-            if (transaction.executed) revert IWallet.TransactionAlreadyExecuted();
-            if ($w.isConfirmed[transactionId][tokenId]) revert IWallet.TransactionAlreadyConfirmed();
-
-            _confirmTransaction(tokenId, transactionId);
-            emit IChamber.TransactionConfirmed(transactionId, msg.sender);
+            _confirmOne(tokenId, transactionIds[i]);
             unchecked {
                 ++i;
             }
@@ -812,27 +757,13 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
     function executeBatchTransactions(uint256 tokenId, uint256[] memory transactionIds, bytes[] calldata data)
         public
         override
-        nonReentrant
-        isDirector(tokenId)
+        directorCall(tokenId)
     {
         if (transactionIds.length == 0) revert IChamber.ZeroAmount();
         if (transactionIds.length != data.length) revert IChamber.ArrayLengthsMustMatch();
 
-        WalletTypes.WalletStorage storage $w = _getWalletStorage();
         for (uint256 i = 0; i < transactionIds.length;) {
-            uint256 transactionId = transactionIds[i];
-            if (transactionId >= $w.transactions.length) revert IWallet.TransactionDoesNotExist();
-            WalletTypes.Transaction storage transaction = $w.transactions[transactionId];
-
-            if (transaction.executed) revert IWallet.TransactionAlreadyExecuted();
-            _notExpired(transactionId);
-            if (_countLiveConfirmFlags(transactionId) < _requiredConfirmations(transactionId)) {
-                revert IChamber.NotEnoughConfirmations();
-            }
-            _requireWalletExecuteAllowed(transaction.target, transactionId, data[i]);
-
-            _executeTransaction(tokenId, transactionId, data[i]);
-            emit IChamber.TransactionExecuted(transactionId, msg.sender);
+            _executeOne(tokenId, transactionIds[i], data[i]);
             unchecked {
                 ++i;
             }
@@ -871,10 +802,19 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
     ///      in the current top seats. Each top-seat token may confirm once per proposal. An address
     ///      that holds `quorum` distinct top-seat membership NFTs can submit, self-confirm, and
     ///      execute — a single-actor treasury. This is intended; confirmations are not capped per owner.
-    modifier isDirector(uint256 tokenId) {
+    modifier directorCall(uint256 tokenId) {
+        _enterAsDirector(tokenId);
+        _;
+        _REENTRANCY_GUARD_SLOT.asBoolean().tstore(false);
+    }
+
+    /// @dev `nonReentrant` entry plus the director check, kept out of line so every director
+    ///      entry point shares one copy. Same transient slot and error as OpenZeppelin's guard.
+    function _enterAsDirector(uint256 tokenId) private {
+        if (_reentrancyGuardEntered()) revert ReentrancyGuardReentrantCall();
+        _REENTRANCY_GUARD_SLOT.asBoolean().tstore(true);
         _syncSeatingControl(_getChamberStorage().nft, tokenId);
         _isDirector(tokenId);
-        _;
     }
 
     /// @notice Verifies `msg.sender` controls `tokenId` and that `tokenId` is a current director seat.
@@ -891,7 +831,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
     ///      Session keys are also gated by expiry, optional scope, and confirm/execute delay.
     function _requireTokenAuthorized(uint256 tokenId) internal view {
         if (tokenId == 0) revert IChamber.NotDirector();
-        address owner = _getChamberStorage().nft.ownerOf(tokenId);
+        address owner = _ownerOf(tokenId);
         if (owner == msg.sender) return;
         if (_isLiveSessionKey(tokenId, owner, msg.sender) && _sessionMayAct(tokenId, msg.sig)) return;
         revert IChamber.NotDirector();
@@ -900,12 +840,10 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
     /// @dev View-safe: burned or tokenId 0 is unauthorized rather than reverting.
     function _isTokenAuthorized(uint256 tokenId, address account) internal view returns (bool) {
         if (tokenId == 0 || account == address(0)) return false;
-        try _getChamberStorage().nft.ownerOf(tokenId) returns (address owner) {
-            if (account == owner) return true;
-            return _isLiveSessionKey(tokenId, owner, account);
-        } catch {
-            return false;
-        }
+        address owner = _ownerOfOrZero(tokenId);
+        if (owner == address(0)) return false;
+        if (account == owner) return true;
+        return _isLiveSessionKey(tokenId, owner, account);
     }
 
     /// @dev Session key is live only for the current contract owner that registered it,
@@ -966,13 +904,11 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
     /// @dev `(true, operator)` when a live (unexpired) session exists; otherwise `(false, 0)`.
     function _liveSessionKey(uint256 tokenId) internal view returns (bool, address) {
         if (tokenId == 0) return (false, address(0));
-        try _getChamberStorage().nft.ownerOf(tokenId) returns (address owner) {
-            DirectorSession storage session = _getChamberStorage().directorSession[tokenId];
-            if (!_isLiveSessionKey(tokenId, owner, session.operator)) return (false, address(0));
-            return (true, session.operator);
-        } catch {
-            return (false, address(0));
-        }
+        address owner = _ownerOfOrZero(tokenId);
+        if (owner == address(0)) return (false, address(0));
+        address operator = _getChamberStorage().directorSession[tokenId].operator;
+        if (!_isLiveSessionKey(tokenId, owner, operator)) return (false, address(0));
+        return (true, operator);
     }
 
     /// @dev True when `tokenId` is among the current top `_getSeats()` nodes.
@@ -1011,7 +947,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
         uint256 deadline
     ) internal override {
         super._submitTransactionWithMetadata(tokenId, target, value, data, metadataURI, deadline);
-        uint256 nonce = getNextTransactionId() - 1;
+        uint256 nonce = getTransactionCount() - 1;
         if (_getWalletStorage().isConfirmed[nonce][tokenId]) {
             _getChamberStorage().confirmOwner[nonce][tokenId] = _ownerOfOrZero(tokenId);
         }
@@ -1020,7 +956,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
     /// @dev Submit votes for the owner, and for a session key only when it could confirm right
     ///      now (CONFIRM scope and past `liveAt`). A propose-only key submits without a vote (R-1012-M2).
     function _submitAutoConfirms(uint256 tokenId) internal view override returns (bool) {
-        if (_getChamberStorage().nft.ownerOf(tokenId) == msg.sender) return true;
+        if (_ownerOf(tokenId) == msg.sender) return true;
         return _sessionMayAct(tokenId, IWallet.confirmTransaction.selector);
     }
 
@@ -1032,6 +968,11 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
     function _recordCancelVote(uint256 tokenId, uint256 nonce) internal override {
         super._recordCancelVote(tokenId, nonce);
         _getChamberStorage().cancelOwner[nonce][tokenId] = _ownerOfOrZero(tokenId);
+    }
+
+    /// @dev `ownerOf` that bubbles the revert for burned ids.
+    function _ownerOf(uint256 tokenId) private view returns (address) {
+        return _getChamberStorage().nft.ownerOf(tokenId);
     }
 
     function _ownerOfOrZero(uint256 tokenId) internal view returns (address owner) {
@@ -1069,17 +1010,9 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
      * @return The ProxyAdmin address stored in ERC1967 admin slot
      */
     function getProxyAdmin() external view override returns (address) {
-        bytes32 adminSlot = 0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
-        return StorageSlot.getAddressSlot(adminSlot).value;
+        return StorageSlot.getAddressSlot(_ADMIN_SLOT).value;
     }
 
-    /**
-     * @notice Accepts admin ownership of the ProxyAdmin (called by Registry after deployment)
-     * @dev This is a no-op since Registry transfers ownership directly
-     */
-    function acceptAdmin() external override {
-        // No-op: Registry transfers ProxyAdmin ownership directly
-    }
 
     /**
      * @notice Pauses vault operations and wallet execution after board quorum.
@@ -1116,7 +1049,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
      */
     function upgradeImplementation(address newImplementation, bytes calldata data) external override {
         if (msg.sender != address(this)) revert IChamber.NotAuthorized();
-        address proxyAdminAddress = this.getProxyAdmin();
+        address proxyAdminAddress = StorageSlot.getAddressSlot(_ADMIN_SLOT).value;
         if (proxyAdminAddress == address(0)) revert IChamber.ZeroAddress();
         if (newImplementation == address(0)) revert IChamber.ZeroAddress();
 
@@ -1303,13 +1236,6 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
         return true;
     }
 
-    /**
-     * @notice Returns the next transaction ID (current nonce)
-     * @return uint256 The next transaction ID that will be assigned
-     */
-    function getNextTransactionId() public view override(IWallet, Wallet) returns (uint256) {
-        return getTransactionCount();
-    }
 
     /// @inheritdoc IWallet
     function getCancelled(uint256 nonce) public view override(IWallet, Wallet) returns (bool) {
@@ -1321,10 +1247,6 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
         return super.getTransactionDeadline(nonce);
     }
 
-    /// @inheritdoc IWallet
-    function isTransactionExpired(uint256 nonce) public view override(IWallet, Wallet) returns (bool) {
-        return super.isTransactionExpired(nonce);
-    }
 
     /// @inheritdoc IWallet
     function getCancelConfirmation(uint256 tokenId, uint256 nonce)

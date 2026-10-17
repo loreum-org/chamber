@@ -9,6 +9,7 @@ import {IERC1271} from "lib/openzeppelin-contracts/contracts/interfaces/IERC1271
 import {MockERC20} from "test/mock/MockERC20.sol";
 import {MockERC721} from "test/mock/MockERC721.sol";
 import {DeployChamber} from "test/utils/DeployChamber.sol";
+import {ChamberReads} from "test/utils/ChamberReads.sol";
 
 /// @dev Contract NFT owner that can register a session key (same pattern as Chamber.t.sol).
 contract MockERC1271Wallet {
@@ -132,7 +133,7 @@ contract FindingPMNM02InertSeatedNftTest is Test {
         vm.prank(user2);
         nft.transferFrom(user2, address(inert), 2);
         assertEq(nft.ownerOf(2), address(inert));
-        assertEq(chamber.getDirectorOperator(2), address(0), "no live session key");
+        assertEq(ChamberReads.directorOperator(chamber, 2), address(0), "no live session key");
 
         assertTrue(chamber.getConfirmation(2, 0), "stored bit is still set");
         (, uint8 stored,,,) = chamber.getTransaction(0);
@@ -194,12 +195,12 @@ contract FindingPMNM02InertSeatedNftTest is Test {
                 chamber.setDirectorOperator, (4, sessionKey, block.timestamp + 30 days, chamber.SESSION_SCOPE_UNSCOPED())
             )
         );
-        assertEq(chamber.getDirectorOperator(4), sessionKey);
+        assertEq(ChamberReads.directorOperator(chamber, 4), sessionKey);
         assertTrue(chamber.isTokenAuthorized(4, sessionKey));
         assertTrue(_inTop(4));
 
         nft.burn(4);
-        assertEq(chamber.getDirectorOperator(4), address(0), "session key is stale after burn");
+        assertEq(ChamberReads.directorOperator(chamber, 4), address(0), "session key is stale after burn");
         assertFalse(chamber.isTokenAuthorized(4, sessionKey));
 
         chamber.cleanupInertSeat(4);

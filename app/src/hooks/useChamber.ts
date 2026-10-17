@@ -8,7 +8,7 @@ import { isSeatingMature } from '@/lib/chamberGovernance'
 import { getAlchemyApiKeyFromEnv } from '@/lib/alchemy'
 import { listOwnedErc721TokenIds } from '@/lib/ownedErc721'
 import { isOnchainContractBytecode } from '@/lib/address'
-import { asUint32 } from '@/lib/directorSession'
+import { asUint32, isLiveSession } from '@/lib/directorSession'
 import type { Transaction, BoardMember, SeatUpdate } from '@/types'
 import { useInvalidateOnReceipt } from './invalidateChamberQueries'
 
@@ -970,67 +970,91 @@ export type DirectorSessionView = {
   isLive: boolean
 }
 
+type RawDirectorSession = readonly [`0x${string}`, `0x${string}`, bigint, number | bigint, bigint]
+
+/**
+ * Raw `getDirectorSession` per tokenId plus its live operator. Live means both the
+ * stored operator and the stored session owner pass `isTokenAuthorized` (see `isLiveSession`).
+ */
+export function useLiveDirectorSessions(
+  chamberAddress: `0x${string}` | undefined,
+  tokenIds: readonly bigint[],
+  opts?: { enabled?: boolean },
+) {
+  const enabled = !!chamberAddress && tokenIds.length > 0 && (opts?.enabled ?? true)
+  const { data: rawResults, refetch: refetchRaw, isFetched: rawFetched } = useReadContracts({
+    contracts: tokenIds.map((tokenId) => ({
+      address: chamberAddress,
+      abi: chamberAbi,
+      functionName: 'getDirectorSession' as const,
+      args: [tokenId] as const,
+    })),
+    query: { enabled, staleTime: 0, retry: false },
+  })
+  const raws = tokenIds.map((_, i) =>
+    rawResults?.[i]?.status === 'success' ? (rawResults[i].result as RawDirectorSession) : undefined,
+  )
+  // Two reads per token: operator, then the stored session owner (see `isLiveSession`).
+  const { data: authResults, refetch: refetchAuth, isFetched: authFetched } = useReadContracts({
+    contracts: tokenIds.flatMap((tokenId, i) =>
+      [raws[i]?.[1], raws[i]?.[0]].map((account) => ({
+        address: chamberAddress,
+        abi: chamberAbi,
+        functionName: 'isTokenAuthorized' as const,
+        args: [tokenId, account ?? zeroAddress] as const,
+      })),
+    ),
+    query: { enabled: enabled && rawResults !== undefined, staleTime: 0, retry: false },
+  })
+  const authorized = (index: number) =>
+    authResults?.[index]?.status === 'success' && authResults[index].result === true
+
+  const sessions = tokenIds.map((_, i) => {
+    const raw = raws[i]
+    const rawOperator = raw?.[1]
+    const live = isLiveSession({
+      rawOperator,
+      operatorAuthorized: authorized(i * 2),
+      sessionOwnerAuthorized: authorized(i * 2 + 1),
+    })
+    const liveOperator: `0x${string}` | undefined = raw === undefined ? undefined : live ? rawOperator : zeroAddress
+    return { raw, liveOperator, isLive: live }
+  })
+
+  const refetch = async () => {
+    await refetchRaw()
+    return refetchAuth()
+  }
+
+  return { sessions, refetch, isFetched: rawFetched && (authFetched || rawResults === undefined) }
+}
+
 /**
  * Live session key plus raw `getDirectorSession` leftovers for `tokenId`.
- * Live getters return zero when the session is unset, stale, expired, or EOA-owned.
+ * Live values are zero when the session is unset, stale, expired, or EOA-owned.
  */
 export function useDirectorSession(
   chamberAddress: `0x${string}` | undefined,
   tokenId: bigint | undefined,
 ) {
-  const enabled = !!chamberAddress && tokenId !== undefined
-  const { data, refetch, isFetched } = useReadContracts({
-    contracts: [
-      {
-        address: chamberAddress,
-        abi: chamberAbi,
-        functionName: 'getDirectorOperator',
-        args: tokenId !== undefined ? [tokenId] : undefined,
-      },
-      {
-        address: chamberAddress,
-        abi: chamberAbi,
-        functionName: 'getDirectorOperatorScope',
-        args: tokenId !== undefined ? [tokenId] : undefined,
-      },
-      {
-        address: chamberAddress,
-        abi: chamberAbi,
-        functionName: 'getDirectorOperatorLiveAt',
-        args: tokenId !== undefined ? [tokenId] : undefined,
-      },
-      {
-        address: chamberAddress,
-        abi: chamberAbi,
-        functionName: 'getDirectorSession',
-        args: tokenId !== undefined ? [tokenId] : undefined,
-      },
-    ],
-    query: {
-      enabled,
-      staleTime: 0,
-      retry: false,
-    },
-  })
-
-  const liveOperator = data?.[0]?.status === 'success' ? (data[0].result as `0x${string}`) : undefined
-  const liveScope = data?.[1]?.status === 'success' ? asUint32(data[1].result) : 0
-  const liveAt = data?.[2]?.status === 'success' ? (data[2].result as bigint) : 0n
-  const raw = data?.[3]?.status === 'success'
-    ? (data[3].result as readonly [string, string, bigint, number | bigint, bigint])
-    : undefined
+  const { sessions, refetch, isFetched } = useLiveDirectorSessions(
+    chamberAddress,
+    tokenId !== undefined ? [tokenId] : [],
+  )
+  const current = sessions[0]
+  const raw = current?.raw
+  const isLive = !!current?.isLive
 
   const sessionOwner = raw?.[0] as `0x${string}` | undefined
   const rawOperator = raw?.[1] as `0x${string}` | undefined
   const expiry = raw?.[2] ?? 0n
   const rawScope = asUint32(raw?.[3])
   const rawLiveAt = raw?.[4] ?? 0n
-  const isLive = !!liveOperator && liveOperator !== zeroAddress
 
   const session: DirectorSessionView = {
-    liveOperator,
-    liveScope,
-    liveAt,
+    liveOperator: current?.liveOperator,
+    liveScope: isLive ? rawScope : 0,
+    liveAt: isLive ? rawLiveAt : 0n,
     sessionOwner,
     rawOperator,
     expiry,
@@ -1159,30 +1183,16 @@ export function useDirectorActionGate(
     [memberTokenKey],
   )
 
-  const { data: operatorResults } = useReadContracts({
-    contracts: memberTokenIds.map((tokenId) => ({
-      address: chamberAddress,
-      abi: chamberAbi,
-      functionName: 'getDirectorOperator' as const,
-      args: [tokenId] as const,
-    })),
-    query: {
-      enabled:
-        !!chamberAddress &&
-        !!userAddress &&
-        memberTokenIds.length > 0,
-      retry: false,
-    },
+  const { sessions: memberSessions } = useLiveDirectorSessions(chamberAddress, memberTokenIds, {
+    enabled: !!userAddress,
   })
 
   let operatorTokenId: bigint | undefined
   let operatorOwner: `0x${string}` | undefined
   let sessionOperator: `0x${string}` | undefined
-  if (userAddress && operatorResults && directors) {
-    for (let i = 0; i < operatorResults.length; i++) {
-      const result = operatorResults[i]
-      if (result.status !== 'success' || typeof result.result !== 'string') continue
-      const op = result.result as `0x${string}`
+  if (userAddress && directors) {
+    for (let i = 0; i < memberSessions.length; i++) {
+      const op = memberSessions[i].liveOperator
       if (!op || op === zeroAddress) continue
 
       if (ownerTokenId !== undefined && memberTokenIds[i] === ownerTokenId) {
