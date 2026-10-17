@@ -11,7 +11,7 @@ Given RPC + a signer + a chamber address:
 | Action | Chamber function |
 | --- | --- |
 | Read board + quorum | `getTop`, `getSeats`, `getQuorum`, `getDirectors`, `getSeatedAt`, `paused` |
-| Read session key | `getDirectorOperator`, `getDirectorOperatorScope`, `getDirectorOperatorLiveAt`, `getDirectorSession` (client methods; live = `getDirectorSession` + `isTokenAuthorized`) |
+| Read session key | `getDirectorOperator`, `getDirectorOperatorScope`, `getDirectorOperatorLiveAt`, `getDirectorSession` (client methods; live = `getDirectorSession` + `isTokenAuthorized` for both the stored operator and session owner) |
 | Delegate | `delegate` |
 | Undelegate | `undelegate` |
 | Submit | `submitTransaction` |
