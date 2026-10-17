@@ -6,6 +6,7 @@ import {IChamber} from "src/interfaces/IChamber.sol";
 import {MockERC20} from "test/mock/MockERC20.sol";
 import {MockERC721} from "test/mock/MockERC721.sol";
 import {DeployChamber} from "test/utils/DeployChamber.sol";
+import {ChamberReads} from "test/utils/ChamberReads.sol";
 
 /**
  * @title R-1012-DOS1: delegations stranded by eviction are later subtracted from a re-inserted node
@@ -65,7 +66,7 @@ contract FindingR1012StaleEvictedSubtractionTest is Test {
         vm.stopPrank();
         (uint256 id,,,) = chamber.getMember(T);
         assertEq(id, 0, "T evicted");
-        assertEq(chamber.getHolderDelegation(attacker, T), 50, "stranded delegation kept");
+        assertEq(ChamberReads.holderDelegation(chamber, attacker, T), 50, "stranded delegation kept");
     }
 
     function test_strandedUndelegateDoesNotReduceNewNode() public {
@@ -79,7 +80,7 @@ contract FindingR1012StaleEvictedSubtractionTest is Test {
 
         (, uint256 amount,,) = chamber.getMember(T);
         assertEq(amount, 1000, "victim's node weight must be untouched");
-        assertEq(chamber.getHolderDelegation(attacker, T), 0);
+        assertEq(ChamberReads.holderDelegation(chamber, attacker, T), 0);
     }
 
     function test_victimCanFullyUndelegateAndRedeem() public {
@@ -106,12 +107,12 @@ contract FindingR1012StaleEvictedSubtractionTest is Test {
         chamber.delegate(T, 10); // re-inserts T with only the new 10
         (, uint256 amount,,) = chamber.getMember(T);
         assertEq(amount, 10);
-        assertEq(chamber.getHolderDelegation(attacker, T), 60);
+        assertEq(ChamberReads.holderDelegation(chamber, attacker, T), 60);
 
         vm.prank(attacker);
         chamber.undelegate(T, 60);
         (uint256 id,,,) = chamber.getMember(T);
         assertEq(id, 0);
-        assertEq(chamber.getHolderDelegation(attacker, T), 0);
+        assertEq(ChamberReads.holderDelegation(chamber, attacker, T), 0);
     }
 }

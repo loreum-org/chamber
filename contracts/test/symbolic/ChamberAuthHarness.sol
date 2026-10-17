@@ -253,7 +253,7 @@ contract ChamberAuthHarness is Board, Wallet {
         uint256 deadline
     ) internal override {
         super._submitTransactionWithMetadata(tokenId, target, value, data, metadataURI, deadline);
-        uint256 nonce = getNextTransactionId() - 1;
+        uint256 nonce = getTransactionCount() - 1;
         if (_getWalletStorage().isConfirmed[nonce][tokenId]) {
             confirmOwner[nonce][tokenId] = _ownerOfOrZero(tokenId);
         }

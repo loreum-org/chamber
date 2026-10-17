@@ -205,10 +205,7 @@ Returns total number of nodes in board.
 #### `getQuorum() → uint256`
 Returns current quorum requirement.
 
-**Returns**: Quorum value (`1 + (n * 51) / 100`) where `n` is reachable authorized top-seat directors (`getReachableDirectorCount`). Empty seats and burned or chamber-held tokenIds do not inflate `n`. One- and two-director boards require all reachable directors.
-
-#### `getReachableDirectorCount() → uint256`
-Returns how many top-seat tokenIds can still authorize (`ownerOf` succeeds, owner is not the chamber).
+**Returns**: Quorum value (`1 + (n * 51) / 100`) where `n` is occupied top seats, `min(getSeats(), getSize())`. Empty seats and burned or chamber-held tokenIds do not inflate `n`. One- and two-director boards require all reachable directors.
 
 #### `recoverSeats(uint256 tokenId, uint256 newSeats)`
 Lowers configured `seats` when filled authorized directors are below the configured-seat quorum. Dedicated recovery path; not an allowed wallet self-call.
@@ -469,13 +466,6 @@ Checks if transaction is confirmed by tokenId.
 - `nonce`: Transaction index
 
 **Returns**: `true` if confirmed, `false` otherwise
-
----
-
-#### `getNextTransactionId() → uint256`
-Returns next transaction ID.
-
-**Returns**: Next transaction ID (equal to transaction count)
 
 ---
 

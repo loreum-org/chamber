@@ -43,9 +43,9 @@ test('generated-plus-IChamber ABI exposes the M04 4-arg session-key surface', ()
     setFn.inputs.map((input) => input.type),
     ['uint256', 'address', 'uint256', 'uint32'],
   )
-  assert.ok(abiItem('function', 'getDirectorOperator'))
-  assert.ok(abiItem('function', 'getDirectorOperatorScope'))
-  assert.ok(abiItem('function', 'getDirectorOperatorLiveAt'))
+  // Live session = getDirectorSession + isTokenAuthorized; the per-field live getters were removed.
+  assert.equal(abiItem('function', 'getDirectorOperator'), undefined)
+  assert.ok(abiItem('function', 'isTokenAuthorized'))
   assert.ok(abiItem('function', 'getDirectorSession'))
   const event = abiItem('event', 'DirectorOperatorSet')
   assert.ok(event && 'inputs' in event)
@@ -55,7 +55,7 @@ test('generated-plus-IChamber ABI exposes the M04 4-arg session-key surface', ()
   )
   assert.ok(abiItem('error', 'InvalidSessionExpiry'))
   assert.ok(abiItem('error', 'InvalidSessionScope'))
-  assert.equal(directorOperatorAbi.length, 8)
+  assert.equal(directorOperatorAbi.length, 5)
 })
 
 test('chamberAbi encodes 4-arg setDirectorOperator and live readers', () => {
@@ -84,9 +84,6 @@ test('chamberAbi encodes 4-arg setDirectorOperator and live readers', () => {
   assert.equal(clearDecoded.args[3], 0)
 
   for (const [functionName, expected] of [
-    ['getDirectorOperator', [3n]],
-    ['getDirectorOperatorScope', [3n]],
-    ['getDirectorOperatorLiveAt', [3n]],
     ['getDirectorSession', [3n]],
   ] as const) {
     const data = encodeFunctionData({ abi: chamberAbi, functionName, args: [3n] })

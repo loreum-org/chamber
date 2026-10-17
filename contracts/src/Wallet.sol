@@ -202,11 +202,6 @@ abstract contract Wallet {
         return _getWalletStorage().transactionDeadline[nonce];
     }
 
-    function isTransactionExpired(uint256 nonce) public view virtual returns (bool) {
-        _txExists(nonce);
-        uint256 deadline = _getWalletStorage().transactionDeadline[nonce];
-        return deadline != 0 && block.timestamp > deadline;
-    }
 
     function getCancelConfirmation(uint256 tokenId, uint256 nonce) public view virtual returns (bool) {
         return _getWalletStorage().isCancelConfirmed[nonce][tokenId];
@@ -216,12 +211,5 @@ abstract contract Wallet {
         return _getWalletStorage().cancelConfirmations[nonce];
     }
 
-    function getNextTransactionId() public view virtual returns (uint256) {
-        return _getWalletStorage().transactions.length;
-    }
 
-    function getCurrentNonce() public view returns (uint256) {
-        uint256 len = _getWalletStorage().transactions.length;
-        return len > 0 ? len - 1 : 0;
-    }
 }

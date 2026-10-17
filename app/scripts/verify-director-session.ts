@@ -55,9 +55,8 @@ function testSetDirectorOperatorAbi() {
 }
 
 function testSessionReaders() {
-  assert.equal(abiFn('getDirectorOperator').outputs?.[0]?.type, 'address')
-  assert.equal(abiFn('getDirectorOperatorScope').outputs?.[0]?.type, 'uint32')
-  assert.equal(abiFn('getDirectorOperatorLiveAt').outputs?.[0]?.type, 'uint256')
+  // Live session = getDirectorSession + isTokenAuthorized(tokenId, operator).
+  assert.equal(abiFn('isTokenAuthorized').outputs?.[0]?.type, 'bool')
   assert.deepEqual(
     abiFn('getDirectorSession').outputs?.map((output) => output.name),
     ['sessionOwner', 'operator', 'expiry', 'scope', 'liveAt'],

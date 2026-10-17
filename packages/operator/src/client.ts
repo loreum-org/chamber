@@ -12,6 +12,7 @@ import {
   defineChain,
   http,
   isHex,
+  zeroAddress,
 } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { chamberAbi } from './abi.ts'
@@ -342,13 +343,7 @@ export class ChamberOperator {
           functionName: 'getTransaction',
           args: [nonce],
         })
-      const [expired, deadline, requiredQuorum, cancelled] = await Promise.all([
-        this.publicClient.readContract({
-          address: this.chamber,
-          abi: chamberAbi,
-          functionName: 'isTransactionExpired',
-          args: [nonce],
-        }),
+      const [deadline, requiredQuorum, cancelled, block] = await Promise.all([
         this.publicClient.readContract({
           address: this.chamber,
           abi: chamberAbi,
@@ -367,7 +362,10 @@ export class ChamberOperator {
           functionName: 'getCancelled',
           args: [nonce],
         }),
+        this.publicClient.getBlock(),
       ])
+      // Same rule as the contract: deadline 0 never expires.
+      const expired = deadline !== 0n && block.timestamp > deadline
       return {
         nonce,
         executed,
@@ -428,21 +426,34 @@ export class ChamberOperator {
   }
 
   /**
+   * Raw session plus whether its operator is live right now. Live means
+   * `isTokenAuthorized(tokenId, operator)`: same owner, owner is a contract,
+   * not expired. Chamber never consults ERC-1271.
+   */
+  private async liveSession(tokenId: bigint): Promise<{ raw: DirectorSessionRaw; live: boolean }> {
+    const raw = await this.getDirectorSession(tokenId)
+    if (isZeroAddress(raw.operator)) return { raw, live: false }
+    try {
+      const live = await this.publicClient.readContract({
+        address: this.chamber,
+        abi: chamberAbi,
+        functionName: 'isTokenAuthorized',
+        args: [tokenId, raw.operator],
+      })
+      return { raw, live }
+    } catch (error) {
+      throw wrapChamberError(error, 'Failed to read director operator')
+    }
+  }
+
+  /**
    * Live session key for `tokenId`, or `address(0)` if unset, stale, expired,
    * or the NFT is EOA-owned. Does not apply scope or the confirm/execute delay.
    * Chamber never consults ERC-1271.
    */
   async getDirectorOperator(tokenId: bigint): Promise<Address> {
-    try {
-      return await this.publicClient.readContract({
-        address: this.chamber,
-        abi: chamberAbi,
-        functionName: 'getDirectorOperator',
-        args: [tokenId],
-      })
-    } catch (error) {
-      throw wrapChamberError(error, 'Failed to read director operator')
-    }
+    const { raw, live } = await this.liveSession(tokenId)
+    return live ? raw.operator : zeroAddress
   }
 
   /**
@@ -450,17 +461,8 @@ export class ChamberOperator {
    * `0` means no live session, not unscoped (`SESSION_SCOPE_UNSCOPED`).
    */
   async getDirectorOperatorScope(tokenId: bigint): Promise<number> {
-    try {
-      const scope = await this.publicClient.readContract({
-        address: this.chamber,
-        abi: chamberAbi,
-        functionName: 'getDirectorOperatorScope',
-        args: [tokenId],
-      })
-      return asUint32(scope)
-    } catch (error) {
-      throw wrapChamberError(error, 'Failed to read director operator scope')
-    }
+    const { raw, live } = await this.liveSession(tokenId)
+    return live ? raw.scope : 0
   }
 
   /**
@@ -468,16 +470,8 @@ export class ChamberOperator {
    * stale / expired / burned. Confirm/execute require `block.number >= liveAt`.
    */
   async getDirectorOperatorLiveAt(tokenId: bigint): Promise<bigint> {
-    try {
-      return await this.publicClient.readContract({
-        address: this.chamber,
-        abi: chamberAbi,
-        functionName: 'getDirectorOperatorLiveAt',
-        args: [tokenId],
-      })
-    } catch (error) {
-      throw wrapChamberError(error, 'Failed to read director operator liveAt')
-    }
+    const { raw, live } = await this.liveSession(tokenId)
+    return live ? raw.liveAt : 0n
   }
 
   /**
@@ -511,14 +505,13 @@ export class ChamberOperator {
    */
   async getDirectorOperatorState(tokenId: bigint): Promise<DirectorOperatorSnapshot> {
     try {
-      const [operator, scope, liveAt, raw, blockNumber] = await Promise.all([
-        this.getDirectorOperator(tokenId),
-        this.getDirectorOperatorScope(tokenId),
-        this.getDirectorOperatorLiveAt(tokenId),
-        this.getDirectorSession(tokenId),
+      const [{ raw, live }, blockNumber] = await Promise.all([
+        this.liveSession(tokenId),
         this.publicClient.getBlockNumber(),
       ])
-      const live = !isZeroAddress(operator)
+      const operator: Address = live ? raw.operator : zeroAddress
+      const scope = live ? raw.scope : 0
+      const liveAt = live ? raw.liveAt : 0n
       return {
         tokenId,
         operator,

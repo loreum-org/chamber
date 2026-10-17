@@ -8,6 +8,7 @@ import {IBoard} from "src/interfaces/IBoard.sol";
 import {MockERC20} from "test/mock/MockERC20.sol";
 import {MockERC721} from "test/mock/MockERC721.sol";
 import {DeployChamber} from "test/utils/DeployChamber.sol";
+import {ChamberReads} from "test/utils/ChamberReads.sol";
 
 /**
  * @title H-03: Seat-update slot has no expiry [HIGH] — FIXED
@@ -55,7 +56,7 @@ contract SeatUpdateExpiryTest is Test {
         chamber.updateSeats(1, 5);
 
         // Proposer leaves the board — cannot cancel via isDirector-gated updateSeats
-        uint256 stake = chamber.getHolderDelegation(director1, 1);
+        uint256 stake = ChamberReads.holderDelegation(chamber, director1, 1);
         vm.prank(director1);
         chamber.undelegate(1, stake);
         assertEq(chamber.getSize(), 3, "proposer left the leaderboard");

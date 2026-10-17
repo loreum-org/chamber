@@ -275,7 +275,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
 
     /**
      * @notice Retrieves the current quorum (minimum distinct director-token confirmations to execute)
-     * @dev Integer formula `1 + (n * 51) / 100` where `n` is {getReachableDirectorCount}: occupied
+     * @dev Integer formula `1 + (n * 51) / 100` where `n` is `min(seats, size)`: occupied
      *      top seats (PMN-M01 keeps empty seats out). Burned or chamber-held ids still count until
      *      {cleanupInertSeat} drops them, so same-block rank changes cannot lower quorum (R-1012-G1).
      *      One- and two-director boards require all reachable directors. Quorum is token-weighted:
@@ -288,14 +288,6 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
         return _filledSeatQuorum();
     }
 
-    /**
-     * @notice Occupied top seats, the quorum denominator.
-     * @dev `min(seats, size)`. Burned or chamber-held ids count until {cleanupInertSeat} removes
-     *      them; excluding them let same-block delegation push them up to lower quorum (R-1012-G1).
-     */
-    function getReachableDirectorCount() public view override returns (uint256) {
-        return _countFilledSeats();
-    }
 
     /**
      * @notice Retrieves the current number of seats
@@ -344,24 +336,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
         return _collectDelegations($c.holderDelegation, $c.totalHolderDelegations, $c.holderDelegatedTokenIds, holder);
     }
 
-    /**
-     * @notice Returns the amount delegated by a holder to a specific membership tokenId
-     * @param holder The delegating holder address
-     * @param tokenId The token ID
-     * @return amount The amount delegated
-     */
-    function getHolderDelegation(address holder, uint256 tokenId) external view override returns (uint256) {
-        return _getChamberStorage().holderDelegation[holder][tokenId];
-    }
 
-    /**
-     * @notice Returns the total amount delegated by a holder across all tokenIds
-     * @param holder The delegating holder address
-     * @return amount The total amount delegated
-     */
-    function getTotalHolderDelegations(address holder) external view override returns (uint256) {
-        return _getChamberStorage().totalHolderDelegations[holder];
-    }
 
     /**
      * @notice Registers or clears the session key for a contract-owned membership NFT.
@@ -398,31 +373,8 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
         emit IChamber.DirectorOperatorSet(tokenId, owner, operator, expiry, scope);
     }
 
-    /**
-     * @notice Live session key for `tokenId`, or zero if unset, stale, expired, or EOA-owned.
-     */
-    function getDirectorOperator(uint256 tokenId) public view override returns (address) {
-        (bool authorized, address operator) = _liveSessionKey(tokenId);
-        return authorized ? operator : address(0);
-    }
 
-    /**
-     * @notice `scope` of the live session, or `0` if none / stale / expired / burned.
-     */
-    function getDirectorOperatorScope(uint256 tokenId) public view override returns (uint32) {
-        (bool live,) = _liveSessionKey(tokenId);
-        if (!live) return 0;
-        return _getChamberStorage().directorSession[tokenId].scope;
-    }
 
-    /**
-     * @notice Confirm/execute unlock block of the live session, or `0` if none / stale / expired / burned.
-     */
-    function getDirectorOperatorLiveAt(uint256 tokenId) public view override returns (uint256) {
-        (bool live,) = _liveSessionKey(tokenId);
-        if (!live) return 0;
-        return _getChamberStorage().directorSession[tokenId].liveAt;
-    }
 
     /**
      * @notice Stored session fields for `tokenId` (raw; not liveness-filtered).
@@ -712,7 +664,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
     ) private {
         _validateTransaction(target, value, data);
         _submitTransactionWithMetadata(tokenId, target, value, data, metadataURI, deadline);
-        emit IChamber.TransactionSubmitted(getNextTransactionId() - 1, target, value);
+        emit IChamber.TransactionSubmitted(getTransactionCount() - 1, target, value);
     }
 
     /// @dev Snapshot live quorum onto each newly submitted wallet transaction (M-04).
@@ -994,7 +946,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
         uint256 deadline
     ) internal override {
         super._submitTransactionWithMetadata(tokenId, target, value, data, metadataURI, deadline);
-        uint256 nonce = getNextTransactionId() - 1;
+        uint256 nonce = getTransactionCount() - 1;
         if (_getWalletStorage().isConfirmed[nonce][tokenId]) {
             _getChamberStorage().confirmOwner[nonce][tokenId] = _ownerOfOrZero(tokenId);
         }
@@ -1060,13 +1012,6 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
         return StorageSlot.getAddressSlot(_ADMIN_SLOT).value;
     }
 
-    /**
-     * @notice Accepts admin ownership of the ProxyAdmin (called by Registry after deployment)
-     * @dev This is a no-op since Registry transfers ownership directly
-     */
-    function acceptAdmin() external override {
-        // No-op: Registry transfers ProxyAdmin ownership directly
-    }
 
     /**
      * @notice Pauses vault operations and wallet execution after board quorum.
@@ -1290,13 +1235,6 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
         return true;
     }
 
-    /**
-     * @notice Returns the next transaction ID (current nonce)
-     * @return uint256 The next transaction ID that will be assigned
-     */
-    function getNextTransactionId() public view override(IWallet, Wallet) returns (uint256) {
-        return getTransactionCount();
-    }
 
     /// @inheritdoc IWallet
     function getCancelled(uint256 nonce) public view override(IWallet, Wallet) returns (bool) {
@@ -1308,10 +1246,6 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
         return super.getTransactionDeadline(nonce);
     }
 
-    /// @inheritdoc IWallet
-    function isTransactionExpired(uint256 nonce) public view override(IWallet, Wallet) returns (bool) {
-        return super.isTransactionExpired(nonce);
-    }
 
     /// @inheritdoc IWallet
     function getCancelConfirmation(uint256 tokenId, uint256 nonce)

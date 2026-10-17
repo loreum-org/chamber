@@ -12,6 +12,7 @@ import {
     TransparentUpgradeableProxy,
     ITransparentUpgradeableProxy
 } from "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {ChamberReads} from "test/utils/ChamberReads.sol";
 
 /// @dev Current Chamber plus storage helpers to simulate a live impl upgrade:
 ///      leftover `holderDelegation` / `totalHolderDelegations` with an empty enumerable set.
@@ -144,15 +145,15 @@ contract UpgradeSafeDelegationsTest is Test {
         (uint256[] memory tokenIds, uint256[] memory amounts) = chamber.getDelegations(alice);
         assertEq(tokenIds.length, 0);
         assertEq(amounts.length, 0);
-        assertEq(chamber.getTotalHolderDelegations(alice), 0);
+        assertEq(ChamberReads.totalHolderDelegations(chamber, alice), 0);
     }
 
     function test_Upgrade_EmptySet_GetDelegationsReturnsOnBoardLeftover() public {
         _deposit(alice, 1000e18);
         _seedLegacyDelegation(alice, LEFTOVER_TOKEN, ALICE_AMOUNT);
 
-        assertEq(chamber.getHolderDelegation(alice, LEFTOVER_TOKEN), ALICE_AMOUNT);
-        assertEq(chamber.getTotalHolderDelegations(alice), ALICE_AMOUNT);
+        assertEq(ChamberReads.holderDelegation(chamber, alice, LEFTOVER_TOKEN), ALICE_AMOUNT);
+        assertEq(ChamberReads.totalHolderDelegations(chamber, alice), ALICE_AMOUNT);
         assertTrue(_contains(alice, LEFTOVER_TOKEN, ALICE_AMOUNT));
     }
 
@@ -180,8 +181,8 @@ contract UpgradeSafeDelegationsTest is Test {
         vm.prank(alice);
         chamber.undelegate(LEFTOVER_TOKEN, ALICE_AMOUNT);
 
-        assertEq(chamber.getHolderDelegation(alice, LEFTOVER_TOKEN), 0);
-        assertEq(chamber.getTotalHolderDelegations(alice), 0);
+        assertEq(ChamberReads.holderDelegation(chamber, alice, LEFTOVER_TOKEN), 0);
+        assertEq(ChamberReads.totalHolderDelegations(chamber, alice), 0);
         (uint256[] memory tokenIds,) = chamber.getDelegations(alice);
         assertEq(tokenIds.length, 0);
 
@@ -229,13 +230,13 @@ contract UpgradeSafeDelegationsTest is Test {
         vm.prank(alice);
         chamber.undelegate(LEFTOVER_TOKEN, ALICE_AMOUNT);
 
-        assertEq(chamber.getHolderDelegation(alice, LEFTOVER_TOKEN), 0);
-        assertEq(chamber.getTotalHolderDelegations(alice), 0);
+        assertEq(ChamberReads.holderDelegation(chamber, alice, LEFTOVER_TOKEN), 0);
+        assertEq(ChamberReads.totalHolderDelegations(chamber, alice), 0);
         (uint256[] memory aliceIds,) = chamber.getDelegations(alice);
         assertEq(aliceIds.length, 0);
 
-        assertEq(chamber.getHolderDelegation(carol, LEFTOVER_TOKEN), CAROL_AMOUNT);
-        assertEq(chamber.getTotalHolderDelegations(carol), CAROL_AMOUNT);
+        assertEq(ChamberReads.holderDelegation(chamber, carol, LEFTOVER_TOKEN), CAROL_AMOUNT);
+        assertEq(ChamberReads.totalHolderDelegations(chamber, carol), CAROL_AMOUNT);
         assertTrue(_contains(carol, LEFTOVER_TOKEN, CAROL_AMOUNT));
 
         uint256 carolShares = chamber.balanceOf(carol);
@@ -258,7 +259,7 @@ contract UpgradeSafeDelegationsTest is Test {
         _upgradeToProduction();
 
         assertTrue(_contains(alice, LEFTOVER_TOKEN, ALICE_AMOUNT), "production impl must union leftover mappings");
-        assertEq(chamber.getTotalHolderDelegations(alice), ALICE_AMOUNT);
+        assertEq(ChamberReads.totalHolderDelegations(chamber, alice), ALICE_AMOUNT);
 
         _fillHighNodes(49, 52);
         _evictLeftover(51);
@@ -281,7 +282,7 @@ contract UpgradeSafeDelegationsTest is Test {
 
         harness.exposedClearHolderSet(alice);
         assertEq(harness.exposedSetLength(alice), 0);
-        assertEq(chamber.getHolderDelegation(alice, LEFTOVER_TOKEN), ALICE_AMOUNT);
+        assertEq(ChamberReads.holderDelegation(chamber, alice, LEFTOVER_TOKEN), ALICE_AMOUNT);
 
         _upgradeToProduction();
 

@@ -20,27 +20,6 @@ export { factoryAbi, mockERC20Abi, mockERC721Abi }
 export const directorOperatorAbi = [
   {
     type: 'function',
-    name: 'getDirectorOperator',
-    inputs: [{ name: 'tokenId', type: 'uint256', internalType: 'uint256' }],
-    outputs: [{ name: 'operator', type: 'address', internalType: 'address' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'getDirectorOperatorScope',
-    inputs: [{ name: 'tokenId', type: 'uint256', internalType: 'uint256' }],
-    outputs: [{ name: 'scope', type: 'uint32', internalType: 'uint32' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'getDirectorOperatorLiveAt',
-    inputs: [{ name: 'tokenId', type: 'uint256', internalType: 'uint256' }],
-    outputs: [{ name: 'liveAt', type: 'uint256', internalType: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
     name: 'getDirectorSession',
     inputs: [{ name: 'tokenId', type: 'uint256', internalType: 'uint256' }],
     outputs: [

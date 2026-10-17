@@ -205,11 +205,11 @@ contract WalletFuzzTest is Test {
         numTransactions = bound(numTransactions, 0, 50);
 
         for (uint256 i = 0; i < numTransactions; i++) {
-            assertEq(wallet.getNextTransactionId(), i);
+            assertEq(wallet.getTransactionCount(), i);
             wallet.submitTransaction(i + 1, address(0x3), 0, "");
         }
 
-        assertEq(wallet.getNextTransactionId(), numTransactions);
+        assertEq(wallet.getTransactionCount(), numTransactions);
     }
 
     /// @notice Fuzz test for already confirmed transaction (should revert)
@@ -295,7 +295,7 @@ contract WalletFuzzTest is Test {
 
         // Invariant: getTransactionCount should equal number of transactions
         assertEq(wallet.getTransactionCount(), numTransactions);
-        assertEq(wallet.getNextTransactionId(), numTransactions);
+        assertEq(wallet.getTransactionCount(), numTransactions);
     }
 
     /// @notice Invariant: Executed transactions should remain executed

@@ -9,6 +9,7 @@ import {MockERC20} from "test/mock/MockERC20.sol";
 import {MockERC721} from "test/mock/MockERC721.sol";
 import {DeployChamber} from "test/utils/DeployChamber.sol";
 import {BoardTypes} from "src/types/BoardTypes.sol";
+import {ChamberReads} from "test/utils/ChamberReads.sol";
 
 /**
  * @title R-1012-G1: chamber-held membership NFTs as seat sinks
@@ -68,7 +69,7 @@ contract FindingR1012ChamberHeldSeatSinkTest is Test {
         vm.startPrank(attacker);
         token.approve(address(chamber), type(uint256).max);
         chamber.deposit(1000 ether, attacker);
-        uint256 s = chamber.balanceOf(attacker) - chamber.getTotalHolderDelegations(attacker);
+        uint256 s = chamber.balanceOf(attacker) - ChamberReads.totalHolderDelegations(chamber, attacker);
         chamber.delegate(20, s / 3);
         chamber.delegate(21, s / 3);
         chamber.delegate(1, s / 3);
@@ -115,6 +116,6 @@ contract FindingR1012ChamberHeldSeatSinkTest is Test {
 
         vm.prank(attacker);
         chamber.undelegate(20, 500 ether); // stranded weight is still withdrawable
-        assertEq(chamber.getHolderDelegation(attacker, 20), 0);
+        assertEq(ChamberReads.holderDelegation(chamber, attacker, 20), 0);
     }
 }
