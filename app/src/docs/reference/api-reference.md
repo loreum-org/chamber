@@ -101,7 +101,7 @@ Public ETH / NFT receive: **`receive`**, **`fallback`**, **`onERC721Received`**.
 | **`getSeats()`** | Seat count. |
 | **`getDirectors()`** | **`ownerOf`** for each top **`getSeats()`** token ID; `address(0)` on failure. |
 | **`setDirectorOperator(tokenId, operator)`** | Contract NFT owner registers or clears the session key. No ERC-1271. |
-| **`getDirectorSession(tokenId)`** | Raw stored session. Live when `isTokenAuthorized(tokenId, operator)` is true. |
+| **`getDirectorSession(tokenId)`** | Raw stored session. Live when `isTokenAuthorized` is true for both the stored `operator` and the stored `sessionOwner`. |
 | **`isTokenAuthorized(tokenId, account)`** | Owner or live session key (does not check seats). |
 | **`syncSeating(tokenId)`** | Permissionless seating-clock bind after `ownerOf` change (PMN-H01). |
 | **`cleanupInertSeat(tokenId)`** | Permissionless: drop a burned `tokenId` from the top set (PMN-M02 B). Live tokens revert `SeatNotInert`. |
