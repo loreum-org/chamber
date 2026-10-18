@@ -201,12 +201,6 @@ interface IWallet {
      */
     function getTransactionDeadline(uint256 nonce) external view returns (uint256 deadline);
 
-    /**
-     * @notice Returns whether a transaction has passed its deadline
-     * @param nonce The index of the transaction to check
-     * @return True if a non-zero deadline is stored and has passed; `false` when deadline is `0`
-     */
-    function isTransactionExpired(uint256 nonce) external view returns (bool);
 
     /**
      * @notice Checks if a director has voted to cancel a transaction
@@ -223,11 +217,6 @@ interface IWallet {
      */
     function getCancelConfirmations(uint256 nonce) external view returns (uint8);
 
-    /**
-     * @notice Returns the next transaction ID (current nonce)
-     * @return uint256 The next transaction ID
-     */
-    function getNextTransactionId() external view returns (uint256);
 
     /// Events
     /**

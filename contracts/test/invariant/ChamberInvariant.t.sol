@@ -6,6 +6,7 @@ import {Chamber} from "src/Chamber.sol";
 import {MockERC20} from "test/mock/MockERC20.sol";
 import {MockERC721} from "test/mock/MockERC721.sol";
 import {DeployChamber} from "test/utils/DeployChamber.sol";
+import {ChamberReads} from "test/utils/ChamberReads.sol";
 
 /// @notice Bounded actions over vault shares and board delegations for stateful fuzzing.
 /// @dev Fewer than MAX_NODES token ids, so no eviction: board amounts must equal the
@@ -37,7 +38,7 @@ contract ChamberHandler is Test {
     }
 
     function _free(address a) internal view returns (uint256) {
-        return chamber.balanceOf(a) - chamber.getTotalHolderDelegations(a);
+        return chamber.balanceOf(a) - ChamberReads.totalHolderDelegations(chamber, a);
     }
 
     function deposit(uint256 actorSeed, uint256 assets) external {
@@ -81,7 +82,7 @@ contract ChamberHandler is Test {
     function undelegate(uint256 actorSeed, uint256 tokenSeed, uint256 amount) external {
         address a = _actor(actorSeed);
         uint256 tokenId = _tokenId(tokenSeed);
-        uint256 current = chamber.getHolderDelegation(a, tokenId);
+        uint256 current = ChamberReads.holderDelegation(chamber, a, tokenId);
         if (current == 0) return;
         amount = bound(amount, 1, current);
         vm.prank(a);
@@ -92,7 +93,7 @@ contract ChamberHandler is Test {
     function transferLockedReverts(uint256 fromSeed, uint256 toSeed, uint256 extra) external {
         address from = _actor(fromSeed);
         address to = _actor(toSeed);
-        if (from == to || chamber.getTotalHolderDelegations(from) == 0) return;
+        if (from == to || ChamberReads.totalHolderDelegations(chamber, from) == 0) return;
         uint256 free = _free(from);
         uint256 locked = chamber.balanceOf(from) - free;
         uint256 shares = free + bound(extra, 1, locked);
@@ -130,7 +131,7 @@ contract ChamberInvariantTest is Test {
     function invariant_delegationsBackedByShares() public view {
         for (uint256 i; i < handler.actorCount(); i++) {
             address a = handler.actors(i);
-            assertLe(chamber.getTotalHolderDelegations(a), chamber.balanceOf(a));
+            assertLe(ChamberReads.totalHolderDelegations(chamber, a), chamber.balanceOf(a));
         }
     }
 
@@ -140,9 +141,9 @@ contract ChamberInvariantTest is Test {
             address a = handler.actors(i);
             uint256 sum;
             for (uint256 id = 1; id <= handler.TOKEN_IDS(); id++) {
-                sum += chamber.getHolderDelegation(a, id);
+                sum += ChamberReads.holderDelegation(chamber, a, id);
             }
-            assertEq(sum, chamber.getTotalHolderDelegations(a));
+            assertEq(sum, ChamberReads.totalHolderDelegations(chamber, a));
         }
     }
 
@@ -151,7 +152,7 @@ contract ChamberInvariantTest is Test {
         for (uint256 id = 1; id <= handler.TOKEN_IDS(); id++) {
             uint256 sum;
             for (uint256 i; i < handler.actorCount(); i++) {
-                sum += chamber.getHolderDelegation(handler.actors(i), id);
+                sum += ChamberReads.holderDelegation(chamber, handler.actors(i), id);
             }
             (uint256 nodeId, uint256 amount,,) = chamber.getMember(id);
             if (sum == 0) {

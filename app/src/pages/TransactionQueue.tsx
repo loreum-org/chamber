@@ -487,16 +487,6 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
     query: { enabled: rpcQueue && transactionCount > 0, retry: false },
   })
 
-  const { data: expiredData } = useReadContracts({
-    contracts: transactionIds.map((id) => ({
-      address: chamberAddress,
-      abi: chamberAbi,
-      functionName: 'isTransactionExpired' as const,
-      args: [BigInt(id)] as const,
-    })),
-    query: { enabled: rpcQueue && transactionCount > 0, retry: false },
-  })
-
   const { data: deadlineData } = useReadContracts({
     contracts: transactionIds.map((id) => ({
       address: chamberAddress,
@@ -600,7 +590,7 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
             p.requiredQuorum !== undefined ? Number(p.requiredQuorum) : undefined,
             liveQuorum,
           )
-          // Same rule as Wallet.isTransactionExpired: deadline != 0 && now > deadline.
+          // Same rule as the contract: deadline != 0 && now > deadline.
           const expired = !!p.deadline && p.deadline !== 0n && nowSec > p.deadline
           const leftoverTokenId = ownedTokenIdsStable.find((id) => confirmers.has(id.toString()))
           const status = computeQueueTxStatus({
@@ -681,14 +671,14 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
             liveConfirmations = confirmations
           }
 
-          const expiredResult = expiredData?.[index]
-          const expired =
-            expiredResult?.status === 'success' ? expiredResult.result === true : false
           const deadlineResult = deadlineData?.[index]
           const deadline =
             deadlineResult?.status === 'success' && typeof deadlineResult.result === 'bigint'
               ? deadlineResult.result
               : undefined
+          // Same rule as the contract: deadline 0 never expires.
+          const expired =
+            deadline !== undefined && deadline !== 0n && BigInt(Math.floor(Date.now() / 1000)) > deadline
 
           let leftoverTokenId: bigint | undefined
           if (ownedCount > 0 && leftoverConfirmData) {
@@ -739,7 +729,6 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
     cancelConfirmationsData,
     metadataData,
     requiredQuorumData,
-    expiredData,
     deadlineData,
     liveConfirmData,
     leftoverConfirmData,

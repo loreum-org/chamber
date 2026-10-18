@@ -9,6 +9,7 @@ import {MockERC20} from "test/mock/MockERC20.sol";
 import {MockERC721} from "test/mock/MockERC721.sol";
 import {DeployChamber} from "test/utils/DeployChamber.sol";
 import {BoardTypes} from "src/types/BoardTypes.sol";
+import {ChamberReads} from "test/utils/ChamberReads.sol";
 
 /// @dev Contract NFT owner used to register a session key (same pattern as Chamber.t.sol).
 contract MockERC1271Wallet {
@@ -81,15 +82,15 @@ contract FindingPMNM04SessionKeyScopeTest is Test {
         chamber.setDirectorOperator(TOKEN_WALLET, sessionKey, block.timestamp + 30 days, UNSCOPED);
 
         _setKey(sessionKey, block.timestamp + 30 days, UNSCOPED);
-        assertEq(chamber.getDirectorOperator(TOKEN_WALLET), sessionKey);
+        assertEq(ChamberReads.directorOperator(chamber, TOKEN_WALLET), sessionKey);
 
         vm.prank(sessionKey);
         vm.expectRevert(IChamber.NotDirector.selector);
         chamber.setDirectorOperator(TOKEN_WALLET, address(0xFEE1), block.timestamp + 30 days, UNSCOPED);
-        assertEq(chamber.getDirectorOperator(TOKEN_WALLET), sessionKey, "key cannot replace itself");
+        assertEq(ChamberReads.directorOperator(chamber, TOKEN_WALLET), sessionKey, "key cannot replace itself");
 
         wallet.execute(address(chamber), abi.encodeCall(chamber.setDirectorOperator, (TOKEN_WALLET, address(0), 0, 0)));
-        assertEq(chamber.getDirectorOperator(TOKEN_WALLET), address(0));
+        assertEq(ChamberReads.directorOperator(chamber, TOKEN_WALLET), address(0));
 
         vm.prank(sessionKey);
         vm.expectRevert(IChamber.NotDirector.selector);
@@ -99,16 +100,16 @@ contract FindingPMNM04SessionKeyScopeTest is Test {
     /// @notice Transfer stales the key in the same transaction. The new owner starts with no operator.
     function test_PMNM04_transferClearsKey() public {
         _setKey(sessionKey, block.timestamp + 30 days, UNSCOPED);
-        assertEq(chamber.getDirectorOperator(TOKEN_WALLET), sessionKey);
+        assertEq(ChamberReads.directorOperator(chamber, TOKEN_WALLET), sessionKey);
 
         MockERC1271Wallet newWallet = new MockERC1271Wallet(address(0xBEEF));
         vm.prank(address(wallet));
         nft.transferFrom(address(wallet), address(newWallet), TOKEN_WALLET);
 
-        assertEq(chamber.getDirectorOperator(TOKEN_WALLET), address(0), "session key is stale after transfer");
+        assertEq(ChamberReads.directorOperator(chamber, TOKEN_WALLET), address(0), "session key is stale after transfer");
         assertFalse(chamber.isTokenAuthorized(TOKEN_WALLET, sessionKey));
         assertTrue(chamber.isTokenAuthorized(TOKEN_WALLET, address(newWallet)), "new owner starts with no operator");
-        assertEq(chamber.getDirectorOperator(TOKEN_WALLET), address(0));
+        assertEq(ChamberReads.directorOperator(chamber, TOKEN_WALLET), address(0));
 
         vm.prank(sessionKey);
         vm.expectRevert(IChamber.NotDirector.selector);
@@ -126,7 +127,7 @@ contract FindingPMNM04SessionKeyScopeTest is Test {
         chamber.setDirectorOperator(eoaToken, sessionKey, block.timestamp + 30 days, UNSCOPED);
 
         assertEq(wallet.signatureCalls(), callsBefore, "ERC-1271 is not consulted on EOA set");
-        assertEq(chamber.getDirectorOperator(eoaToken), address(0));
+        assertEq(ChamberReads.directorOperator(chamber, eoaToken), address(0));
 
         _setKey(sessionKey, block.timestamp + 30 days, UNSCOPED);
         vm.prank(address(wallet));
@@ -137,7 +138,7 @@ contract FindingPMNM04SessionKeyScopeTest is Test {
         vm.expectRevert(IChamber.NotDirector.selector);
         chamber.submitTransaction(TOKEN_WALLET, address(0x3), 0, "");
         assertEq(wallet.signatureCalls(), callsBefore, "ERC-1271 is not consulted after transfer to EOA");
-        assertEq(chamber.getDirectorOperator(TOKEN_WALLET), address(0), "leftover mapping ignored on EOA owner");
+        assertEq(ChamberReads.directorOperator(chamber, TOKEN_WALLET), address(0), "leftover mapping ignored on EOA owner");
     }
 
     /// @notice After the recorded expiry, the key cannot submit, confirm, execute, or update seats.
@@ -155,7 +156,7 @@ contract FindingPMNM04SessionKeyScopeTest is Test {
         chamber.submitTransaction(1, address(0x3), 0, "");
 
         vm.warp(expiry + 1);
-        assertEq(chamber.getDirectorOperator(TOKEN_WALLET), address(0), "expired key is not live");
+        assertEq(ChamberReads.directorOperator(chamber, TOKEN_WALLET), address(0), "expired key is not live");
         assertFalse(chamber.isTokenAuthorized(TOKEN_WALLET, sessionKey));
 
         vm.prank(sessionKey);
@@ -176,7 +177,7 @@ contract FindingPMNM04SessionKeyScopeTest is Test {
 
         uint256 refreshed = block.timestamp + 7 days;
         _setKey(sessionKey, refreshed, UNSCOPED);
-        assertEq(chamber.getDirectorOperator(TOKEN_WALLET), sessionKey, "owner can refresh expiry");
+        assertEq(ChamberReads.directorOperator(chamber, TOKEN_WALLET), sessionKey, "owner can refresh expiry");
         (,, uint256 newExpiry,,) = chamber.getDirectorSession(TOKEN_WALLET);
         assertEq(newExpiry, refreshed);
     }
@@ -231,7 +232,7 @@ contract FindingPMNM04SessionKeyScopeTest is Test {
         chamber.executeTransaction(TOKEN_WALLET, 0, "");
 
         wallet.execute(address(chamber), abi.encodeCall(chamber.setDirectorOperator, (TOKEN_WALLET, address(0), 0, 0)));
-        assertEq(chamber.getDirectorOperator(TOKEN_WALLET), address(0), "owner can clear immediately");
+        assertEq(ChamberReads.directorOperator(chamber, TOKEN_WALLET), address(0), "owner can clear immediately");
 
         _setKey(sessionKey, block.timestamp + 30 days, UNSCOPED);
         vm.roll(block.number + SEATING_DELAY);
@@ -251,25 +252,25 @@ contract FindingPMNM04SessionKeyScopeTest is Test {
 
     /// @notice Live getters expose scope and liveAt. Raw getDirectorSession may retain leftovers.
     function test_PMNM04_viewsExposeScopeAndLiveAt() public {
-        assertEq(chamber.getDirectorOperatorScope(TOKEN_WALLET), 0);
-        assertEq(chamber.getDirectorOperatorLiveAt(TOKEN_WALLET), 0);
+        assertEq(ChamberReads.directorOperatorScope(chamber, TOKEN_WALLET), 0);
+        assertEq(ChamberReads.directorOperatorLiveAt(chamber, TOKEN_WALLET), 0);
 
         uint32 confirmOnly = chamber.SESSION_SCOPE_CONFIRM();
         _setKey(sessionKey, block.timestamp + 30 days, confirmOnly);
         uint256 expectedLiveAt = block.number + SEATING_DELAY;
 
-        assertEq(chamber.getDirectorOperator(TOKEN_WALLET), sessionKey);
-        assertEq(chamber.getDirectorOperatorScope(TOKEN_WALLET), confirmOnly);
-        assertEq(chamber.getDirectorOperatorLiveAt(TOKEN_WALLET), expectedLiveAt);
+        assertEq(ChamberReads.directorOperator(chamber, TOKEN_WALLET), sessionKey);
+        assertEq(ChamberReads.directorOperatorScope(chamber, TOKEN_WALLET), confirmOnly);
+        assertEq(ChamberReads.directorOperatorLiveAt(chamber, TOKEN_WALLET), expectedLiveAt);
 
         (,,, uint32 rawScope, uint256 rawLiveAt) = chamber.getDirectorSession(TOKEN_WALLET);
         assertEq(rawScope, confirmOnly);
         assertEq(rawLiveAt, expectedLiveAt);
 
         vm.warp(block.timestamp + 31 days);
-        assertEq(chamber.getDirectorOperator(TOKEN_WALLET), address(0), "expired key is not live");
-        assertEq(chamber.getDirectorOperatorScope(TOKEN_WALLET), 0);
-        assertEq(chamber.getDirectorOperatorLiveAt(TOKEN_WALLET), 0);
+        assertEq(ChamberReads.directorOperator(chamber, TOKEN_WALLET), address(0), "expired key is not live");
+        assertEq(ChamberReads.directorOperatorScope(chamber, TOKEN_WALLET), 0);
+        assertEq(ChamberReads.directorOperatorLiveAt(chamber, TOKEN_WALLET), 0);
         (,,, uint32 leftoverScope,) = chamber.getDirectorSession(TOKEN_WALLET);
         assertEq(leftoverScope, confirmOnly, "raw session retains leftover scope");
     }
@@ -277,14 +278,14 @@ contract FindingPMNM04SessionKeyScopeTest is Test {
     /// @notice Burning the membership NFT drops the live key. Leftover storage is not a director.
     function test_PMNM04_burnDropsLiveKey() public {
         _setKey(sessionKey, block.timestamp + 30 days, UNSCOPED);
-        assertEq(chamber.getDirectorOperator(TOKEN_WALLET), sessionKey);
-        assertEq(chamber.getDirectorOperatorScope(TOKEN_WALLET), UNSCOPED);
+        assertEq(ChamberReads.directorOperator(chamber, TOKEN_WALLET), sessionKey);
+        assertEq(ChamberReads.directorOperatorScope(chamber, TOKEN_WALLET), UNSCOPED);
 
         nft.burn(TOKEN_WALLET);
 
-        assertEq(chamber.getDirectorOperator(TOKEN_WALLET), address(0));
-        assertEq(chamber.getDirectorOperatorScope(TOKEN_WALLET), 0);
-        assertEq(chamber.getDirectorOperatorLiveAt(TOKEN_WALLET), 0);
+        assertEq(ChamberReads.directorOperator(chamber, TOKEN_WALLET), address(0));
+        assertEq(ChamberReads.directorOperatorScope(chamber, TOKEN_WALLET), 0);
+        assertEq(ChamberReads.directorOperatorLiveAt(chamber, TOKEN_WALLET), 0);
         assertFalse(chamber.isTokenAuthorized(TOKEN_WALLET, sessionKey));
         assertFalse(chamber.isTokenAuthorized(TOKEN_WALLET, address(wallet)));
 
@@ -312,7 +313,7 @@ contract FindingPMNM04SessionKeyScopeTest is Test {
 
         uint32 revokeOnly = chamber.SESSION_SCOPE_REVOKE();
         _setKey(sessionKey, block.timestamp + 30 days, revokeOnly);
-        assertEq(chamber.getDirectorOperatorScope(TOKEN_WALLET), revokeOnly);
+        assertEq(ChamberReads.directorOperatorScope(chamber, TOKEN_WALLET), revokeOnly);
 
         vm.prank(sessionKey);
         chamber.revokeConfirmation(TOKEN_WALLET, 0);
@@ -329,7 +330,7 @@ contract FindingPMNM04SessionKeyScopeTest is Test {
         bytes[] memory execData = new bytes[](1);
 
         _setKey(sessionKey, block.timestamp + 30 days, UNSCOPED);
-        assertEq(chamber.getDirectorOperatorLiveAt(TOKEN_WALLET), block.number + SEATING_DELAY);
+        assertEq(ChamberReads.directorOperatorLiveAt(chamber, TOKEN_WALLET), block.number + SEATING_DELAY);
 
         vm.prank(sessionKey);
         vm.expectRevert(IChamber.NotDirector.selector);
@@ -365,7 +366,7 @@ contract FindingPMNM04SessionKeyScopeTest is Test {
         chamber.submitTransaction(1, address(0x3), 0, "");
 
         _setKey(sessionKey, block.timestamp + 30 days, UNSCOPED);
-        uint256 firstLiveAt = chamber.getDirectorOperatorLiveAt(TOKEN_WALLET);
+        uint256 firstLiveAt = ChamberReads.directorOperatorLiveAt(chamber, TOKEN_WALLET);
         vm.roll(firstLiveAt);
         vm.prank(sessionKey);
         chamber.confirmTransaction(TOKEN_WALLET, 0);
@@ -374,10 +375,10 @@ contract FindingPMNM04SessionKeyScopeTest is Test {
         chamber.submitTransaction(1, address(0x5), 0, "");
 
         _setKey(sessionKey, block.timestamp + 60 days, UNSCOPED);
-        uint256 secondLiveAt = chamber.getDirectorOperatorLiveAt(TOKEN_WALLET);
+        uint256 secondLiveAt = ChamberReads.directorOperatorLiveAt(chamber, TOKEN_WALLET);
         assertGt(secondLiveAt, firstLiveAt, "refresh restarts liveAt");
         assertEq(secondLiveAt, firstLiveAt + SEATING_DELAY, "refresh liveAt is prior liveAt plus SEATING_DELAY");
-        assertEq(chamber.getDirectorOperatorScope(TOKEN_WALLET), UNSCOPED);
+        assertEq(ChamberReads.directorOperatorScope(chamber, TOKEN_WALLET), UNSCOPED);
 
         vm.prank(sessionKey);
         vm.expectRevert(IChamber.NotDirector.selector);

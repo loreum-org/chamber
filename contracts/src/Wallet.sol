@@ -79,6 +79,10 @@ abstract contract Wallet {
         return WalletLib.resolveDeadline(deadline);
     }
 
+    function _requireNoThirdPartyPull(address target, address asset, bytes memory data) internal view {
+        WalletLib.requireNoThirdPartyPull(target, asset, data);
+    }
+
     function _submitTransaction(uint256 tokenId, address target, uint256 value, bytes memory data) internal {
         _submitTransaction(tokenId, target, value, data, 0);
     }
@@ -116,12 +120,18 @@ abstract contract Wallet {
             metadataURI,
             deadline,
             _submitQuorum(),
-            address(this)
+            address(this),
+            _submitAutoConfirms(tokenId)
         );
     }
 
     function _submitQuorum() internal view virtual returns (uint256) {
         return 0;
+    }
+
+    /// @dev Whether a submit also records the submitting token's confirmation.
+    function _submitAutoConfirms(uint256) internal view virtual returns (bool) {
+        return true;
     }
 
     function _confirmTransaction(uint256 tokenId, uint256 nonce) internal virtual {
@@ -164,15 +174,18 @@ abstract contract Wallet {
         );
     }
 
-    function getTransactionMetadata(uint256 nonce) public view virtual txExists(nonce) returns (string memory) {
+    function getTransactionMetadata(uint256 nonce) public view virtual returns (string memory) {
+        _txExists(nonce);
         return _getWalletStorage().transactionMetadataURI[nonce];
     }
 
-    function getTransactionCalldata(uint256 nonce) public view virtual txExists(nonce) returns (bytes memory) {
+    function getTransactionCalldata(uint256 nonce) public view virtual returns (bytes memory) {
+        _txExists(nonce);
         return _getWalletStorage().transactionCalldata[nonce];
     }
 
-    function getTransactionRequiredQuorum(uint256 nonce) public view virtual txExists(nonce) returns (uint256) {
+    function getTransactionRequiredQuorum(uint256 nonce) public view virtual returns (uint256) {
+        _txExists(nonce);
         return _getWalletStorage().transactionRequiredQuorum[nonce];
     }
 
@@ -184,14 +197,11 @@ abstract contract Wallet {
         return _getWalletStorage().cancelled[nonce];
     }
 
-    function getTransactionDeadline(uint256 nonce) public view virtual txExists(nonce) returns (uint256 deadline) {
+    function getTransactionDeadline(uint256 nonce) public view virtual returns (uint256 deadline) {
+        _txExists(nonce);
         return _getWalletStorage().transactionDeadline[nonce];
     }
 
-    function isTransactionExpired(uint256 nonce) public view virtual txExists(nonce) returns (bool) {
-        uint256 deadline = _getWalletStorage().transactionDeadline[nonce];
-        return deadline != 0 && block.timestamp > deadline;
-    }
 
     function getCancelConfirmation(uint256 tokenId, uint256 nonce) public view virtual returns (bool) {
         return _getWalletStorage().isCancelConfirmed[nonce][tokenId];
@@ -201,12 +211,5 @@ abstract contract Wallet {
         return _getWalletStorage().cancelConfirmations[nonce];
     }
 
-    function getNextTransactionId() public view virtual returns (uint256) {
-        return _getWalletStorage().transactions.length;
-    }
 
-    function getCurrentNonce() public view returns (uint256) {
-        uint256 len = _getWalletStorage().transactions.length;
-        return len > 0 ? len - 1 : 0;
-    }
 }

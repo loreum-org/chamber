@@ -10,6 +10,7 @@ import {MockERC20} from "test/mock/MockERC20.sol";
 import {MockERC721} from "test/mock/MockERC721.sol";
 import {DeployChamber} from "test/utils/DeployChamber.sol";
 import {DeployRegistry} from "test/utils/DeployRegistry.sol";
+import {ChamberReads} from "test/utils/ChamberReads.sol";
 
 /**
  * @title PMN-M01: quorum uses reachable authorized directors (Solution A + C)
@@ -51,7 +52,7 @@ contract FindingPMNM01ReachableQuorumTest is Test {
         vm.roll(block.number + SEATING_DELAY);
 
         assertEq(chamber.getSeats(), 3);
-        assertEq(chamber.getReachableDirectorCount(), 3);
+        assertEq(ChamberReads.reachableDirectorCount(chamber), 3);
         uint256 expected = 1 + (uint256(3) * 51) / 100;
         assertEq(chamber.getQuorum(), expected);
         assertEq(chamber.getQuorum(), 2);
@@ -62,7 +63,7 @@ contract FindingPMNM01ReachableQuorumTest is Test {
         vm.roll(block.number + SEATING_DELAY);
 
         assertEq(chamber.getSeats(), 3, "configured seats stay 3");
-        assertEq(chamber.getReachableDirectorCount(), 1, "only one authorized director");
+        assertEq(ChamberReads.reachableDirectorCount(chamber), 1, "only one authorized director");
         assertEq(chamber.getQuorum(), 1 + (uint256(1) * 51) / 100, "quorum uses reachable, not empty slots");
         assertEq(chamber.getQuorum(), 1);
 
@@ -90,8 +91,13 @@ contract FindingPMNM01ReachableQuorumTest is Test {
         nft.burn(2);
         nft.burn(3);
 
+        // R-1012-G1: burned ids keep counting until anyone drops them with cleanupInertSeat.
+        assertEq(ChamberReads.reachableDirectorCount(chamber), 3, "burned ids count until cleaned up");
+        chamber.cleanupInertSeat(2);
+        chamber.cleanupInertSeat(3);
+
         assertEq(chamber.getSeats(), 3, "configured seats unchanged");
-        assertEq(chamber.getReachableDirectorCount(), 1, "burned ownerOf slots drop from denominator");
+        assertEq(ChamberReads.reachableDirectorCount(chamber), 1, "cleaned-up burned slots drop from denominator");
         assertEq(chamber.getQuorum(), 1, "reachable quorum, not the old configured 2");
         assertFalse(chamber.isTokenAuthorized(2, user2), "burned token cannot authorize");
         assertFalse(chamber.isTokenAuthorized(3, user3));
@@ -118,7 +124,7 @@ contract FindingPMNM01ReachableQuorumTest is Test {
 
         address created = factory.createChamber(address(token), address(nft), 5, "EmptyNft", "E");
         assertEq(IChamber(created).getSeats(), 5, "create with unfilled membership still succeeds");
-        assertEq(IChamber(created).getReachableDirectorCount(), 0);
+        assertEq(ChamberReads.reachableDirectorCount(IChamber(created)), 0);
         assertEq(IChamber(created).getQuorum(), 1, "empty board does not use configured seats as n");
     }
 
@@ -127,10 +133,10 @@ contract FindingPMNM01ReachableQuorumTest is Test {
         vm.roll(block.number + SEATING_DELAY);
 
         assertEq(chamber.getSeats(), 3);
-        assertEq(chamber.getReachableDirectorCount(), 1);
+        assertEq(ChamberReads.reachableDirectorCount(chamber), 1);
         uint256 configuredQuorum = 1 + (chamber.getSeats() * 51) / 100;
         assertEq(configuredQuorum, 2);
-        assertLt(chamber.getReachableDirectorCount(), configuredQuorum);
+        assertLt(ChamberReads.reachableDirectorCount(chamber), configuredQuorum);
 
         vm.expectEmit(true, false, false, true, address(chamber));
         emit IChamber.SeatsRecovered(1, 3, 1);
@@ -158,8 +164,8 @@ contract FindingPMNM01ReachableQuorumTest is Test {
         _seat(user2, 2, 100 ether);
         _seat(user3, 3, 100 ether);
         vm.roll(block.number + SEATING_DELAY + 1);
-        assertEq(filled.getReachableDirectorCount(), 3);
-        assertGe(filled.getReachableDirectorCount(), 1 + (filled.getSeats() * 51) / 100);
+        assertEq(ChamberReads.reachableDirectorCount(filled), 3);
+        assertGe(ChamberReads.reachableDirectorCount(filled), 1 + (filled.getSeats() * 51) / 100);
         assertTrue(block.number >= filled.getSeatedAt(1), "filled board directors are mature");
 
         vm.prank(user1);

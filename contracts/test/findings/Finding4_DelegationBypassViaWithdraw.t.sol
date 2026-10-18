@@ -8,6 +8,7 @@ import {IChamber} from "src/interfaces/IChamber.sol";
 import {MockERC20} from "test/mock/MockERC20.sol";
 import {MockERC721} from "test/mock/MockERC721.sol";
 import {DeployChamber} from "test/utils/DeployChamber.sol";
+import {ChamberReads} from "test/utils/ChamberReads.sol";
 
 /**
  * @title Finding 4: ERC4626 Withdraw Bypasses Delegation Locks [CRITICAL] — FIXED
@@ -56,7 +57,7 @@ contract DelegationBypassViaWithdrawTest is Test {
 
         // Delegation and balance are intact
         assertGt(chamber.balanceOf(attacker), 0, "Attacker still has shares");
-        assertGt(chamber.getHolderDelegation(attacker, 1), 0, "Delegation intact");
+        assertGt(ChamberReads.holderDelegation(chamber, attacker, 1), 0, "Delegation intact");
     }
 
     /**

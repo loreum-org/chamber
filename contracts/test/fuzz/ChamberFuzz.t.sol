@@ -9,6 +9,7 @@ import {IERC721} from "lib/openzeppelin-contracts/contracts/token/ERC721/IERC721
 import {MockERC20} from "test/mock/MockERC20.sol";
 import {MockERC721} from "test/mock/MockERC721.sol";
 import {DeployChamber} from "test/utils/DeployChamber.sol";
+import {ChamberReads} from "test/utils/ChamberReads.sol";
 
 contract ChamberFuzzTest is Test {
     Chamber public chamber;
@@ -50,7 +51,7 @@ contract ChamberFuzzTest is Test {
         vm.stopPrank();
 
         // Verify delegation
-        assertEq(chamber.getHolderDelegation(user1, tokenId), amount);
+        assertEq(ChamberReads.holderDelegation(chamber, user1, tokenId), amount);
         (, uint256 nodeAmount,,) = chamber.getMember(tokenId);
         assertEq(nodeAmount, amount);
     }
@@ -78,7 +79,7 @@ contract ChamberFuzzTest is Test {
         chamber.delegate(tokenId, delegateAmount);
         vm.stopPrank();
 
-        uint256 beforeDelegation = chamber.getHolderDelegation(user1, tokenId);
+        uint256 beforeDelegation = ChamberReads.holderDelegation(chamber, user1, tokenId);
         (, uint256 beforeNodeAmount,,) = chamber.getMember(tokenId);
 
         // Undelegate
@@ -87,7 +88,7 @@ contract ChamberFuzzTest is Test {
         vm.stopPrank();
 
         // Verify undelegation
-        assertEq(chamber.getHolderDelegation(user1, tokenId), beforeDelegation - undelegateAmount);
+        assertEq(ChamberReads.holderDelegation(chamber, user1, tokenId), beforeDelegation - undelegateAmount);
         (, uint256 afterNodeAmount,,) = chamber.getMember(tokenId);
         assertEq(afterNodeAmount, beforeNodeAmount - undelegateAmount);
     }
@@ -148,12 +149,12 @@ contract ChamberFuzzTest is Test {
         // Verify all delegations
         uint256 totalDelegated = 0;
         for (uint256 i = 0; i < 5; i++) {
-            uint256 delegation = chamber.getHolderDelegation(user1, tokenIds[i]);
+            uint256 delegation = ChamberReads.holderDelegation(chamber, user1, tokenIds[i]);
             assertEq(delegation, amounts[i]);
             totalDelegated += delegation;
         }
 
-        assertEq(chamber.getTotalHolderDelegations(user1), totalDelegated);
+        assertEq(ChamberReads.totalHolderDelegations(chamber, user1), totalDelegated);
     }
 
     /// @notice Fuzz test for deposit and withdraw
@@ -390,7 +391,7 @@ contract ChamberFuzzTest is Test {
         vm.stopPrank();
 
         // Invariant: total delegations <= balance
-        uint256 totalDelegations = chamber.getTotalHolderDelegations(user1);
+        uint256 totalDelegations = ChamberReads.totalHolderDelegations(chamber, user1);
         uint256 balance = chamber.balanceOf(user1);
         assertLe(totalDelegations, balance, "Total delegations should never exceed balance");
     }

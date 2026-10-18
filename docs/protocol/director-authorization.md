@@ -69,18 +69,16 @@ operator cannot replace itself.
 
 These getters are how callers read the session. They match the rules above.
 
-- `getDirectorOperator(tokenId)` — live operator, or zero if unset, stale,
-  expired, EOA-owned, or burned. Does **not** apply `scope` or the
-  confirm/execute delay.
-- `getDirectorOperatorScope(tokenId)` — `scope` of that live session, or
-  `0` if there is no live session. `0` is not unscoped; unscoped is
-  `SESSION_SCOPE_UNSCOPED`.
-- `getDirectorOperatorLiveAt(tokenId)` — first block the live session may
-  confirm or execute (`liveAt`), or `0` if there is no live session.
-  Confirm/execute require `block.number >= liveAt`.
 - `getDirectorSession(tokenId)` — raw stored `(sessionOwner, operator,
-  expiry, scope, liveAt)`. These fields may be stale or expired. Use the
-  live getters above for the current key.
+  expiry, scope, liveAt)`. These fields may be stale or expired. The session
+  is live when `isTokenAuthorized(tokenId, operator)` and
+  `isTokenAuthorized(tokenId, sessionOwner)` are both true; its `scope` and
+  `liveAt` then apply. Check both: if the NFT was transferred to its own
+  session key, the operator passes because it is now the owner, and the stored
+  `scope` / `liveAt` are leftovers from the previous owner. A self-registered
+  key (`operator == sessionOwner`, which `setDirectorOperator` allows) passes
+  both reads through the owner branch, so for it also check `expiry != 0`,
+  `block.timestamp <= expiry`, and that the owner still has code.
 - `isTokenAuthorized(tokenId, account)` — NFT owner or live (unexpired)
   session key. Does **not** check board seats, seating delay, `scope`, or
   the confirm/execute delay. Burned tokens return false.

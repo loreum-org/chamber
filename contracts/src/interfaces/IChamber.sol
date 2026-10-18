@@ -54,20 +54,7 @@ interface IChamber is IERC4626, IBoard, IWallet {
      */
     function getDelegations(address holder) external view returns (uint256[] memory tokenIds, uint256[] memory amounts);
 
-    /**
-     * @notice Returns the amount delegated by a holder to a specific membership tokenId
-     * @param holder The delegating holder address
-     * @param tokenId The token ID
-     * @return amount The amount delegated
-     */
-    function getHolderDelegation(address holder, uint256 tokenId) external view returns (uint256);
 
-    /**
-     * @notice Returns the total amount delegated by a holder across all tokenIds
-     * @param holder The delegating holder address
-     * @return amount The total amount delegated
-     */
-    function getTotalHolderDelegations(address holder) external view returns (uint256);
 
     /**
      * @notice Registers or clears the session key for a contract-owned membership NFT.
@@ -84,32 +71,13 @@ interface IChamber is IERC4626, IBoard, IWallet {
      */
     function setDirectorOperator(uint256 tokenId, address operator, uint256 expiry, uint32 scope) external;
 
-    /**
-     * @notice Live session key for `tokenId`, or `address(0)` if none, stale, or expired.
-     * @dev Stale after NFT transfer, while the current owner is an EOA, after `expiry`, or if burned.
-     *      Does not apply scope or the post-set confirm/execute delay. See
-     *      {getDirectorOperatorScope} and {getDirectorOperatorLiveAt}.
-     */
-    function getDirectorOperator(uint256 tokenId) external view returns (address operator);
 
-    /**
-     * @notice `scope` of the live session for `tokenId`, or `0` if none / stale / expired / burned.
-     * @dev Same liveness as {getDirectorOperator}. `0` here means no live session, not unscoped
-     *      (`type(uint32).max`). Raw leftover scope is on {getDirectorSession}.
-     */
-    function getDirectorOperatorScope(uint256 tokenId) external view returns (uint32 scope);
 
-    /**
-     * @notice First block the live session may confirm or execute, or `0` if none / stale / expired / burned.
-     * @dev Same liveness as {getDirectorOperator}. Confirm/execute require `block.number >= liveAt`.
-     *      Raw leftover `liveAt` is on {getDirectorSession}.
-     */
-    function getDirectorOperatorLiveAt(uint256 tokenId) external view returns (uint256 liveAt);
 
     /**
      * @notice Stored session fields for `tokenId` (raw; not liveness-filtered).
-     * @dev `operator` / `scope` / `liveAt` here may be stale or expired. Use {getDirectorOperator},
-     *      {getDirectorOperatorScope}, and {getDirectorOperatorLiveAt} for the live session.
+     * @dev `operator` / `scope` / `liveAt` here may be stale or expired. The session is live when
+     *      {isTokenAuthorized}(tokenId, operator) is true.
      */
     function getDirectorSession(uint256 tokenId)
         external
@@ -131,16 +99,10 @@ interface IChamber is IERC4626, IBoard, IWallet {
      */
     function syncSeating(uint256 tokenId) external;
 
-    /**
-     * @notice Top-seat tokenIds that can still authorize (`ownerOf` succeeds, owner is not the chamber).
-     * @dev Denominator for {getQuorum} (PMN-M01). Does not compact leaderboard rank; use
-     *      {cleanupInertSeat} to drop a burned id (PMN-M02 B).
-     */
-    function getReachableDirectorCount() external view returns (uint256);
 
     /**
-     * @notice Removes a burned membership `tokenId` from the leaderboard (PMN-M02 Solution B).
-     * @dev Permissionless. `ownerOf` must revert (or otherwise fail). `refreshSeating` on a later
+     * @notice Removes a burned or chamber-held membership `tokenId` from the leaderboard (PMN-M02 B).
+     * @dev Permissionless. `ownerOf` must revert (or otherwise fail), or return this chamber. `refreshSeating` on a later
      *      delegate/undelegate does not put the id back while it stays inert. Reminting the same
      *      `tokenId` is not required. Live tokens revert {IBoard.SeatNotInert}.
      * @param tokenId Membership token to drop from the top set
@@ -177,11 +139,6 @@ interface IChamber is IERC4626, IBoard, IWallet {
      */
     function cancelSeatUpdate(uint256 tokenId) external;
 
-    /**
-     * @notice Optional hook reserved for registry flows; current implementation is a no-op.
-     * @dev The registry transfers `ProxyAdmin` ownership to the chamber directly after deployment.
-     */
-    function acceptAdmin() external;
 
     /**
      * @notice Returns the `ProxyAdmin` contract address for this transparent proxy (ERC-1967 admin slot).

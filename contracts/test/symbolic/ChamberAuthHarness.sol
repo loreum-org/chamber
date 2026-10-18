@@ -59,8 +59,9 @@ contract ChamberAuthHarness is Board, Wallet {
     function delegate(uint256 tokenId, uint256 amount) external nonReentrant {
         if (tokenId == 0) revert IChamber.ZeroTokenId();
         if (amount == 0) revert IChamber.ZeroAmount();
-        try nft.ownerOf(tokenId) returns (address) {}
-        catch {
+        try nft.ownerOf(tokenId) returns (address owner) {
+            if (owner == address(this)) revert IChamber.InvalidTokenId();
+        } catch {
             revert IChamber.InvalidTokenId();
         }
 
@@ -171,11 +172,15 @@ contract ChamberAuthHarness is Board, Wallet {
     }
 
     function getQuorum() public view returns (uint256) {
-        return _liveQuorum(nft, address(this));
+        return _filledSeatQuorum();
     }
 
     function getReachableDirectorCount() public view returns (uint256) {
-        return _countReachableAuthorized(nft, address(this));
+        return _countFilledSeats();
+    }
+
+    function cleanupInertSeat(uint256 tokenId) external nonReentrant {
+        _cleanupInertSeat(nft, tokenId);
     }
 
     function getSeats() public view returns (uint256) {
@@ -248,7 +253,15 @@ contract ChamberAuthHarness is Board, Wallet {
         uint256 deadline
     ) internal override {
         super._submitTransactionWithMetadata(tokenId, target, value, data, metadataURI, deadline);
-        confirmOwner[getNextTransactionId() - 1][tokenId] = _ownerOfOrZero(tokenId);
+        uint256 nonce = getTransactionCount() - 1;
+        if (_getWalletStorage().isConfirmed[nonce][tokenId]) {
+            confirmOwner[nonce][tokenId] = _ownerOfOrZero(tokenId);
+        }
+    }
+
+    function _submitAutoConfirms(uint256 tokenId) internal view override returns (bool) {
+        if (nft.ownerOf(tokenId) == msg.sender) return true;
+        return _sessionMayAct(tokenId, IWallet.confirmTransaction.selector);
     }
 
     function _confirmTransaction(uint256 tokenId, uint256 nonce) internal override {
@@ -296,7 +309,7 @@ contract ChamberAuthHarness is Board, Wallet {
         (uint32 bit, bool delayed) = _sessionScopeForSelector(selector);
         if (delayed && block.number < session.liveAt) return false;
         if (session.scope == SESSION_SCOPE_UNSCOPED) return true;
-        return bit != 0 && (session.scope & bit) != 0;
+        return bit != 0 && (session.scope & bit) == bit;
     }
 
     function _sessionScopeForSelector(bytes4 selector) internal pure returns (uint32 bit, bool delayed) {

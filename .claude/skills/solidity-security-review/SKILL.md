@@ -96,8 +96,8 @@ Aderyn 0.6.8, all detectors: 4 High kinds (19 instances), 14 Low kinds.
 
 Halmos 0.3.3, `make ci-halmos`: 45 symbolic tests across 6 suites, all pass.
 
-Also observed, not flagged by tools: `BoardLib.executeSeatsUpdate` calls
-`refreshSeating($, prevTop)` twice in a row; the second call is a no-op (gas only).
+Manual-review findings from the 2026-10-12 full review (none were tool-flagged) are in
+`docs/security/review-2026-10-12.md`; read its open list before a new review.
 
 If a new detector kind or a new instance shows up that is not in this table,
 it is a lead: read the code before deciding.
