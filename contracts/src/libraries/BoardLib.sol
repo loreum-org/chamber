@@ -352,9 +352,7 @@ library BoardLib {
     }
 
     /// @dev Immediate seat decrease for PMN-M01 Solution C. Caller enforces recovery preconditions.
-    function recoverSeats(BoardTypes.BoardStorage storage $, uint256 tokenId, uint256 newSeats, IERC721 nft)
-        external
-    {
+    function recoverSeats(BoardTypes.BoardStorage storage $, uint256 tokenId, uint256 newSeats, IERC721 nft) external {
         if (newSeats == 0 || newSeats >= $.seats) revert IBoard.InvalidNumSeats();
         uint256[] memory prevTop = topTokenIds($);
         $.seats = uint32(newSeats);
@@ -503,7 +501,12 @@ library BoardLib {
         BoardTypes.BoardStorage storage $,
         IERC721 nft,
         mapping(uint256 nonce => mapping(uint256 tokenId => bool)) storage flags,
-        mapping(uint256 nonce => mapping(uint256 tokenId => address)) storage flagOwners,
+        mapping(
+            uint256 nonce
+                => mapping(
+                uint256 tokenId => address
+            )
+        ) storage flagOwners,
         uint256 nonce
     ) external view returns (uint256 count) {
         uint256 current = $.head;

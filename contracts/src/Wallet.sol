@@ -92,15 +92,7 @@ abstract contract Wallet {
         uint256 deadline
     ) internal virtual {
         WalletLib.submitTransactionWithMetadata(
-            _getWalletStorage(),
-            tokenId,
-            target,
-            value,
-            data,
-            metadataURI,
-            deadline,
-            _submitQuorum(),
-            address(this)
+            _getWalletStorage(), tokenId, target, value, data, metadataURI, deadline, _submitQuorum(), address(this)
         );
     }
 
@@ -139,13 +131,14 @@ abstract contract Wallet {
         returns (bool executed, uint8 confirmations, address target, uint256 value, bytes32 dataHash)
     {
         WalletTypes.Transaction storage transaction = _getWalletStorage().transactions[nonce];
-        return (
-            transaction.executed,
-            transaction.confirmations,
-            transaction.target,
-            transaction.value,
-            transaction.dataHash
-        );
+        return
+            (
+                transaction.executed,
+                transaction.confirmations,
+                transaction.target,
+                transaction.value,
+                transaction.dataHash
+            );
     }
 
     function getTransactionMetadata(uint256 nonce) public view virtual returns (string memory) {
@@ -176,7 +169,6 @@ abstract contract Wallet {
         return _getWalletStorage().transactionDeadline[nonce];
     }
 
-
     function getCancelConfirmation(uint256 tokenId, uint256 nonce) public view virtual returns (bool) {
         return _getWalletStorage().isCancelConfirmed[nonce][tokenId];
     }
@@ -184,6 +176,4 @@ abstract contract Wallet {
     function getCancelConfirmations(uint256 nonce) public view virtual returns (uint8) {
         return _getWalletStorage().cancelConfirmations[nonce];
     }
-
-
 }

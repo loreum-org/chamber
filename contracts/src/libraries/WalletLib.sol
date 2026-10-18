@@ -91,15 +91,12 @@ library WalletLib {
         uint256 resolvedDeadline = resolveDeadline(deadline);
 
         bytes32 dataHash = keccak256(data);
-        $.transactions.push(
-            WalletTypes.Transaction({
-                target: target,
-                value: value,
-                dataHash: dataHash,
-                executed: false,
-                confirmations: 0
-            })
-        );
+        $.transactions
+            .push(
+                WalletTypes.Transaction({
+                    target: target, value: value, dataHash: dataHash, executed: false, confirmations: 0
+                })
+            );
         if (target == selfAddress) {
             $.transactionCalldata[nonce] = data;
         }

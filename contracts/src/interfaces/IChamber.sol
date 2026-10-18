@@ -54,12 +54,6 @@ interface IChamber is IERC4626, IBoard, IWallet {
      */
     function getDelegations(address holder) external view returns (uint256[] memory tokenIds, uint256[] memory amounts);
 
-    
-
-    
-
-    
-
     /**
      * @notice Binds `seatedAt` to the current `ownerOf(tokenId)` (PMN-H01 Solution A).
      * @dev Permissionless. Call after a seated NFT changes hands so the new controller's
@@ -194,8 +188,6 @@ interface IChamber is IERC4626, IBoard, IWallet {
      *      intake is not implemented.
      */
     event ReceivedERC721(address indexed token, address indexed from, uint256 indexed tokenId);
-
-    
 
     /**
      * @notice Emitted when {recoverSeats} lowers the configured seat count (PMN-M01 C).

@@ -165,7 +165,6 @@ interface IWallet {
      */
     function getTransactionDeadline(uint256 nonce) external view returns (uint256 deadline);
 
-
     /**
      * @notice Checks if a director has voted to cancel a transaction
      * @param tokenId The tokenId of the director to check
@@ -180,7 +179,6 @@ interface IWallet {
      * @return The count of cancel votes
      */
     function getCancelConfirmations(uint256 nonce) external view returns (uint8);
-
 
     /// Events
     /**

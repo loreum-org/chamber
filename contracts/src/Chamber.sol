@@ -304,12 +304,6 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
         return _collectDelegations($c.holderDelegation, $c.holderDelegatedTokenIds, holder);
     }
 
-    
-
-    
-
-    
-
     /**
      * @notice Returns the current seat update proposal
      * @return uint256 proposedSeats
@@ -395,11 +389,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
      * @param tokenId The tokenId confirming the transaction
      * @param transactionId The ID of the transaction to confirm
      */
-    function confirmTransaction(uint256 tokenId, uint256 transactionId)
-        public
-        override
-        directorCall(tokenId)
-    {
+    function confirmTransaction(uint256 tokenId, uint256 transactionId) public override directorCall(tokenId) {
         _confirmOne(tokenId, transactionId);
     }
 
@@ -463,11 +453,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
      * @param tokenId The tokenId voting to cancel
      * @param transactionId The ID of the transaction to cancel
      */
-    function cancelTransaction(uint256 tokenId, uint256 transactionId)
-        public
-        override
-        directorCall(tokenId)
-    {
+    function cancelTransaction(uint256 tokenId, uint256 transactionId) public override directorCall(tokenId) {
         WalletTypes.WalletStorage storage $w = _getWalletStorage();
         if (transactionId >= $w.transactions.length) revert IWallet.TransactionDoesNotExist();
         WalletTypes.Transaction storage transaction = $w.transactions[transactionId];

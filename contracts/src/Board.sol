@@ -88,9 +88,7 @@ abstract contract Board is ReentrancyGuardTransientUpgradeable {
         uint256 tokenId,
         uint256 amount
     ) internal {
-        BoardLib.trackLiveDelegation(
-            _getBoardStorage(), holderEpoch, liveDelegation, holder, tokenId, amount
-        );
+        BoardLib.trackLiveDelegation(_getBoardStorage(), holderEpoch, liveDelegation, holder, tokenId, amount);
     }
 
     function _consumeLiveDelegation(
@@ -173,7 +171,12 @@ abstract contract Board is ReentrancyGuardTransientUpgradeable {
     function _countCurrentDirectorFlags(
         IERC721 nft,
         mapping(uint256 nonce => mapping(uint256 tokenId => bool)) storage flags,
-        mapping(uint256 nonce => mapping(uint256 tokenId => address)) storage flagOwners,
+        mapping(
+            uint256 nonce
+                => mapping(
+                uint256 tokenId => address
+            )
+        ) storage flagOwners,
         uint256 nonce
     ) internal view returns (uint256) {
         return BoardLib.countCurrentDirectorFlags(_getBoardStorage(), nft, flags, flagOwners, nonce);
