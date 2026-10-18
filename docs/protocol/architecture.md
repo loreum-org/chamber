@@ -127,7 +127,7 @@ User → delegate(tokenId, amount)
 ### Transaction Flow
 
 ```
-Director → submitTransaction(tokenId, target, value, data)
+Director → submitTransaction(tokenId, target, value, data, metadataURI, deadline)
   → Wallet._submitTransaction()
     → Create Transaction struct
     → Auto-confirm submitter

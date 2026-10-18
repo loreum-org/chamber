@@ -136,7 +136,7 @@ Undelegates tokens from a token ID.
 ---
 
 #### `getDelegations(address agent) → (uint256[] tokenIds, uint256[] amounts)`
-Returns all delegations for an agent.
+Returns all delegations for an agent, in the order they were first made. Includes token IDs that have left the board.
 
 **Parameters**:
 - `agent`: Address to query
@@ -301,14 +301,16 @@ Returns current seat update proposal.
 
 ### Wallet Functions
 
-#### `submitTransaction(uint256 tokenId, address target, uint256 value, bytes memory data)`
-Submits a new transaction for approval.
+#### `submitTransaction(uint256 tokenId, address target, uint256 value, bytes memory data, string memory metadataURI, uint256 deadline)`
+Submits a new transaction for approval. Submitting records the submitter's confirmation.
 
 **Parameters**:
 - `tokenId`: Director's token ID
 - `target`: Target address
 - `value`: ETH amount to send
 - `data`: Calldata
+- `metadataURI`: URI or content hash describing the proposal. Empty stores nothing.
+- `deadline`: Unix time after which the transaction expires. `0` uses the 30-day default.
 
 **Reverts**:
 - `NotDirector`: If caller is not a director
@@ -319,6 +321,8 @@ Submits a new transaction for approval.
 **Events**:
 - `SubmitTransaction(tokenId, transactionId, target, value, data)`
 - `TransactionSubmitted(transactionId, target, value)`
+- `ProposalMetadataSet(transactionId, metadataURI)` when `metadataURI` is not empty
+- `TransactionDeadlineSet(transactionId, deadline)`
 
 **Access**: Directors only
 
@@ -475,7 +479,7 @@ Checks if transaction is confirmed by tokenId.
 Accepts native ETH with empty calldata. Emits `Received`.
 
 #### `fallback()`
-Accepts native ETH sent with calldata. Emits `Received` when `msg.value > 0`. Unknown selectors do not dispatch privileged logic.
+Accepts native ETH sent with calldata and emits `Received`. Reverts with `InvalidTransaction` when no ETH is sent, so a call to an unknown function (for example `permit`) never looks like it succeeded.
 
 #### `onERC721Received(address operator, address from, uint256 tokenId, bytes data) → bytes4`
 ERC-721 receiver hook. Accepts **any** collection (`msg.sender` is not checked against `nft()`). Receipt is treasury custody: it does not mint shares or change board seats. Directors transfer received ERC-721s out via the wallet.

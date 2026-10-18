@@ -58,7 +58,7 @@ sequenceDiagram
 
     rect rgb(240, 255, 240)
         Note over User,External: Phase 3: Transaction Execution
-        User->>Chamber: submitTransaction(tokenId, target, value, data)
+        User->>Chamber: submitTransaction(tokenId, target, value, data, metadataURI, deadline)
         Chamber->>Chamber: Verify isDirector(tokenId)
         Chamber->>Wallet: _submitTransaction(...)
         Wallet->>Wallet: Create transaction, auto-confirm
@@ -328,7 +328,7 @@ sequenceDiagram
 
     Note over Director1,ExternalContract: Transaction Flow (Quorum = 3)
 
-    Director1->>Chamber: submitTransaction(tokenId1, target, value, data)
+    Director1->>Chamber: submitTransaction(tokenId1, target, value, data, metadataURI, deadline)
     
     Chamber->>Chamber: Check isDirector(tokenId1)
     Note over Chamber: Verify tokenId1 in top seats

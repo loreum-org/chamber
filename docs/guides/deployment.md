@@ -340,11 +340,13 @@ cast send $CHAMBER_ADDRESS \
 
 # Test transaction submission
 cast send $CHAMBER_ADDRESS \
-    "submitTransaction(uint256,address,uint256,bytes)" \
+    "submitTransaction(uint256,address,uint256,bytes,string,uint256)" \
     1 \
     $TARGET_ADDRESS \
     0 \
     0x \
+    "" \
+    0 \
     --rpc-url mainnet \
     --private-key $PRIVATE_KEY
 ```
@@ -370,6 +372,8 @@ registry.on("ChamberCreated", (chamber, seats, name, symbol, erc20, erc721) => {
 
 ### Upgrading Chamber Implementation
 
+Chambers deployed before 1.2.0 cannot be upgraded in place to 1.3.0 (1.3.0 does not backfill their delegation records). Deploy a new chamber instead.
+
 1. **Deploy New Implementation**:
 ```bash
 forge create src/Chamber.sol:Chamber \
@@ -388,7 +392,9 @@ chamber.submitTransaction(
         ProxyAdmin.upgrade.selector,
         chamberProxyAddress,
         newImplementationAddress
-    )
+    ),
+    "", // metadataURI
+    0   // deadline: 30-day default
 );
 ```
 

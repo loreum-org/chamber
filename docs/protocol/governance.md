@@ -45,5 +45,5 @@ That threshold is a count of distinct director **token IDs**, not unique address
 
 Who may *call* as a given `tokenId` is specified in
 [Director authorization](./director-authorization.md): the NFT owner
-(`msg.sender == ownerOf`), or one Chamber-registered session key on a
-**contract-owned** membership NFT. ERC-1271 is not consulted (M-01).
+(`msg.sender == ownerOf`). Agents act through the owner's own wallet.
+ERC-1271 is not consulted (M-01).

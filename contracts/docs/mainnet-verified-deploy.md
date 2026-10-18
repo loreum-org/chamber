@@ -29,7 +29,7 @@ Review blockers that the old checklist marked open are **merged**:
 | PMN-M01 reachable quorum | [#209](https://github.com/loreum-org/chamber/issues/209) | [#223](https://github.com/loreum-org/chamber/pull/223) | merged |
 | PMN-M02 inert seated NFTs | [#210](https://github.com/loreum-org/chamber/issues/210) | [#224](https://github.com/loreum-org/chamber/pull/224) | merged |
 | PMN-M03 Factory-only create / impl probe | [#211](https://github.com/loreum-org/chamber/issues/211) | [#225](https://github.com/loreum-org/chamber/pull/225) | merged |
-| PMN-M04 session-key expiry/scope | [#212](https://github.com/loreum-org/chamber/issues/212) | [#226](https://github.com/loreum-org/chamber/pull/226) | merged |
+| PMN-M04 session-key expiry/scope | [#212](https://github.com/loreum-org/chamber/issues/212) | [#226](https://github.com/loreum-org/chamber/pull/226) | merged; moot since 1.3.0 removed session keys |
 | 1.1.7 / 1.1.9 eviction hot-path | — | [#213](https://github.com/loreum-org/chamber/pull/213) | merged (`Chamber.VERSION` is `1.1.9`) |
 | Halmos harness (not a full proof) | — | [#206](https://github.com/loreum-org/chamber/pull/206) | merged |
 | Verified deploy package | [#188](https://github.com/loreum-org/chamber/issues/188) | [#214](https://github.com/loreum-org/chamber/pull/214) | merged; Factory fields still TBD |
