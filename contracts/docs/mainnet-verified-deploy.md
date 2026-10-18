@@ -58,6 +58,10 @@ Sepolia is already deployed. Do not treat a Sepolia redeploy as a substitute for
 | Verify | `make verify-mainnet-factory` | No (Etherscan only; refuses TBD / Sepolia) |
 | Receipt extract | `script/extract-mainnet-broadcast.sh` | No (prints labels; does not write the file as live) |
 | Address template | `deployments/mainnet.txt` | TBD until a chain-id-1 receipt |
+| Upgrade step 1: new implementation | `script/DeployChamberImplementation.s.sol` | Gated on chain id 1 (**Chad only**) |
+| Upgrade step 2: queue board tx | `script/ProposeChamberUpgrade.s.sol` | Prints calldata by default; `SUBMIT=true` + `--broadcast` gated on chain id 1 (**Chad only**) |
+
+Upgrades after deploy: since 1.3.0 the only path is a quorum transaction from the chamber to its own ProxyAdmin, `upgradeAndCall(chamber, newImplementation, data)`. `ProposeChamberUpgrade` checks that the ProxyAdmin is owned by the chamber, that the implementation has code and a `VERSION()`, and that it differs from the current one. ProxyAdmin has no version or migration checks of its own; the board is responsible for what it approves.
 
 `DeployFactory.s.sol` remains the generic script (any chain). Use **DeployMainnetFactory** on Ethereum so libs are logged and Sepolia is refused. Do not invent a new Make broadcast target.
 

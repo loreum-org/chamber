@@ -77,10 +77,10 @@ forge script script/Registry.s.sol:RegistryScript \
     --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 ```
 
-### 3. Deploy Chamber Implementation
+### 3. Deploy a Chamber (Factory path; the chamber owns its ProxyAdmin)
 
 ```bash
-forge script script/Chamber.s.sol:ChamberScript \
+forge script script/Chamber.s.sol:DeployChamber \
     --rpc-url http://localhost:8545 \
     --broadcast \
     --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
@@ -129,10 +129,10 @@ forge script script/Registry.s.sol:RegistryScript \
     -vvvv
 ```
 
-#### 3. Deploy Chamber Implementation
+#### 3. Deploy a Chamber (Factory path; the chamber owns its ProxyAdmin)
 
 ```bash
-forge script script/Chamber.s.sol:ChamberScript \
+forge script script/Chamber.s.sol:DeployChamber \
     --rpc-url sepolia \
     --broadcast \
     --verify \
@@ -374,12 +374,14 @@ registry.on("ChamberCreated", (chamber, seats, name, symbol, erc20, erc721) => {
 
 Chambers deployed before 1.2.0 cannot be upgraded in place to 1.3.0 (1.3.0 does not backfill their delegation records). Deploy a new chamber instead. If one is upgraded anyway, `delegate`/`undelegate` on its pre-1.2.0 delegation rows revert `LegacyDelegation` instead of corrupting board weight, and the app refuses to submit to chambers older than 1.1.5.
 
+Scripts: `script/DeployChamberImplementation.s.sol` (step 1) and `script/ProposeChamberUpgrade.s.sol` (step 2), or `make deploy-chamber-implementation` / `make propose-chamber-upgrade`. Both simulate unless you pass `--broadcast`; chain id 1 broadcast is gated by `MAINNET_DEPLOY_UNBLOCKED=1` (Chad only). `ProposeChamberUpgrade` runs the preflight (ProxyAdmin owned by the chamber, implementation has code and `VERSION()`, differs from the current one), prints the ProxyAdmin target and `upgradeAndCall` calldata plus the full `submitTransaction` calldata, and with `SUBMIT=true` submits it from the broadcasting director.
+
+Only chambers whose ProxyAdmin is owned by the chamber (every Factory-created chamber) can be upgraded by the board. A bare proxy deployed with an EOA admin is upgraded by that EOA, not the board; do not deploy chambers that way.
+
 1. **Deploy New Implementation**:
 ```bash
-forge create src/Chamber.sol:Chamber \
-    --rpc-url mainnet \
-    --private-key $PRIVATE_KEY \
-    --verify
+forge script script/DeployChamberImplementation.s.sol:DeployChamberImplementation \
+    --rpc-url $RPC --account $DEPLOYER --broadcast --verify
 ```
 
 2. **Propose Upgrade**. Since 1.3.0 this is the only upgrade path: a quorum transaction to the chamber's ProxyAdmin (Chamber has no `upgradeImplementation`). ProxyAdmin has no version or migration checks of its own; the board is responsible for what it approves.
@@ -397,6 +399,12 @@ chamber.submitTransaction(
 );
 ```
 
+   Or with the script (prints everything; `SUBMIT=true` + `--broadcast` sends it):
+```bash
+CHAMBER=$CHAMBER NEW_IMPLEMENTATION=$IMPL TOKEN_ID=1 SUBMIT=true \
+forge script script/ProposeChamberUpgrade.s.sol:ProposeChamberUpgrade --rpc-url $RPC --account $DIRECTOR --broadcast
+```
+
 3. **Execute Upgrade** (after quorum). The calldata is stored onchain, so `data` can be empty:
 ```solidity
 chamber.executeTransaction(tokenId, transactionId, "");
@@ -408,7 +416,7 @@ Similar process, but requires admin role:
 
 ```solidity
 ProxyAdmin proxyAdmin = ProxyAdmin(proxyAdminAddress);
-proxyAdmin.upgrade(registryProxyAddress, newRegistryImplementation);
+proxyAdmin.upgradeAndCall(ITransparentUpgradeableProxy(registryProxyAddress), newRegistryImplementation, "");
 ```
 
 ---
