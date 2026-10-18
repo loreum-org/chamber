@@ -7,6 +7,7 @@ import {IChamber} from "src/interfaces/IChamber.sol";
 import {MockERC20} from "test/mock/MockERC20.sol";
 import {MockERC721} from "test/mock/MockERC721.sol";
 import {DeployChamber} from "test/utils/DeployChamber.sol";
+import {ChamberReads} from "test/utils/ChamberReads.sol";
 
 /**
  * @title M-03: Evicted delegations are undiscoverable via getDelegations — FIXED
@@ -97,8 +98,8 @@ contract EvictedDelegationDiscoveryTest is Test {
         _fillBoardWithAliceAsTail();
         _evictTail(51);
 
-        assertEq(chamber.getHolderDelegation(alice, EVICTED_TOKEN), ALICE_AMOUNT);
-        assertEq(chamber.getTotalHolderDelegations(alice), ALICE_AMOUNT);
+        assertEq(ChamberReads.holderDelegation(chamber, alice, EVICTED_TOKEN), ALICE_AMOUNT);
+        assertEq(ChamberReads.totalHolderDelegations(chamber, alice), ALICE_AMOUNT);
         assertTrue(_containsDelegation(alice, EVICTED_TOKEN, ALICE_AMOUNT), "getDelegations must include evicted id");
     }
 
@@ -117,8 +118,8 @@ contract EvictedDelegationDiscoveryTest is Test {
         vm.prank(alice);
         chamber.undelegate(EVICTED_TOKEN, ALICE_AMOUNT);
 
-        assertEq(chamber.getHolderDelegation(alice, EVICTED_TOKEN), 0);
-        assertEq(chamber.getTotalHolderDelegations(alice), 0);
+        assertEq(ChamberReads.holderDelegation(chamber, alice, EVICTED_TOKEN), 0);
+        assertEq(ChamberReads.totalHolderDelegations(chamber, alice), 0);
         (uint256[] memory tokenIds,) = chamber.getDelegations(alice);
         assertEq(tokenIds.length, 0, "cleared evicted id should leave the enumerable set");
 
@@ -156,7 +157,7 @@ contract EvictedDelegationDiscoveryTest is Test {
         vm.prank(alice);
         chamber.undelegate(EVICTED_TOKEN, 20);
 
-        assertEq(chamber.getHolderDelegation(alice, EVICTED_TOKEN), 30);
+        assertEq(ChamberReads.holderDelegation(chamber, alice, EVICTED_TOKEN), 30);
         assertTrue(_containsDelegation(alice, EVICTED_TOKEN, 30));
 
         uint256 aliceShares = chamber.balanceOf(alice);
@@ -196,13 +197,13 @@ contract EvictedDelegationDiscoveryTest is Test {
         vm.prank(alice);
         chamber.undelegate(EVICTED_TOKEN, ALICE_AMOUNT);
 
-        assertEq(chamber.getHolderDelegation(alice, EVICTED_TOKEN), 0);
-        assertEq(chamber.getTotalHolderDelegations(alice), 0);
+        assertEq(ChamberReads.holderDelegation(chamber, alice, EVICTED_TOKEN), 0);
+        assertEq(ChamberReads.totalHolderDelegations(chamber, alice), 0);
         (uint256[] memory aliceIds,) = chamber.getDelegations(alice);
         assertEq(aliceIds.length, 0);
 
-        assertEq(chamber.getHolderDelegation(carol, EVICTED_TOKEN), CAROL_AMOUNT, "carol stake must remain");
-        assertEq(chamber.getTotalHolderDelegations(carol), CAROL_AMOUNT);
+        assertEq(ChamberReads.holderDelegation(chamber, carol, EVICTED_TOKEN), CAROL_AMOUNT, "carol stake must remain");
+        assertEq(ChamberReads.totalHolderDelegations(chamber, carol), CAROL_AMOUNT);
         assertTrue(_containsDelegation(carol, EVICTED_TOKEN, CAROL_AMOUNT));
 
         uint256 carolShares = chamber.balanceOf(carol);

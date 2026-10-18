@@ -89,8 +89,6 @@ Public ETH / NFT receive: **`receive`**, **`fallback`**, **`onERC721Received`**.
 | **`delegate(uint256 tokenId, uint256 amount)`** | Updates `holderDelegation` and board; requires share balance; NFT must exist (**`InvalidTokenId`** on `ownerOf` failure). |
 | **`undelegate(uint256 tokenId, uint256 amount)`** | Reduces holder maps; updates board if node still present. |
 | **`getDelegations(address holder) → (uint256[] tokenIds, uint256[] amounts)`** | Scans board list for this holder’s positive weights. |
-| **`getHolderDelegation(address holder, uint256 tokenId)`** | Single cell. |
-| **`getTotalHolderDelegations(address holder)`** | Aggregate. |
 
 ### Board
 
@@ -103,7 +101,7 @@ Public ETH / NFT receive: **`receive`**, **`fallback`**, **`onERC721Received`**.
 | **`getSeats()`** | Seat count. |
 | **`getDirectors()`** | **`ownerOf`** for each top **`getSeats()`** token ID; `address(0)` on failure. |
 | **`setDirectorOperator(tokenId, operator)`** | Contract NFT owner registers or clears the session key. No ERC-1271. |
-| **`getDirectorOperator(tokenId)`** | Live session key, or zero if unset / stale / EOA-owned. |
+| **`getDirectorSession(tokenId)`** | Raw stored session. Live when `isTokenAuthorized` is true for both the stored `operator` and the stored `sessionOwner`. |
 | **`isTokenAuthorized(tokenId, account)`** | Owner or live session key (does not check seats). |
 | **`syncSeating(tokenId)`** | Permissionless seating-clock bind after `ownerOf` change (PMN-H01). |
 | **`cleanupInertSeat(tokenId)`** | Permissionless: drop a burned `tokenId` from the top set (PMN-M02 B). Live tokens revert `SeatNotInert`. |
@@ -129,7 +127,7 @@ All director-gated with **`isDirector(tokenId)`** and **`nonReentrant`** where m
 
 Transaction validation (single and batch): **`target != address(0)`**. If **`target == address(this)`**, calldata selector must be **`upgradeImplementation(address,bytes)`**. **`value`** cannot exceed native balance.
 
-Read helpers: **`getTransactionCount`**, **`getNextTransactionId`**, **`getTransaction(nonce)`** → **`(..., dataHash)`**, **`getTransactionMetadata`**, **`getTransactionCalldata`**, **`getConfirmation`**, **`getCancelled`**, **`getCancelConfirmation`**, **`getCancelConfirmations`**.
+Read helpers: **`getTransactionCount`**, **`getTransaction(nonce)`** → **`(..., dataHash)`**, **`getTransactionMetadata`**, **`getTransactionCalldata`**, **`getConfirmation`**, **`getCancelled`**, **`getCancelConfirmation`**, **`getCancelConfirmations`**.
 
 ### Proxy upgrades
 
@@ -137,7 +135,6 @@ Read helpers: **`getTransactionCount`**, **`getNextTransactionId`**, **`getTrans
 |---------|------|
 | **`getProxyAdmin() → address`** | Reads ERC‑1967 admin slot (OZ **ProxyAdmin** contract). |
 | **`upgradeImplementation(address newImplementation, bytes calldata data)`** | Requires **`msg.sender == address(this)`** (e.g. via **`executeTransaction`**); **`ProxyAdmin.owner() == address(this)`**; invokes **`upgradeAndCall`**. |
-| **`acceptAdmin()`** | No-op; Factory (or leftover Registry) transfers ProxyAdmin ownership directly. |
 
 ---
 

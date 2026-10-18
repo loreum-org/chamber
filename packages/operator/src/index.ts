@@ -35,6 +35,8 @@ export {
   describeSessionScope,
   directorSessionStatus,
   directorSessionStatusLabel,
+  isLiveSession,
+  isSelfSession,
   isUnscopedSession,
   isValidSessionExpiry,
   isZeroAddress,

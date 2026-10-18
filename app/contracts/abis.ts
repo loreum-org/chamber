@@ -141,23 +141,6 @@ export const chamberAbi = [
     ],
     stateMutability: 'view',
   },
-  {
-    type: 'function',
-    name: 'getHolderDelegation',
-    inputs: [
-      { name: 'holder', type: 'address' },
-      { name: 'tokenId', type: 'uint256' },
-    ],
-    outputs: [{ name: 'amount', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'getTotalHolderDelegations',
-    inputs: [{ name: 'holder', type: 'address' }],
-    outputs: [{ name: 'amount', type: 'uint256' }],
-    stateMutability: 'view',
-  },
   // Board functions
   {
     type: 'function',
@@ -263,27 +246,6 @@ export const chamberAbi = [
     ],
     outputs: [],
     stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    name: 'getDirectorOperator',
-    inputs: [{ name: 'tokenId', type: 'uint256' }],
-    outputs: [{ name: 'operator', type: 'address' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'getDirectorOperatorScope',
-    inputs: [{ name: 'tokenId', type: 'uint256' }],
-    outputs: [{ name: 'scope', type: 'uint32' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'getDirectorOperatorLiveAt',
-    inputs: [{ name: 'tokenId', type: 'uint256' }],
-    outputs: [{ name: 'liveAt', type: 'uint256' }],
-    stateMutability: 'view',
   },
   {
     type: 'function',
@@ -479,13 +441,6 @@ export const chamberAbi = [
   },
   {
     type: 'function',
-    name: 'isTransactionExpired',
-    inputs: [{ name: 'nonce', type: 'uint256' }],
-    outputs: [{ name: '', type: 'bool' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
     name: 'getConfirmation',
     inputs: [
       { name: 'tokenId', type: 'uint256' },
@@ -516,13 +471,6 @@ export const chamberAbi = [
     name: 'getCancelConfirmations',
     inputs: [{ name: 'nonce', type: 'uint256' }],
     outputs: [{ name: '', type: 'uint8' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'getNextTransactionId',
-    inputs: [],
-    outputs: [{ name: '', type: 'uint256' }],
     stateMutability: 'view',
   },
   // Events

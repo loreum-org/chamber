@@ -15,6 +15,8 @@ import {
   describeSessionScope,
   directorSessionStatus,
   directorSessionStatusLabel,
+  isLiveSession,
+  isSelfSession,
   isValidSessionExpiry,
 } from '../src/session.ts'
 
@@ -43,9 +45,9 @@ test('generated-plus-IChamber ABI exposes the M04 4-arg session-key surface', ()
     setFn.inputs.map((input) => input.type),
     ['uint256', 'address', 'uint256', 'uint32'],
   )
-  assert.ok(abiItem('function', 'getDirectorOperator'))
-  assert.ok(abiItem('function', 'getDirectorOperatorScope'))
-  assert.ok(abiItem('function', 'getDirectorOperatorLiveAt'))
+  // Live session = getDirectorSession + isTokenAuthorized; the per-field live getters were removed.
+  assert.equal(abiItem('function', 'getDirectorOperator'), undefined)
+  assert.ok(abiItem('function', 'isTokenAuthorized'))
   assert.ok(abiItem('function', 'getDirectorSession'))
   const event = abiItem('event', 'DirectorOperatorSet')
   assert.ok(event && 'inputs' in event)
@@ -55,7 +57,7 @@ test('generated-plus-IChamber ABI exposes the M04 4-arg session-key surface', ()
   )
   assert.ok(abiItem('error', 'InvalidSessionExpiry'))
   assert.ok(abiItem('error', 'InvalidSessionScope'))
-  assert.equal(directorOperatorAbi.length, 8)
+  assert.equal(directorOperatorAbi.length, 5)
 })
 
 test('chamberAbi encodes 4-arg setDirectorOperator and live readers', () => {
@@ -84,9 +86,6 @@ test('chamberAbi encodes 4-arg setDirectorOperator and live readers', () => {
   assert.equal(clearDecoded.args[3], 0)
 
   for (const [functionName, expected] of [
-    ['getDirectorOperator', [3n]],
-    ['getDirectorOperatorScope', [3n]],
-    ['getDirectorOperatorLiveAt', [3n]],
     ['getDirectorSession', [3n]],
   ] as const) {
     const data = encodeFunctionData({ abi: chamberAbi, functionName, args: [3n] })
@@ -213,4 +212,157 @@ test('README documents 4-arg session keys, defaults, EOA rejection, and no 1271'
   assert.match(readme, /30-day/)
   assert.match(readme, /SESSION_SCOPE_UNSCOPED/)
   assert.match(readme, /confirm\/execute wait until `liveAt`/i)
+})
+
+/**
+ * Fake chamber for the live-session read path. `isTokenAuthorized` mirrors the contract:
+ * owner, or the stored operator while `sessionOwner == owner` and unexpired.
+ */
+function fakeOperator(state: {
+  owner: string
+  sessionOwner: string
+  operator: string
+  scope: number
+  liveAt: bigint
+  expiry?: bigint
+  now?: bigint
+  ownerCode?: `0x${string}`
+}) {
+  const expiry = state.expiry ?? 1_900_000_000n
+  const now = state.now ?? 1_800_000_000n
+  const ownerCode = state.ownerCode ?? '0x6080'
+  const calls: string[] = []
+  const eq = (a: string, b: string) => a.toLowerCase() === b.toLowerCase()
+  const publicClient = {
+    async readContract({ functionName, args }: { functionName: string; args: readonly unknown[] }) {
+      calls.push(functionName)
+      if (functionName === 'getDirectorSession') {
+        return [state.sessionOwner, state.operator, expiry, state.scope, state.liveAt]
+      }
+      if (functionName === 'isTokenAuthorized') {
+        // Chamber._isTokenAuthorized: owner branch first, then _isLiveSessionKey.
+        const account = args[1] as string
+        if (eq(account, ZERO)) return false
+        if (eq(account, state.owner)) return true
+        return (
+          ownerCode !== '0x' &&
+          eq(state.sessionOwner, state.owner) &&
+          eq(account, state.operator) &&
+          expiry !== 0n &&
+          now <= expiry
+        )
+      }
+      throw new Error(`unexpected read ${functionName}`)
+    },
+    async getBlockNumber() {
+      return 100n
+    },
+    async getBlock() {
+      calls.push('getBlock')
+      return { timestamp: now }
+    },
+    async getBytecode({ address }: { address: string }) {
+      calls.push('getBytecode')
+      return eq(address, state.owner) ? ownerCode : '0x'
+    },
+  }
+  const Ctor = ChamberOperator as unknown as new (opts: Record<string, unknown>) => ChamberOperator
+  return Object.assign(
+    new Ctor({ rpcUrl: 'http://fake', chamber: '0x00000000000000000000000000000000000000C1', publicClient }),
+    { calls },
+  )
+}
+
+test('isLiveSession needs both the operator and the stored session owner authorized', () => {
+  assert.equal(isLiveSession({ rawOperator: SESSION, operatorAuthorized: true, sessionOwnerAuthorized: true }), true)
+  assert.equal(isLiveSession({ rawOperator: SESSION, operatorAuthorized: true, sessionOwnerAuthorized: false }), false)
+  assert.equal(isLiveSession({ rawOperator: SESSION, operatorAuthorized: false, sessionOwnerAuthorized: true }), false)
+  assert.equal(isLiveSession({ rawOperator: ZERO, operatorAuthorized: true, sessionOwnerAuthorized: true }), false)
+})
+
+test('live session reads report the key while the setting owner still holds the NFT', async () => {
+  const OWNER_A = '0x00000000000000000000000000000000000000A1'
+  const op = fakeOperator({ owner: OWNER_A, sessionOwner: OWNER_A, operator: SESSION, scope: SESSION_SCOPE_CONFIRM, liveAt: 50n })
+  assert.equal((await op.getDirectorOperator(3n)).toLowerCase(), SESSION.toLowerCase())
+  assert.equal(await op.getDirectorOperatorScope(3n), SESSION_SCOPE_CONFIRM)
+  assert.equal(await op.getDirectorOperatorLiveAt(3n), 50n)
+})
+
+test('session is not live after the NFT moves to the operator itself', async () => {
+  // Contract A set key X, then transferred the NFT to X. X now acts as owner, not as A's key.
+  const OWNER_A = '0x00000000000000000000000000000000000000A1'
+  const op = fakeOperator({ owner: SESSION, sessionOwner: OWNER_A, operator: SESSION, scope: SESSION_SCOPE_CONFIRM, liveAt: 50n })
+  assert.equal(await op.getDirectorOperator(3n), ZERO)
+  assert.equal(await op.getDirectorOperatorScope(3n), 0)
+  assert.equal(await op.getDirectorOperatorLiveAt(3n), 0n)
+  const state = await op.getDirectorOperatorState(3n)
+  assert.equal(state.operator, ZERO)
+  assert.equal(state.status, 'stale')
+})
+
+// ---------------------------------------------------------------------------
+// QA #392: self-registered key (operator == sessionOwner == owner). Both
+// isTokenAuthorized reads pass via the owner branch, so liveness must mirror
+// Chamber._isLiveSessionKey: owner has code and expiry != 0 && now <= expiry.
+// ---------------------------------------------------------------------------
+
+const SELF = '0x00000000000000000000000000000000000000A1'
+
+test('isLiveSession mirrors _isLiveSessionKey for a self-registered key', () => {
+  const base = { rawOperator: SELF, operatorAuthorized: true, sessionOwnerAuthorized: true, sessionOwner: SELF } as const
+  assert.equal(isSelfSession(SELF, SELF.toUpperCase().replace('0X', '0x')), true)
+  assert.equal(isSelfSession(SESSION, SELF), false)
+  assert.equal(isLiveSession({ ...base, rawExpiry: 200n, nowSec: 200n, ownerHasCode: true }), true)
+  assert.equal(isLiveSession({ ...base, rawExpiry: 200n, nowSec: 201n, ownerHasCode: true }), false, 'expired')
+  assert.equal(isLiveSession({ ...base, rawExpiry: 0n, nowSec: 1n, ownerHasCode: true }), false, 'expiry 0')
+  assert.equal(isLiveSession({ ...base, rawExpiry: 200n, nowSec: 100n, ownerHasCode: false }), false, 'owner lost code')
+  assert.equal(isLiveSession({ ...base }), false, 'missing inputs fail closed')
+  // A normal key (operator != sessionOwner) does not need the extra inputs.
+  assert.equal(
+    isLiveSession({ rawOperator: SESSION, operatorAuthorized: true, sessionOwnerAuthorized: true, sessionOwner: SELF }),
+    true,
+  )
+})
+
+test('self-registered key is live while unexpired and the owner has code', async () => {
+  const op = fakeOperator({ owner: SELF, sessionOwner: SELF, operator: SELF, scope: SESSION_SCOPE_CONFIRM, liveAt: 50n })
+  assert.equal((await op.getDirectorOperator(3n)).toLowerCase(), SELF.toLowerCase())
+  assert.equal(await op.getDirectorOperatorScope(3n), SESSION_SCOPE_CONFIRM)
+})
+
+test('expired self-registered key is not live even though both isTokenAuthorized reads pass', async () => {
+  const op = fakeOperator({
+    owner: SELF,
+    sessionOwner: SELF,
+    operator: SELF,
+    scope: SESSION_SCOPE_CONFIRM,
+    liveAt: 50n,
+    expiry: 1_000n,
+    now: 2_000n,
+  })
+  assert.equal(await op.getDirectorOperator(3n), ZERO)
+  assert.equal(await op.getDirectorOperatorScope(3n), 0)
+  assert.equal(await op.getDirectorOperatorLiveAt(3n), 0n)
+  const state = await op.getDirectorOperatorState(3n)
+  assert.equal(state.operator, ZERO)
+  assert.equal(state.status, 'expired')
+})
+
+test('self-registered key is not live once the owner has no code (revoked EIP-7702)', async () => {
+  const op = fakeOperator({
+    owner: SELF,
+    sessionOwner: SELF,
+    operator: SELF,
+    scope: SESSION_SCOPE_CONFIRM,
+    liveAt: 50n,
+    ownerCode: '0x',
+  })
+  assert.equal(await op.getDirectorOperator(3n), ZERO)
+})
+
+test('normal session key skips the extra block / bytecode reads', async () => {
+  const op = fakeOperator({ owner: SELF, sessionOwner: SELF, operator: SESSION, scope: SESSION_SCOPE_CONFIRM, liveAt: 50n })
+  assert.equal((await op.getDirectorOperator(3n)).toLowerCase(), SESSION.toLowerCase())
+  assert.ok(!op.calls.includes('getBlock'))
+  assert.ok(!op.calls.includes('getBytecode'))
 })

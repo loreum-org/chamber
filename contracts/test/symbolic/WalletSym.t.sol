@@ -5,6 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {SymTest} from "halmos-cheatcodes/SymTest.sol";
 import {MockWallet} from "test/mock/MockWallet.sol";
 import {WalletTypes} from "src/types/WalletTypes.sol";
+import {ChamberReads} from "test/utils/ChamberReads.sol";
 
 /// @notice Symbolic verification of Wallet queue storage and lifecycle via Halmos
 /// @dev Auth (`isDirector` / session keys) lives on Chamber; see ChamberSymTest.
@@ -45,7 +46,7 @@ contract WalletSymTest is Test, SymTest {
         assertEq(target, TARGET);
         assertTrue(wallet.getConfirmation(tokenId, 0));
         assertEq(wallet.getTransactionDeadline(0), submittedAt + WalletTypes.DEFAULT_TRANSACTION_MAX_AGE);
-        assertFalse(wallet.isTransactionExpired(0));
+        assertFalse(ChamberReads.transactionExpired(address(wallet), 0));
         assertFalse(wallet.getCancelled(0));
     }
 
@@ -116,7 +117,7 @@ contract WalletSymTest is Test, SymTest {
         wallet.submitTransaction(tokenId, TARGET, 0, data, deadline);
 
         vm.warp(deadline + 1);
-        assertTrue(wallet.isTransactionExpired(0));
+        assertTrue(ChamberReads.transactionExpired(address(wallet), 0));
 
         (bool success,) = address(wallet).call(abi.encodeCall(MockWallet.executeTransaction, (tokenId, 0, data)));
         assertFalse(success);
