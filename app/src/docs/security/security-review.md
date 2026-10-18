@@ -14,7 +14,7 @@ Chamber’s **trust surface** is the Solidity in **`contracts/src/`** (`Factory`
 
 1. **Architecture** — inheritance, storage slots, Factory → Chamber deploy path.  
 2. **Per-function analysis** — access control, reentrancy, arithmetic, external calls.  
-3. **Cross-contract** — delegation vs transfers, stale confirmations, owner / session-key director auth.  
+3. **Cross-contract** — delegation vs transfers, stale confirmations, owner-only director auth (Chamber session keys were removed in 1.3.0).  
 4. **Tooling** — Slither, Foundry tests/fuzz, manual threat modeling.
 
 ## Common question areas

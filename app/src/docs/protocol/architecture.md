@@ -54,7 +54,7 @@ Production-shaped flows use **`Factory.createChamber`**. Standalone Chamber depl
 ## Read next
 
 - **[Governance](./governance.md)** — behavior in plain language  
-- **[Director authorization](./director-authorization.md)** — owner and session keys  
+- **[Director authorization](./director-authorization.md)** — directors act as the NFT owner  
 - **[Design notes](./design-notes.md)** — storage layout and limits (`MAX_NODES` = 50)  
 - **[Deployment](../guides/deployment.md)** — Foundry commands  
 - **[API reference](../reference/api-reference.md)**  

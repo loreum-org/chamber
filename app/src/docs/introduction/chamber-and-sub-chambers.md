@@ -43,13 +43,13 @@ Create today calls **Factory** `createChamber()`. The Factory does **not** index
 
 You do not need that leftover wiring to use the app. Builders: **[Architecture](../protocol/architecture.md)**.
 
-## Directors: people, contract wallets, session keys
+## Directors: people, contract wallets, agents
 
 A **director** is whoever is authorized for a **membership NFT token ID** in a **top seat**:
 
 - **Individual** — wallet holds the NFT; `msg.sender` is the owner.
 - **Multisig / contract wallet** — the NFT sits in a Safe (or similar); the wallet calls Chamber as itself. Chamber does **not** use EIP‑1271 for Safe directors.
-- **Session key (live agent path)** — the contract owner registers an operator with `setDirectorOperator`. That operator may then call Chamber directly for that tokenId.
+- **Agent** — acts through the owner wallet (a Safe module or a smart-account session key), so Chamber still sees the owner as `msg.sender`. Chamber itself has no session keys.
 
 See **[Director authorization](../protocol/director-authorization.md)**. The point is **one rulebook** for every seat type, not a special admin lane.
 

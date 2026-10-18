@@ -88,7 +88,7 @@ Consider a Chamber if:
 
 ## Can you use both?
 
-Yes. A **multisig contract** can **own a membership NFT** and act as one **director seat** on the board. The Safe (or other contract wallet) calls Chamber as `msg.sender`, or registers a **session key** with `setDirectorOperator`. Chamber does **not** call EIP-1271. See **[Director authorization](../protocol/director-authorization.md)** and **[Chambers and Sub-Chambers](./chamber-and-sub-chambers.md)**.
+Yes. A **multisig contract** can **own a membership NFT** and act as one **director seat** on the board. The Safe (or other contract wallet) calls Chamber as `msg.sender`. An agent can act for that seat through a Safe module or wallet session key. Chamber does **not** call EIP-1271. See **[Director authorization](../protocol/director-authorization.md)** and **[Chambers and Sub-Chambers](./chamber-and-sub-chambers.md)**.
 
 ## Read next
 

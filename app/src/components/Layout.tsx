@@ -13,7 +13,6 @@ import toast from 'react-hot-toast'
 
 const navItems = [
   { path: '/', label: 'My Chambers' },
-  { path: '/operators', label: 'Operators' },
   { path: '/deploy', label: 'Deploy Chamber' },
   { path: '/compliance', label: 'Compliance' },
   { path: '/docs', label: 'Docs' },

@@ -816,8 +816,6 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
         <DirectorCallerStatus
           role={directorGate.role}
           tokenId={directorGate.tokenId}
-          nftOwner={directorGate.nftOwner}
-          sessionOperator={directorGate.sessionOperator}
         />
       </ChamberHeader>
 

@@ -296,7 +296,7 @@ export function useSubmitTransactionWithStatus(
         address: chamberAddress,
         abi: chamberAbi,
         functionName: 'submitTransaction',
-        args: [tokenId, target, value, data],
+        args: [tokenId, target, value, data, '', 0n],
       })
     } catch (err) {
       // On error, reset the status
@@ -594,7 +594,7 @@ export function useCreateChamberWithStatus(
  *   onSuccess: () => refetch(),
  * })
  * 
- * await execute({ args: [tokenId, target, value, data] })
+ * await execute({ args: [tokenId, target, value, data, '', 0n] })
  * ```
  */
 export function useWriteContractWithStatus(

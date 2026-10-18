@@ -78,7 +78,7 @@ Single proxy instance per organization. **`VERSION`** is a public **`bytes32`** 
 
 Standard **`deposit` / `mint` / `withdraw` / `redeem`** with OpenZeppelin ERC‑4626 behavior. Vault assets must be **standard ERC‑20**; `deposit`/`mint` revert **`AssetAmountMismatch`** if the observed `balanceOf` delta is not the requested amount (fee-on-transfer). Transfers and withdrawals enforce **non-underflow vs `totalHolderDelegations`** (**`ExceedsDelegatedAmount`**). ERC‑20 **`transfer`/`transferFrom`** disallow zero amount and zero **to** (**`ZeroAmount`**, **`TransferToZeroAddress`**).
 
-Public ETH / NFT receive: **`receive`**, **`fallback`**, **`onERC721Received`**.
+Public ETH / NFT receive: **`receive`**, **`fallback`**, **`onERC721Received`**. The payable `fallback` reverts when called with no ETH.
 
 `onERC721Received` accepts **any** ERC-721 collection (treasury custody; not a membership whitelist). Receipt does not mint shares. There is **no** `onERC1155Received` — ERC-1155 `safeTransferFrom` to Chamber reverts. Directors transfer received ERC-721s out via the wallet queue.
 
@@ -100,9 +100,6 @@ Public ETH / NFT receive: **`receive`**, **`fallback`**, **`onERC721Received`**.
 | **`getQuorum()`** | `1 + (n * 51) / 100` over reachable authorized director `tokenId`s (PMN-M01; token-weighted, not 1-address-1-vote). Empty/inert slots do not inflate `n`. |
 | **`getSeats()`** | Seat count. |
 | **`getDirectors()`** | **`ownerOf`** for each top **`getSeats()`** token ID; `address(0)` on failure. |
-| **`setDirectorOperator(tokenId, operator)`** | Contract NFT owner registers or clears the session key. No ERC-1271. |
-| **`getDirectorSession(tokenId)`** | Raw stored session. Live when `isTokenAuthorized` is true for both the stored `operator` and the stored `sessionOwner`. |
-| **`isTokenAuthorized(tokenId, account)`** | Owner or live session key (does not check seats). |
 | **`syncSeating(tokenId)`** | Permissionless seating-clock bind after `ownerOf` change (PMN-H01). |
 | **`cleanupInertSeat(tokenId)`** | Permissionless: drop a burned `tokenId` from the top set (PMN-M02 B). Live tokens revert `SeatNotInert`. |
 | **`updateSeats(uint256 tokenId, uint256 numOfSeats)`** | Director-only seat proposal / support. |
@@ -111,12 +108,11 @@ Public ETH / NFT receive: **`receive`**, **`fallback`**, **`onERC721Received`**.
 
 ### Wallet multisig
 
-All director-gated with **`isDirector(tokenId)`** and **`nonReentrant`** where marked on `Chamber`. Directorship and confirmations are **per membership token**, so one address holding **`quorum`** top-seat NFTs is a **single-actor treasury**.
+All director-gated with **`isDirector(tokenId)`** (caller must be **`ownerOf(tokenId)`**; there are no Chamber session keys since 1.3.0) and **`nonReentrant`** where marked on `Chamber`. Directorship and confirmations are **per membership token**, so one address holding **`quorum`** top-seat NFTs is a **single-actor treasury**.
 
 | Function | Role |
 |---------|------|
-| **`submitTransaction(tokenId, target, value, data)`** | Validates target/value (see below); stores **`keccak256(data)`**; also stores full bytes for self-calls (`upgradeImplementation`); auto-confirms submitter. |
-| **`submitTransactionWithMetadata(..., string metadataURI)`** | Same + optional durable URI / hash string. |
+| **`submitTransaction(tokenId, target, value, data, metadataURI, deadline)`** | The only single-transaction submit. Validates target/value (see below); stores **`keccak256(data)`**; also stores full bytes for self-calls (`upgradeImplementation`); records the submitter's confirmation. Pass `""` for no metadata and `0` for the default 30-day deadline. |
 | **`confirmTransaction(tokenId, transactionId)`** | Increments confirmations if not cancelled / executed / duplicate. |
 | **`revokeConfirmation(tokenId, transactionId)`** | Removes this director’s confirmation when allowed. |
 | **`executeTransaction(tokenId, transactionId, bytes calldata data)`** | Requires quorum; verifies hash; empty `data` uses stored self-call bytes. |
