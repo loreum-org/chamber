@@ -6,7 +6,7 @@ pragma solidity ^0.8.30;
  * @author xhad, Loreum DAO LLC
  * @notice Director-gated multisig: submit, confirm, execute, revoke, and cancel transaction flows.
  * @dev Ordinary calls store only `keccak256(calldata)`; callers must retain full calldata to execute.
- *      Self-calls (`target == address(this)`, Chamber: `upgradeImplementation`) also persist the
+ *      Self-calls (`target == address(this)`) and, on Chamber, calls to its ProxyAdmin also persist the
  *      original bytes onchain so a confirmed upgrade remains executable if logs are unavailable.
  *      Confirmation and execution require a quorum of distinct director token IDs as enforced by `Chamber`.
  *      That quorum is token-weighted: one address that holds `quorum` top-seat membership NFTs
@@ -44,7 +44,7 @@ interface IWallet {
     /**
      * @notice Executes a transaction if current directors still meet the required quorum
      * @dev Caller must supply the original calldata unless it was stored onchain for a self-call
-     *      (Chamber: `upgradeImplementation`). Empty `data` then uses the stored bytes.
+     *      (Chamber: also calls to its ProxyAdmin, i.e. upgrades). Empty `data` then uses the stored bytes.
      *      The contract always verifies keccak256(payload) == stored hash.
      *      Chamber counts only tokenIds still in the top-seat set, against
      *      `max(submitQuorum, liveQuorum)`. Deadline `0` is unset and is not expired.

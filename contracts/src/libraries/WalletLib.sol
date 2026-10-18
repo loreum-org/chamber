@@ -85,7 +85,7 @@ library WalletLib {
         string memory metadataURI,
         uint256 deadline,
         uint256 submitQuorum,
-        address selfAddress
+        bool storeCalldata
     ) external {
         uint256 nonce = $.transactions.length;
         uint256 resolvedDeadline = resolveDeadline(deadline);
@@ -97,7 +97,7 @@ library WalletLib {
                     target: target, value: value, dataHash: dataHash, executed: false, confirmations: 0
                 })
             );
-        if (target == selfAddress) {
+        if (storeCalldata) {
             $.transactionCalldata[nonce] = data;
         }
         $.transactionRequiredQuorum[nonce] = submitQuorum;

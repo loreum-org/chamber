@@ -16,10 +16,6 @@ import {
 } from "lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {ERC20Upgradeable} from "lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
 import {PausableUpgradeable} from "lib/openzeppelin-contracts-upgradeable/contracts/utils/PausableUpgradeable.sol";
-import {ProxyAdmin} from "lib/openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
-import {
-    ITransparentUpgradeableProxy
-} from "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {StorageSlot} from "lib/openzeppelin-contracts/contracts/utils/StorageSlot.sol";
 import {EnumerableSet} from "lib/openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
 import {TransientSlot} from "lib/openzeppelin-contracts/contracts/utils/TransientSlot.sol";
@@ -91,8 +87,6 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
      */
     bytes32 public constant VERSION = "1.3.0";
 
-    /// @notice Function selector for upgradeImplementation(address,bytes)
-    bytes4 private constant UPGRADE_SELECTOR = 0xc89311b6;
     /// @notice Function selector for pause()
     bytes4 private constant PAUSE_SELECTOR = 0x8456cb59;
     /// @notice Function selector for unpause()
@@ -396,8 +390,8 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
 
     /**
      * @notice Executes a transaction if current directors still meet the required quorum
-     * @dev Caller must re-supply the original calldata unless this nonce stored it (self-call /
-     *      `upgradeImplementation`). Empty `data` uses the stored bytes. Payload is always
+     * @dev Caller must re-supply the original calldata unless this nonce stored it (self-calls and
+     *      calls to this chamber's ProxyAdmin). Empty `data` uses the stored bytes. Payload is always
      *      verified against the stored keccak256 hash.
      *      Counts live top-seat flags (H-01) against `max(submitQuorum, liveQuorum)` (M-04).
      *      Deadline `0` is unset and is not expired (M-06).
@@ -524,6 +518,12 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
         return getQuorum();
     }
 
+    /// @dev Keep full calldata for self-calls and for calls to this chamber's ProxyAdmin, so an
+    ///      approved upgrade can be executed without re-supplying its bytes (L-04).
+    function _storesCalldata(address target) internal view override returns (bool) {
+        return target == address(this) || target == StorageSlot.getAddressSlot(_ADMIN_SLOT).value;
+    }
+
     /**
      * @notice Confirmations required to execute a submitted transaction
      * @dev `max(submitQuorum, liveQuorum)` so a later seat decrease cannot revive an
@@ -549,12 +549,13 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
         }
     }
 
-    /// @dev Self-calls are limited to upgrade, pause, and unpause so the board cannot invoke arbitrary internals.
+    /// @dev Self-calls are limited to pause and unpause so the board cannot invoke arbitrary internals.
+    ///      Upgrades go to the chamber's ProxyAdmin (`upgradeAndCall`) as an ordinary quorum transaction.
     function _requireAllowedSelfCall(bytes memory data) internal pure {
         if (data.length < 4) revert IChamber.InvalidTransaction();
         // forge-lint: disable-next-line(unsafe-typecast)
         bytes4 selector = bytes4(data);
-        if (selector != UPGRADE_SELECTOR && selector != PAUSE_SELECTOR && selector != UNPAUSE_SELECTOR) {
+        if (selector != PAUSE_SELECTOR && selector != UNPAUSE_SELECTOR) {
             revert IChamber.InvalidTransaction();
         }
     }
@@ -797,32 +798,6 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
     /// @notice Returns true if vault operations and wallet execution are paused
     function paused() public view override(PausableUpgradeable, IChamber) returns (bool) {
         return PausableUpgradeable.paused();
-    }
-
-    /**
-     * @notice Upgrades the Chamber implementation via `ProxyAdmin.upgradeAndCall`
-     * @dev Reverts with `NotAuthorized` if this contract is not the `ProxyAdmin` owner.
-     *      Must not take `nonReentrant`: the only legitimate caller is this contract via
-     *      `executeTransaction` (`msg.sender == address(this)`), which already holds the shared
-     *      guard. A nested `nonReentrant` would make every upgrade revert. External reentry is
-     *      already rejected by the `NotAuthorized` sender check.
-     * @param newImplementation The new implementation address
-     * @param data Optional initialization data for the new implementation
-     */
-    function upgradeImplementation(address newImplementation, bytes calldata data) external override {
-        if (msg.sender != address(this)) revert IChamber.NotAuthorized();
-        address proxyAdminAddress = StorageSlot.getAddressSlot(_ADMIN_SLOT).value;
-        if (proxyAdminAddress == address(0)) revert IChamber.ZeroAddress();
-        if (newImplementation == address(0)) revert IChamber.ZeroAddress();
-
-        ProxyAdmin proxyAdmin = ProxyAdmin(proxyAdminAddress);
-
-        if (proxyAdmin.owner() != address(this)) {
-            revert IChamber.NotAuthorized();
-        }
-
-        ITransparentUpgradeableProxy proxy = ITransparentUpgradeableProxy(address(this));
-        proxyAdmin.upgradeAndCall(proxy, newImplementation, data);
     }
 
     /// ERC-4626 OVERRIDES ///
