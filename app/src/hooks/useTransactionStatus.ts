@@ -1,8 +1,9 @@
 import { useEffect, useCallback, useRef, useState } from 'react'
-import { useWaitForTransactionReceipt, useWriteContract } from 'wagmi'
+import { usePublicClient, useWaitForTransactionReceipt, useWriteContract } from 'wagmi'
 import { type Abi, type Hash, type TransactionReceipt } from 'viem'
 import toast from 'react-hot-toast'
 import { chamberAbi, erc20Abi, factoryAbi, registryAbi } from '@/contracts/abis'
+import { ChamberSubmitError, planSubmit, readChamberVersionLabel, verifySubmitReceipt } from '@/lib/chamberSubmit'
 
 export type TransactionStatus = 'idle' | 'pending' | 'confirming' | 'success' | 'error'
 
@@ -267,13 +268,17 @@ export function useTransactionStatus(
 }
 
 /**
- * Enhanced hook for submitting transactions with status tracking
+ * Enhanced hook for submitting transactions with status tracking.
+ * Version-gated like `useSubmitTransaction` (legacy submit below 1.3.0), and the mined
+ * receipt must contain the chamber's `SubmitTransaction` event or an error is surfaced.
  */
 export function useSubmitTransactionWithStatus(
   chamberAddress: `0x${string}` | undefined,
   options?: UseTransactionStatusOptions
 ) {
-  const { writeContract, data: hash, isPending, error: writeError } = useWriteContract()
+  const { writeContractAsync, data: hash, isPending, error: writeError } = useWriteContract()
+  const publicClient = usePublicClient()
+  const [recordError, setRecordError] = useState<Error | null>(null)
   const transactionStatus = useTransactionStatus({
     hash,
     ...options,
@@ -283,21 +288,29 @@ export function useSubmitTransactionWithStatus(
     tokenId: bigint,
     target: `0x${string}`,
     value: bigint,
-    data: `0x${string}`
+    data: `0x${string}`,
+    metadataURI = '',
+    deadline = 0n
   ) => {
     if (!chamberAddress) return
     try {
       // Reset transaction status before new transaction
       transactionStatus.reset()
-      
-      // Call writeContract - wagmi will automatically update the hash state
-      // which will trigger useTransactionStatus to start watching
-      await writeContract({
-        address: chamberAddress,
-        abi: chamberAbi,
-        functionName: 'submitTransaction',
-        args: [tokenId, target, value, data, '', 0n],
+      setRecordError(null)
+      if (!publicClient) throw new ChamberSubmitError('No RPC connection for this network. Nothing was sent.')
+      const versionLabel = await readChamberVersionLabel(publicClient, chamberAddress)
+      const plan = planSubmit(versionLabel, { tokenId, target, value, data, metadataURI, deadline })
+      const txHash =
+        plan.kind === 'single'
+          ? await writeContractAsync({ address: chamberAddress, abi: plan.abi, functionName: plan.functionName, args: plan.args })
+          : await writeContractAsync({ address: chamberAddress, abi: plan.abi, functionName: plan.functionName, args: plan.args })
+      void verifySubmitReceipt(publicClient, txHash, chamberAddress).catch((err: unknown) => {
+        const e = err instanceof Error ? err : new Error(String(err))
+        setRecordError(e)
+        if (options?.showNotifications !== false) toast.error(e.message)
+        options?.onError?.(e)
       })
+      return txHash
     } catch (err) {
       // On error, reset the status
       transactionStatus.reset()
@@ -308,6 +321,8 @@ export function useSubmitTransactionWithStatus(
   return {
     submit,
     ...transactionStatus,
+    isSuccess: transactionStatus.isSuccess && !recordError,
+    recordError,
     writeError,
     isPending: isPending || transactionStatus.isPending,
   }

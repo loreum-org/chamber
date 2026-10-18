@@ -152,7 +152,7 @@ From **`IChamber`** / **`IBoard`** / **`IWallet`** / **`IFactory`** / leftover *
 |------|-----------|
 | Factory / leftover Registry | `ZeroAddress`, `InvalidSeats` |
 | Chamber / IChamber | `InsufficientChamberBalance`, `ExceedsDelegatedAmount`, `AssetAmountMismatch`, `NotDirector`, `NotEnoughConfirmations`, `InvalidTransaction`, `NotAuthorized`, seat / token errors |
-| Board | `CircuitBreakerActive`, `TokenIdTooLarge`, `MaxNodesReached`, seat proposal / timelock errors |
+| Board | `CircuitBreakerActive`, `TokenIdTooLarge`, `MaxNodesReached`, `LegacyDelegation` (pre-1.2.0 delegation row on a chamber upgraded in place; redeploy), seat proposal / timelock errors |
 | Wallet / IWallet | `TransactionDoesNotExist`, `TransactionAlreadyExecuted`, `TransactionAlreadyConfirmed`, `TransactionNotConfirmed`, `TransactionAlreadyCancelled`, `DataHashMismatch`, `TransactionFailed`, `InvalidTarget` |
 
 See interface files for full enumerations.

@@ -1,9 +1,11 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
+import toast from 'react-hot-toast'
 import { useQuery } from '@tanstack/react-query'
 import { useReadContract, useReadContracts, useWriteContract, useWaitForTransactionReceipt, useSimulateContract, useAccount, useBlockNumber, usePublicClient, useChainId } from 'wagmi'
 import { isAddress } from 'viem'
 import { chamberAbi, erc20Abi, erc721Abi } from '@/contracts/abis'
 import { chamberVersionBytes32ToLabel, resolveTokenDecimals } from '@/lib/utils'
+import { ChamberSubmitError, planSubmit, readChamberVersionLabel, verifySubmitReceipt } from '@/lib/chamberSubmit'
 import { isSeatingMature } from '@/lib/chamberGovernance'
 import { getAlchemyApiKeyFromEnv } from '@/lib/alchemy'
 import { listOwnedErc721TokenIds } from '@/lib/ownedErc721'
@@ -505,9 +507,17 @@ export function useDelegations(chamberAddress: `0x${string}` | undefined, accoun
 }
 
 // Write hooks
+/**
+ * Submits one proposal. Reads the chamber's `VERSION()` on-chain first and uses the legacy
+ * `submitTransactionWithMetadata` on chambers older than 1.3.0 (see `lib/chamberSubmit`).
+ * Once mined, the receipt must contain the chamber's `SubmitTransaction` event; if it does
+ * not, `recordError` is set and an error toast is shown.
+ */
 export function useSubmitTransaction(chamberAddress: `0x${string}` | undefined) {
   const { writeContractAsync, data: hash, isPending, error } = useWriteContract()
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
+  const publicClient = usePublicClient()
+  const [recordError, setRecordError] = useState<Error | null>(null)
 
   const submit = async (
     tokenId: bigint,
@@ -518,16 +528,23 @@ export function useSubmitTransaction(chamberAddress: `0x${string}` | undefined) 
     deadline = 0n
   ) => {
     if (!chamberAddress) return
-    // Single entrypoint: "" stores no metadata, 0n applies the default 30-day deadline.
-    return writeContractAsync({
-      address: chamberAddress,
-      abi: chamberAbi,
-      functionName: 'submitTransaction',
-      args: [tokenId, target, value, data, metadataURI, deadline],
+    if (!publicClient) throw new ChamberSubmitError('No RPC connection for this network. Nothing was sent.')
+    setRecordError(null)
+    const versionLabel = await readChamberVersionLabel(publicClient, chamberAddress)
+    const plan = planSubmit(versionLabel, { tokenId, target, value, data, metadataURI, deadline })
+    const txHash =
+      plan.kind === 'single'
+        ? await writeContractAsync({ address: chamberAddress, abi: plan.abi, functionName: plan.functionName, args: plan.args })
+        : await writeContractAsync({ address: chamberAddress, abi: plan.abi, functionName: plan.functionName, args: plan.args })
+    void verifySubmitReceipt(publicClient, txHash, chamberAddress).catch((err: unknown) => {
+      const e = err instanceof Error ? err : new Error(String(err))
+      setRecordError(e)
+      toast.error(e.message)
     })
+    return txHash
   }
 
-  return { submit, isPending, isConfirming, isSuccess, error, hash }
+  return { submit, isPending, isConfirming, isSuccess: isSuccess && !recordError, error, recordError, hash }
 }
 
 export function useSubmitBatchTransactions(chamberAddress: `0x${string}` | undefined) {

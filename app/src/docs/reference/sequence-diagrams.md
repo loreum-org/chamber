@@ -582,7 +582,7 @@ sequenceDiagram
     
     loop For each transaction
         Chamber->>Chamber: Validate target != 0, if target==Chamber only upgradeImplementation selector
-        Chamber->>Wallet: _submitTransaction(tokenId, target[i], value[i], data[i])
+        Chamber->>Wallet: _submitTransactionWithMetadata(tokenId, target[i], value[i], data[i], "", 0)
         Wallet->>Wallet: Create Transaction
         Wallet->>Wallet: Auto-confirm tokenId
         Wallet-->>Chamber: Transaction created
