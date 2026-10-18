@@ -4,10 +4,15 @@ pragma solidity 0.8.30;
 import {Script, console} from "forge-std/Script.sol";
 import {stdJson} from "forge-std/StdJson.sol";
 import {Chamber} from "src/Chamber.sol";
-import {DeployChamber as DeployChamberLib} from "test/utils/DeployChamber.sol";
+import {ScriptDeploy} from "script/ScriptDeploy.sol";
 import {MockERC20} from "test/mock/MockERC20.sol";
 import {MockERC721} from "test/mock/MockERC721.sol";
+import {MainnetDeployGuard} from "script/MainnetDeployGuard.sol";
 
+/// @notice Deploys a Chamber through the product path: new implementation, new Factory, createChamber.
+/// @dev The Factory hands the chamber's ProxyAdmin to the chamber itself, so the board (quorum tx to
+///      ProxyAdmin.upgradeAndCall) is the only upgrader. Do not deploy a bare proxy with an EOA admin:
+///      that EOA would own upgrades and the board could not upgrade. Chain id 1 is Chad-only.
 contract DeployChamber is Script {
     using stdJson for string;
 
@@ -15,7 +20,8 @@ contract DeployChamber is Script {
     address asset;
     address admin;
 
-    function run() external {
+    function run() external returns (Chamber chamber) {
+        if (block.chainid == 1) MainnetDeployGuard.revertIfBroadcastBlocked();
         vm.startBroadcast();
 
         if (block.chainid == 1) {
@@ -70,9 +76,15 @@ contract DeployChamber is Script {
             revert("Unsupported chain");
         }
 
-        Chamber chamber = DeployChamberLib.deploy(asset, nft, 5, "Chamber LORE", "cLORE", admin);
+        chamber = deployWith(asset, nft, admin);
         console.log("Chamber deployed at:", address(chamber));
+        console.log("ProxyAdmin         :", chamber.getProxyAdmin());
 
         vm.stopBroadcast();
+    }
+
+    /// @notice Factory create path; reverts unless the chamber owns its ProxyAdmin.
+    function deployWith(address asset_, address nft_, address admin_) public returns (Chamber chamber) {
+        (chamber,) = ScriptDeploy.deployChamberViaFactory(asset_, nft_, 5, "Chamber LORE", "cLORE", admin_);
     }
 }

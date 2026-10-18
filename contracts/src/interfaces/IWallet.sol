@@ -22,7 +22,7 @@ interface IWallet {
      * @param tokenId The tokenId submitting the transaction
      * @param target The address to send the transaction to
      * @param value The amount of Ether to send
-     * @param data The calldata (hash stored always; full bytes stored when `target` is this wallet)
+     * @param data The calldata (hash stored always; full bytes stored when `target` is this wallet or, on a Chamber, its ProxyAdmin)
      * @param metadataURI URI or content hash describing the proposal; empty stores nothing
      * @param deadline Exclusive-after unix timestamp; `0` applies the 30-day default max age
      */
