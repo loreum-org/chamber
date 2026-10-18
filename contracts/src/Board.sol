@@ -86,11 +86,10 @@ abstract contract Board is ReentrancyGuardTransientUpgradeable {
         mapping(address => mapping(uint256 => uint256)) storage liveDelegation,
         address holder,
         uint256 tokenId,
-        uint256 priorDelegation,
         uint256 amount
     ) internal {
         BoardLib.trackLiveDelegation(
-            _getBoardStorage(), holderEpoch, liveDelegation, holder, tokenId, priorDelegation, amount
+            _getBoardStorage(), holderEpoch, liveDelegation, holder, tokenId, amount
         );
     }
 
@@ -186,23 +185,9 @@ abstract contract Board is ReentrancyGuardTransientUpgradeable {
 
     function _collectDelegations(
         mapping(address => mapping(uint256 => uint256)) storage holderDelegation,
-        mapping(address => uint256) storage totalHolderDelegations,
         mapping(address => EnumerableSet.UintSet) storage holderDelegatedTokenIds,
         address holder
     ) internal view returns (uint256[] memory, uint256[] memory) {
-        return BoardLib.collectDelegations(
-            _getBoardStorage(), holderDelegation, totalHolderDelegations, holderDelegatedTokenIds, holder
-        );
-    }
-
-    function _syncTrackedDelegations(
-        mapping(address => mapping(uint256 => uint256)) storage holderDelegation,
-        mapping(address => uint256) storage totalHolderDelegations,
-        mapping(address => EnumerableSet.UintSet) storage holderDelegatedTokenIds,
-        address holder
-    ) internal {
-        BoardLib.syncTrackedDelegations(
-            _getBoardStorage(), holderDelegation, totalHolderDelegations, holderDelegatedTokenIds, holder
-        );
+        return BoardLib.collectDelegations(holderDelegation, holderDelegatedTokenIds, holder);
     }
 }

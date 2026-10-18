@@ -18,51 +18,15 @@ pragma solidity ^0.8.30;
  */
 interface IWallet {
     /**
-     * @notice Submits a new transaction for approval
+     * @notice Submits a new transaction for approval. The submitting token's confirmation is recorded.
      * @param tokenId The tokenId submitting the transaction
      * @param target The address to send the transaction to
      * @param value The amount of Ether to send
      * @param data The calldata (hash stored always; full bytes stored when `target` is this wallet)
-     */
-    function submitTransaction(uint256 tokenId, address target, uint256 value, bytes memory data) external;
-
-    /**
-     * @notice Submits a new transaction for approval with an explicit execution deadline
-     * @param tokenId The tokenId submitting the transaction
-     * @param target The address to send the transaction to
-     * @param value The amount of Ether to send
-     * @param data The calldata (stored onchain as keccak256 hash only)
+     * @param metadataURI URI or content hash describing the proposal; empty stores nothing
      * @param deadline Exclusive-after unix timestamp; `0` applies the 30-day default max age
      */
-    function submitTransaction(uint256 tokenId, address target, uint256 value, bytes memory data, uint256 deadline)
-        external;
-
-    /**
-     * @notice Submits a new transaction for approval with durable proposal metadata
-     * @param tokenId The tokenId submitting the transaction
-     * @param target The address to send the transaction to
-     * @param value The amount of Ether to send
-     * @param data The calldata (hash stored always; full bytes stored when `target` is this wallet)
-     * @param metadataURI URI or content hash describing the proposal rationale and risk context
-     */
-    function submitTransactionWithMetadata(
-        uint256 tokenId,
-        address target,
-        uint256 value,
-        bytes memory data,
-        string memory metadataURI
-    ) external;
-
-    /**
-     * @notice Submits a new transaction with durable proposal metadata and an explicit deadline
-     * @param tokenId The tokenId submitting the transaction
-     * @param target The address to send the transaction to
-     * @param value The amount of Ether to send
-     * @param data The calldata (stored onchain as keccak256 hash only)
-     * @param metadataURI URI or content hash describing the proposal rationale and risk context
-     * @param deadline Exclusive-after unix timestamp; `0` applies the 30-day default max age
-     */
-    function submitTransactionWithMetadata(
+    function submitTransaction(
         uint256 tokenId,
         address target,
         uint256 value,
@@ -92,7 +56,7 @@ interface IWallet {
 
     /**
      * @notice Revokes a confirmation for a transaction
-     * @dev Chamber allows the token owner or its live session key to revoke after leaving
+     * @dev Chamber allows the token owner to revoke after leaving
      *      the board (no ERC-1271; see director-authorization.md).
      * @param tokenId The tokenId revoking the confirmation
      * @param transactionId The ID of the transaction to revoke confirmation for

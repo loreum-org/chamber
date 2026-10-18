@@ -85,8 +85,7 @@ library WalletLib {
         string memory metadataURI,
         uint256 deadline,
         uint256 submitQuorum,
-        address selfAddress,
-        bool autoConfirm
+        address selfAddress
     ) external {
         uint256 nonce = $.transactions.length;
         uint256 resolvedDeadline = resolveDeadline(deadline);
@@ -111,7 +110,7 @@ library WalletLib {
             $.transactionMetadataURI[nonce] = metadataURI;
             emit IWallet.ProposalMetadataSet(nonce, metadataURI);
         }
-        if (autoConfirm) confirmTransaction($, tokenId, nonce);
+        confirmTransaction($, tokenId, nonce);
         emit IWallet.SubmitTransaction(tokenId, nonce, target, value, data);
     }
 

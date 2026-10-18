@@ -33,11 +33,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
     using EnumerableSet for EnumerableSet.UintSet;
     using TransientSlot for *;
 
-    /// @dev Bound to the approving contract owner so an NFT transfer drops the key.
-    ///      Packed into two slots: `owner`/`expiry`/`scope` then `operator`/`liveAt`.
-    ///      `expiry == 0` is not live (rejected at set; leftover zero-expiry rows are inert).
-    ///      `scope == 0` grants no actions. `SESSION_SCOPE_UNSCOPED` is explicit full access.
-    ///      `liveAt` is the first block the key may confirm or execute (PMN-M04 C).
+    /// @dev Retired session-key record (removed in 1.3.0). Kept only so the storage layout does not shift.
     struct DirectorSession {
         address owner;
         uint64 expiry;
@@ -60,8 +56,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
         mapping(address => uint256) totalHolderDelegations;
         /// @dev Per-holder set of tokenIds with a positive delegation, including board-evicted ids.
         mapping(address => EnumerableSet.UintSet) holderDelegatedTokenIds;
-        /// @dev Session key for a contract-owned membership NFT. Stale if `owner` != current `ownerOf`,
-        ///      expired, or (for confirm/execute) `block.number < liveAt`.
+        /// @dev Unused since 1.3.0 (session keys removed). Kept for layout stability.
         mapping(uint256 tokenId => DirectorSession) directorSession;
         /// @dev `ownerOf` when the confirm bit was last written. Mismatch is ignored for quorum (PMN-H01 A).
         mapping(uint256 nonce => mapping(uint256 tokenId => address)) confirmOwner;
@@ -88,28 +83,13 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
     /// Constants
     uint256 private constant MAX_SEATS = 20;
 
-    /// @notice Session scope bit: submit (including batch and metadata variants)
-    uint32 public constant SESSION_SCOPE_SUBMIT = 1 << 0;
-    /// @notice Session scope bit: confirm (including batch)
-    uint32 public constant SESSION_SCOPE_CONFIRM = 1 << 1;
-    /// @notice Session scope bit: execute (including batch)
-    uint32 public constant SESSION_SCOPE_EXECUTE = 1 << 2;
-    /// @notice Session scope bit: updateSeats / executeSeatsUpdate / cancelSeatUpdate
-    uint32 public constant SESSION_SCOPE_UPDATE_SEATS = 1 << 3;
-    /// @notice Session scope bit: revokeConfirmation
-    uint32 public constant SESSION_SCOPE_REVOKE = 1 << 4;
-    /// @notice Session scope bit: cancelTransaction
-    uint32 public constant SESSION_SCOPE_CANCEL = 1 << 5;
-    /// @notice Explicit unscoped sentinel. Scope `0` is rejected at set and grants nothing.
-    uint32 public constant SESSION_SCOPE_UNSCOPED = type(uint32).max;
-
     /**
      * @notice Implementation version stored as a bytes32 constant.
      * @dev Replaces `string version` in ChamberStorage — a dynamic string uses 2+ storage slots
      *      (length word + data word) and incurs an SLOAD on every read. A bytes32 constant is
      *      inlined at compile time: zero runtime gas, zero storage slots.
      */
-    bytes32 public constant VERSION = "1.2.0";
+    bytes32 public constant VERSION = "1.3.0";
 
     /// @notice Function selector for upgradeImplementation(address,bytes)
     bytes4 private constant UPGRADE_SELECTOR = 0xc89311b6;
@@ -190,8 +170,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
         uint256 senderBalance = balanceOf(msg.sender);
         if (senderBalance < amount) revert IChamber.InsufficientChamberBalance();
 
-        uint256 priorDelegation = $.holderDelegation[msg.sender][tokenId];
-        $.holderDelegation[msg.sender][tokenId] = priorDelegation + amount;
+        $.holderDelegation[msg.sender][tokenId] += amount;
         $.totalHolderDelegations[msg.sender] += amount;
         $.holderDelegatedTokenIds[msg.sender].add(tokenId);
 
@@ -200,10 +179,8 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
             revert IChamber.InsufficientChamberBalance();
         }
 
-        _trackLiveDelegation($.holderEpoch, $.liveDelegation, msg.sender, tokenId, priorDelegation, amount);
+        _trackLiveDelegation($.holderEpoch, $.liveDelegation, msg.sender, tokenId, amount);
         _delegate(tokenId, amount, $.nft);
-        _syncCallerDelegations();
-
         emit IChamber.DelegationUpdated(msg.sender, tokenId, $.holderDelegation[msg.sender][tokenId]);
     }
 
@@ -234,14 +211,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
             _undelegate(tokenId, boardAmount, $.nft);
         }
 
-        _syncCallerDelegations();
-
         emit IChamber.DelegationUpdated(msg.sender, tokenId, newDelegation);
-    }
-
-    function _syncCallerDelegations() private {
-        ChamberStorage storage $ = _getChamberStorage();
-        _syncTrackedDelegations($.holderDelegation, $.totalHolderDelegations, $.holderDelegatedTokenIds, msg.sender);
     }
 
     /// BOARD ///
@@ -289,7 +259,6 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
         return _filledSeatQuorum();
     }
 
-
     /**
      * @notice Retrieves the current number of seats
      * @return The current number of seats
@@ -319,9 +288,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
 
     /**
      * @notice Returns the list of tokenIds to which the holder has delegated tokens and the corresponding amounts
-     * @dev Prefers the per-holder enumerable set (insertion order, including evicted ids). After an
-     *      in-place upgrade the set is empty, so leftover `holderDelegation` amounts are unioned from
-     *      the live board list and the eviction index. Empty holders stay empty.
+     * @dev Insertion order, including ids evicted from the board.
      * @param holder The address holding Chamber shares that delegated voting weight
      * @return tokenIds The list of tokenIds
      * @return amounts The list of amounts delegated to each tokenId
@@ -334,68 +301,14 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
     {
         if (holder == address(0)) revert IChamber.ZeroAddress();
         ChamberStorage storage $c = _getChamberStorage();
-        return _collectDelegations($c.holderDelegation, $c.totalHolderDelegations, $c.holderDelegatedTokenIds, holder);
+        return _collectDelegations($c.holderDelegation, $c.holderDelegatedTokenIds, holder);
     }
 
+    
 
+    
 
-    /**
-     * @notice Registers or clears the session key for a contract-owned membership NFT.
-     * @dev Only the current contract owner may call. Never consults ERC-1271 (M-01).
-     *      `expiry == 0` is rejected (PMN-M04 A). `scope == 0` is rejected; unscoped is
-     *      `SESSION_SCOPE_UNSCOPED` (PMN-M04 B). Confirm/execute wait `SEATING_DELAY` (PMN-M04 C).
-     */
-    function setDirectorOperator(uint256 tokenId, address operator, uint256 expiry, uint32 scope)
-        external
-        override
-        nonReentrant
-    {
-        if (tokenId == 0) revert IChamber.NotDirector();
-        address owner = _ownerOf(tokenId);
-        if (owner != msg.sender) revert IChamber.NotDirector();
-        if (owner.code.length == 0) revert IChamber.NotDirector();
-
-        ChamberStorage storage $ = _getChamberStorage();
-        if (operator == address(0)) {
-            delete $.directorSession[tokenId];
-            emit IChamber.DirectorOperatorSet(tokenId, owner, operator, 0, 0);
-            return;
-        }
-
-        if (expiry == 0 || expiry > type(uint64).max || expiry <= block.timestamp) {
-            revert IChamber.InvalidSessionExpiry();
-        }
-        if (scope == 0) revert IChamber.InvalidSessionScope();
-
-        uint256 liveAt = block.number + BoardTypes.SEATING_DELAY;
-        $.directorSession[tokenId] = DirectorSession({
-            owner: owner, expiry: uint64(expiry), scope: scope, operator: operator, liveAt: uint64(liveAt)
-        });
-        emit IChamber.DirectorOperatorSet(tokenId, owner, operator, expiry, scope);
-    }
-
-
-
-
-    /**
-     * @notice Stored session fields for `tokenId` (raw; not liveness-filtered).
-     */
-    function getDirectorSession(uint256 tokenId)
-        public
-        view
-        override
-        returns (address sessionOwner, address operator, uint256 expiry, uint32 scope, uint256 liveAt)
-    {
-        DirectorSession storage session = _getChamberStorage().directorSession[tokenId];
-        return (session.owner, session.operator, session.expiry, session.scope, session.liveAt);
-    }
-
-    /**
-     * @notice Whether `account` is the NFT owner or the live session key for `tokenId`.
-     */
-    function isTokenAuthorized(uint256 tokenId, address account) public view override returns (bool) {
-        return _isTokenAuthorized(tokenId, account);
-    }
+    
 
     /**
      * @notice Returns the current seat update proposal
@@ -458,64 +371,15 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
     /// WALLET ///
 
     /**
-     * @notice Submits a new transaction for approval
+     * @notice Submits a new transaction for approval and records the submitter's confirmation
      * @param tokenId The tokenId submitting the transaction
      * @param target The address to send the transaction to
      * @param value The amount of Ether to send
      * @param data The data to include in the transaction
-     */
-    function submitTransaction(uint256 tokenId, address target, uint256 value, bytes memory data)
-        public
-        override
-        directorCall(tokenId)
-    {
-        _submitOne(tokenId, target, value, data, "", 0);
-    }
-
-    /**
-     * @notice Submits a new transaction for approval with an explicit execution deadline
-     * @param tokenId The tokenId submitting the transaction
-     * @param target The address to send the transaction to
-     * @param value The amount of Ether to send
-     * @param data The data to include in the transaction
+     * @param metadataURI URI or content hash describing the proposal; empty stores nothing
      * @param deadline Exclusive-after unix timestamp; `0` applies the 30-day default max age
      */
-    function submitTransaction(uint256 tokenId, address target, uint256 value, bytes memory data, uint256 deadline)
-        public
-        override
-        directorCall(tokenId)
-    {
-        _submitOne(tokenId, target, value, data, "", deadline);
-    }
-
-    /**
-     * @notice Submits a new transaction with durable proposal metadata for approval
-     * @param tokenId The tokenId submitting the transaction
-     * @param target The address to send the transaction to
-     * @param value The amount of Ether to send
-     * @param data The data to include in the transaction
-     * @param metadataURI URI or content hash describing the proposal rationale and risk context
-     */
-    function submitTransactionWithMetadata(
-        uint256 tokenId,
-        address target,
-        uint256 value,
-        bytes memory data,
-        string memory metadataURI
-    ) public override directorCall(tokenId) {
-        _submitOne(tokenId, target, value, data, metadataURI, 0);
-    }
-
-    /**
-     * @notice Submits a new transaction with durable proposal metadata and an explicit deadline
-     * @param tokenId The tokenId submitting the transaction
-     * @param target The address to send the transaction to
-     * @param value The amount of Ether to send
-     * @param data The data to include in the transaction
-     * @param metadataURI URI or content hash describing the proposal rationale and risk context
-     * @param deadline Exclusive-after unix timestamp; `0` applies the 30-day default max age
-     */
-    function submitTransactionWithMetadata(
+    function submitTransaction(
         uint256 tokenId,
         address target,
         uint256 value,
@@ -584,7 +448,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
 
     /**
      * @notice Revokes a confirmation for a transaction
-     * @dev Token owner or its live session key may revoke after leaving the top-seat set, so
+     * @dev The token owner may revoke after leaving the top-seat set, so
      *      outgoing approvals can be withdrawn. No ERC-1271 (M-01). Execute already ignores those flags.
      * @param tokenId The tokenId revoking the confirmation
      * @param transactionId The ID of the transaction to revoke confirmation for
@@ -775,11 +639,11 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
         emit IChamber.Received(msg.sender, msg.value);
     }
 
-    /// @notice Receives native ETH sent with calldata
+    /// @notice Receives native ETH sent with calldata. Calls with no ETH revert, so unknown
+    ///         functions (for example `permit`) never appear to succeed (R-1012-L3).
     fallback() external payable {
-        if (msg.value > 0) {
-            emit IChamber.Received(msg.sender, msg.value);
-        }
+        if (msg.value == 0) revert IChamber.InvalidTransaction();
+        emit IChamber.Received(msg.sender, msg.value);
     }
 
     /// @notice Accepts any ERC-721 via `safeTransferFrom` for treasury custody.
@@ -798,7 +662,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
 
     /// @notice Restricts the call to a director acting with a specific membership `tokenId`.
     /// @dev Directorship and confirmations are token-weighted (per `tokenId`), not 1-address-1-vote.
-    ///      `msg.sender` must control `tokenId` (owner or live session key) and `tokenId` must be
+    ///      `msg.sender` must own `tokenId` and `tokenId` must be
     ///      in the current top seats. Each top-seat token may confirm once per proposal. An address
     ///      that holds `quorum` distinct top-seat membership NFTs can submit, self-confirm, and
     ///      execute — a single-actor treasury. This is intended; confirmations are not capped per owner.
@@ -826,89 +690,11 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
         if (!_isSeatingMature(_getChamberStorage().nft, tokenId)) revert IChamber.DirectorNotSeated();
     }
 
-    /// @dev NFT owner of `tokenId`, or the live session key on a contract-owned NFT.
-    ///      Never consults ERC-1271 (M-01). `ownerOf` reverts if the token is burned.
-    ///      Session keys are also gated by expiry, optional scope, and confirm/execute delay.
+    /// @dev `msg.sender` must be the NFT owner of `tokenId`. Never consults ERC-1271 (M-01).
+    ///      `ownerOf` reverts if the token is burned. Agents act through the owner's own wallet
+    ///      (for example a smart account session key), not through Chamber.
     function _requireTokenAuthorized(uint256 tokenId) internal view {
-        if (tokenId == 0) revert IChamber.NotDirector();
-        address owner = _ownerOf(tokenId);
-        if (owner == msg.sender) return;
-        if (_isLiveSessionKey(tokenId, owner, msg.sender) && _sessionMayAct(tokenId, msg.sig)) return;
-        revert IChamber.NotDirector();
-    }
-
-    /// @dev View-safe: burned or tokenId 0 is unauthorized rather than reverting.
-    function _isTokenAuthorized(uint256 tokenId, address account) internal view returns (bool) {
-        if (tokenId == 0 || account == address(0)) return false;
-        address owner = _ownerOfOrZero(tokenId);
-        if (owner == address(0)) return false;
-        if (account == owner) return true;
-        return _isLiveSessionKey(tokenId, owner, account);
-    }
-
-    /// @dev Session key is live only for the current contract owner that registered it,
-    ///      and only while `block.timestamp <= expiry`. `expiry == 0` is not live.
-    function _isLiveSessionKey(uint256 tokenId, address owner, address account) internal view returns (bool) {
-        if (account == address(0) || owner.code.length == 0) return false;
-        DirectorSession storage session = _getChamberStorage().directorSession[tokenId];
-        if (session.owner != owner || session.operator != account) return false;
-        if (session.expiry == 0 || block.timestamp > session.expiry) return false;
-        return true;
-    }
-
-    /// @dev Scope and post-set delay for a live session key. Owner callers skip this.
-    ///      Unknown selectors fail closed unless the owner passed `SESSION_SCOPE_UNSCOPED`.
-    function _sessionMayAct(uint256 tokenId, bytes4 selector) internal view returns (bool) {
-        DirectorSession storage session = _getChamberStorage().directorSession[tokenId];
-        (uint32 bit, bool delayed) = _sessionScopeForSelector(selector);
-        if (delayed && block.number < session.liveAt) return false;
-        if (session.scope == SESSION_SCOPE_UNSCOPED) return true;
-        return bit != 0 && (session.scope & bit) == bit;
-    }
-
-    /// @dev Maps Chamber director entry points to required scope bits and the C delay flag.
-    ///      Submit needs only SUBMIT and is not delayed; whether it also votes is decided by
-    ///      {_submitAutoConfirms} (R-1012-M2).
-    function _sessionScopeForSelector(bytes4 selector) internal pure returns (uint32 bit, bool delayed) {
-        if (
-            selector == bytes4(keccak256("submitTransaction(uint256,address,uint256,bytes)"))
-                || selector == bytes4(keccak256("submitTransaction(uint256,address,uint256,bytes,uint256)"))
-                || selector == bytes4(keccak256("submitTransactionWithMetadata(uint256,address,uint256,bytes,string)"))
-                || selector
-                    == bytes4(keccak256("submitTransactionWithMetadata(uint256,address,uint256,bytes,string,uint256)"))
-                || selector == bytes4(keccak256("submitBatchTransactions(uint256,address[],uint256[],bytes[])"))
-        ) {
-            return (SESSION_SCOPE_SUBMIT, false);
-        }
-        if (selector == IWallet.confirmTransaction.selector || selector == IWallet.confirmBatchTransactions.selector) {
-            return (SESSION_SCOPE_CONFIRM, true);
-        }
-        if (selector == IWallet.executeTransaction.selector || selector == IWallet.executeBatchTransactions.selector) {
-            return (SESSION_SCOPE_EXECUTE, true);
-        }
-        if (selector == IChamber.executeSeatsUpdate.selector) {
-            return (SESSION_SCOPE_UPDATE_SEATS, true);
-        }
-        if (selector == IChamber.updateSeats.selector || selector == IChamber.cancelSeatUpdate.selector) {
-            return (SESSION_SCOPE_UPDATE_SEATS, false);
-        }
-        if (selector == IWallet.revokeConfirmation.selector) {
-            return (SESSION_SCOPE_REVOKE, false);
-        }
-        if (selector == IWallet.cancelTransaction.selector) {
-            return (SESSION_SCOPE_CANCEL, false);
-        }
-        return (0, false);
-    }
-
-    /// @dev `(true, operator)` when a live (unexpired) session exists; otherwise `(false, 0)`.
-    function _liveSessionKey(uint256 tokenId) internal view returns (bool, address) {
-        if (tokenId == 0) return (false, address(0));
-        address owner = _ownerOfOrZero(tokenId);
-        if (owner == address(0)) return (false, address(0));
-        address operator = _getChamberStorage().directorSession[tokenId].operator;
-        if (!_isLiveSessionKey(tokenId, owner, operator)) return (false, address(0));
-        return (true, operator);
+        if (tokenId == 0 || _ownerOf(tokenId) != msg.sender) revert IChamber.NotDirector();
     }
 
     /// @dev True when `tokenId` is among the current top `_getSeats()` nodes.
@@ -947,27 +733,17 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
         uint256 deadline
     ) internal override {
         super._submitTransactionWithMetadata(tokenId, target, value, data, metadataURI, deadline);
-        uint256 nonce = getTransactionCount() - 1;
-        if (_getWalletStorage().isConfirmed[nonce][tokenId]) {
-            _getChamberStorage().confirmOwner[nonce][tokenId] = _ownerOfOrZero(tokenId);
-        }
-    }
-
-    /// @dev Submit votes for the owner, and for a session key only when it could confirm right
-    ///      now (CONFIRM scope and past `liveAt`). A propose-only key submits without a vote (R-1012-M2).
-    function _submitAutoConfirms(uint256 tokenId) internal view override returns (bool) {
-        if (_ownerOf(tokenId) == msg.sender) return true;
-        return _sessionMayAct(tokenId, IWallet.confirmTransaction.selector);
+        _getChamberStorage().confirmOwner[getTransactionCount() - 1][tokenId] = msg.sender;
     }
 
     function _confirmTransaction(uint256 tokenId, uint256 nonce) internal override {
         super._confirmTransaction(tokenId, nonce);
-        _getChamberStorage().confirmOwner[nonce][tokenId] = _ownerOfOrZero(tokenId);
+        _getChamberStorage().confirmOwner[nonce][tokenId] = msg.sender;
     }
 
     function _recordCancelVote(uint256 tokenId, uint256 nonce) internal override {
         super._recordCancelVote(tokenId, nonce);
-        _getChamberStorage().cancelOwner[nonce][tokenId] = _ownerOfOrZero(tokenId);
+        _getChamberStorage().cancelOwner[nonce][tokenId] = msg.sender;
     }
 
     /// @dev `ownerOf` that bubbles the revert for burned ids.
@@ -1012,7 +788,6 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
     function getProxyAdmin() external view override returns (address) {
         return StorageSlot.getAddressSlot(_ADMIN_SLOT).value;
     }
-
 
     /**
      * @notice Pauses vault operations and wallet execution after board quorum.
@@ -1236,7 +1011,6 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
         return true;
     }
 
-
     /// @inheritdoc IWallet
     function getCancelled(uint256 nonce) public view override(IWallet, Wallet) returns (bool) {
         return super.getCancelled(nonce);
@@ -1246,7 +1020,6 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
     function getTransactionDeadline(uint256 nonce) public view override(IWallet, Wallet) returns (uint256) {
         return super.getTransactionDeadline(nonce);
     }
-
 
     /// @inheritdoc IWallet
     function getCancelConfirmation(uint256 tokenId, uint256 nonce)
