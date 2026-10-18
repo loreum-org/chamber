@@ -102,17 +102,43 @@ export function isValidSessionExpiry(expiry: bigint, nowSec = Math.floor(Date.no
 }
 
 /**
+ * Self-registered key: the stored operator is the stored session owner. Chamber allows it
+ * (`setDirectorOperator` does not reject `operator == owner`).
+ */
+export function isSelfSession(rawOperator: string | undefined, sessionOwner: string | undefined): boolean {
+  return !!rawOperator && !!sessionOwner && rawOperator.toLowerCase() === sessionOwner.toLowerCase()
+}
+
+/**
  * Whether a raw `getDirectorSession` row is live, from two `isTokenAuthorized` reads.
  * `sessionOwner` is authorized only while it is still `ownerOf(tokenId)` (a session's
  * owner cannot also be its live key). `operator` is authorized as the owner or as the
  * live key. Requiring both drops a session whose NFT moved to the operator itself.
+ *
+ * For a self-registered key (`operator == sessionOwner`) both reads pass through the
+ * owner branch of `isTokenAuthorized`, whatever the session's own state. So this mirrors
+ * `Chamber._isLiveSessionKey` directly: the owner still has code (`code.length > 0`, so a
+ * revoked EIP-7702 delegation fails) and `expiry != 0 && now <= expiry` at the latest
+ * block timestamp. Missing inputs fail closed.
  */
 export function isLiveSession(args: {
   rawOperator: `0x${string}` | undefined
   operatorAuthorized: boolean
   sessionOwnerAuthorized: boolean
+  /** Stored session owner; enables the self-registered-key check. */
+  sessionOwner?: string
+  /** Stored session expiry (unix seconds). Needed for a self-registered key. */
+  rawExpiry?: bigint
+  /** Latest block timestamp (unix seconds). Needed for a self-registered key. */
+  nowSec?: bigint | number
+  /** Whether the session owner currently has code. Needed for a self-registered key. */
+  ownerHasCode?: boolean
 }): boolean {
-  return isNonZeroAddress(args.rawOperator) && args.operatorAuthorized && args.sessionOwnerAuthorized
+  if (!(isNonZeroAddress(args.rawOperator) && args.operatorAuthorized && args.sessionOwnerAuthorized)) return false
+  if (!isSelfSession(args.rawOperator, args.sessionOwner)) return true
+  if (args.ownerHasCode !== true) return false
+  if (args.rawExpiry === undefined || args.rawExpiry === 0n || args.nowSec === undefined) return false
+  return BigInt(args.nowSec) <= args.rawExpiry
 }
 
 export function directorSessionStatus(args: {

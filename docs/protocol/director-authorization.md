@@ -75,7 +75,10 @@ These getters are how callers read the session. They match the rules above.
   `isTokenAuthorized(tokenId, sessionOwner)` are both true; its `scope` and
   `liveAt` then apply. Check both: if the NFT was transferred to its own
   session key, the operator passes because it is now the owner, and the stored
-  `scope` / `liveAt` are leftovers from the previous owner.
+  `scope` / `liveAt` are leftovers from the previous owner. A self-registered
+  key (`operator == sessionOwner`, which `setDirectorOperator` allows) passes
+  both reads through the owner branch, so for it also check `expiry != 0`,
+  `block.timestamp <= expiry`, and that the owner still has code.
 - `isTokenAuthorized(tokenId, account)` — NFT owner or live (unexpired)
   session key. Does **not** check board seats, seating delay, `scope`, or
   the confirm/execute delay. Burned tokens return false.

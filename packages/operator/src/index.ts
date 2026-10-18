@@ -36,6 +36,7 @@ export {
   directorSessionStatus,
   directorSessionStatusLabel,
   isLiveSession,
+  isSelfSession,
   isUnscopedSession,
   isValidSessionExpiry,
   isZeroAddress,

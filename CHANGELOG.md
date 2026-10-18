@@ -12,7 +12,7 @@ Security review 2026-10-12 fixes (#392) and the EIP-170 size refactor (#394). Se
 
 | Removed | Use instead |
 |---|---|
-| `getDirectorOperator`, `getDirectorOperatorScope`, `getDirectorOperatorLiveAt` | `getDirectorSession(tokenId)`. The stored session is live only when `isTokenAuthorized(tokenId, operator)` **and** `isTokenAuthorized(tokenId, sessionOwner)` are both true. Checking the operator alone is not enough: it is also true after the NFT is transferred to its own session key, which leaves the previous owner's `scope` / `liveAt` behind. |
+| `getDirectorOperator`, `getDirectorOperatorScope`, `getDirectorOperatorLiveAt` | `getDirectorSession(tokenId)`. The stored session is live only when `isTokenAuthorized(tokenId, operator)` **and** `isTokenAuthorized(tokenId, sessionOwner)` are both true. Checking the operator alone is not enough: it is also true after the NFT is transferred to its own session key, which leaves the previous owner's `scope` / `liveAt` behind. For a self-registered key (`operator == sessionOwner`) both reads pass through the owner branch, so also require `expiry != 0`, `block.timestamp <= expiry`, and owner `code.length > 0`, as `_isLiveSessionKey` does. |
 | `getReachableDirectorCount` | `min(getSeats(), getSize())` |
 | `getHolderDelegation`, `getTotalHolderDelegations` | `getDelegations(holder)` |
 | `isTransactionExpired` | `getTransactionDeadline(nonce)` (`0` never expires) |

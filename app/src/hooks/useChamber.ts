@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { useReadContract, useReadContracts, useWriteContract, useWaitForTransactionReceipt, useSimulateContract, useAccount, useBlockNumber, usePublicClient, useChainId } from 'wagmi'
+import { useReadContract, useReadContracts, useWriteContract, useWaitForTransactionReceipt, useSimulateContract, useAccount, useBlockNumber, useBlock, usePublicClient, useChainId } from 'wagmi'
 import { isAddress, zeroAddress } from 'viem'
 import { chamberAbi, erc20Abi, erc721Abi } from '@/contracts/abis'
 import { chamberVersionBytes32ToLabel, resolveTokenDecimals } from '@/lib/utils'
@@ -8,7 +8,7 @@ import { isSeatingMature } from '@/lib/chamberGovernance'
 import { getAlchemyApiKeyFromEnv } from '@/lib/alchemy'
 import { listOwnedErc721TokenIds } from '@/lib/ownedErc721'
 import { isOnchainContractBytecode } from '@/lib/address'
-import { asUint32, isLiveSession } from '@/lib/directorSession'
+import { asUint32, isLiveSession, isSelfSession } from '@/lib/directorSession'
 import type { Transaction, BoardMember, SeatUpdate } from '@/types'
 import { useInvalidateOnReceipt } from './invalidateChamberQueries'
 
@@ -975,6 +975,8 @@ type RawDirectorSession = readonly [`0x${string}`, `0x${string}`, bigint, number
 /**
  * Raw `getDirectorSession` per tokenId plus its live operator. Live means both the
  * stored operator and the stored session owner pass `isTokenAuthorized` (see `isLiveSession`).
+ * A self-registered key (`operator == sessionOwner`) also needs owner code and an unexpired
+ * session at the latest block timestamp, as `Chamber._isLiveSessionKey` requires.
  */
 export function useLiveDirectorSessions(
   chamberAddress: `0x${string}` | undefined,
@@ -1009,13 +1011,48 @@ export function useLiveDirectorSessions(
   const authorized = (index: number) =>
     authResults?.[index]?.status === 'success' && authResults[index].result === true
 
+  // Self-registered keys (operator == sessionOwner) pass both reads via the owner branch,
+  // so mirror `_isLiveSessionKey` for them: owner code + expiry vs latest block timestamp.
+  const selfOwners = Array.from(
+    new Set(
+      raws
+        .filter((raw) => raw !== undefined && isSelfSession(raw[1], raw[0]) && raw[0] !== zeroAddress)
+        .map((raw) => raw![0].toLowerCase() as `0x${string}`),
+    ),
+  ).sort()
+  const hasSelf = enabled && selfOwners.length > 0
+  const publicClient = usePublicClient()
+  const chainId = useChainId()
+  const { data: latestBlock, refetch: refetchBlock, isFetched: blockFetched } = useBlock({
+    query: { enabled: hasSelf, staleTime: 0, refetchInterval: hasSelf ? 12_000 : false },
+  })
+  const { data: ownerCode, refetch: refetchCode, isFetched: codeFetched } = useQuery({
+    queryKey: ['session-owner-bytecode', chainId, selfOwners.join(',')],
+    enabled: hasSelf && !!publicClient,
+    staleTime: 0,
+    queryFn: async () => {
+      const entries = await Promise.all(
+        selfOwners.map(async (owner) => {
+          const code = await publicClient!.getBytecode({ address: owner })
+          return [owner, isOnchainContractBytecode(code ?? '0x')] as const
+        }),
+      )
+      return Object.fromEntries(entries) as Record<string, boolean>
+    },
+  })
+
   const sessions = tokenIds.map((_, i) => {
     const raw = raws[i]
     const rawOperator = raw?.[1]
+    const sessionOwner = raw?.[0]
     const live = isLiveSession({
       rawOperator,
       operatorAuthorized: authorized(i * 2),
       sessionOwnerAuthorized: authorized(i * 2 + 1),
+      sessionOwner,
+      rawExpiry: raw?.[2],
+      nowSec: latestBlock?.timestamp,
+      ownerHasCode: sessionOwner ? ownerCode?.[sessionOwner.toLowerCase()] : undefined,
     })
     const liveOperator: `0x${string}` | undefined = raw === undefined ? undefined : live ? rawOperator : zeroAddress
     return { raw, liveOperator, isLive: live }
@@ -1023,10 +1060,16 @@ export function useLiveDirectorSessions(
 
   const refetch = async () => {
     await refetchRaw()
+    if (hasSelf) await Promise.all([refetchBlock(), refetchCode()])
     return refetchAuth()
   }
 
-  return { sessions, refetch, isFetched: rawFetched && (authFetched || rawResults === undefined) }
+  return {
+    sessions,
+    refetch,
+    isFetched:
+      rawFetched && (authFetched || rawResults === undefined) && (!hasSelf || (blockFetched && codeFetched)),
+  }
 }
 
 /**

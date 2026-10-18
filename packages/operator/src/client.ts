@@ -24,6 +24,7 @@ import {
   defaultSessionExpiry,
   directorSessionStatus,
   isLiveSession,
+  isSelfSession,
   isValidSessionExpiry,
   isZeroAddress,
   type DirectorOperatorSnapshot,
@@ -429,6 +430,8 @@ export class ChamberOperator {
   /**
    * Raw session plus whether its operator is live right now: both the stored
    * `sessionOwner` and `operator` pass `isTokenAuthorized` (see {@link isLiveSession}).
+   * A self-registered key (`operator == sessionOwner`) also needs owner code and an
+   * unexpired session at the latest block timestamp, as `_isLiveSessionKey` requires.
    * Chamber never consults ERC-1271.
    */
   private async liveSession(tokenId: bigint): Promise<{ raw: DirectorSessionRaw; live: boolean }> {
@@ -445,9 +448,25 @@ export class ChamberOperator {
           }),
         ),
       )
+      const base = { rawOperator: raw.operator, operatorAuthorized, sessionOwnerAuthorized }
+      if (!operatorAuthorized || !sessionOwnerAuthorized || !isSelfSession(raw.operator, raw.sessionOwner)) {
+        return { raw, live: isLiveSession(base) }
+      }
+      // Self-registered key: both reads passed via the owner branch. Mirror
+      // `_isLiveSessionKey` (owner has code, not expired at the latest block).
+      const [block, code] = await Promise.all([
+        this.publicClient.getBlock(),
+        this.publicClient.getBytecode({ address: raw.sessionOwner }),
+      ])
       return {
         raw,
-        live: isLiveSession({ rawOperator: raw.operator, operatorAuthorized, sessionOwnerAuthorized }),
+        live: isLiveSession({
+          ...base,
+          sessionOwner: raw.sessionOwner,
+          rawExpiry: raw.expiry,
+          nowSec: block.timestamp,
+          ownerHasCode: !!code && code !== '0x',
+        }),
       }
     } catch (error) {
       throw wrapChamberError(error, 'Failed to read director operator')
