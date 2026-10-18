@@ -110,6 +110,14 @@ export const chamberAbi = [
     outputs: [{ name: '', type: 'bytes32' }],
     stateMutability: 'view',
   },
+  // ProxyAdmin for this proxy: the only upgrade path since 1.3.0 (upgradeAndCall via a quorum tx)
+  {
+    type: 'function',
+    name: 'getProxyAdmin',
+    inputs: [],
+    outputs: [{ name: 'adminContract', type: 'address' }],
+    stateMutability: 'view',
+  },
   // Delegation functions
   {
     type: 'function',

@@ -49,6 +49,11 @@ export type DecodedTransaction = {
   isChamberSelfCall: boolean
 }
 
+const PROXY_ADMIN_UPGRADE_ABI = parseAbi([
+  'function upgradeAndCall(address proxy, address implementation, bytes data)',
+])
+
+/** `upgradeImplementation` was removed in Chamber 1.3.0; kept to label older queued proposals. */
 const CHAMBER_SELF_CALL_ABI = parseAbi([
   'function upgradeImplementation(address newImplementation, bytes data)',
   'function pause()',
@@ -176,7 +181,25 @@ export function decodeTransactionAction(params: {
     }
   }
 
-  // Chamber self-calls (upgrade / pause / unpause).
+  // Chamber upgrade (1.3.0+ path, works on every version): ProxyAdmin.upgradeAndCall(proxy, impl, data).
+  try {
+    const decoded = decodeFunctionData({ abi: PROXY_ADMIN_UPGRADE_ABI, data: hex })
+    const impl = (decoded.args as readonly unknown[])[1]
+    if (isAddress_(impl)) {
+      return {
+        functionName: 'upgradeAndCall',
+        summary: 'Upgrade the Chamber implementation via its ProxyAdmin (governance change)',
+        counterparty: impl,
+        counterpartyRole: 'implementation',
+        intent: null,
+        isChamberSelfCall: false,
+      }
+    }
+  } catch {
+    // Not a ProxyAdmin upgrade.
+  }
+
+  // Chamber self-calls (pause / unpause; legacy upgradeImplementation before 1.3.0).
   try {
     const decoded = decodeFunctionData({ abi: CHAMBER_SELF_CALL_ABI, data: hex })
     const args = (decoded.args as readonly unknown[] | undefined) ?? []
@@ -185,7 +208,7 @@ export function decodeTransactionAction(params: {
       if (isAddress_(impl)) {
         return {
           functionName: 'upgradeImplementation',
-          summary: 'Upgrade the Chamber implementation (governance change)',
+          summary: 'Upgrade the Chamber implementation (legacy upgradeImplementation, removed in 1.3.0)',
           counterparty: impl,
           counterpartyRole: 'implementation',
           intent: null,
