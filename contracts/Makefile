@@ -136,6 +136,16 @@ deploy-all-anvil :
 # Alias used by the app (`make deploy-anvil-all`)
 deploy-anvil-all : deploy-all-anvil
 
+# Chamber upgrade path (1.3.0+): deploy a new implementation, then queue the board's quorum tx
+# ProxyAdmin.upgradeAndCall(chamber, impl, data). Both simulate unless ARGS includes --broadcast;
+# chain id 1 broadcast is Chad-only (MAINNET_DEPLOY_UNBLOCKED). See docs/guides/deployment.md.
+# Usage: make propose-chamber-upgrade rpc=$$RPC CHAMBER=0x.. NEW_IMPLEMENTATION=0x.. TOKEN_ID=1 [SUBMIT=true ARGS="--broadcast --account me"]
+deploy-chamber-implementation :; forge script script/DeployChamberImplementation.s.sol:DeployChamberImplementation \
+	--rpc-url ${rpc} $(ARGS) -vvv
+
+propose-chamber-upgrade :; CHAMBER=$(CHAMBER) NEW_IMPLEMENTATION=$(NEW_IMPLEMENTATION) TOKEN_ID=$(TOKEN_ID) SUBMIT=$(or $(SUBMIT),false) \
+	forge script script/ProposeChamberUpgrade.s.sol:ProposeChamberUpgrade --rpc-url ${rpc} $(ARGS) -vvv
+
 # Sync ABIs from compiled contracts to the app
 sync-abis :; node script/sync-abis.js
 
