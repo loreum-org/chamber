@@ -4,7 +4,7 @@ Contract-level changes to `Chamber` that affect integrations. App, docs, and too
 
 ## 1.3.0 (unreleased; not deployed)
 
-Scope cuts before mainnet (epic #395). Chamber runtime bytecode drops from 24,571 to 22,108 bytes, leaving 2,468 bytes under the EIP-170 limit.
+Scope cuts before mainnet (epic #395). Chamber runtime bytecode drops from 24,571 to 21,810 bytes, leaving 2,766 bytes under the EIP-170 limit.
 
 ### Breaking: session keys removed (#396)
 
@@ -26,8 +26,8 @@ Empty `metadataURI` stores nothing. `deadline = 0` uses the 30-day default. Subm
 ### Changed
 
 - Pre-upgrade delegation backfill removed (#398). `getDelegations` returns the holder's tracked set in insertion order. Chambers deployed before 1.2.0 cannot be upgraded in place to 1.3.0; redeploy them. The `directorSession` and `evictedTokenIds` storage fields stay in place, unused, so the layout does not shift.
-- New error `IBoard.LegacyDelegation`. A pre-1.2.0 chamber runs its own old `upgradeImplementation`, so 1.3.0 code cannot stop the implementation switch itself. Instead 1.3.0 fails closed on the data it cannot account for: a positive delegation row with `holderEpoch == 0` (only pre-1.2.0 code writes those) on a node still on the board makes `delegate` and `undelegate` revert `LegacyDelegation`, rather than letting `undelegate` free the shares while the board keeps the weight. Rows on nodes that already left the board can still be withdrawn. Chambers born on 1.2.0+ are unaffected.
-- Known limitation, unchanged: a quorum transaction aimed directly at the chamber's `ProxyAdmin` bypasses the checks in `upgradeImplementation`.
+- New error `IBoard.LegacyDelegation`. A pre-1.2.0 chamber is upgraded by its own old code (or its ProxyAdmin), so 1.3.0 code cannot stop the implementation switch itself. Instead 1.3.0 fails closed on the data it cannot account for: a positive delegation row with `holderEpoch == 0` (only pre-1.2.0 code writes those) on a node still on the board makes `delegate` and `undelegate` revert `LegacyDelegation`, rather than letting `undelegate` free the shares while the board keeps the weight. Rows on nodes that already left the board can still be withdrawn. Chambers born on 1.2.0+ are unaffected.
+- Breaking: `upgradeImplementation` removed. The only upgrade path is a quorum transaction with `target = getProxyAdmin()` and `data = upgradeAndCall(chamber, newImplementation, initData)`, which was already possible and skipped `upgradeImplementation`'s checks anyway. ProxyAdmin has no version or migration checks of its own; the board is responsible for what it approves (and for not calling `transferOwnership` / `renounceOwnership` on it). Calls to the ProxyAdmin now store their calldata onchain like self-calls (L-04), so an approved upgrade executes with empty `data`. Self-calls are limited to `pause` / `unpause`; the old selector `0xc89311b6` now reverts in `fallback` (`InvalidTransaction`) unless ETH is attached.
 - `fallback` reverts with `InvalidTransaction` when called with no ETH, so unknown functions such as `permit` no longer appear to succeed (#399, closes R-1012-L3). Plain ETH and ETH sent with calldata are still accepted.
 - Confirm and cancel votes record `msg.sender` as the controller (it is always the owner now) instead of reading `ownerOf` again.
 - `VERSION` is `1.3.0`.

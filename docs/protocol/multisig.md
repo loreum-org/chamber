@@ -20,7 +20,8 @@ Once the number of confirmations reaches the **Quorum**, any Director can execut
 - The Chamber uses the **Checks-Effects-Interactions (CEI)** pattern to prevent reentrancy during execution.
 - If a Director who confirmed a transaction is unseated before execution, their confirmation still counts (as the action was authorized while they were a Director).
 - Ordinary calls store only `keccak256(calldata)`; the executor must re-supply the original bytes (typically recovered from the `SubmitTransaction` event).
-- Self-calls (`target == Chamber`, restricted to `upgradeImplementation`) also persist the original bytes onchain. Execution may pass empty `data` and the stored payload is used, so a confirmed upgrade remains executable if logs are unavailable.
+- Self-calls (`target == Chamber`, restricted to `pause` / `unpause`) and calls to the chamber's ProxyAdmin (upgrades: `upgradeAndCall(chamber, impl, data)`) also persist the original bytes onchain. Execution may pass empty `data` and the stored payload is used, so a confirmed upgrade remains executable if logs are unavailable.
+- Upgrades: since 1.3.0 the only path is a quorum transaction to the ProxyAdmin (`upgradeImplementation` was removed). ProxyAdmin is the single upgrade path and has no version or migration checks of its own; the board is responsible for what it approves.
 
 ## Batch Operations
 

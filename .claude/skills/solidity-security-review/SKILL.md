@@ -117,8 +117,11 @@ must always be true. For Chamber that is:
   confirmations whose recorded owner still owns the token; batch variants loop.
 - **Director auth**: only `ownerOf(tokenId)` may act (session keys were removed in
   1.3.0; agents use wallet-level keys).
-- **Upgrades**: Transparent proxy; ProxyAdmin is owned by the chamber, so an
-  upgrade is a wallet transaction calling the chamber itself.
+- **Upgrades**: Transparent proxy; ProxyAdmin is owned by the chamber. Since 1.3.0
+  `upgradeImplementation` is gone: the single upgrade path is a quorum wallet transaction
+  to `getProxyAdmin()` calling `upgradeAndCall(chamber, impl, data)` (calldata stored onchain,
+  L-04). ProxyAdmin has no version or migration checks of its own; the board is responsible.
+  Self-calls are limited to `pause` / `unpause`.
 - **Factory / Registry**: permissionless create; implementation pointer admin.
 
 Then walk each in-scope external/public function and check, in this order:

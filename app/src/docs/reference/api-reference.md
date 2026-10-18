@@ -121,7 +121,7 @@ All director-gated with **`isDirector(tokenId)`** (caller must be **`ownerOf(tok
 | **`confirmBatchTransactions(tokenId, transactionIds[])`** | Batched confirms. |
 | **`executeBatchTransactions(tokenId, transactionIds[], bytes[] calldata data)`** | Parallel arrays; per-tx hash check. |
 
-Transaction validation (single and batch): **`target != address(0)`**. If **`target == address(this)`**, calldata selector must be **`upgradeImplementation(address,bytes)`**. **`value`** cannot exceed native balance.
+Transaction validation (single and batch): **`target != address(0)`**. If **`target == address(this)`**, calldata selector must be **`pause()`** or **`unpause()`**. **`value`** cannot exceed native balance.
 
 Read helpers: **`getTransactionCount`**, **`getTransaction(nonce)`** → **`(..., dataHash)`**, **`getTransactionMetadata`**, **`getTransactionCalldata`**, **`getConfirmation`**, **`getCancelled`**, **`getCancelConfirmation`**, **`getCancelConfirmations`**.
 
@@ -130,7 +130,8 @@ Read helpers: **`getTransactionCount`**, **`getTransaction(nonce)`** → **`(...
 | Function | Role |
 |---------|------|
 | **`getProxyAdmin() → address`** | Reads ERC‑1967 admin slot (OZ **ProxyAdmin** contract). |
-| **`upgradeImplementation(address newImplementation, bytes calldata data)`** | Requires **`msg.sender == address(this)`** (e.g. via **`executeTransaction`**); **`ProxyAdmin.owner() == address(this)`**; invokes **`upgradeAndCall`**. |
+
+Since 1.3.0 Chamber has no upgrade function of its own (`upgradeImplementation` was removed). To upgrade, the board queues a transaction with **`target = getProxyAdmin()`** and **`data = upgradeAndCall(chamber, newImplementation, initData)`**, then confirms and executes it like any other proposal. Its calldata is stored onchain, so it can be executed with empty `data`. ProxyAdmin is the single upgrade path and has no version or migration checks of its own; the board is responsible for what it approves.
 
 ---
 
