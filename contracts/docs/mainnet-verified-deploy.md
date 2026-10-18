@@ -44,7 +44,7 @@ Live tokens already on Ethereum (not Chamber / Factory):
 | LoreumNFT Explorers | `0xB99DEdbDe082B8Be86f06449f2fC7b9FED044E15` |
 | Team Safe (LORE owner / Factory admin) | `0x5d45A213B2B6259F0b3c116a8907B56AB5E22095` |
 
-Sepolia is already deployed. Do not redeploy Sepolia as a substitute for mainnet.
+Sepolia is already deployed. Do not treat a Sepolia redeploy as a substitute for the mainnet steps here. Separately, Sepolia chambers older than 1.2.0 (the current deployment reports 1.1.5) cannot be upgraded in place to 1.3.0 and must be redeployed on 1.3.0 to test it; see `CHANGELOG.md`.
 
 ## What this package is
 

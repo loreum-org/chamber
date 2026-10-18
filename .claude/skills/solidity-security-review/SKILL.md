@@ -85,11 +85,11 @@ Aderyn 0.6.8, all detectors: 4 High kinds (19 instances), 14 Low kinds.
 
 | Detector | Where | Verdict |
 | --- | --- | --- |
-| slither `unused-return` | `EnumerableSet.add/remove` in Chamber.delegate/undelegate, BoardLib.insert, syncTrackedDelegations; `nft.ownerOf` in delegate | FP: set ops are idempotent by design; `ownerOf` is an existence check inside try/catch |
+| slither `unused-return` | `EnumerableSet.add/remove` in Chamber.delegate/undelegate, BoardLib.insert; `nft.ownerOf` in delegate | FP: set ops are idempotent by design; `ownerOf` is an existence check inside try/catch |
 | slither `uninitialized-local` | BoardLib accumulators (`trackedTotal`, `validSupport`, `n`) | FP: zero-init is intended |
 | slither `incorrect-equality` | `BoardLib.isSeatingMature` `seatedAt == 0` | FP: 0 is the "never seated" sentinel |
-| aderyn `unsafe-casting` | `uint128(tokenId)` in BoardLib list links; `uint64(expiry)` in setDirectorOperator | Guarded: `BoardLib.insert` reverts `TokenIdTooLarge` above uint128; expiry bounded to uint64 before the cast. Re-check the guard on any new cast site |
-| aderyn `reentrancy-state-change` | Chamber.delegate (try `ownerOf`), setDirectorOperator, WalletLib.executeTransaction | Guarded by `nonReentrant`; the NFT is the chamber's own trusted collection. `transaction.executed = false` before `revert` in executeTransaction is dead code (revert rolls it back) |
+| aderyn `unsafe-casting` | `uint128(tokenId)` in BoardLib list links | Guarded: `BoardLib.insert` reverts `TokenIdTooLarge` above uint128. Re-check the guard on any new cast site |
+| aderyn `reentrancy-state-change` | Chamber.delegate (try `ownerOf`), WalletLib.executeTransaction | Guarded by `nonReentrant`; the NFT is the chamber's own trusted collection. `transaction.executed = false` before `revert` in executeTransaction is dead code (revert rolls it back) |
 | aderyn `contract-locks-ether` | Chamber | Intended: ETH leaves through director-confirmed wallet transactions |
 | aderyn `incorrect-erc721-interface` | Chamber.transferFrom | FP: that is the ERC-20 share `transferFrom` |
 | slither `timestamp`, `calls-loop` (Low) | deadlines; `ownerOf` in board walks | Accepted: block-time granularity is fine; loops are bounded by `MAX_NODES = 50` and `seats <= 20` |

@@ -666,6 +666,7 @@ Transfers tokens from another address.
 - `MaxNodesReached()`: Maximum nodes reached
 - `CircuitBreakerActive()`: Circuit breaker active
 - `SeatNotInert()`: `cleanupInertSeat` called on a tokenId whose `ownerOf` still succeeds
+- `LegacyDelegation()`: `delegate` / `undelegate` touched a delegation row written before 1.2.0 (no live-weight epoch) whose node is still on the board. Only possible on a pre-1.2.0 chamber upgraded in place to 1.3.0; redeploy it
 
 ### Wallet Errors
 

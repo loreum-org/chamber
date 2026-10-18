@@ -372,7 +372,7 @@ registry.on("ChamberCreated", (chamber, seats, name, symbol, erc20, erc721) => {
 
 ### Upgrading Chamber Implementation
 
-Chambers deployed before 1.2.0 cannot be upgraded in place to 1.3.0 (1.3.0 does not backfill their delegation records). Deploy a new chamber instead.
+Chambers deployed before 1.2.0 cannot be upgraded in place to 1.3.0 (1.3.0 does not backfill their delegation records). Deploy a new chamber instead. If one is upgraded anyway, `delegate`/`undelegate` on its pre-1.2.0 delegation rows revert `LegacyDelegation` instead of corrupting board weight, and the app refuses to submit to chambers older than 1.1.5.
 
 1. **Deploy New Implementation**:
 ```bash
