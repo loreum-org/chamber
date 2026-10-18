@@ -382,25 +382,24 @@ forge create src/Chamber.sol:Chamber \
     --verify
 ```
 
-2. **Propose Upgrade** (if using governance):
+2. **Propose Upgrade**. Since 1.3.0 this is the only upgrade path: a quorum transaction to the chamber's ProxyAdmin (Chamber has no `upgradeImplementation`). ProxyAdmin has no version or migration checks of its own; the board is responsible for what it approves.
 ```solidity
 chamber.submitTransaction(
     tokenId,
-    proxyAdminAddress,
+    chamber.getProxyAdmin(),
     0,
-    abi.encodeWithSelector(
-        ProxyAdmin.upgrade.selector,
-        chamberProxyAddress,
-        newImplementationAddress
+    abi.encodeCall(
+        ProxyAdmin.upgradeAndCall,
+        (ITransparentUpgradeableProxy(chamberProxyAddress), newImplementationAddress, "")
     ),
     "", // metadataURI
     0   // deadline: 30-day default
 );
 ```
 
-3. **Execute Upgrade** (after quorum):
+3. **Execute Upgrade** (after quorum). The calldata is stored onchain, so `data` can be empty:
 ```solidity
-chamber.executeTransaction(tokenId, transactionId);
+chamber.executeTransaction(tokenId, transactionId, "");
 ```
 
 ### Upgrading Registry

@@ -25,7 +25,7 @@ Create deploys that standalone object. Nested Sub-Chambers and Registry parent�
 ## Chamber proxy
 
 - Initialized with **underlying ERC‑20**, **membership ERC‑721**, **seat count**, and share **name/symbol**.  
-- **Upgradeable** — logic changes go through **`upgradeImplementation`**, normally as a queued transaction.  
+- **Upgradeable** — logic changes are a queued, quorum-approved transaction to the chamber's **ProxyAdmin** (`upgradeAndCall`). Since 1.3.0 that is the only path; proxyAdmin is the single upgrade path and has no version or migration checks of its own; the board is responsible for what it approves.  
 - **`ProxyAdmin` ownership** is transferred to the Chamber itself after Factory deploy (so upgrades are also director-gated).
 
 ## Factory (intended create path)

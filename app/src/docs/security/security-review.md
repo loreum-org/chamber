@@ -8,7 +8,7 @@ Chamber’s **trust surface** is the Solidity in **`contracts/src/`** (`Factory`
 
 - **Vault funds** — ERC‑4626 shares and underlying assets.  
 - **Governance integrity** — delegation, seat ranking, quorum, proposal lifecycle.  
-- **Upgrade path** — ProxyAdmin + `upgradeImplementation` only through controlled queue rules.
+- **Upgrade path** — a quorum transaction to the chamber-owned ProxyAdmin (`upgradeAndCall`) is the only path since 1.3.0. ProxyAdmin is the single upgrade path and has no version or migration checks of its own; the board is responsible for what it approves.
 
 ## Review phases
 

@@ -104,17 +104,11 @@ interface IChamber is IERC4626, IBoard, IWallet {
     /**
      * @notice Returns the `ProxyAdmin` contract address for this transparent proxy (ERC-1967 admin slot).
      * @return adminContract The OpenZeppelin `ProxyAdmin` instance controlling upgrades for this chamber
+     * @dev Since 1.3.0 this is the only upgrade path: the board queues `upgradeAndCall(chamber, impl, data)`
+     *      with `target = getProxyAdmin()`. ProxyAdmin has no version or migration checks of its own;
+     *      the board is responsible for what it approves. Calldata for such a nonce is stored onchain (L-04).
      */
     function getProxyAdmin() external view returns (address adminContract);
-
-    /**
-     * @notice Performs an implementation upgrade via the chamber-owned `ProxyAdmin`.
-     * @dev Must be called with `msg.sender == address(this)` (e.g. via `executeTransaction`). Requires
-     *      `ProxyAdmin.owner() == address(this)` and non-zero `newImplementation`.
-     * @param newImplementation Address of the new implementation contract
-     * @param data Optional data forwarded to `upgradeAndCall` (e.g. initializer on the new implementation)
-     */
-    function upgradeImplementation(address newImplementation, bytes calldata data) external;
 
     /**
      * @notice Pauses vault deposit/withdraw/mint/redeem and wallet execution.

@@ -9,8 +9,12 @@ import {IWallet} from "src/interfaces/IWallet.sol";
 import {MockERC20} from "test/mock/MockERC20.sol";
 import {MockERC721} from "test/mock/MockERC721.sol";
 import {DeployChamber} from "test/utils/DeployChamber.sol";
+import {ProxyAdmin} from "lib/openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
+import {
+    ITransparentUpgradeableProxy
+} from "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-/// @notice L-04: self-call / upgrade calldata is stored onchain so execution does not depend on logs.
+/// @notice L-04: self-call and ProxyAdmin (upgrade) calldata is stored onchain so execution does not depend on logs.
 contract FindingL04UpgradeCalldataLivenessTest is Test {
     Registry public registry;
     Chamber public newImplementation;
@@ -24,13 +28,16 @@ contract FindingL04UpgradeCalldataLivenessTest is Test {
 
     IChamber public chamber;
     address public chamberAddress;
+    address public proxyAdminAddr;
 
     function setUp() public {
         token = new MockERC20("Test Token", "TEST", 1000000e18);
         nft = new MockERC721("Mock NFT", "MNFT");
         newImplementation = new Chamber();
-        chamberAddress = address(DeployChamber.deployViaFactory(address(token), address(nft), 5, "Chamber Token", "CHMB", admin));
+        chamberAddress =
+            address(DeployChamber.deployViaFactory(address(token), address(nft), 5, "Chamber Token", "CHMB", admin));
         chamber = IChamber(chamberAddress);
+        proxyAdminAddr = chamber.getProxyAdmin();
 
         _setupDirectors();
         vm.roll(block.number + 1);
@@ -65,6 +72,10 @@ contract FindingL04UpgradeCalldataLivenessTest is Test {
         vm.stopPrank();
     }
 
+    function _upgradeCall(address impl) internal view returns (bytes memory) {
+        return abi.encodeCall(ProxyAdmin.upgradeAndCall, (ITransparentUpgradeableProxy(chamberAddress), impl, ""));
+    }
+
     function _reachQuorum(uint256 txId) internal {
         vm.prank(user2);
         chamber.confirmTransaction(2, txId);
@@ -76,11 +87,10 @@ contract FindingL04UpgradeCalldataLivenessTest is Test {
         bytes32 implSlot = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
         address currentImpl = address(uint160(uint256(vm.load(chamberAddress, implSlot))));
 
-        bytes memory upgradeData =
-            abi.encodeWithSelector(IChamber.upgradeImplementation.selector, address(newImplementation), "");
+        bytes memory upgradeData = _upgradeCall(address(newImplementation));
 
         vm.prank(user1);
-        chamber.submitTransaction(1, chamberAddress, 0, upgradeData, "", 0);
+        chamber.submitTransaction(1, proxyAdminAddr, 0, upgradeData, "", 0);
         uint256 txId = chamber.getTransactionCount() - 1;
 
         assertEq(chamber.getTransactionCalldata(txId), upgradeData);
@@ -100,10 +110,10 @@ contract FindingL04UpgradeCalldataLivenessTest is Test {
     function test_L04_BatchUpgradeExecutesWithoutResuppliedCalldata() public {
         Chamber impl1 = new Chamber();
         bytes[] memory upgradeDataArray = new bytes[](1);
-        upgradeDataArray[0] = abi.encodeWithSelector(IChamber.upgradeImplementation.selector, address(impl1), "");
+        upgradeDataArray[0] = _upgradeCall(address(impl1));
 
         address[] memory targets = new address[](1);
-        targets[0] = chamberAddress;
+        targets[0] = proxyAdminAddr;
         uint256[] memory values = new uint256[](1);
 
         vm.prank(user1);

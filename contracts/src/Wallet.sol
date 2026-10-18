@@ -92,12 +92,25 @@ abstract contract Wallet {
         uint256 deadline
     ) internal virtual {
         WalletLib.submitTransactionWithMetadata(
-            _getWalletStorage(), tokenId, target, value, data, metadataURI, deadline, _submitQuorum(), address(this)
+            _getWalletStorage(),
+            tokenId,
+            target,
+            value,
+            data,
+            metadataURI,
+            deadline,
+            _submitQuorum(),
+            _storesCalldata(target)
         );
     }
 
     function _submitQuorum() internal view virtual returns (uint256) {
         return 0;
+    }
+
+    /// @dev Whether a submitted nonce keeps its full calldata onchain (L-04). Self-calls by default.
+    function _storesCalldata(address target) internal view virtual returns (bool) {
+        return target == address(this);
     }
 
     function _confirmTransaction(uint256 tokenId, uint256 nonce) internal virtual {

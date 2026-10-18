@@ -7,6 +7,10 @@ import {Factory} from "src/Factory.sol";
 import {IChamber} from "src/interfaces/IChamber.sol";
 import {IBoard} from "src/interfaces/IBoard.sol";
 import {BoardTypes} from "src/types/BoardTypes.sol";
+import {ProxyAdmin} from "lib/openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
+import {
+    ITransparentUpgradeableProxy
+} from "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {EnumerableSet} from "lib/openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
 import {MockERC20} from "test/mock/MockERC20.sol";
 import {MockERC721} from "test/mock/MockERC721.sol";
@@ -35,15 +39,15 @@ contract LegacyLayoutChamber is Chamber {
 
 /**
  * @title 1.3.0 in-place upgrade guard (#398 follow-up)
- * @notice 1.3.0 deleted the pre-1.2.0 delegation backfill. A pre-1.2.0 chamber runs its OLD
- *         `upgradeImplementation`, so no 1.3.0 code can veto the implementation switch. The guard
+ * @notice 1.3.0 deleted the pre-1.2.0 delegation backfill. A pre-1.2.0 chamber is upgraded by its
+ *         old code (or its ProxyAdmin), so no 1.3.0 code can veto the implementation switch. The guard
  *         therefore lives in the 1.3.0 delegation paths: a positive delegation row with
  *         `holderEpoch == 0` can only have been written before 1.2.0 (every 1.2.0+ `delegate` sets a
  *         non-zero epoch), and if its node is still on the board, `delegate` / `undelegate` revert
  *         `LegacyDelegation` instead of corrupting board weight. Such chambers must be redeployed.
  *
- *         Known limitation (not addressed here): a quorum transaction aimed directly at the
- *         chamber's ProxyAdmin bypasses `upgradeImplementation`'s checks.
+ *         Upgrades here go through the chamber's ProxyAdmin, the single upgrade path since 1.3.0.
+ *         ProxyAdmin has no version checks of its own; the board is responsible for what it approves.
  */
 contract FindingR1012LegacyUpgradeGuardTest is Test {
     bytes32 internal constant IMPL_SLOT = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
@@ -78,11 +82,14 @@ contract FindingR1012LegacyUpgradeGuardTest is Test {
         vm.stopPrank();
     }
 
-    /// @dev Board-approved self-call to `upgradeImplementation` (3 of 3 seated directors).
+    /// @dev Board-approved transaction to the chamber's ProxyAdmin (3 of 3 seated directors), the
+    ///      only upgrade path since 1.3.0.
     function _upgrade(Chamber chamber, address newImpl) internal {
-        bytes memory data = abi.encodeWithSelector(IChamber.upgradeImplementation.selector, newImpl, "");
+        bytes memory data =
+            abi.encodeCall(ProxyAdmin.upgradeAndCall, (ITransparentUpgradeableProxy(address(chamber)), newImpl, ""));
+        address proxyAdmin = chamber.getProxyAdmin();
         vm.prank(user1);
-        chamber.submitTransaction(1, address(chamber), 0, data, "", 0);
+        chamber.submitTransaction(1, proxyAdmin, 0, data, "", 0);
         uint256 txId = chamber.getTransactionCount() - 1;
         vm.prank(user2);
         chamber.confirmTransaction(2, txId);
