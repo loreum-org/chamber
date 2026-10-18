@@ -16,11 +16,25 @@ import {DeployChamber} from "test/utils/DeployChamber.sol";
  */
 contract FindingR1012PhantomFallbackTest is Test {
     Chamber public chamber;
+    MockERC20 public token;
+    MockERC721 public nft;
+    address public director = makeAddr("director");
 
     function setUp() public {
-        MockERC20 token = new MockERC20("T", "T", 0);
-        MockERC721 nft = new MockERC721("N", "N");
+        token = new MockERC20("T", "T", 0);
+        nft = new MockERC721("N", "N");
         chamber = DeployChamber.deploy(address(token), address(nft), 1, "C", "C", address(0x9));
+    }
+
+    function _seatDirector() internal {
+        nft.mintWithTokenId(director, 1);
+        token.mint(director, 1e18);
+        vm.startPrank(director);
+        token.approve(address(chamber), 1e18);
+        chamber.deposit(1e18, director);
+        chamber.delegate(1, 1e18);
+        vm.stopPrank();
+        vm.roll(block.number + 2);
     }
 
     function test_unknownSelectorReverts() public {
@@ -35,5 +49,24 @@ contract FindingR1012PhantomFallbackTest is Test {
         (ok,) = address(chamber).call{value: 1 ether}(hex"deadbeef");
         assertTrue(ok);
         assertEq(address(chamber).balance, 2 ether);
+    }
+
+    /// A self-targeted proposal with an unknown selector is rejected at submit (self-call allowlist),
+    /// so it can never reach execute and the fallback.
+    function test_selfTargetUnknownSelector_RejectedAtSubmit() public {
+        _seatDirector();
+        bytes memory data = abi.encodeWithSelector(IERC20Permit.permit.selector, address(1), address(2), 1, 0, 0, 0, 0);
+        vm.prank(director);
+        vm.expectRevert(IChamber.InvalidTransaction.selector);
+        chamber.submitTransaction(1, address(chamber), 0, data, "", 0);
+    }
+
+    /// A zero-value call the chamber makes to itself with an unknown selector (the path a
+    /// self-targeted execute would take) reverts through the fallback instead of succeeding.
+    function test_selfCallUnknownSelector_RevertsInFallback() public {
+        vm.prank(address(chamber));
+        (bool ok, bytes memory ret) = address(chamber).call(hex"deadbeef");
+        assertFalse(ok);
+        assertEq(bytes4(ret), IChamber.InvalidTransaction.selector);
     }
 }
