@@ -7,8 +7,8 @@ import {ChamberAuthHarness} from "test/symbolic/ChamberAuthHarness.sol";
 import {MockERC721} from "test/mock/MockERC721.sol";
 import {BoardTypes} from "src/types/BoardTypes.sol";
 
-/// @dev Contract wallet that can register a session key as itself.
-contract MockSessionOwner {
+/// @dev Contract wallet that owns a membership NFT and acts as itself.
+contract MockContractOwner {
     function execute(address target, bytes calldata data) external {
         (bool ok, bytes memory ret) = target.call(data);
         if (!ok) {
@@ -19,12 +19,12 @@ contract MockSessionOwner {
     }
 }
 
-/// @notice Symbolic verification of Chamber director auth, session keys, and wallet queue
+/// @notice Symbolic verification of Chamber director auth and wallet queue
 /// @dev Uses ChamberAuthHarness: Halmos 0.3.3 cannot `new Chamber()` (`vm.deployCode`).
 contract ChamberSymTest is Test, SymTest {
     ChamberAuthHarness internal chamber;
     MockERC721 internal nft;
-    MockSessionOwner internal sessionOwner;
+    MockContractOwner internal contractOwner;
 
     address internal constant USER = address(0xBEEF);
     address internal constant USER2 = address(0xCAFE);
@@ -32,7 +32,7 @@ contract ChamberSymTest is Test, SymTest {
 
     function setUp() public {
         nft = new MockERC721("Mock NFT", "MNFT");
-        sessionOwner = new MockSessionOwner();
+        contractOwner = new MockContractOwner();
         chamber = new ChamberAuthHarness(address(nft), 2);
     }
 
@@ -135,104 +135,21 @@ contract ChamberSymTest is Test, SymTest {
         assertEq(chamber.totalHolderDelegations(USER), delegateAmount);
     }
 
-    /// @dev EOA owner is authorized; any other symbolic caller is not
-    function symbolicUnauthorizedCallerIsNotTokenAuthorized() public {
-        uint256 tokenId = svm.createUint(16, "tokenId");
+    /// @dev Only the NFT owner can act for a seated token; any other symbolic caller cannot
+    function symbolicUnauthorizedCallerCannotAct() public {
         address caller = svm.createAddress("caller");
-        vm.assume(tokenId > 0);
         vm.assume(caller != USER && caller != address(0));
 
-        nft.mintWithTokenId(USER, tokenId);
+        _fundAndDelegate(USER, 1, 1e18, 1e18);
+        _rollDelay();
 
-        assertTrue(chamber.isTokenAuthorized(tokenId, USER));
-        assertFalse(chamber.isTokenAuthorized(tokenId, caller));
-    }
+        vm.prank(caller);
+        (bool callerOk,) = address(chamber).call(_submitTx(1));
+        assertFalse(callerOk);
 
-    /// @dev Only the registered session key (plus the contract owner) is authorized.
-    ///      Reads the PMN-M04 session ABI (expiry/scope/liveAt). Not a symbolic proof of
-    ///      every expiry/scope bit combination.
-    function symbolicSessionKeyIsOnlyApprovedOperator() public {
-        uint256 tokenId = svm.createUint(16, "tokenId");
-        address sessionKey = svm.createAddress("sessionKey");
-        address other = svm.createAddress("other");
-        vm.assume(tokenId > 0);
-        vm.assume(sessionKey != address(0));
-        vm.assume(other != address(0) && other != sessionKey);
-        vm.assume(other != address(sessionOwner) && sessionKey != address(sessionOwner));
-
-        nft.mintWithTokenId(address(sessionOwner), tokenId);
-        sessionOwner.execute(address(chamber), _setOperator(tokenId, sessionKey));
-
-        assertTrue(chamber.isTokenAuthorized(tokenId, address(sessionOwner)));
-        assertTrue(chamber.isTokenAuthorized(tokenId, sessionKey));
-        assertFalse(chamber.isTokenAuthorized(tokenId, other));
-        assertEq(chamber.getDirectorOperator(tokenId), sessionKey);
-        assertEq(chamber.getDirectorOperatorScope(tokenId), type(uint32).max);
-        assertEq(chamber.getDirectorOperatorLiveAt(tokenId), block.number + BoardTypes.SEATING_DELAY);
-
-        (address storedOwner, address storedOp, uint256 expiry, uint32 scope, uint256 liveAt) =
-            chamber.getDirectorSession(tokenId);
-        assertEq(storedOwner, address(sessionOwner));
-        assertEq(storedOp, sessionKey);
-        assertEq(expiry, type(uint64).max);
-        assertEq(scope, type(uint32).max);
-        assertEq(liveAt, block.number + BoardTypes.SEATING_DELAY);
-    }
-
-    /// @dev PMN-M04 A+B: expiry 0 and scope 0 are rejected at set
-    function symbolicSessionSetRejectsZeroExpiryOrScope() public {
-        uint256 tokenId = 1;
-        address sessionKey = svm.createAddress("sessionKey");
-        vm.assume(sessionKey != address(0) && sessionKey != address(sessionOwner));
-
-        nft.mintWithTokenId(address(sessionOwner), tokenId);
-
-        (bool expiryOk,) = address(sessionOwner).call(
-            abi.encodeCall(
-                sessionOwner.execute,
-                (
-                    address(chamber),
-                    abi.encodeCall(
-                        ChamberAuthHarness.setDirectorOperator, (tokenId, sessionKey, uint256(0), type(uint32).max)
-                    )
-                )
-            )
-        );
-        (bool scopeOk,) = address(sessionOwner).call(
-            abi.encodeCall(
-                sessionOwner.execute,
-                (
-                    address(chamber),
-                    abi.encodeCall(
-                        ChamberAuthHarness.setDirectorOperator, (tokenId, sessionKey, type(uint64).max, uint32(0))
-                    )
-                )
-            )
-        );
-        assertFalse(expiryOk);
-        assertFalse(scopeOk);
-        assertEq(chamber.getDirectorOperator(tokenId), address(0));
-    }
-
-    /// @dev Transferring the membership NFT clears the live session key
-    function symbolicOperatorClearedOnTransfer() public {
-        uint256 tokenId = svm.createUint(16, "tokenId");
-        address sessionKey = svm.createAddress("sessionKey");
-        address recipient = svm.createAddress("recipient");
-        vm.assume(tokenId > 0);
-        vm.assume(sessionKey != address(0) && sessionKey != address(sessionOwner));
-        vm.assume(recipient != address(0) && recipient != address(sessionOwner) && recipient != sessionKey);
-
-        nft.mintWithTokenId(address(sessionOwner), tokenId);
-        sessionOwner.execute(address(chamber), _setOperator(tokenId, sessionKey));
-        assertEq(chamber.getDirectorOperator(tokenId), sessionKey);
-
-        sessionOwner.execute(address(nft), abi.encodeCall(nft.transferFrom, (address(sessionOwner), recipient, tokenId)));
-
-        assertEq(nft.ownerOf(tokenId), recipient);
-        assertEq(chamber.getDirectorOperator(tokenId), address(0));
-        assertFalse(chamber.isTokenAuthorized(tokenId, sessionKey));
-        assertTrue(chamber.isTokenAuthorized(tokenId, recipient));
+        vm.prank(USER);
+        (bool ownerOk,) = address(chamber).call(_submitTx(1));
+        assertTrue(ownerOk);
     }
 
     /// @dev A newly seated token cannot submit until the seating delay elapses
@@ -302,55 +219,6 @@ contract ChamberSymTest is Test, SymTest {
         assertFalse(success);
     }
 
-    /// @dev Live session key may submit after seating; NFT transfer drops that right
-    function symbolicSessionKeyCanSubmitUntilTransfer() public {
-        address sessionKey = svm.createAddress("sessionKey");
-        vm.assume(sessionKey != address(0) && sessionKey != address(sessionOwner) && sessionKey != USER);
-
-        _fundAndDelegate(address(sessionOwner), 1, 2e18, 2e18);
-        _fundAndDelegate(USER, 2, 1e18, 1e18);
-        _rollDelay();
-
-        sessionOwner.execute(address(chamber), _setOperator(1, sessionKey));
-
-        vm.prank(sessionKey);
-        chamber.submitTransaction(1, TARGET, 0, "");
-        assertEq(chamber.getTransactionCount(), 1);
-
-        sessionOwner.execute(address(nft), abi.encodeCall(nft.transferFrom, (address(sessionOwner), USER, uint256(1))));
-
-        vm.prank(sessionKey);
-        (bool success,) = address(chamber).call(_submitTx(1));
-        assertFalse(success);
-        assertEq(chamber.getDirectorOperator(1), address(0));
-    }
-
-    /// @dev PMN-M04 C: a newly set key can submit immediately but cannot confirm until liveAt
-    function symbolicSessionKeyConfirmWaitsLiveAt() public {
-        address sessionKey = svm.createAddress("sessionKey");
-        vm.assume(sessionKey != address(0) && sessionKey != address(sessionOwner) && sessionKey != USER);
-
-        _fundAndDelegate(USER, 1, 2e18, 2e18);
-        _fundAndDelegate(address(sessionOwner), 2, 1e18, 1e18);
-        _rollDelay();
-
-        vm.prank(USER);
-        chamber.submitTransaction(1, TARGET, 0, "");
-
-        uint256 setBlock = vm.getBlockNumber();
-        sessionOwner.execute(address(chamber), _setOperator(2, sessionKey));
-        assertEq(chamber.getDirectorOperatorLiveAt(2), setBlock + BoardTypes.SEATING_DELAY);
-
-        vm.prank(sessionKey);
-        (bool earlyConfirm,) = address(chamber).call(abi.encodeCall(chamber.confirmTransaction, (uint256(2), uint256(0))));
-        assertFalse(earlyConfirm);
-
-        _rollDelay();
-        vm.prank(sessionKey);
-        chamber.confirmTransaction(2, 0);
-        assertTrue(chamber.getConfirmation(2, 0));
-    }
-
     /// @dev PMN-M01: a chamber-held top-seat NFT drops out of the reachable quorum denominator
     function symbolicReachableQuorumDropsChamberHeldSeat() public {
         _fundAndDelegate(USER, 1, 2e18, 2e18);
@@ -384,11 +252,13 @@ contract ChamberSymTest is Test, SymTest {
 
     /// @dev PMN-H01: after ownerOf changes, the new controller waits until syncSeating + delay
     function symbolicControlTransferRequiresSyncSeating() public {
-        _fundAndDelegate(address(sessionOwner), 1, 2e18, 2e18);
+        _fundAndDelegate(address(contractOwner), 1, 2e18, 2e18);
         _fundAndDelegate(USER, 2, 1e18, 1e18);
         _rollDelay();
 
-        sessionOwner.execute(address(nft), abi.encodeCall(nft.transferFrom, (address(sessionOwner), USER2, uint256(1))));
+        contractOwner.execute(
+            address(nft), abi.encodeCall(nft.transferFrom, (address(contractOwner), USER2, uint256(1)))
+        );
 
         vm.prank(USER2);
         (bool beforeSync,) = address(chamber).call(_submitTx(1));
@@ -415,12 +285,6 @@ contract ChamberSymTest is Test, SymTest {
 
     function _submitTx(uint256 tokenId) internal view returns (bytes memory) {
         return abi.encodeCall(ChamberAuthHarness.submitTransaction, (tokenId, TARGET, uint256(0), bytes("")));
-    }
-
-    function _setOperator(uint256 tokenId, address sessionKey) internal view returns (bytes memory) {
-        return abi.encodeCall(
-            ChamberAuthHarness.setDirectorOperator, (tokenId, sessionKey, type(uint64).max, type(uint32).max)
-        );
     }
 
     function _fundAndDelegate(address holder, uint256 tokenId, uint256 shares, uint256 delegateAmount) internal {

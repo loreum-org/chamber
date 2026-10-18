@@ -71,7 +71,7 @@ contract LifecycleTest is Test {
         bytes memory transferData = abi.encodeWithSelector(IERC20.transfer.selector, recipient, 100e18);
 
         vm.prank(directors[0]);
-        chamber.submitTransaction(directorTokenIds[0], address(token), 0, transferData);
+        chamber.submitTransaction(directorTokenIds[0], address(token), 0, transferData, "", 0);
 
         (bool executed, uint8 confirmations, address target,,) = chamber.getTransaction(0);
         assertEq(target, address(token));

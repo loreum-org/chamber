@@ -11,36 +11,19 @@ import {IERC721} from "lib/openzeppelin-contracts/contracts/interfaces/IERC721.s
 
 /**
  * @title ChamberAuthHarness
- * @notice Lean Board+Wallet+session-key surface for Halmos.
+ * @notice Lean Board+Wallet surface for Halmos.
  * @dev Foundry rewrites `new Chamber()` to `vm.deployCode` (unsupported in Halmos 0.3.3)
  *      because embedding Chamber initcode would blow the test-contract size limit.
- *      This harness mirrors Chamber director auth, seating, session keys (PMN-M04),
+ *      This harness mirrors Chamber director auth (owner only), seating,
  *      reachable quorum (PMN-M01), seating-control sync (PMN-H01), holder delegation,
  *      and the wallet queue — not ERC-4626, pause, or proxy upgrade.
  *      Keep the copied checks aligned with `Chamber.sol`.
  */
 contract ChamberAuthHarness is Board, Wallet {
-    struct DirectorSession {
-        address owner;
-        uint64 expiry;
-        uint32 scope;
-        address operator;
-        uint64 liveAt;
-    }
-
-    uint32 public constant SESSION_SCOPE_SUBMIT = 1 << 0;
-    uint32 public constant SESSION_SCOPE_CONFIRM = 1 << 1;
-    uint32 public constant SESSION_SCOPE_EXECUTE = 1 << 2;
-    uint32 public constant SESSION_SCOPE_UPDATE_SEATS = 1 << 3;
-    uint32 public constant SESSION_SCOPE_REVOKE = 1 << 4;
-    uint32 public constant SESSION_SCOPE_CANCEL = 1 << 5;
-    uint32 public constant SESSION_SCOPE_UNSCOPED = type(uint32).max;
-
     IERC721 public nft;
     mapping(address => mapping(uint256 => uint256)) public holderDelegation;
     mapping(address => uint256) public totalHolderDelegations;
     mapping(address => uint256) public shareBalance;
-    mapping(uint256 => DirectorSession) public directorSession;
     mapping(uint256 => mapping(uint256 => address)) public confirmOwner;
     mapping(uint256 => mapping(uint256 => address)) public cancelOwner;
 
@@ -105,67 +88,6 @@ contract ChamberAuthHarness is Board, Wallet {
         return true;
     }
 
-    function setDirectorOperator(uint256 tokenId, address operator, uint256 expiry, uint32 scope)
-        external
-        nonReentrant
-    {
-        if (tokenId == 0) revert IChamber.NotDirector();
-        address owner = nft.ownerOf(tokenId);
-        if (owner != msg.sender) revert IChamber.NotDirector();
-        if (owner.code.length == 0) revert IChamber.NotDirector();
-
-        if (operator == address(0)) {
-            delete directorSession[tokenId];
-            return;
-        }
-
-        if (expiry == 0 || expiry > type(uint64).max || expiry <= block.timestamp) {
-            revert IChamber.InvalidSessionExpiry();
-        }
-        if (scope == 0) revert IChamber.InvalidSessionScope();
-
-        uint256 liveAt = block.number + BoardTypes.SEATING_DELAY;
-        directorSession[tokenId] = DirectorSession({
-            owner: owner, expiry: uint64(expiry), scope: scope, operator: operator, liveAt: uint64(liveAt)
-        });
-    }
-
-    function getDirectorOperator(uint256 tokenId) public view returns (address) {
-        (bool authorized, address operator) = _liveSessionKey(tokenId);
-        return authorized ? operator : address(0);
-    }
-
-    function getDirectorOperatorScope(uint256 tokenId) public view returns (uint32) {
-        (bool live,) = _liveSessionKey(tokenId);
-        if (!live) return 0;
-        return directorSession[tokenId].scope;
-    }
-
-    function getDirectorOperatorLiveAt(uint256 tokenId) public view returns (uint256) {
-        (bool live,) = _liveSessionKey(tokenId);
-        if (!live) return 0;
-        return directorSession[tokenId].liveAt;
-    }
-
-    function getDirectorSession(uint256 tokenId)
-        public
-        view
-        returns (address sessionOwner, address operator, uint256 expiry, uint32 scope, uint256 liveAt)
-    {
-        DirectorSession storage session = directorSession[tokenId];
-        return (session.owner, session.operator, session.expiry, session.scope, session.liveAt);
-    }
-
-    function isTokenAuthorized(uint256 tokenId, address account) public view returns (bool) {
-        if (tokenId == 0 || account == address(0)) return false;
-        try nft.ownerOf(tokenId) returns (address owner) {
-            if (account == owner) return true;
-            return _isLiveSessionKey(tokenId, owner, account);
-        } catch {
-            return false;
-        }
-    }
-
     function getMember(uint256 tokenId) external view returns (uint256, uint256, uint256, uint256) {
         Node memory node = _getNode(tokenId);
         return (node.tokenId, node.amount, node.next, node.prev);
@@ -202,7 +124,7 @@ contract ChamberAuthHarness is Board, Wallet {
         isDirector(tokenId)
     {
         if (target == address(0)) revert IChamber.ZeroAddress();
-        _submitTransaction(tokenId, target, value, data);
+        _submitTransactionWithMetadata(tokenId, target, value, data, "", 0);
     }
 
     function confirmTransaction(uint256 tokenId, uint256 transactionId) public nonReentrant isDirector(tokenId) {
@@ -253,25 +175,17 @@ contract ChamberAuthHarness is Board, Wallet {
         uint256 deadline
     ) internal override {
         super._submitTransactionWithMetadata(tokenId, target, value, data, metadataURI, deadline);
-        uint256 nonce = getTransactionCount() - 1;
-        if (_getWalletStorage().isConfirmed[nonce][tokenId]) {
-            confirmOwner[nonce][tokenId] = _ownerOfOrZero(tokenId);
-        }
-    }
-
-    function _submitAutoConfirms(uint256 tokenId) internal view override returns (bool) {
-        if (nft.ownerOf(tokenId) == msg.sender) return true;
-        return _sessionMayAct(tokenId, IWallet.confirmTransaction.selector);
+        confirmOwner[getTransactionCount() - 1][tokenId] = msg.sender;
     }
 
     function _confirmTransaction(uint256 tokenId, uint256 nonce) internal override {
         super._confirmTransaction(tokenId, nonce);
-        confirmOwner[nonce][tokenId] = _ownerOfOrZero(tokenId);
+        confirmOwner[nonce][tokenId] = msg.sender;
     }
 
     function _recordCancelVote(uint256 tokenId, uint256 nonce) internal override {
         super._recordCancelVote(tokenId, nonce);
-        cancelOwner[nonce][tokenId] = _ownerOfOrZero(tokenId);
+        cancelOwner[nonce][tokenId] = msg.sender;
     }
 
     function _requiredConfirmations(uint256 nonce) internal view returns (uint256) {
@@ -289,70 +203,7 @@ contract ChamberAuthHarness is Board, Wallet {
     }
 
     function _requireTokenAuthorized(uint256 tokenId) internal view {
-        if (tokenId == 0) revert IChamber.NotDirector();
-        address owner = nft.ownerOf(tokenId);
-        if (owner == msg.sender) return;
-        if (_isLiveSessionKey(tokenId, owner, msg.sender) && _sessionMayAct(tokenId, msg.sig)) return;
-        revert IChamber.NotDirector();
-    }
-
-    function _isLiveSessionKey(uint256 tokenId, address owner, address account) internal view returns (bool) {
-        if (account == address(0) || owner.code.length == 0) return false;
-        DirectorSession storage session = directorSession[tokenId];
-        if (session.owner != owner || session.operator != account) return false;
-        if (session.expiry == 0 || block.timestamp > session.expiry) return false;
-        return true;
-    }
-
-    function _sessionMayAct(uint256 tokenId, bytes4 selector) internal view returns (bool) {
-        DirectorSession storage session = directorSession[tokenId];
-        (uint32 bit, bool delayed) = _sessionScopeForSelector(selector);
-        if (delayed && block.number < session.liveAt) return false;
-        if (session.scope == SESSION_SCOPE_UNSCOPED) return true;
-        return bit != 0 && (session.scope & bit) == bit;
-    }
-
-    function _sessionScopeForSelector(bytes4 selector) internal pure returns (uint32 bit, bool delayed) {
-        if (
-            selector == bytes4(keccak256("submitTransaction(uint256,address,uint256,bytes)"))
-                || selector == bytes4(keccak256("submitTransaction(uint256,address,uint256,bytes,uint256)"))
-                || selector == bytes4(keccak256("submitTransactionWithMetadata(uint256,address,uint256,bytes,string)"))
-                || selector
-                    == bytes4(keccak256("submitTransactionWithMetadata(uint256,address,uint256,bytes,string,uint256)"))
-                || selector == bytes4(keccak256("submitBatchTransactions(uint256,address[],uint256[],bytes[])"))
-        ) {
-            return (SESSION_SCOPE_SUBMIT, false);
-        }
-        if (selector == IWallet.confirmTransaction.selector || selector == IWallet.confirmBatchTransactions.selector) {
-            return (SESSION_SCOPE_CONFIRM, true);
-        }
-        if (selector == IWallet.executeTransaction.selector || selector == IWallet.executeBatchTransactions.selector) {
-            return (SESSION_SCOPE_EXECUTE, true);
-        }
-        if (selector == IChamber.executeSeatsUpdate.selector) {
-            return (SESSION_SCOPE_UPDATE_SEATS, true);
-        }
-        if (selector == IChamber.updateSeats.selector || selector == IChamber.cancelSeatUpdate.selector) {
-            return (SESSION_SCOPE_UPDATE_SEATS, false);
-        }
-        if (selector == IWallet.revokeConfirmation.selector) {
-            return (SESSION_SCOPE_REVOKE, false);
-        }
-        if (selector == IWallet.cancelTransaction.selector) {
-            return (SESSION_SCOPE_CANCEL, false);
-        }
-        return (0, false);
-    }
-
-    function _liveSessionKey(uint256 tokenId) internal view returns (bool, address) {
-        if (tokenId == 0) return (false, address(0));
-        try nft.ownerOf(tokenId) returns (address owner) {
-            DirectorSession storage session = directorSession[tokenId];
-            if (!_isLiveSessionKey(tokenId, owner, session.operator)) return (false, address(0));
-            return (true, session.operator);
-        } catch {
-            return (false, address(0));
-        }
+        if (tokenId == 0 || nft.ownerOf(tokenId) != msg.sender) revert IChamber.NotDirector();
     }
 
     function _isInTopSeats(uint256 tokenId) internal view returns (bool) {
@@ -373,11 +224,5 @@ contract ChamberAuthHarness is Board, Wallet {
 
     function _countLiveCancelFlags(uint256 nonce) internal view returns (uint256) {
         return _countCurrentDirectorFlags(nft, _getWalletStorage().isCancelConfirmed, cancelOwner, nonce);
-    }
-
-    function _ownerOfOrZero(uint256 tokenId) internal view returns (address owner) {
-        try nft.ownerOf(tokenId) returns (address o) {
-            owner = o;
-        } catch {}
     }
 }

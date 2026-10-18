@@ -37,7 +37,7 @@ contract FindingH02SeatingDelayTest is Test {
 
     function test_H02_NewDirectorCannotConfirmUntilDelay() public {
         vm.prank(user1);
-        chamber.submitTransaction(1, address(0x3), 0, "");
+        chamber.submitTransaction(1, address(0x3), 0, "", "", 0);
 
         _seat(user3, 3, 50 ether);
 
@@ -57,7 +57,7 @@ contract FindingH02SeatingDelayTest is Test {
         deal(address(chamber), 1 ether);
 
         vm.prank(user1);
-        chamber.submitTransaction(1, address(0x3), 1 ether, "");
+        chamber.submitTransaction(1, address(0x3), 1 ether, "", "", 0);
         vm.prank(user2);
         chamber.confirmTransaction(2, 0);
 
@@ -78,10 +78,10 @@ contract FindingH02SeatingDelayTest is Test {
 
         vm.prank(user3);
         vm.expectRevert(IChamber.DirectorNotSeated.selector);
-        chamber.submitTransaction(3, address(0x3), 0, "");
+        chamber.submitTransaction(3, address(0x3), 0, "", "", 0);
 
         vm.prank(user1);
-        chamber.submitTransaction(1, address(0x3), 0, "");
+        chamber.submitTransaction(1, address(0x3), 0, "", "", 0);
         assertEq(chamber.getTransactionCount(), 1, "existing seated director can still submit");
     }
 
@@ -89,7 +89,7 @@ contract FindingH02SeatingDelayTest is Test {
         deal(address(chamber), 1 ether);
 
         vm.prank(user1);
-        chamber.submitTransaction(1, address(0x3), 1 ether, "");
+        chamber.submitTransaction(1, address(0x3), 1 ether, "", "", 0);
 
         _seat(user3, 3, 50 ether);
         vm.roll(block.number + SEATING_DELAY);
@@ -113,7 +113,7 @@ contract FindingH02SeatingDelayTest is Test {
         assertTrue(block.number >= seatedAtBefore);
 
         vm.prank(user1);
-        chamber.submitTransaction(1, address(0x3), 0, "");
+        chamber.submitTransaction(1, address(0x3), 0, "", "", 0);
         vm.prank(user2);
         chamber.confirmTransaction(2, 0);
 
@@ -137,10 +137,10 @@ contract FindingH02SeatingDelayTest is Test {
 
         vm.prank(user3);
         vm.expectRevert(IChamber.DirectorNotSeated.selector);
-        chamber.submitTransaction(3, address(0x3), 0, "");
+        chamber.submitTransaction(3, address(0x3), 0, "", "", 0);
 
         vm.prank(user1);
-        chamber.submitTransaction(1, address(0x3), 0, "");
+        chamber.submitTransaction(1, address(0x3), 0, "", "", 0);
         assertEq(chamber.getTransactionCount(), 1);
     }
 
@@ -160,7 +160,7 @@ contract FindingH02SeatingDelayTest is Test {
         assertEq(chamber.getSeatedAt(2), 0);
 
         vm.prank(user1);
-        chamber.submitTransaction(1, address(0x3), 1 ether, "");
+        chamber.submitTransaction(1, address(0x3), 1 ether, "", "", 0);
         vm.prank(user2);
         chamber.confirmTransaction(2, 0);
         vm.prank(user1);
@@ -180,7 +180,7 @@ contract FindingH02SeatingDelayTest is Test {
         assertEq(chamber.getSeatedAt(1), 0);
 
         vm.prank(user1);
-        chamber.submitTransaction(1, address(0x3), 0, "");
+        chamber.submitTransaction(1, address(0x3), 0, "", "", 0);
 
         _seat(user3, 3, 50 ether);
         assertGt(chamber.getSeatedAt(3), 0, "new seat still receives an activation block");
@@ -218,7 +218,7 @@ contract FindingH02SeatingDelayTest is Test {
         assertEq(chamber.getSeatedAt(1), 0, "refresh must not assign an activation to an incumbent");
 
         vm.prank(user1);
-        chamber.submitTransaction(1, address(0x3), 0, "");
+        chamber.submitTransaction(1, address(0x3), 0, "", "", 0);
         assertEq(chamber.getTransactionCount(), 1);
     }
 
@@ -239,10 +239,10 @@ contract FindingH02SeatingDelayTest is Test {
 
         vm.prank(user3);
         vm.expectRevert(IChamber.DirectorNotSeated.selector);
-        chamber.submitTransaction(3, address(0x3), 0, "");
+        chamber.submitTransaction(3, address(0x3), 0, "", "", 0);
 
         vm.prank(user1);
-        chamber.submitTransaction(1, address(0x3), 0, "");
+        chamber.submitTransaction(1, address(0x3), 0, "", "", 0);
         assertEq(chamber.getTransactionCount(), 1);
     }
 

@@ -80,7 +80,7 @@ contract FindingL04UpgradeCalldataLivenessTest is Test {
             abi.encodeWithSelector(IChamber.upgradeImplementation.selector, address(newImplementation), "");
 
         vm.prank(user1);
-        chamber.submitTransaction(1, chamberAddress, 0, upgradeData);
+        chamber.submitTransaction(1, chamberAddress, 0, upgradeData, "", 0);
         uint256 txId = chamber.getTransactionCount() - 1;
 
         assertEq(chamber.getTransactionCalldata(txId), upgradeData);
@@ -130,7 +130,7 @@ contract FindingL04UpgradeCalldataLivenessTest is Test {
         bytes memory transferData = abi.encodeWithSignature("transfer(address,uint256)", recipient, 1e18);
 
         vm.prank(user1);
-        chamber.submitTransaction(1, address(token), 0, transferData);
+        chamber.submitTransaction(1, address(token), 0, transferData, "", 0);
         uint256 txId = chamber.getTransactionCount() - 1;
 
         assertEq(chamber.getTransactionCalldata(txId).length, 0);

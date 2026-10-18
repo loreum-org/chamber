@@ -110,7 +110,7 @@ contract ChamberUpgradeTest is Test {
 
         // Submit upgrade transaction as director (user1 with tokenId 1)
         vm.prank(user1);
-        chamber.submitTransaction(1, chamberAddress, 0, upgradeData);
+        chamber.submitTransaction(1, chamberAddress, 0, upgradeData, "", 0);
 
         // Get transaction ID
         uint256 txId = chamber.getTransactionCount() - 1;
@@ -144,7 +144,7 @@ contract ChamberUpgradeTest is Test {
             abi.encodeWithSelector(IChamber.upgradeImplementation.selector, address(newImplementation), "");
 
         vm.prank(user1);
-        chamber.submitTransaction(1, chamberAddress, 0, upgradeData);
+        chamber.submitTransaction(1, chamberAddress, 0, upgradeData, "", 0);
 
         uint256 txId = chamber.getTransactionCount() - 1;
         assertEq(chamber.getTransactionCalldata(txId), upgradeData);
@@ -168,7 +168,7 @@ contract ChamberUpgradeTest is Test {
             abi.encodeWithSelector(IChamber.upgradeImplementation.selector, address(newImplementation), "");
 
         vm.prank(user1);
-        chamber.submitTransaction(1, chamberAddress, 0, upgradeData);
+        chamber.submitTransaction(1, chamberAddress, 0, upgradeData, "", 0);
 
         uint256 txId = chamber.getTransactionCount() - 1;
 
@@ -195,7 +195,7 @@ contract ChamberUpgradeTest is Test {
 
         // Submit upgrade transaction
         vm.prank(user1);
-        chamber.submitTransaction(1, chamberAddress, 0, upgradeData);
+        chamber.submitTransaction(1, chamberAddress, 0, upgradeData, "", 0);
 
         uint256 txId = chamber.getTransactionCount() - 1;
 
@@ -228,7 +228,7 @@ contract ChamberUpgradeTest is Test {
         // Non-director cannot submit upgrade transaction (tokenId 999 not in top seats)
         vm.prank(nonDirector);
         vm.expectRevert(IChamber.NotDirector.selector);
-        chamber.submitTransaction(999, chamberAddress, 0, upgradeData);
+        chamber.submitTransaction(999, chamberAddress, 0, upgradeData, "", 0);
     }
 
     function test_Chamber_UpgradeViaTransaction_InvalidSelector_Reverts() public {
@@ -238,7 +238,7 @@ contract ChamberUpgradeTest is Test {
 
         vm.prank(user1);
         vm.expectRevert(IChamber.InvalidTransaction.selector);
-        chamber.submitTransaction(1, chamberAddress, 0, wrongData);
+        chamber.submitTransaction(1, chamberAddress, 0, wrongData, "", 0);
     }
 
     function test_Chamber_UpgradeViaTransaction_NotEnoughConfirmations_Reverts() public {
@@ -247,7 +247,7 @@ contract ChamberUpgradeTest is Test {
 
         // Submit upgrade transaction
         vm.prank(user1);
-        chamber.submitTransaction(1, chamberAddress, 0, upgradeData);
+        chamber.submitTransaction(1, chamberAddress, 0, upgradeData, "", 0);
 
         uint256 txId = chamber.getTransactionCount() - 1;
 
@@ -262,7 +262,7 @@ contract ChamberUpgradeTest is Test {
 
         // Submit upgrade transaction
         vm.prank(user1);
-        chamber.submitTransaction(1, chamberAddress, 0, upgradeData);
+        chamber.submitTransaction(1, chamberAddress, 0, upgradeData, "", 0);
 
         uint256 txId = chamber.getTransactionCount() - 1;
 
@@ -330,7 +330,7 @@ contract ChamberUpgradeTest is Test {
             abi.encodeWithSelector(IChamber.upgradeImplementation.selector, address(newImplementation), "");
 
         vm.prank(user1);
-        chamber.submitTransaction(1, chamberAddress, 0, upgradeData);
+        chamber.submitTransaction(1, chamberAddress, 0, upgradeData, "", 0);
 
         uint256 txId = chamber.getTransactionCount() - 1;
 
@@ -428,7 +428,7 @@ contract ChamberUpgradeTest is Test {
         bytes memory transferData = abi.encodeWithSignature("transferOwnership(address)", address(0xDEAD));
 
         vm.prank(user1);
-        chamber.submitTransaction(1, proxyAdminAddress, 0, transferData);
+        chamber.submitTransaction(1, proxyAdminAddress, 0, transferData, "", 0);
         uint256 transferTxId = chamber.getTransactionCount() - 1;
 
         vm.prank(user2);
@@ -446,7 +446,7 @@ contract ChamberUpgradeTest is Test {
             abi.encodeWithSelector(IChamber.upgradeImplementation.selector, address(newImplementation), "");
 
         vm.prank(user1);
-        chamber.submitTransaction(1, chamberAddress, 0, upgradeData);
+        chamber.submitTransaction(1, chamberAddress, 0, upgradeData, "", 0);
         uint256 upgradeTxId = chamber.getTransactionCount() - 1;
 
         vm.prank(user2);
