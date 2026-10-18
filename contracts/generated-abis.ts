@@ -3232,6 +3232,11 @@ export const chamberAbi = [
   },
   {
     "type": "error",
+    "name": "LegacyDelegation",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "MaxNodesReached",
     "inputs": []
   },

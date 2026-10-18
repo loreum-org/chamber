@@ -199,19 +199,25 @@ library BoardLib {
 
     /// @dev Records `amount` as live in `tokenId`'s current node (R-1012-M1). Weight from an earlier
     ///      node epoch stays in `holderDelegation` but is no longer live. `holderEpoch` stores
-    ///      `nodeEpoch + 1`.
+    ///      `nodeEpoch + 1`, so every row written by 1.2.0+ has a non-zero epoch.
+    ///      A positive row with epoch 0 was written before 1.2.0. If its node is still on the board,
+    ///      1.3.0 cannot tell how much of it is live, so it fails closed (`LegacyDelegation`).
     function trackLiveDelegation(
         BoardTypes.BoardStorage storage $,
         mapping(address => mapping(uint256 => uint256)) storage holderEpoch,
         mapping(address => mapping(uint256 => uint256)) storage liveDelegation,
         address holder,
         uint256 tokenId,
+        uint256 priorDelegation,
         uint256 amount
     ) external {
         uint256 epoch = $.nodeEpoch[tokenId] + 1;
         uint256 stored = holderEpoch[holder][tokenId];
         uint256 live = liveDelegation[holder][tokenId];
         if (stored != epoch) {
+            if (stored == 0 && priorDelegation != 0 && $.nodes[tokenId].tokenId == tokenId) {
+                revert IBoard.LegacyDelegation();
+            }
             live = 0;
             holderEpoch[holder][tokenId] = epoch;
         }
@@ -220,6 +226,8 @@ library BoardLib {
 
     /// @dev How much of an `amount` undelegation comes off the current node (live weight first).
     ///      Stranded weight (evicted or cleaned-up node) returns 0 and never touches the board.
+    ///      A pre-1.2.0 row (epoch 0) on a node still on the board reverts `LegacyDelegation`:
+    ///      returning 0 would lower `holderDelegation` but leave the weight on the board.
     function consumeLiveDelegation(
         BoardTypes.BoardStorage storage $,
         mapping(address => mapping(uint256 => uint256)) storage holderEpoch,
@@ -230,7 +238,9 @@ library BoardLib {
     ) external returns (uint256 boardAmount) {
         if ($.nodes[tokenId].tokenId != tokenId) return 0;
         uint256 nodeAmount = $.nodes[tokenId].amount;
-        if (holderEpoch[holder][tokenId] != $.nodeEpoch[tokenId] + 1) return 0;
+        uint256 stored = holderEpoch[holder][tokenId];
+        if (stored == 0) revert IBoard.LegacyDelegation();
+        if (stored != $.nodeEpoch[tokenId] + 1) return 0;
         uint256 live = liveDelegation[holder][tokenId];
         boardAmount = amount < live ? amount : live;
         if (boardAmount > nodeAmount) boardAmount = nodeAmount;

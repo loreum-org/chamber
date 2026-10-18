@@ -170,7 +170,8 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
         uint256 senderBalance = balanceOf(msg.sender);
         if (senderBalance < amount) revert IChamber.InsufficientChamberBalance();
 
-        $.holderDelegation[msg.sender][tokenId] += amount;
+        uint256 priorDelegation = $.holderDelegation[msg.sender][tokenId];
+        $.holderDelegation[msg.sender][tokenId] = priorDelegation + amount;
         $.totalHolderDelegations[msg.sender] += amount;
         $.holderDelegatedTokenIds[msg.sender].add(tokenId);
 
@@ -179,7 +180,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
             revert IChamber.InsufficientChamberBalance();
         }
 
-        _trackLiveDelegation($.holderEpoch, $.liveDelegation, msg.sender, tokenId, amount);
+        _trackLiveDelegation($.holderEpoch, $.liveDelegation, msg.sender, tokenId, priorDelegation, amount);
         _delegate(tokenId, amount, $.nft);
         emit IChamber.DelegationUpdated(msg.sender, tokenId, $.holderDelegation[msg.sender][tokenId]);
     }

@@ -86,9 +86,12 @@ abstract contract Board is ReentrancyGuardTransientUpgradeable {
         mapping(address => mapping(uint256 => uint256)) storage liveDelegation,
         address holder,
         uint256 tokenId,
+        uint256 priorDelegation,
         uint256 amount
     ) internal {
-        BoardLib.trackLiveDelegation(_getBoardStorage(), holderEpoch, liveDelegation, holder, tokenId, amount);
+        BoardLib.trackLiveDelegation(
+            _getBoardStorage(), holderEpoch, liveDelegation, holder, tokenId, priorDelegation, amount
+        );
     }
 
     function _consumeLiveDelegation(
