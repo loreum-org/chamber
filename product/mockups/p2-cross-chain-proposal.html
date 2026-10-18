@@ -60,7 +60,6 @@
       <a class="brand" href="index.html"><span class="brand-mark">L</span><span>Loreum</span></a>
       <nav class="nav" aria-label="Main">
         <a href="app-overview.html" class="on">My Chambers</a>
-        <a href="app-session-keys.html">Operators</a>
         <a href="#">Deploy Chamber</a>
         <a href="#">Compliance</a>
         <a href="app-migrate.html">Migrate from Safe</a>
@@ -107,7 +106,6 @@
     <a href="app-queue.html" class="on">Queue <span class="badge warn">2</span></a>
     <a href="p2-multichain-treasury.html">Treasury</a>
     <a href="app-supply-authority.html">Supply authority</a>
-    <a href="app-session-keys.html">Session keys</a>
     <a href="p2-multichain-treasury.html#spokes">Spokes <span class="badge warn">Preview</span></a>
   </nav>
 
@@ -133,14 +131,14 @@
         <div class="auth compact">
           <div class="node seat"><span class="k">Seat</span><span class="v">Explorer #7 · rank 1</span></div>
           <div class="node"><span class="k">Owner</span><span class="v">aria.eth · EOA</span></div>
-          <div class="node key"><span class="k">Signed by</span><span class="v">Owner, no session key</span></div>
+          <div class="node key"><span class="k">Signed by</span><span class="v">Owner wallet</span></div>
         </div>
         <span class="hint num">Sep 17, 11:47 UTC · deadline on Ethereum Sep 24, 11:47 UTC</span>
         <span class="upper" style="margin-top:10px">Sent from Ethereum by</span>
         <div class="auth compact">
           <div class="node seat"><span class="k">Seat</span><span class="v">Explorer #58 · rank 5</span></div>
           <div class="node"><span class="k">Owner</span><span class="v">marco.eth · EOA</span></div>
-          <div class="node key"><span class="k">Signed by</span><span class="v">Owner, no session key</span></div>
+          <div class="node key"><span class="k">Signed by</span><span class="v">Owner wallet</span></div>
         </div>
         <span class="hint num">Sep 18, 09:14 UTC · executeTransaction on the home Chamber</span>
       </div>
@@ -382,7 +380,7 @@
   <section class="notes">
     <h3>Design notes</h3>
     <ol>
-      <li><b>Authority chain on every actor.</b> The proposer, each confirmer, the director who sent it from Ethereum and the Base executor each show the signature element. All four are EOA owners, which can't set session keys, so the third node says "Owner" rather than disappearing. Submitting counts as the proposer's confirmation (WalletLib), which is why aria.eth appears in both places. Quorum is snapshotted at submit, and execute needs the higher of that and the live quorum (Chamber.sol M-04).</li>
+      <li><b>Authority chain on every actor.</b> The proposer, each confirmer, the director who sent it from Ethereum and the Base executor each show the signature element. All four sign from their own EOA, so the third node says "Owner wallet". Submitting counts as the proposer's confirmation (WalletLib), which is why aria.eth appears in both places. Quorum is snapshotted at submit, and execute needs the higher of that and the live quorum (Chamber.sol M-04).</li>
       <li><b>One lifecycle, from the indexer.</b> The six states (Proposed → Approved → Sent → Delivered → Queued → Executed) and the four exception states come from one table keyed by home chain, Chamber and wallet nonce (I-27, P-24). Delivered and Queued happen in the same Base transaction but are shown separately, because they fail differently. The app makes no Base RPC calls to draw this.</li>
       <li><b>Nested decode from bytes, never from prose.</b> The tree follows the path messenger → receiver → Delay → Roles → Safe → USDC.transfer (P-14 chain-aware decoder, P-25 recursive decoder through receiveMessage). USDC amounts use 6 decimals from the token list; the current decoder hardcodes 18 (P-14 review note). The warning banner is the P-30 messenger-target flag. The messageId binds source chain, Chamber, nonce, destination and payload, per the review's replay fix.</li>
       <li><b>Honest timing.</b> This replaces the v1.0 "15–30 s" promise with each real step and its actual duration: approval, about 2 minutes of delivery, and the 72 h delay. It points to bridge templates for speed, where solver capital, not message speed, makes the move fast.</li>

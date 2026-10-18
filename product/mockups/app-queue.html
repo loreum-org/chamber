@@ -97,7 +97,6 @@
       <a class="brand" href="index.html"><span class="brand-mark">L</span><span>Loreum</span></a>
       <nav class="nav" aria-label="Main">
         <a href="app-overview.html" class="on">My Chambers</a>
-        <a href="app-session-keys.html">Operators</a>
         <a href="#">Deploy Chamber</a>
         <a href="#">Compliance</a>
         <a href="app-migrate.html">Migrate from Safe</a>
@@ -138,7 +137,6 @@
     <a href="app-queue.html" class="on">Queue <span class="badge warn">3</span></a>
     <a href="p2-multichain-treasury.html">Treasury</a>
     <a href="app-supply-authority.html">Supply authority</a>
-    <a href="app-session-keys.html">Session keys</a>
   </nav>
 
   <!-- Queue header -->
@@ -153,7 +151,7 @@
       <div class="auth compact vert-sm" aria-label="Your authority chain">
         <div class="node seat"><span class="k">Seat</span><span class="v">Explorer #44 · rank 4</span></div>
         <div class="node"><span class="k">Owner</span><span class="v">lena.eth · EOA</span></div>
-        <div class="node"><span class="k">Signs as</span><span class="v">owner (no session key)</span></div>
+        <div class="node"><span class="k">Signs as</span><span class="v">Owner wallet</span></div>
       </div>
     </div>
   </div>
@@ -387,13 +385,13 @@
                 <div class="auth compact">
                   <div class="node seat"><span class="k">Seat</span><span class="v">#12</span></div>
                   <div class="node"><span class="k">Owner</span><span class="v">kofi.eth · Safe</span></div>
-                  <div class="node key"><span class="k">Session key</span><span class="v">0xA11c…04e5</span></div>
+                  <div class="node key"><span class="k">Signed by</span><span class="v">Safe 2-of-3</span></div>
                 </div>
-                <span class="when">at submit · Mar 13 10:41 UTC · SUBMIT scope</span>
+                <span class="when">at submit · Mar 13 10:41 UTC</span>
                 <div class="auth compact">
                   <div class="node seat"><span class="k">Seat</span><span class="v">#31</span></div>
                   <div class="node"><span class="k">Owner</span><span class="v">Treasury Agent</span></div>
-                  <div class="node"><span class="k">Signed by</span><span class="v">policy account</span></div>
+                  <div class="node"><span class="k">Signed by</span><span class="v">Agent via owner's Safe</span></div>
                 </div>
                 <span class="when">Mar 13 15:20 UTC · mandate check passed</span>
                 <div class="auth compact">
@@ -423,7 +421,7 @@
           </div>
         </div>
         <div class="foot">
-          <span class="hint">Proposed by #12 kofi.eth via session key · Mar 13, 10:41 UTC · block 27,161,607</span>
+          <span class="hint">Proposed by #12 kofi.eth via Safe · Mar 13, 10:41 UTC · block 27,161,607</span>
           <div class="row" style="gap:8px">
             <button class="btn ghost sm" type="button">Revoke my confirmation</button>
             <a class="btn ghost sm" href="app-proposal.html">Open #46</a>
@@ -462,12 +460,12 @@
               <tr>
                 <td class="mono faint">#45</td>
                 <td>
-                  <div class="hist-title">Set session key for Explorer #31 (scope 0x35, expires Mar 30)</div>
+                  <div class="hist-title">Co-sign Treasury Agent Safe: enable its policy module</div>
                   <div class="row" style="gap:6px; margin-top:5px">
                     <span class="chip"><span class="l">Target</span>Treasury Agent Safe · 0x9aB3…40d1</span>
                     <span class="chip">approveHash · 0xd4d9bdcd</span>
                   </div>
-                  <div class="hint" style="margin-top:5px">Approved the Safe transaction <span class="mono">setDirectorOperator(31, 0x7E0f…19b2, Mar 30, 0x35)</span>. The Safe then executed it in its own transaction.</div>
+                  <div class="hint" style="margin-top:5px">Approved the Safe transaction <span class="mono">enableModule</span> for the agent's policy module. The Safe then executed it in its own transaction.</div>
                 </td>
                 <td><span class="badge ok">Executed</span></td>
                 <td class="muted">#7 aria.eth · owner</td>
@@ -513,7 +511,6 @@
         <div class="tpl">
           <a href="#"><b>Transfer tokens</b><span>ERC-20 or ETH from the treasury</span></a>
           <a href="app-supply-authority.html"><b>Queue LORE mint via gate</b><span>queueMint on LoreMintGate · 7-day delay · counts toward the quarterly cap</span></a>
-          <a href="app-session-keys.html"><b>Approve a session key</b><span>Only for seats owned by a Safe that has this Chamber as a signer <span class="note">12</span></span></a>
           <a href="#"><b>Custom call</b><span>Any target and ABI, decoded before you submit</span></a>
         </div>
 
@@ -597,11 +594,10 @@
       <li><b>Risk classes extend <code>classifyTransactionRisk</code>.</b> A self-call upgrade is high, and the badge says why in a single line. Gate calls are tagged "LORE supply" and show the quarterly budget inline (<code>M-15</code>, <code>M-16</code>). Messenger and bridge targets will also classify as high (<code>P-30</code>). "Unknown recipient" means an address the indexer hasn't seen as a director, a Chamber-owned Safe or a past recipient (#44).</li>
       <li><b>Deadlines are countdowns on the indexer head clock</b> (<code>I-10</code> <code>useIndexerHead</code>), capped by the 30-day max age (<code>WalletTypes.DEFAULT_TRANSACTION_MAX_AGE</code>). Proposers can set shorter deadlines with the <code>P-28</code> presets. The gate template sets #47's deadline to gate op #3's expiry (Apr 2), so the proposal can't outlive the window it needs.</li>
       <li><b>The list never simulates on load.</b> Simulating is an RPC call, so it runs only when someone clicks (#260 <code>TxSimulationPanel</code>). Results stay cached for the tab and show their block. #47's "reverts NotReady until Mar 19" is predicted from the indexed gate eta (<code>M-14</code>, <code>I-25</code>), so the list can warn without spending RPC. This keeps the route at 0 in the <code>I-21</code> RPC budget.</li>
-      <li><b>Confirmations show the authority chain.</b> Each one shows seat → owner → signer: owner EOA, a Safe's threshold, a session key or the agent's policy account. <b>Contract fact:</b> <code>submitTransaction*</code> records the proposer's confirmation (WalletLib calls <code>confirmTransaction</code>), so kofi.eth's SUBMIT-only key counted as a confirmation on #46. The UI labels it "at submit · SUBMIT scope" instead of hiding it. Whether that should stay is a <code>C-17</code> pre-freeze question. Naming follows <code>P-9</code>: these are session keys, not operators.</li>
+      <li><b>Confirmations show the authority chain.</b> Each one shows seat → owner → signer: owner EOA, a Safe's threshold, or an agent acting through its owner's Safe. Only the NFT's owner can act for a seat. <b>Contract fact:</b> <code>submitTransaction</code> records the proposer's confirmation (WalletLib calls <code>confirmTransaction</code>), so kofi.eth's submit counted as a confirmation on #46. The UI labels it "at submit" instead of hiding it.</li>
       <li><b>Batch confirm</b> uses <code>confirmBatchTransactions</code> through the new hooks in <code>P-28</code>. A high-risk item can join a batch, but the batch review must show its full decode, the implementation checks and a passing simulation before the wallet prompt. Ready proposals switch the bar to <code>executeBatchTransactions</code>, because the two calls can't be mixed.</li>
       <li><b>Cancel is a quorum vote, not a button.</b> <code>cancelTransaction</code> records a vote and cancels once live cancel votes reach the current quorum. History shows the voters so an unknown-recipient cancel like #44 can be reviewed later (#261 compliance export).</li>
-      <li><b>The composer has four templates.</b> The gate template comes from <code>M-16</code>, the session-key template from #259, and every template gets the <code>P-28</code> deadline field. <b>Draft from a description</b> only fills typed fields. The preview is decoded from the resulting calldata, and the prose is saved as metadata. Nobody signs natural language, per the review's "LLM compiles, humans sign calldata" rule. The review scheduled a full LLM intent compiler for Phase 3, so this helper is a small, flagged step toward it.</li>
-      <li><b>The "Approve a session key" template is limited.</b> Only the NFT's contract owner can call <code>setDirectorOperator</code> (Chamber.sol:356), and a Chamber proposal can't self-call it (allowlist at :732). A Safe-module call from inside <code>executeTransaction</code> doesn't work either: the Safe would call back into the Chamber while <code>executeTransaction</code> holds its reentrancy lock, and <code>setDirectorOperator</code> is also <code>nonReentrant</code>, so it reverts. #45 therefore called <code>approveHash</code> on the Treasury Agent's policy Safe, which lists this Chamber as a required signer for owner-level changes, and the Safe executed <code>setDirectorOperator</code> in a separate transaction. The agent's routine confirmations go through the Safe's mandate-checking policy module instead, so they don't need the board. That keeps the board, not the agent, in control of the agent's key. For other owners, the template opens <a href="app-session-keys.html">Session keys</a> to sign from the owner account (#259).</li>
+      <li><b>The composer has three templates.</b> The gate template comes from <code>M-16</code>, and every template gets the <code>P-28</code> deadline field. <b>Draft from a description</b> only fills typed fields. The preview is decoded from the resulting calldata, and the prose is saved as metadata. Nobody signs natural language, per the review's "LLM compiles, humans sign calldata" rule. The review scheduled a full LLM intent compiler for Phase 3, so this helper is a small, flagged step toward it.</li>
     </ol>
   </section>
 </main>

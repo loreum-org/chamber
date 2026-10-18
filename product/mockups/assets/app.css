@@ -6,7 +6,7 @@
  *   - IBM Plex Sans / Mono, weights 300 / 400 / 600 only (no 700)
  *   - single accent #4A2F8F, used functionally (controls, governance weight)
  *   - depth via surface layering, not shadows
- *   - the authority chain (seat -> owner -> session key) is the signature element
+ *   - the authority chain (seat -> owner -> signer) is the signature element
  *   - destructive actions = ghost button + typed confirmation
  *
  * Static HTML only. No build step. Dark only (the app is dark only).
@@ -274,7 +274,7 @@ table.t td.r, table.t th.r { text-align: right; }
 .banner .ic { font-family: var(--mono); font-weight: 600; flex: none; }
 
 /* ---------- Authority chain: the signature element ---------- */
-/* seat (membership NFT, rank) -> owner (EOA / Safe) -> session key (scoped, expiring) */
+/* seat (membership NFT, rank) -> owner (EOA / Safe) -> signer (owner wallet, or an agent via the owner's wallet) */
 .auth { display: flex; align-items: stretch; gap: 0; flex-wrap: wrap; }
 .auth .node {
   display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; background: var(--s2);
@@ -292,12 +292,6 @@ table.t td.r, table.t th.r { text-align: right; }
 .auth .node.seat { background: var(--a950); border-color: rgba(124, 92, 214, 0.4); }
 .auth .node.key .v { color: var(--a300); }
 .auth.compact .node { padding: 5px 10px; }
-
-/* ---------- Scope bits (session keys) ---------- */
-.scopes { display: flex; gap: 4px; flex-wrap: wrap; }
-.scope { font-family: var(--mono); font-size: 11px; padding: 2px 7px; border-radius: 4px; border: 1px solid var(--line); color: var(--t4); background: var(--s2); }
-.scope.on { color: var(--a300); border-color: rgba(124, 92, 214, 0.45); background: var(--a-soft); }
-.scope.risky.on { color: var(--warn); border-color: rgba(251, 191, 36, 0.4); background: var(--warn-soft); }
 
 /* ---------- Meter (budgets, quorum, caps) ---------- */
 .meter { height: 8px; border-radius: 4px; background: var(--s3); overflow: hidden; display: flex; }
