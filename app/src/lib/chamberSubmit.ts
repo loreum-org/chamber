@@ -39,7 +39,8 @@ export type SemVer = readonly [number, number, number]
 
 export function parseChamberVersion(label: string | undefined): SemVer | undefined {
   if (!label) return undefined
-  const m = /^v?(\d+)\.(\d+)\.(\d+)/.exec(label.trim())
+  // Strict, like ProposeChamberUpgrade.parseVersion: a suffix such as `-rc` fails closed.
+  const m = /^v?(\d+)\.(\d+)\.(\d+)$/.exec(label.trim())
   if (!m) return undefined
   return [Number(m[1]), Number(m[2]), Number(m[3])]
 }

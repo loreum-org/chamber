@@ -10,6 +10,7 @@ import {
 import {
   ChamberSubmitError,
   legacySubmitAbi,
+  parseChamberVersion,
   planSubmit,
   readChamberVersionLabel,
   submitTransactionEventAbi,
@@ -43,6 +44,20 @@ function submitLog(address: `0x${string}`, nonce: bigint) {
 function receipt(status: 'success' | 'reverted', logs: ReturnType<typeof submitLog>[]): TransactionReceipt {
   return { status, logs } as unknown as TransactionReceipt
 }
+
+describe('parseChamberVersion', () => {
+  it('accepts plain and v-prefixed major.minor.patch, including multi-digit parts', () => {
+    expect(parseChamberVersion('1.1.5')).toEqual([1, 1, 5])
+    expect(parseChamberVersion('v1.3.0')).toEqual([1, 3, 0])
+    expect(parseChamberVersion('1.10.0')).toEqual([1, 10, 0])
+  })
+
+  it('rejects suffixes and malformed labels, like the upgrade script', () => {
+    for (const bad of ['1.2.0-rc', '1.2.0garbage', '1.3', '1..3', '1.3.0.1', '', undefined]) {
+      expect(parseChamberVersion(bad)).toBeUndefined()
+    }
+  })
+})
 
 describe('planSubmit (version gate)', () => {
   it('uses the single 6-arg submitTransaction on 1.3.0+', () => {

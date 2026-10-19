@@ -117,6 +117,15 @@ describe('prepareUpgradeProposal (preflight, same on old and new chambers)', () 
     ).resolves.toBeTruthy()
   })
 
+  it('refuses a pre-release chamber label instead of treating it as 1.2.0', async () => {
+    await expect(
+      prepareUpgradeProposal(client({ proxyAdmin, owner: chamber, chamberVersion: '1.2.0-rc' }), chamber, impl),
+    ).rejects.toThrow(/Could not read this chamber’s VERSION/)
+    await expect(
+      prepareUpgradeProposal(client({ proxyAdmin, owner: chamber, chamberVersion: 'v1.10.0' }), chamber, impl),
+    ).resolves.toBeTruthy()
+  })
+
   it('blocks when either VERSION cannot be read', async () => {
     await expect(
       prepareUpgradeProposal(client({ proxyAdmin, owner: chamber, chamberVersion: new Error('x') }), chamber, impl),
