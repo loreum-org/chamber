@@ -115,7 +115,7 @@ All director-gated with **`isDirector(tokenId)`** (caller must be **`ownerOf(tok
 | **`submitTransaction(tokenId, target, value, data, metadataURI, deadline)`** | The only single-transaction submit. Validates target/value (see below); stores **`keccak256(data)`**; also stores full bytes for self-calls (`pause` / `unpause`) and for calls to the chamber's ProxyAdmin; records the submitter's confirmation. Pass `""` for no metadata and `0` for the default 30-day deadline. |
 | **`confirmTransaction(tokenId, transactionId)`** | Increments confirmations if not cancelled / executed / duplicate. |
 | **`revokeConfirmation(tokenId, transactionId)`** | Removes this director’s confirmation when allowed. |
-| **`executeTransaction(tokenId, transactionId, bytes calldata data)`** | Requires quorum; verifies hash; empty `data` uses stored self-call bytes. |
+| **`executeTransaction(tokenId, transactionId, bytes calldata data)`** | Requires quorum; verifies hash; empty `data` uses the stored bytes (self-calls and ProxyAdmin calls). |
 | **`cancelTransaction(tokenId, transactionId)`** | Cancels after quorum cancel votes. |
 | **`submitBatchTransactions(tokenId, targets[], values[], data[])`** | Same constraints per row; **`Σ values ≤ address(this).balance`** check for ETH. |
 | **`confirmBatchTransactions(tokenId, transactionIds[])`** | Batched confirms. |
