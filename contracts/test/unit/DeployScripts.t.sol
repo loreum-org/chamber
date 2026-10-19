@@ -196,6 +196,42 @@ contract DeployScriptsTest is Test {
         script.preflight(address(chamber), address(token));
     }
 
+    /// @dev 1.3.0 removed the pre-1.2.0 delegation backfill, so a < 1.2.0 chamber must be redeployed.
+    function test_ProposeScript_Preflight_RejectsPre120InPlaceUpgrade() public {
+        Chamber chamber = new DeployChamberScript().deployWith(address(token), address(nft), admin);
+        ProposeChamberUpgrade script = new ProposeChamberUpgrade();
+        address impl = address(new Chamber());
+
+        vm.mockCall(address(chamber), abi.encodeWithSignature("VERSION()"), abi.encode(bytes32("1.1.5")));
+        vm.expectRevert(bytes("chamber is older than 1.2.0: redeploy it on 1.3.0+ instead of upgrading in place"));
+        script.preflight(address(chamber), impl);
+        vm.expectRevert(bytes("chamber is older than 1.2.0: redeploy it on 1.3.0+ instead of upgrading in place"));
+        script.propose(address(chamber), impl, "", 1, "", false);
+
+        vm.mockCall(address(chamber), abi.encodeWithSignature("VERSION()"), abi.encode(bytes32("1.2.0")));
+        script.preflight(address(chamber), impl);
+
+        vm.mockCallRevert(address(chamber), abi.encodeWithSignature("VERSION()"), "");
+        vm.expectRevert(bytes("could not read the chamber's VERSION(); refusing to upgrade"));
+        script.preflight(address(chamber), impl);
+
+        vm.mockCall(address(chamber), abi.encodeWithSignature("VERSION()"), abi.encode(bytes32("dev")));
+        vm.expectRevert(bytes("chamber VERSION() is not major.minor.patch; refusing to upgrade"));
+        script.preflight(address(chamber), impl);
+    }
+
+    function test_ProposeScript_ParseVersion() public {
+        ProposeChamberUpgrade script = new ProposeChamberUpgrade();
+        assertEq(script.parseVersion("1.3.0"), (1 << 32) | (3 << 16));
+        assertEq(script.parseVersion("v1.2.10"), (1 << 32) | (2 << 16) | 10);
+        assertGt(script.parseVersion("1.10.0"), script.parseVersion("1.9.9"));
+        assertEq(script.parseVersion(""), 0);
+        assertEq(script.parseVersion("1.3"), 0);
+        assertEq(script.parseVersion("1..3"), 0);
+        assertEq(script.parseVersion("1.3.0.1"), 0);
+        assertEq(script.parseVersion("1.3.x"), 0);
+    }
+
     /// @dev No deploy/upgrade script may use the removed `upgradeImplementation` path.
     function test_NoScriptUsesRemovedUpgradeImplementation() public view {
         Vm.DirEntry[] memory entries = vm.readDir("script");

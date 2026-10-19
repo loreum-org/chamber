@@ -35,7 +35,8 @@ library ChamberUpgradeCalldata {
  *         Since 1.3.0 the only upgrade path is a quorum transaction from the chamber to its own
  *         ProxyAdmin: `submitTransaction(tokenId, getProxyAdmin(), 0, upgradeAndCall(...), uri, 0)`.
  *         ProxyAdmin has no version or migration checks of its own. This script's preflight is the
- *         only automated check; the board is responsible for what it approves.
+ *         only automated check (it refuses an in-place upgrade to 1.3.0+ from a chamber older than
+ *         1.2.0, and logs a downgrade); the board is responsible for what it approves.
  *
  * Env:
  *   CHAMBER              chamber proxy (required)
@@ -81,6 +82,12 @@ contract ProposeChamberUpgrade is Script {
         console.log("Chamber                ", chamber);
         console.log("Current implementation ", currentImplementation(chamber));
         console.log("New implementation     ", newImplementation);
+        (bytes32 currentVersion, bytes32 newVersion) = versions(chamber, newImplementation);
+        console.log("Current VERSION        ", string(abi.encodePacked(currentVersion)));
+        console.log("New VERSION            ", string(abi.encodePacked(newVersion)));
+        if (parseVersion(newVersion) < parseVersion(currentVersion)) {
+            console.log("WARNING: this is a DOWNGRADE. Check the storage layout before the board approves it.");
+        }
         console.log("Target (ProxyAdmin)    ", target);
         console.log("Value                  ", uint256(0));
         console.log("Data (upgradeAndCall)");
@@ -114,10 +121,72 @@ contract ProposeChamberUpgrade is Script {
             "ProxyAdmin is not owned by the chamber; the board cannot upgrade it (not a Factory-created chamber?)"
         );
         require(newImplementation != currentImplementation(chamber), "chamber already runs this implementation");
-        try Chamber(payable(newImplementation)).VERSION() returns (bytes32) {}
-        catch {
+        (uint256 current, uint256 next) = _parsedVersions(chamber, newImplementation);
+        // 1.3.0 removed the pre-1.2.0 delegation backfill: an in-place upgrade from < 1.2.0 leaves
+        // legacy delegation rows that revert `LegacyDelegation` and keep those shares locked.
+        require(
+            next < MIGRATION_REMOVED_VERSION || current >= MIN_IN_PLACE_VERSION,
+            "chamber is older than 1.2.0: redeploy it on 1.3.0+ instead of upgrading in place"
+        );
+    }
+
+    uint256 internal constant MIN_IN_PLACE_VERSION = (1 << 32) | (2 << 16); // 1.2.0
+    uint256 internal constant MIGRATION_REMOVED_VERSION = (1 << 32) | (3 << 16); // 1.3.0
+
+    /// @notice Raw `VERSION()` labels of the chamber and the new implementation (reverts if unreadable).
+    function versions(address chamber, address newImplementation)
+        public
+        view
+        returns (bytes32 currentVersion, bytes32 newVersion)
+    {
+        try Chamber(payable(newImplementation)).VERSION() returns (bytes32 v) {
+            newVersion = v;
+        } catch {
             revert("implementation has no VERSION(); not a Chamber build?");
         }
+        try Chamber(payable(chamber)).VERSION() returns (bytes32 v) {
+            currentVersion = v;
+        } catch {
+            revert("could not read the chamber's VERSION(); refusing to upgrade");
+        }
+    }
+
+    function _parsedVersions(address chamber, address newImplementation)
+        internal
+        view
+        returns (uint256 current, uint256 next)
+    {
+        (bytes32 currentVersion, bytes32 newVersion) = versions(chamber, newImplementation);
+        next = parseVersion(newVersion);
+        require(next != 0, "implementation VERSION() is not major.minor.patch");
+        current = parseVersion(currentVersion);
+        require(current != 0, "chamber VERSION() is not major.minor.patch; refusing to upgrade");
+    }
+
+    /// @notice Packs a `major.minor.patch` label (optional leading `v`) as major<<32 | minor<<16 | patch.
+    ///         Returns 0 when the label is not in that form.
+    function parseVersion(bytes32 label) public pure returns (uint256 packed) {
+        uint256[3] memory parts;
+        uint256 part;
+        bool digit;
+        uint256 i = label[0] == "v" ? 1 : 0;
+        for (; i < 32; i++) {
+            bytes1 c = label[i];
+            if (c == 0) break;
+            if (c == ".") {
+                if (!digit || part == 2) return 0;
+                part++;
+                digit = false;
+            } else if (c >= "0" && c <= "9") {
+                parts[part] = parts[part] * 10 + uint8(c) - 48;
+                if (parts[part] > type(uint16).max) return 0;
+                digit = true;
+            } else {
+                return 0;
+            }
+        }
+        if (part != 2 || !digit) return 0;
+        return (parts[0] << 32) | (parts[1] << 16) | parts[2];
     }
 
     function currentImplementation(address chamber) public view returns (address) {

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { decodeFunctionData, encodeFunctionData, getAddress, parseAbi } from 'viem'
+import { decodeFunctionData, encodeFunctionData, getAddress, parseAbi, stringToHex } from 'viem'
 import {
   ChamberUpgradeError,
   LEGACY_UPGRADE_SELECTOR,
@@ -17,9 +17,22 @@ const proxyAdmin = getAddress('0x00000000000000000000000000000000000000a1')
 const impl = getAddress('0x00000000000000000000000000000000000000b1')
 const legacyAbi = parseAbi(['function upgradeImplementation(address newImplementation, bytes data)'])
 
-function client(opts: { proxyAdmin?: string | Error; owner?: string | Error; code?: string }) {
+const label = (v: string) => stringToHex(v, { size: 32 })
+
+function client(opts: {
+  proxyAdmin?: string | Error
+  owner?: string | Error
+  code?: string
+  chamberVersion?: string | Error
+  implVersion?: string | Error
+}) {
   return {
-    readContract: vi.fn(async ({ functionName }: { functionName: string }) => {
+    readContract: vi.fn(async ({ functionName, address }: { functionName: string; address: string }) => {
+      if (functionName === 'VERSION') {
+        const ver = address === chamber ? (opts.chamberVersion ?? '1.2.0') : (opts.implVersion ?? '1.3.0')
+        if (ver instanceof Error) throw ver
+        return label(ver)
+      }
       const v = functionName === 'getProxyAdmin' ? opts.proxyAdmin : opts.owner
       if (v instanceof Error) throw v
       return v
@@ -85,6 +98,28 @@ describe('prepareUpgradeProposal (preflight, same on old and new chambers)', () 
     await expect(
       prepareUpgradeProposal(client({ proxyAdmin: '0x0000000000000000000000000000000000000000' }), chamber, impl),
     ).rejects.toThrow(/no ProxyAdmin/)
+  })
+
+  it('blocks an in-place upgrade to 1.3.0+ from a chamber older than 1.2.0', async () => {
+    await expect(
+      prepareUpgradeProposal(client({ proxyAdmin, owner: chamber, chamberVersion: '1.1.5' }), chamber, impl),
+    ).rejects.toThrow(/runs Chamber 1\.1\.5.*needs to be redeployed/)
+    // 1.2.x chambers can still be upgraded in place.
+    const p = await prepareUpgradeProposal(client({ proxyAdmin, owner: chamber, chamberVersion: '1.2.0' }), chamber, impl)
+    expect(p.target).toBe(proxyAdmin)
+    // Old-to-old upgrades that keep the backfill are not blocked.
+    await expect(
+      prepareUpgradeProposal(client({ proxyAdmin, owner: chamber, chamberVersion: '1.1.5', implVersion: '1.2.0' }), chamber, impl),
+    ).resolves.toBeTruthy()
+  })
+
+  it('blocks when either VERSION cannot be read', async () => {
+    await expect(
+      prepareUpgradeProposal(client({ proxyAdmin, owner: chamber, chamberVersion: new Error('x') }), chamber, impl),
+    ).rejects.toThrow(/Could not read this chamber’s VERSION/)
+    await expect(
+      prepareUpgradeProposal(client({ proxyAdmin, owner: chamber, implVersion: new Error('x') }), chamber, impl),
+    ).rejects.toThrow(/no readable VERSION/)
   })
 
   it('blocks when the new implementation has no code', async () => {

@@ -1,4 +1,6 @@
 import { decodeFunctionData, encodeFunctionData, parseAbi, toFunctionSelector, type Hex } from 'viem'
+import { compareVersions, parseChamberVersion, type SemVer } from './chamberSubmit'
+import { chamberVersionBytes32ToLabel } from './utils'
 
 /**
  * Chamber upgrades go through the chamber-owned ProxyAdmin on every version.
@@ -11,6 +13,8 @@ import { decodeFunctionData, encodeFunctionData, parseAbi, toFunctionSelector, t
  * VERSION label came from. The checks `upgradeImplementation` used to make (chamber owns its
  * ProxyAdmin, non-zero implementation) run here as a preflight before anything is sent.
  * ProxyAdmin has no version or migration checks of its own; the board is responsible.
+ * The preflight also refuses an in-place upgrade to 1.3.0+ from a chamber older than 1.2.0: 1.3.0
+ * removed the pre-1.2.0 delegation backfill, so such a chamber must be redeployed instead.
  */
 
 export const proxyAdminAbi = parseAbi([
@@ -100,10 +104,26 @@ export interface UpgradePreflightClient {
 }
 
 const getProxyAdminAbi = parseAbi(['function getProxyAdmin() view returns (address)'])
+const versionAbi = parseAbi(['function VERSION() view returns (bytes32)'])
+
+/** Oldest chamber that can be upgraded in place to a build without the pre-1.2.0 backfill. */
+export const MIN_IN_PLACE_UPGRADE_VERSION: SemVer = [1, 2, 0]
+/** First build without the pre-1.2.0 delegation backfill. */
+export const BACKFILL_REMOVED_VERSION: SemVer = [1, 3, 0]
+
+async function readVersion(client: UpgradePreflightClient, address: `0x${string}`): Promise<string | undefined> {
+  try {
+    const raw = await client.readContract({ address, abi: versionAbi, functionName: 'VERSION' })
+    return chamberVersionBytes32ToLabel(raw as Hex)
+  } catch {
+    return undefined
+  }
+}
 
 /**
- * Reads the chamber's ProxyAdmin on-chain and checks it can perform the upgrade:
- * the chamber owns it, and the new implementation is a contract. Returns the proposal to queue.
+ * Reads the chamber's ProxyAdmin on-chain and checks it can perform the upgrade: the chamber owns
+ * it, the new implementation is a contract with a VERSION, and the version jump is allowed in place.
+ * Returns the proposal to queue.
  */
 export async function prepareUpgradeProposal(
   client: UpgradePreflightClient,
@@ -134,6 +154,25 @@ export async function prepareUpgradeProposal(
   const code = await client.getCode({ address: newImplementation }).catch(() => undefined)
   if (!code || code === '0x') {
     throw new ChamberUpgradeError('The new implementation address has no contract code. Nothing was sent.')
+  }
+  const newLabel = await readVersion(client, newImplementation)
+  const newVersion = parseChamberVersion(newLabel)
+  if (!newVersion) {
+    throw new ChamberUpgradeError('The new implementation has no readable VERSION, so it may not be a Chamber build. Nothing was sent.')
+  }
+  const currentLabel = await readVersion(client, chamber)
+  const currentVersion = parseChamberVersion(currentLabel)
+  if (!currentVersion) {
+    throw new ChamberUpgradeError('Could not read this chamber’s VERSION, so the upgrade cannot be checked. Nothing was sent.')
+  }
+  if (
+    compareVersions(newVersion, BACKFILL_REMOVED_VERSION) >= 0 &&
+    compareVersions(currentVersion, MIN_IN_PLACE_UPGRADE_VERSION) < 0
+  ) {
+    throw new ChamberUpgradeError(
+      `This chamber runs Chamber ${currentLabel}, which cannot be upgraded in place to ${newLabel}. ` +
+        'The chamber needs to be redeployed on a current version.',
+    )
   }
   return buildUpgradeProposal(chamber, proxyAdmin, newImplementation, initData)
 }
