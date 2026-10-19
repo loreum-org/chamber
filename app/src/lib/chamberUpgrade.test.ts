@@ -3,6 +3,10 @@ import { decodeFunctionData, encodeFunctionData, getAddress, parseAbi, stringToH
 import {
   ChamberUpgradeError,
   LEGACY_UPGRADE_SELECTOR,
+  PROXY_ADMIN_RENOUNCE_OWNERSHIP_SELECTOR,
+  PROXY_ADMIN_TRANSFER_OWNERSHIP_SELECTOR,
+  classifyProxyAdminCall,
+  proxyAdminRisk,
   UPGRADE_AND_CALL_SELECTOR,
   buildUpgradeProposal,
   decodeUpgradeProposal,
@@ -142,5 +146,58 @@ describe('self-call allowlist and decoding', () => {
     expect(d?.functionName).toBe('upgradeAndCall')
     expect(d?.counterparty).toBe(impl)
     expect(d?.counterpartyRole).toBe('implementation')
+  })
+})
+
+describe('upgrade preflight warnings', () => {
+  it('warns, but does not block, on a downgrade', async () => {
+    const p = await prepareUpgradeProposal(client({ proxyAdmin, owner: chamber, chamberVersion: '1.3.1', implVersion: '1.3.0' }), chamber, impl)
+    expect(p.target).toBe(proxyAdmin)
+    expect(p.warnings).toHaveLength(1)
+    expect(p.warnings?.[0]).toMatch(/downgrade from Chamber 1\.3\.1 to 1\.3\.0/)
+  })
+
+  it('no warning on a normal upgrade; 1.1.9 -> 1.3.0 still refused', async () => {
+    const p = await prepareUpgradeProposal(client({ proxyAdmin, owner: chamber }), chamber, impl)
+    expect(p.warnings).toEqual([])
+    await expect(
+      prepareUpgradeProposal(client({ proxyAdmin, owner: chamber, chamberVersion: '1.1.9' }), chamber, impl),
+    ).rejects.toThrow(/needs to be redeployed/)
+  })
+})
+
+describe('ProxyAdmin ownership calls are high risk', () => {
+  const transfer = encodeFunctionData({ abi: proxyAdminAbi, functionName: 'transferOwnership', args: [impl] })
+  const renounce = encodeFunctionData({ abi: proxyAdminAbi, functionName: 'renounceOwnership' })
+
+  it('classifies calls to the ProxyAdmin', () => {
+    expect(PROXY_ADMIN_TRANSFER_OWNERSHIP_SELECTOR).toBe('0xf2fde38b')
+    expect(PROXY_ADMIN_RENOUNCE_OWNERSHIP_SELECTOR).toBe('0x715018a6')
+    expect(classifyProxyAdminCall(proxyAdmin, proxyAdmin, transfer)).toBe('transferOwnership')
+    expect(classifyProxyAdminCall(proxyAdmin, proxyAdmin, renounce)).toBe('renounceOwnership')
+    expect(classifyProxyAdminCall(proxyAdmin, proxyAdmin, buildUpgradeProposal(chamber, proxyAdmin, impl).data)).toBe('upgrade')
+    expect(classifyProxyAdminCall(proxyAdmin, proxyAdmin, '0xdeadbeef')).toBe('other')
+    // Same selector on another Ownable contract is not this hazard; unknown ProxyAdmin -> null.
+    expect(classifyProxyAdminCall(proxyAdmin, impl, transfer)).toBeNull()
+    expect(classifyProxyAdminCall(undefined, proxyAdmin, transfer)).toBeNull()
+  })
+
+  it('maps ownership calls to high-risk copy', () => {
+    expect(proxyAdminRisk('transferOwnership')).toMatchObject({ level: 'high', label: expect.stringMatching(/upgrade control/) })
+    expect(proxyAdminRisk('renounceOwnership')).toMatchObject({ level: 'high', label: expect.stringMatching(/unupgradeable/) })
+    expect(proxyAdminRisk('other')?.level).toBe('high')
+    expect(proxyAdminRisk('upgrade')).toBeNull()
+    expect(proxyAdminRisk(null)).toBeNull()
+  })
+
+  it('decoder flags ownership calls when the ProxyAdmin is known', () => {
+    const t = decodeTransactionAction({ target: proxyAdmin, value: 0n, calldata: transfer, proxyAdmin })
+    expect(t?.functionName).toBe('transferOwnership')
+    expect(t?.highRisk).toBe(true)
+    expect(t?.counterparty).toBe(impl)
+    const r = decodeTransactionAction({ target: proxyAdmin, value: 0n, calldata: renounce, proxyAdmin })
+    expect(r?.functionName).toBe('renounceOwnership')
+    expect(r?.highRisk).toBe(true)
+    expect(decodeTransactionAction({ target: impl, value: 0n, calldata: transfer, proxyAdmin })?.highRisk).toBeFalsy()
   })
 })

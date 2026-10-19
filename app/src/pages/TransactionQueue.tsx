@@ -60,7 +60,7 @@ import { ChamberHeader } from '@/components/ChamberHeader'
 import { Banner, Segmented } from '@/components/ui'
 import { DirectorCallerStatus } from '@/components/DirectorCallerStatus'
 import { SeatTheBoardLink } from '@/components/SeatTheBoard'
-import { decodeUpgradeProposal, prepareUpgradeProposal } from '@/lib/chamberUpgrade'
+import { classifyProxyAdminCall, decodeUpgradeProposal, prepareUpgradeProposal, proxyAdminRisk } from '@/lib/chamberUpgrade'
 import {
   PAUSE_SELECTOR,
   UNPAUSE_SELECTOR,
@@ -192,6 +192,8 @@ function classifyTransactionRisk(
   const isSelfCall = isChamberSelfCall(chamberAddress, target)
   const selector = selectorOf(data)
   const isUpgrade = decodeUpgradeProposal(chamberAddress, proxyAdmin, target, data) !== null
+  const adminRisk = isUpgrade ? null : proxyAdminRisk(classifyProxyAdminCall(proxyAdmin, target, data))
+  if (adminRisk) return adminRisk
   const isPause = isSelfCall && selector === PAUSE_SELECTOR
   const isUnpause = isSelfCall && selector === UNPAUSE_SELECTOR
   const hasUnknownCallData = data !== '0x' && !isUpgrade && !isPause && !isUnpause
@@ -259,8 +261,17 @@ function classifyTransactionRiskFromDataHash(
   chamberAddress: `0x${string}`,
   target: `0x${string}`,
   value: bigint,
-  dataHash: `0x${string}`
+  dataHash: `0x${string}`,
+  proxyAdmin?: `0x${string}`,
 ) {
+  if (proxyAdmin && target.toLowerCase() === proxyAdmin.toLowerCase()) {
+    return {
+      level: 'high' as RiskLevel,
+      label: 'High risk: ProxyAdmin call',
+      summary:
+        'Calls this chamber’s ProxyAdmin, which controls upgrades and who may perform them. Load the calldata and confirm it is the intended upgradeAndCall, not an ownership change.',
+    }
+  }
   const isSelfCall = target.toLowerCase() === chamberAddress.toLowerCase()
   const hasCalldata = hasProposalCalldata(dataHash)
   const sendsEth = value > 0n
@@ -1237,6 +1248,12 @@ function TransactionCard({
   onWriteSent,
   onWriteClear,
 }: TransactionCardProps) {
+  const { data: cardProxyAdminData } = useReadContract({
+    address: chamberAddress,
+    abi: chamberAbi,
+    functionName: 'getProxyAdmin',
+  })
+  const cardProxyAdmin = typeof cardProxyAdminData === 'string' ? (cardProxyAdminData as `0x${string}`) : undefined
   const { confirm, isPending: isConfirmPending, isConfirming: isConfirmWaiting, hash: confirmHash } = useConfirmTransaction(chamberAddress)
   const { execute, isPending: isExecutePending, isConfirming: isExecuteWaiting, hash: executeHash } = useExecuteTransaction(chamberAddress)
   const { revoke, isPending: isRevokePending, isConfirming: isRevokeWaiting, hash: revokeHash } = useRevokeConfirmation(chamberAddress)
@@ -1442,9 +1459,6 @@ function TransactionCard({
   const shortTarget = `${transaction.target.slice(0, 10)}...${transaction.target.slice(-8)}`
   const hasData = hasProposalCalldata(transaction.dataHash)
   const displayTitle = proposalMeta?.title || (hasData ? 'Contract call' : 'Transaction')
-  const risk = classifyTransactionRiskFromDataHash(chamberAddress, transaction.target, transaction.value, transaction.dataHash)
-  const riskLevel = proposalMeta?.riskLevel || risk.level
-  const riskSummary = proposalMeta?.riskSummary || risk.summary
 
   // #260: calldata for the decoded view — resolved preimage wins; otherwise a
   // locally known preimage (execute textarea / metadata) when it matches the hash.
@@ -1460,6 +1474,19 @@ function TransactionCard({
     }
     return undefined
   })()
+  // ProxyAdmin ownership changes are computed from chain data and override proposer-supplied metadata risk.
+  const adminRisk = decodedSummaryCalldata
+    ? proxyAdminRisk(
+        decodeUpgradeProposal(chamberAddress, cardProxyAdmin, transaction.target, decodedSummaryCalldata as `0x${string}`)
+          ? null
+          : classifyProxyAdminCall(cardProxyAdmin, transaction.target, decodedSummaryCalldata as `0x${string}`),
+      )
+    : null
+  const risk =
+    adminRisk ??
+    classifyTransactionRiskFromDataHash(chamberAddress, transaction.target, transaction.value, transaction.dataHash, cardProxyAdmin)
+  const riskLevel = adminRisk ? adminRisk.level : proposalMeta?.riskLevel || risk.level
+  const riskSummary = adminRisk ? adminRisk.summary : proposalMeta?.riskSummary || risk.summary
   const simulationMode: 'confirm' | 'execute' = transaction.status === 'ready' ? 'execute' : 'confirm'
 
   const isCancelled = transaction.cancelled === true
@@ -1580,6 +1607,7 @@ function TransactionCard({
               dataHash={hasData ? transaction.dataHash : undefined}
               functionNameHint={proposalMeta?.functionName}
               simulatedToken={simToken}
+              proxyAdmin={cardProxyAdmin}
             />
           )}
           <div className="flex items-center gap-4 text-sm text-slate-400">
@@ -2543,7 +2571,7 @@ function NewTransactionForm({
 
       // Store proposal metadata (title/description) for display
       const metaTitle = title.trim() || (txType === 'eth' ? `Send ${value} ETH` : parsedFunction?.name || 'Custom Transaction')
-      const risk = classifyTransactionRisk(chamberAddress, target as `0x${string}`, txValue, txData)
+      const risk = classifyTransactionRisk(chamberAddress, target as `0x${string}`, txValue, txData, proxyAdmin)
       const metadata = {
         title: metaTitle,
         description: description.trim() || undefined,
@@ -2574,6 +2602,7 @@ function NewTransactionForm({
           toast.error('Upgrades must target this chamber’s ProxyAdmin. Nothing was sent.')
           return
         }
+        for (const w of planned.warnings ?? []) toast(w, { icon: '⚠️' })
       }
       onWriteStart(writeKind)
       const hash = await submit(userTokenId, target as `0x${string}`, txValue, txData, metadataURI)

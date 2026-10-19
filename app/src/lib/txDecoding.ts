@@ -47,11 +47,15 @@ export type DecodedTransaction = {
   intent: TxTransferIntent
   /** True when the proposal calls the Chamber itself (upgrade / pause / unpause). */
   isChamberSelfCall: boolean
+  /** Set for ProxyAdmin ownership changes: hands over or destroys upgrade control. */
+  highRisk?: boolean
 }
 
 const PROXY_ADMIN_UPGRADE_ABI = parseAbi([
   'function upgradeAndCall(address proxy, address implementation, bytes data)',
 ])
+
+const PROXY_ADMIN_OWNERSHIP_ABI = parseAbi(['function transferOwnership(address newOwner)', 'function renounceOwnership()'])
 
 /** `upgradeImplementation` was removed in Chamber 1.3.0; kept to label older queued proposals. */
 const CHAMBER_SELF_CALL_ABI = parseAbi([
@@ -94,8 +98,10 @@ export function decodeTransactionAction(params: {
   value: bigint
   calldata?: string | null
   functionNameHint?: string
+  /** The chamber's ProxyAdmin, when known, so ownership calls to it are flagged. */
+  proxyAdmin?: Address
 }): DecodedTransaction | null {
-  const { target, value, functionNameHint } = params
+  const { target, value, functionNameHint, proxyAdmin } = params
   const hex =
     params.calldata && params.calldata !== '0x'
       ? ((params.calldata.startsWith('0x') ? params.calldata : `0x${params.calldata}`) as Hex)
@@ -115,6 +121,38 @@ export function decodeTransactionAction(params: {
   }
 
   const selector = hex.slice(0, 10).toLowerCase()
+
+  // ProxyAdmin ownership: whoever owns it can upgrade the chamber; nobody can after renounce.
+  if (proxyAdmin && target.toLowerCase() === proxyAdmin.toLowerCase()) {
+    try {
+      const decoded = decodeFunctionData({ abi: PROXY_ADMIN_OWNERSHIP_ABI, data: hex })
+      if (decoded.functionName === 'transferOwnership') {
+        const to = (decoded.args as readonly unknown[])[0]
+        if (isAddress_(to)) {
+          return {
+            functionName: 'transferOwnership',
+            summary: 'Transfer this chamber’s ProxyAdmin (upgrade control) to',
+            counterparty: to,
+            counterpartyRole: 'recipient',
+            intent: null,
+            isChamberSelfCall: false,
+            highRisk: true,
+          }
+        }
+      }
+      if (decoded.functionName === 'renounceOwnership') {
+        return {
+          functionName: 'renounceOwnership',
+          summary: 'Renounce this chamber’s ProxyAdmin: the chamber can never be upgraded again',
+          intent: null,
+          isChamberSelfCall: false,
+          highRisk: true,
+        }
+      }
+    } catch {
+      // Not an ownership call.
+    }
+  }
 
   // ERC-20 patterns decode from raw bytes — canonical signatures, no ABI needed.
   const words = hex.slice(10)

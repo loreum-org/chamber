@@ -20,7 +20,12 @@ import { chamberVersionBytes32ToLabel } from './utils'
 export const proxyAdminAbi = parseAbi([
   'function owner() view returns (address)',
   'function upgradeAndCall(address proxy, address implementation, bytes data) payable',
+  'function transferOwnership(address newOwner)',
+  'function renounceOwnership()',
 ])
+
+export const PROXY_ADMIN_TRANSFER_OWNERSHIP_SELECTOR = toFunctionSelector('transferOwnership(address)')
+export const PROXY_ADMIN_RENOUNCE_OWNERSHIP_SELECTOR = toFunctionSelector('renounceOwnership()')
 
 export const UPGRADE_AND_CALL_SELECTOR = toFunctionSelector('upgradeAndCall(address,address,bytes)')
 /** Removed in Chamber 1.3.0. Only for recognising older queued proposals. */
@@ -42,6 +47,8 @@ export interface UpgradeProposal {
   target: `0x${string}`
   value: bigint
   data: Hex
+  /** Non-blocking notes for the proposer (for example a downgrade). */
+  warnings?: string[]
 }
 
 /** The calldata and target for an upgrade proposal through the chamber's submit path. */
@@ -174,5 +181,67 @@ export async function prepareUpgradeProposal(
         'The chamber needs to be redeployed on a current version.',
     )
   }
-  return buildUpgradeProposal(chamber, proxyAdmin, newImplementation, initData)
+  const warnings: string[] = []
+  if (compareVersions(newVersion, currentVersion) < 0) {
+    warnings.push(`This is a downgrade from Chamber ${currentLabel} to ${newLabel}. Make sure the board intends to roll back.`)
+  }
+  return { ...buildUpgradeProposal(chamber, proxyAdmin, newImplementation, initData), warnings }
+}
+
+export type ProxyAdminCallKind = 'upgrade' | 'transferOwnership' | 'renounceOwnership' | 'other'
+
+/**
+ * Classifies a proposal aimed at this chamber's ProxyAdmin. Returns null when the target is not
+ * the ProxyAdmin (or the ProxyAdmin is still unknown). `transferOwnership` hands upgrade control
+ * of the chamber to someone else; `renounceOwnership` makes the chamber permanently unupgradeable.
+ */
+export function classifyProxyAdminCall(
+  proxyAdmin: `0x${string}` | undefined,
+  target: string,
+  data: Hex,
+): ProxyAdminCallKind | null {
+  if (!proxyAdmin || !eq(target, proxyAdmin)) return null
+  const selector = data.slice(0, 10).toLowerCase()
+  if (selector === UPGRADE_AND_CALL_SELECTOR) return 'upgrade'
+  if (selector === PROXY_ADMIN_TRANSFER_OWNERSHIP_SELECTOR) return 'transferOwnership'
+  if (selector === PROXY_ADMIN_RENOUNCE_OWNERSHIP_SELECTOR) return 'renounceOwnership'
+  return 'other'
+}
+
+export interface ProxyAdminRisk {
+  level: 'high'
+  label: string
+  summary: string
+}
+
+/**
+ * Risk copy for a proposal to the chamber's ProxyAdmin. Ownership calls are the dangerous ones:
+ * the board stays the chamber's only upgrader only while the chamber owns its ProxyAdmin.
+ * Upgrades are classified separately (`decodeUpgradeProposal`); this returns null for them.
+ */
+export function proxyAdminRisk(kind: ProxyAdminCallKind | null): ProxyAdminRisk | null {
+  switch (kind) {
+    case 'transferOwnership':
+      return {
+        level: 'high',
+        label: 'High risk: hands over upgrade control',
+        summary:
+          'Transfers ownership of this chamber’s ProxyAdmin. The new owner could upgrade the chamber to any code on its own, and the board could no longer upgrade it.',
+      }
+    case 'renounceOwnership':
+      return {
+        level: 'high',
+        label: 'High risk: makes the chamber unupgradeable',
+        summary:
+          'Renounces ownership of this chamber’s ProxyAdmin. Nobody, including the board, could ever upgrade the chamber again. This cannot be undone.',
+      }
+    case 'other':
+      return {
+        level: 'high',
+        label: 'High risk: ProxyAdmin call',
+        summary: 'Calls this chamber’s ProxyAdmin, which controls upgrades. Verify the exact function before approving.',
+      }
+    default:
+      return null
+  }
 }

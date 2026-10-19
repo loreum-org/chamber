@@ -220,6 +220,30 @@ contract DeployScriptsTest is Test {
         script.preflight(address(chamber), impl);
     }
 
+    /// @dev Downgrades are logged as a warning, not refused (the board may intend a rollback).
+    function test_ProposeScript_DowngradeAllowedWithWarning() public {
+        Chamber chamber = _boardChamber();
+        ProposeChamberUpgrade script = new ProposeChamberUpgrade();
+        address impl = address(new Chamber());
+        vm.mockCall(address(chamber), abi.encodeWithSignature("VERSION()"), abi.encode(bytes32("1.3.1")));
+        script.preflight(address(chamber), impl);
+        assertEq(script.propose(address(chamber), impl, "", 1, "", false), type(uint256).max);
+        (bytes32 current, bytes32 next) = script.versions(address(chamber), impl);
+        assertLt(script.parseVersion(next), script.parseVersion(current), "is a downgrade");
+    }
+
+    /// @dev The forbidden jump is refused on the submit path too, so nothing reaches the queue.
+    function test_ProposeScript_Pre120_SubmitQueuesNothing() public {
+        Chamber chamber = _boardChamber();
+        ProposeChamberUpgrade script = new ProposeChamberUpgrade();
+        address impl = address(new Chamber());
+        uint256 countBefore = chamber.getTransactionCount();
+        vm.mockCall(address(chamber), abi.encodeWithSignature("VERSION()"), abi.encode(bytes32("1.1.9")));
+        vm.expectRevert(bytes("chamber is older than 1.2.0: redeploy it on 1.3.0+ instead of upgrading in place"));
+        script.propose(address(chamber), impl, "", 1, "", true);
+        assertEq(chamber.getTransactionCount(), countBefore);
+    }
+
     function test_ProposeScript_ParseVersion() public {
         ProposeChamberUpgrade script = new ProposeChamberUpgrade();
         assertEq(script.parseVersion("1.3.0"), (1 << 32) | (3 << 16));
