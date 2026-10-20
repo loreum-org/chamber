@@ -85,14 +85,14 @@ Aderyn 0.6.8, all detectors: 4 High kinds (19 instances), 14 Low kinds.
 
 | Detector | Where | Verdict |
 | --- | --- | --- |
-| slither `unused-return` | `EnumerableSet.add/remove` in Chamber.delegate/undelegate, BoardLib.insert, syncTrackedDelegations; `nft.ownerOf` in delegate | FP: set ops are idempotent by design; `ownerOf` is an existence check inside try/catch |
+| slither `unused-return` | `EnumerableSet.add/remove` in Chamber.delegate/undelegate, BoardLib.insert; `nft.ownerOf` in delegate | FP: set ops are idempotent by design; `ownerOf` is an existence check inside try/catch |
 | slither `uninitialized-local` | BoardLib accumulators (`trackedTotal`, `validSupport`, `n`) | FP: zero-init is intended |
 | slither `incorrect-equality` | `BoardLib.isSeatingMature` `seatedAt == 0` | FP: 0 is the "never seated" sentinel |
-| aderyn `unsafe-casting` | `uint128(tokenId)` in BoardLib list links; `uint64(expiry)` in setDirectorOperator | Guarded: `BoardLib.insert` reverts `TokenIdTooLarge` above uint128; expiry bounded to uint64 before the cast. Re-check the guard on any new cast site |
-| aderyn `reentrancy-state-change` | Chamber.delegate (try `ownerOf`), setDirectorOperator, WalletLib.executeTransaction | Guarded by `nonReentrant`; the NFT is the chamber's own trusted collection. `transaction.executed = false` before `revert` in executeTransaction is dead code (revert rolls it back) |
+| aderyn `unsafe-casting` | `uint128(tokenId)` in BoardLib list links | Guarded: `BoardLib.insert` reverts `TokenIdTooLarge` above uint128. Re-check the guard on any new cast site |
+| aderyn `reentrancy-state-change` | Chamber.delegate (try `ownerOf`), WalletLib.executeTransaction | Guarded by `nonReentrant`; the NFT is the chamber's own trusted collection. `transaction.executed = false` before `revert` in executeTransaction is dead code (revert rolls it back) |
 | aderyn `contract-locks-ether` | Chamber | Intended: ETH leaves through director-confirmed wallet transactions |
 | aderyn `incorrect-erc721-interface` | Chamber.transferFrom | FP: that is the ERC-20 share `transferFrom` |
-| slither `timestamp`, `calls-loop` (Low) | deadlines, session expiry; `ownerOf` in board walks | Accepted: block-time granularity is fine; loops are bounded by `MAX_NODES = 50` and `seats <= 20` |
+| slither `timestamp`, `calls-loop` (Low) | deadlines; `ownerOf` in board walks | Accepted: block-time granularity is fine; loops are bounded by `MAX_NODES = 50` and `seats <= 20` |
 
 Halmos 0.3.3, `make ci-halmos`: 45 symbolic tests across 6 suites, all pass.
 
@@ -115,14 +115,17 @@ must always be true. For Chamber that is:
   act, seat-count changes go through propose / timelock / expiry.
 - **Wallet**: directors submit / confirm / execute / cancel; quorum counts only
   confirmations whose recorded owner still owns the token; batch variants loop.
-- **Session keys**: contract-owned NFTs can set an operator with expiry, scope
-  and `liveAt`.
-- **Upgrades**: Transparent proxy; ProxyAdmin is owned by the chamber, so an
-  upgrade is a wallet transaction calling the chamber itself.
+- **Director auth**: only `ownerOf(tokenId)` may act (session keys were removed in
+  1.3.0; agents use wallet-level keys).
+- **Upgrades**: Transparent proxy; ProxyAdmin is owned by the chamber. Since 1.3.0
+  `upgradeImplementation` is gone: the single upgrade path is a quorum wallet transaction
+  to `getProxyAdmin()` calling `upgradeAndCall(chamber, impl, data)` (calldata stored onchain,
+  L-04). ProxyAdmin has no version or migration checks of its own; the board is responsible.
+  Self-calls are limited to `pause` / `unpause`.
 - **Factory / Registry**: permissionless create; implementation pointer admin.
 
 Then walk each in-scope external/public function and check, in this order:
-1. Who can call it, and is that enforced on every path (including batch and session-key paths)?
+1. Who can call it, and is that enforced on every path (including batch paths)?
 2. What state does it read that someone else can change in the same block (delegation, NFT ownership, seat changes)?
 3. External calls: before or after state updates? `nonReentrant`? What can the callee do?
 4. Math: rounding direction (vault rounds against the user), division before
@@ -134,7 +137,7 @@ Then walk each in-scope external/public function and check, in this order:
 Walk the ethskills `security` pre-deploy checklist, then the evm-audit
 checklists this codebase routes to:
 `general`, `precision-math`, `erc20`, `erc4626`, `erc721`, `governance`,
-`proxies`, `access-control`, `dos`, plus `erc4337` for session keys and
+`proxies`, `access-control`, `dos`, plus
 `assembly` if any assembly changed. For a full review, give each checklist to
 its own subagent with the source, the finding format below, and an output file
 `audits/<date>/findings-<domain>.md`, then deduplicate and synthesize. Tell

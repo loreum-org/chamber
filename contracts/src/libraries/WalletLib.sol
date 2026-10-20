@@ -85,23 +85,19 @@ library WalletLib {
         string memory metadataURI,
         uint256 deadline,
         uint256 submitQuorum,
-        address selfAddress,
-        bool autoConfirm
+        bool storeCalldata
     ) external {
         uint256 nonce = $.transactions.length;
         uint256 resolvedDeadline = resolveDeadline(deadline);
 
         bytes32 dataHash = keccak256(data);
-        $.transactions.push(
-            WalletTypes.Transaction({
-                target: target,
-                value: value,
-                dataHash: dataHash,
-                executed: false,
-                confirmations: 0
-            })
-        );
-        if (target == selfAddress) {
+        $.transactions
+            .push(
+                WalletTypes.Transaction({
+                    target: target, value: value, dataHash: dataHash, executed: false, confirmations: 0
+                })
+            );
+        if (storeCalldata) {
             $.transactionCalldata[nonce] = data;
         }
         $.transactionRequiredQuorum[nonce] = submitQuorum;
@@ -111,7 +107,7 @@ library WalletLib {
             $.transactionMetadataURI[nonce] = metadataURI;
             emit IWallet.ProposalMetadataSet(nonce, metadataURI);
         }
-        if (autoConfirm) confirmTransaction($, tokenId, nonce);
+        confirmTransaction($, tokenId, nonce);
         emit IWallet.SubmitTransaction(tokenId, nonce, target, value, data);
     }
 

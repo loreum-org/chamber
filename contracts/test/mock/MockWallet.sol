@@ -12,13 +12,13 @@ contract MockWallet is Wallet {
     }
 
     function submitTransaction(uint256 tokenId, address to, uint256 value, bytes memory data) public {
-        _submitTransaction(tokenId, to, value, data);
+        _submitTransactionWithMetadata(tokenId, to, value, data, "", 0);
     }
 
     function submitTransaction(uint256 tokenId, address to, uint256 value, bytes memory data, uint256 deadline)
         public
     {
-        _submitTransaction(tokenId, to, value, data, deadline);
+        _submitTransactionWithMetadata(tokenId, to, value, data, "", deadline);
     }
 
     function confirmTransaction(uint256 tokenId, uint256 transactionId) public {

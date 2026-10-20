@@ -52,7 +52,7 @@ Directors can vote to **cancel** before execution. Enough cancel votes (quorum) 
 
 ## Upgrades (special case)
 
-A proposal may target **the Chamber itself** only for **`upgradeImplementation`** — the controlled path to upgrade the contract logic via **ProxyAdmin**. Random self-calls are blocked. Those self-calls persist calldata onchain so a confirmed upgrade can still be executed if event logs are unavailable. Ordinary treasury calls stay hash-only.
+An upgrade is an ordinary proposal to the chamber's **ProxyAdmin**: `upgradeAndCall(chamber, newImplementation, initData)`, approved by quorum. Since 1.3.0 this is the only upgrade path (`upgradeImplementation` was removed). ProxyAdmin is the single upgrade path and has no version or migration checks of its own; the board is responsible for what it approves. Calls to the ProxyAdmin, like self-calls, persist calldata onchain so a confirmed upgrade can still be executed if event logs are unavailable. Self-calls to the Chamber itself are limited to `pause` and `unpause`. Ordinary treasury calls stay hash-only.
 
 ## Batching
 

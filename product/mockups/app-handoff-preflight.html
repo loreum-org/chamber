@@ -76,7 +76,6 @@
       <a class="brand" href="index.html"><span class="brand-mark">L</span><span>Loreum</span></a>
       <nav class="nav" aria-label="Main">
         <a href="app-overview.html" class="on">My Chambers</a>
-        <a href="app-session-keys.html">Operators</a>
         <a href="#">Deploy Chamber</a>
         <a href="#">Compliance</a>
         <a href="app-migrate.html">Migrate from Safe</a>
@@ -117,7 +116,6 @@
     <a href="app-queue.html">Queue <span class="badge warn">2</span></a>
     <a href="p2-multichain-treasury.html">Treasury</a>
     <a href="app-supply-authority.html" class="on">Supply authority</a>
-    <a href="app-session-keys.html">Session keys</a>
   </nav>
 
   <nav class="subnav" aria-label="Supply authority">
@@ -192,7 +190,7 @@
         <ul class="checks">
           <li>
             <span class="st pass">✓</span>
-            <div><div class="t">Guardian is independent</div><div class="d">Loreum Guardian Safe 0x9C44…E01d, 3-of-5. None of its signers is a Team Safe owner, owns a seat, holds a session key or holds a large amount of LORE.</div></div>
+            <div><div class="t">Guardian is independent</div><div class="d">Loreum Guardian Safe 0x9C44…E01d, 3-of-5. None of its signers is a Team Safe owner, owns a seat or holds a large amount of LORE.</div></div>
             <span class="val">3-of-5</span>
           </li>
           <li>
@@ -252,7 +250,7 @@
         <div class="auth compact vert" role="group" aria-label="marco.eth authority chain">
           <div class="node seat"><span class="k">Seat</span><span class="v">Explorer #58 · rank 5</span></div>
           <div class="node"><span class="k">Owner</span><span class="v">marco.eth · EOA</span></div>
-          <div class="node key"><span class="k">Session key</span><span class="v">None</span></div>
+          <div class="node key"><span class="k">Signed by</span><span class="v">Owner wallet</span></div>
         </div>
         <dl class="kv" style="margin-top:12px">
           <dt>Seated</dt><dd>Feb 12, 09:14 UTC · block 26,952,372</dd>
@@ -303,7 +301,6 @@
             <th class="r">Weight</th>
             <th>Seated</th>
             <th>7-day mark</th>
-            <th>Session key</th>
           </tr>
         </thead>
         <tbody>
@@ -314,7 +311,6 @@
             <td class="r"><div class="stack-sm"><span class="num" title="convertToAssets of about 2,410,000 cLORE">2,410,000 LORE</span><span class="src">2.41M cLORE</span></div></td>
             <td class="num">Feb 2</td>
             <td><span class="badge ok">Matured Feb 9</span></td>
-            <td><span class="faint">None</span></td>
           </tr>
           <tr>
             <td class="num">2</td>
@@ -323,12 +319,6 @@
             <td class="r"><div class="stack-sm"><span class="num" title="convertToAssets of about 1,905,000 cLORE">1,905,000 LORE</span><span class="src">1.91M cLORE</span></div></td>
             <td class="num">Feb 2</td>
             <td><span class="badge ok">Matured Feb 9</span></td>
-            <td>
-              <div class="stack-sm">
-                <span class="mono">0xA11c…04e5 · 0x31</span>
-                <div class="scopes"><span class="scope on">SUBMIT</span><span class="scope">CONFIRM</span><span class="scope">EXECUTE</span><span class="scope on">REVOKE</span><span class="scope on">CANCEL</span></div>
-              </div>
-            </td>
           </tr>
           <tr>
             <td class="num">3</td>
@@ -337,7 +327,6 @@
             <td class="r"><div class="stack-sm"><span class="num" title="convertToAssets of about 1,120,000 cLORE">1,120,000 LORE</span><span class="src">1.12M cLORE</span></div></td>
             <td class="num">Feb 5</td>
             <td><span class="badge ok">Matured Feb 12</span></td>
-            <td><span class="faint">None</span></td>
           </tr>
           <tr>
             <td class="num">4</td>
@@ -346,7 +335,6 @@
             <td class="r"><div class="stack-sm"><span class="num" title="convertToAssets of about 980,000 cLORE">980,000 LORE</span><span class="src">0.98M cLORE</span></div></td>
             <td class="num">Feb 9 08:47</td>
             <td><span class="badge ok">Matured 1 h 18 m ago</span></td>
-            <td><span class="faint">None</span></td>
           </tr>
           <tr class="waiting">
             <td class="num">5</td>
@@ -355,12 +343,11 @@
             <td class="r"><div class="stack-sm"><span class="num" title="convertToAssets of about 612,000 cLORE">612,000 LORE</span><span class="src">0.61M cLORE</span></div></td>
             <td class="num">Feb 12 09:14</td>
             <td><span class="badge warn">Feb 19 09:14</span></td>
-            <td><span class="faint">None</span></td>
           </tr>
         </tbody>
       </table>
     </div>
-    <p class="hint" style="margin-top:10px">Rows come from chamber-indexer. The preflight read the same seats again over RPC (getTop(getSeats()) and the live session-key getters) and all 5 rows match; any difference would fail the run. No session key can confirm or execute. Weights are shown in LORE (convertToAssets), with cLORE shares underneath.</p>
+    <p class="hint" style="margin-top:10px">Rows come from chamber-indexer. The preflight read the same seats again over RPC (getTop(getSeats()) and ownerOf for each seat) and all 5 rows match; any difference would fail the run. Weights are shown in LORE (convertToAssets), with cLORE shares underneath.</p>
   </section>
 
   <!-- The Safe transaction -->
@@ -445,7 +432,7 @@
       <li>The capture-cost check is the <code>M-10</code> weight margin, taken from the review's ECO-3 finding and the <code>M-12</code> analysis. An outsider needs 3 Explorers that each outweigh the rank-3 seat, and that total is compared with all LORE outside the Team Safe. Seat weights are cLORE shares, so they are converted with <code>convertToAssets</code> before comparing, which fixes the roughly 1,000× unit error the plan review found. The faint line says what the check does not cover: the Team Safe's own power to redelegate is governed by the <code>M-23</code> delegation plan, not by this script.</li>
       <li>Post-handoff steps come from <code>M-20</code> steps 7 and 8, including the proof that the Team Safe can no longer mint.</li>
       <li>This is the one page where display data uses RPC, because it is the preflight right before a signature, which the pinned rule allows. The page says so, and the reads run only when you press Run. The board table comes from the indexer and is labelled that way. The preflight reads the same seats again over RPC, and any mismatch between the two sources fails the run, because it means one of them is wrong (<code>I-10</code>).</li>
-      <li>Weights are shown in LORE with cLORE shares underneath: <code>M-10</code> requires <code>convertToAssets</code> and both units (_decimalsOffset = 3), and the capture-cost check (note 6) uses the converted values. The session-key scope bits use the Chamber.sol values, and none of them grants CONFIRM or EXECUTE.</li>
+      <li>Weights are shown in LORE with cLORE shares underneath: <code>M-10</code> requires <code>convertToAssets</code> and both units (_decimalsOffset = 3), and the capture-cost check (note 6) uses the converted values.</li>
       <li>This is the exact transaction <code>M-10</code> prints. The calldata, domain hash, message hash and safeTxHash are real EIP-712 values for the real Team Safe and LORE addresses, the illustrative gate address and an illustrative nonce, computed with <code>cast</code>. The red banner states the single-step, irreversible nature in plain words, because this is the step the review found unsafe when it pointed at the Chamber (<code>M-1</code>).</li>
       <li>The signer checklist puts the <code>M-11</code> requirement (every signer compares the hash on their hardware device) into steps anyone can follow, and tells signers to compare full addresses rather than the first and last few characters.</li>
     </ol>

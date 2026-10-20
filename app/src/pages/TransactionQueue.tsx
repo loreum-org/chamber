@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useParams, Link, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useAccount, useReadContracts, useChainId, useReadContract } from 'wagmi'
+import { useAccount, useReadContracts, useChainId, useReadContract, usePublicClient } from 'wagmi'
 import { formatEther, isAddress, encodeFunctionData, parseAbi, parseEther, parseUnits } from 'viem'
 import {
   FiArrowLeft,
@@ -60,8 +60,8 @@ import { ChamberHeader } from '@/components/ChamberHeader'
 import { Banner, Segmented } from '@/components/ui'
 import { DirectorCallerStatus } from '@/components/DirectorCallerStatus'
 import { SeatTheBoardLink } from '@/components/SeatTheBoard'
+import { classifyProxyAdminCall, decodeUpgradeProposal, prepareUpgradeProposal, proxyAdminRisk } from '@/lib/chamberUpgrade'
 import {
-  UPGRADE_SELECTOR,
   PAUSE_SELECTOR,
   UNPAUSE_SELECTOR,
   SEAT_UPDATE_TIMELOCK_SEC,
@@ -182,10 +182,18 @@ function PendingTxBanner({
   )
 }
 
-function classifyTransactionRisk(chamberAddress: `0x${string}`, target: `0x${string}`, value: bigint, data: `0x${string}`) {
+function classifyTransactionRisk(
+  chamberAddress: `0x${string}`,
+  target: `0x${string}`,
+  value: bigint,
+  data: `0x${string}`,
+  proxyAdmin?: `0x${string}`,
+) {
   const isSelfCall = isChamberSelfCall(chamberAddress, target)
   const selector = selectorOf(data)
-  const isUpgrade = isSelfCall && selector === UPGRADE_SELECTOR
+  const isUpgrade = decodeUpgradeProposal(chamberAddress, proxyAdmin, target, data) !== null
+  const adminRisk = isUpgrade ? null : proxyAdminRisk(classifyProxyAdminCall(proxyAdmin, target, data))
+  if (adminRisk) return adminRisk
   const isPause = isSelfCall && selector === PAUSE_SELECTOR
   const isUnpause = isSelfCall && selector === UNPAUSE_SELECTOR
   const hasUnknownCallData = data !== '0x' && !isUpgrade && !isPause && !isUnpause
@@ -253,8 +261,17 @@ function classifyTransactionRiskFromDataHash(
   chamberAddress: `0x${string}`,
   target: `0x${string}`,
   value: bigint,
-  dataHash: `0x${string}`
+  dataHash: `0x${string}`,
+  proxyAdmin?: `0x${string}`,
 ) {
+  if (proxyAdmin && target.toLowerCase() === proxyAdmin.toLowerCase()) {
+    return {
+      level: 'high' as RiskLevel,
+      label: 'High risk: ProxyAdmin call',
+      summary:
+        'Calls this chamber’s ProxyAdmin, which controls upgrades and who may perform them. Load the calldata and confirm it is the intended upgradeAndCall, not an ownership change.',
+    }
+  }
   const isSelfCall = target.toLowerCase() === chamberAddress.toLowerCase()
   const hasCalldata = hasProposalCalldata(dataHash)
   const sendsEth = value > 0n
@@ -816,8 +833,6 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
         <DirectorCallerStatus
           role={directorGate.role}
           tokenId={directorGate.tokenId}
-          nftOwner={directorGate.nftOwner}
-          sessionOperator={directorGate.sessionOperator}
         />
       </ChamberHeader>
 
@@ -1233,6 +1248,12 @@ function TransactionCard({
   onWriteSent,
   onWriteClear,
 }: TransactionCardProps) {
+  const { data: cardProxyAdminData } = useReadContract({
+    address: chamberAddress,
+    abi: chamberAbi,
+    functionName: 'getProxyAdmin',
+  })
+  const cardProxyAdmin = typeof cardProxyAdminData === 'string' ? (cardProxyAdminData as `0x${string}`) : undefined
   const { confirm, isPending: isConfirmPending, isConfirming: isConfirmWaiting, hash: confirmHash } = useConfirmTransaction(chamberAddress)
   const { execute, isPending: isExecutePending, isConfirming: isExecuteWaiting, hash: executeHash } = useExecuteTransaction(chamberAddress)
   const { revoke, isPending: isRevokePending, isConfirming: isRevokeWaiting, hash: revokeHash } = useRevokeConfirmation(chamberAddress)
@@ -1438,9 +1459,6 @@ function TransactionCard({
   const shortTarget = `${transaction.target.slice(0, 10)}...${transaction.target.slice(-8)}`
   const hasData = hasProposalCalldata(transaction.dataHash)
   const displayTitle = proposalMeta?.title || (hasData ? 'Contract call' : 'Transaction')
-  const risk = classifyTransactionRiskFromDataHash(chamberAddress, transaction.target, transaction.value, transaction.dataHash)
-  const riskLevel = proposalMeta?.riskLevel || risk.level
-  const riskSummary = proposalMeta?.riskSummary || risk.summary
 
   // #260: calldata for the decoded view — resolved preimage wins; otherwise a
   // locally known preimage (execute textarea / metadata) when it matches the hash.
@@ -1456,6 +1474,19 @@ function TransactionCard({
     }
     return undefined
   })()
+  // ProxyAdmin ownership changes are computed from chain data and override proposer-supplied metadata risk.
+  const adminRisk = decodedSummaryCalldata
+    ? proxyAdminRisk(
+        decodeUpgradeProposal(chamberAddress, cardProxyAdmin, transaction.target, decodedSummaryCalldata as `0x${string}`)
+          ? null
+          : classifyProxyAdminCall(cardProxyAdmin, transaction.target, decodedSummaryCalldata as `0x${string}`),
+      )
+    : null
+  const risk =
+    adminRisk ??
+    classifyTransactionRiskFromDataHash(chamberAddress, transaction.target, transaction.value, transaction.dataHash, cardProxyAdmin)
+  const riskLevel = adminRisk ? adminRisk.level : proposalMeta?.riskLevel || risk.level
+  const riskSummary = adminRisk ? adminRisk.summary : proposalMeta?.riskSummary || risk.summary
   const simulationMode: 'confirm' | 'execute' = transaction.status === 'ready' ? 'execute' : 'confirm'
 
   const isCancelled = transaction.cancelled === true
@@ -1576,6 +1607,7 @@ function TransactionCard({
               dataHash={hasData ? transaction.dataHash : undefined}
               functionNameHint={proposalMeta?.functionName}
               simulatedToken={simToken}
+              proxyAdmin={cardProxyAdmin}
             />
           )}
           <div className="flex items-center gap-4 text-sm text-slate-400">
@@ -2294,6 +2326,14 @@ function NewTransactionForm({
   const [encodedData, setEncodedData] = useState<string>('0x')
 
   const { submit, isPending, isConfirming, hash: submitHash } = useSubmitTransaction(chamberAddress)
+  const publicClient = usePublicClient()
+  // Upgrades are queued as `upgradeAndCall` to the chamber's ProxyAdmin on every version.
+  const { data: proxyAdminData } = useReadContract({
+    address: chamberAddress,
+    abi: chamberAbi,
+    functionName: 'getProxyAdmin',
+  })
+  const proxyAdmin = typeof proxyAdminData === 'string' ? (proxyAdminData as `0x${string}`) : undefined
   const {
     updateSeats: proposeSeats,
     isPending: isSeatPending,
@@ -2305,7 +2345,7 @@ function NewTransactionForm({
   const previewValue = txType === 'eth' && value ? (() => { try { return parseEther(value) } catch { return 0n } })() : 0n
   const previewData = txType === 'custom' ? (encodedData as `0x${string}`) : txType === 'token' ? (data as `0x${string}`) : '0x'
   const previewRisk = proposalType === 'transaction' && isAddress(previewTarget)
-    ? classifyTransactionRisk(chamberAddress, previewTarget, previewValue, previewData)
+    ? classifyTransactionRisk(chamberAddress, previewTarget, previewValue, previewData, proxyAdmin)
     : null
   const busy = isPending || isConfirming || isSeatPending || isSeatConfirming
   const queueUpgradeCopy = registryUpgradeDraft
@@ -2319,13 +2359,14 @@ function NewTransactionForm({
       registryUpgradePrefilledRef.current = undefined
       return
     }
+    if (!proxyAdmin) return
     const impl = registryUpgradeDraft.newImplementation
     if (registryUpgradePrefilledRef.current === impl) return
     registryUpgradePrefilledRef.current = impl
 
     setProposalType('transaction')
     setTxType('custom')
-    setTarget(chamberAddress)
+    setTarget(proxyAdmin)
     setValue('0')
 
     const regV = registryUpgradeDraft.registryVersionLabel
@@ -2333,11 +2374,12 @@ function NewTransactionForm({
     const copy = implQueueUpgradeCopy(registryUpgradeDraft.implSourceLabel)
     setTitle(copy.proposalTitle(regV))
     setDescription(
-      `Multisig: upgradeImplementation(${impl}, 0x). Current proxy implementation VERSION reports ${curV ?? 'unknown'}. Confirm audit status and migrations before approving; init calldata left empty.`,
+      `Multisig: ProxyAdmin ${proxyAdmin}.upgradeAndCall(${chamberAddress}, ${impl}, 0x). Current proxy implementation VERSION reports ${curV ?? 'unknown'}. ProxyAdmin has no version or migration checks of its own: confirm audit status and migrations before approving; init calldata left empty.`,
     )
-    setFunctionSig('upgradeImplementation(address,bytes)')
+    setFunctionSig('upgradeAndCall(address,address,bytes)')
   }, [
     chamberAddress,
+    proxyAdmin,
     registryUpgradeDraft?.newImplementation,
     registryUpgradeDraft?.registryVersionLabel,
     registryUpgradeDraft?.chamberVersionLabel,
@@ -2369,9 +2411,9 @@ function NewTransactionForm({
   useEffect(() => {
     const impl = registryUpgradeDraft?.newImplementation
     if (!impl) return
-    if (parsedFunction?.name !== 'upgradeImplementation') return
-    setParamValues({ param0: impl, param1: '0x' })
-  }, [registryUpgradeDraft?.newImplementation, parsedFunction])
+    if (parsedFunction?.name !== 'upgradeAndCall') return
+    setParamValues({ param0: chamberAddress, param1: impl, param2: '0x' })
+  }, [chamberAddress, registryUpgradeDraft?.newImplementation, parsedFunction])
 
   // Encode function data when params change
   useEffect(() => {
@@ -2488,7 +2530,7 @@ function NewTransactionForm({
           args: [target as `0x${string}`, parsedTokenAmount],
         })
         if (!isAllowedChamberSelfCall(chamberAddress, tokenAddress, txData)) {
-          toast.error('Chamber self-calls are only allowed for upgrades. Use Board changes for seat changes.')
+          toast.error('Chamber self-calls are limited to pause and unpause. Upgrades go to the chamber’s ProxyAdmin; use Board changes for seat changes.')
           return
         }
         // Target becomes token address
@@ -2523,13 +2565,13 @@ function NewTransactionForm({
       }
 
       if (!isAllowedChamberSelfCall(chamberAddress, target, txData)) {
-        toast.error('Chamber self-calls are only allowed for upgrades. Use Board changes for seat changes.')
+        toast.error('Chamber self-calls are limited to pause and unpause. Upgrades go to the chamber’s ProxyAdmin; use Board changes for seat changes.')
         return
       }
 
       // Store proposal metadata (title/description) for display
       const metaTitle = title.trim() || (txType === 'eth' ? `Send ${value} ETH` : parsedFunction?.name || 'Custom Transaction')
-      const risk = classifyTransactionRisk(chamberAddress, target as `0x${string}`, txValue, txData)
+      const risk = classifyTransactionRisk(chamberAddress, target as `0x${string}`, txValue, txData, proxyAdmin)
       const metadata = {
         title: metaTitle,
         description: description.trim() || undefined,
@@ -2542,10 +2584,26 @@ function NewTransactionForm({
         riskSummary: risk.summary,
       }
       const metadataURI = createProposalMetadataURI(metadata)
-      const writeKind: QueueWriteKind =
-        parsedFunction?.name === 'upgradeImplementation' || selectorOf(txData) === UPGRADE_SELECTOR
-          ? 'upgrade'
-          : 'submit'
+      const upgrade = decodeUpgradeProposal(chamberAddress, proxyAdmin, target, txData)
+      const writeKind: QueueWriteKind = upgrade ? 'upgrade' : 'submit'
+      if (upgrade) {
+        if (upgrade.via === 'legacy') {
+          toast.error('upgradeImplementation was removed in Chamber 1.3.0. Queue upgradeAndCall on the chamber’s ProxyAdmin instead.')
+          return
+        }
+        // Preflight what upgradeImplementation used to check: the chamber owns its ProxyAdmin,
+        // the target is that ProxyAdmin, and the new implementation is a contract.
+        if (!publicClient) {
+          toast.error('No RPC connection for this network. Nothing was sent.')
+          return
+        }
+        const planned = await prepareUpgradeProposal(publicClient, chamberAddress, upgrade.implementation, upgrade.initData)
+        if (planned.target.toLowerCase() !== target.toLowerCase()) {
+          toast.error('Upgrades must target this chamber’s ProxyAdmin. Nothing was sent.')
+          return
+        }
+        for (const w of planned.warnings ?? []) toast(w, { icon: '⚠️' })
+      }
       onWriteStart(writeKind)
       const hash = await submit(userTokenId, target as `0x${string}`, txValue, txData, metadataURI)
       if (txData !== '0x') {
@@ -2681,7 +2739,7 @@ function NewTransactionForm({
                   {queueUpgradeCopy.prefilledTitle}
                 </p>
                 <p className="text-slate-400 text-xs leading-relaxed">
-                  Target is this Chamber. Calldata invokes <span className="font-mono">upgradeImplementation</span> using
+                  Target is this chamber’s ProxyAdmin. Calldata invokes <span className="font-mono">upgradeAndCall</span> using
                   {' '}{queueUpgradeCopy.prefilledImplLead}{' '}
                   <span className="font-mono text-slate-300">
                     {shortenAddress(registryUpgradeDraft.newImplementation, 6)}
@@ -2959,7 +3017,7 @@ function NewTransactionForm({
             kind={
               proposalType === 'seats'
                 ? 'seat-propose'
-                : parsedFunction?.name === 'upgradeImplementation' || !!registryUpgradeDraft
+                : parsedFunction?.name === 'upgradeAndCall' || !!registryUpgradeDraft
                   ? 'upgrade'
                   : 'submit'
             }

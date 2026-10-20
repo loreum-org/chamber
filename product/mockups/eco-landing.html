@@ -186,11 +186,6 @@ b, strong { font-weight: 600; }
 .lp-agent-h .nm div span:last-child { font-size: 12.5px; color: var(--lt3); }
 .lp-agent-b { padding: 18px 20px; display: grid; gap: 18px; }
 .lp-lbl { font-size: 10.5px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--lt4); font-weight: 600; margin-bottom: 8px; }
-.lp-scopes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
-.lp-scopes span { display: flex; justify-content: space-between; align-items: center; gap: 6px; padding: 7px 10px; border-radius: 7px; border: 1px solid var(--ll); font-family: var(--lmono); font-size: 11.5px; color: var(--lt4); background: rgba(11, 13, 23, 0.5); }
-.lp-scopes span::after { content: "off"; font-size: 10px; }
-.lp-scopes span.on { color: #ddd6fe; border-color: rgba(166, 133, 245, 0.45); background: rgba(124, 92, 214, 0.16); }
-.lp-scopes span.on::after { content: "on"; color: #c4b5fd; }
 .lp-checks { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; font-size: 13.5px; }
 .lp-checks li { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 10px; color: var(--lt2); }
 .lp-checks .ck { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 600; background: rgba(16, 185, 129, 0.14); color: var(--lok); }
@@ -304,7 +299,6 @@ b, strong { font-weight: 600; }
   .lp-auth .n:last-child { border-radius: 0 0 12px 12px; }
   .lp-auth .n + .n { border-left: 1px solid var(--ll2); border-top: 0; }
   .lp-auth .n + .n::before { left: 50%; top: -7px; margin-top: 0; margin-left: -6px; transform: rotate(135deg); }
-  .lp-scopes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .lp-gate .row { grid-template-columns: minmax(0, 1fr); gap: 4px; }
   .lp-later-in { padding: 24px 18px; }
   .lp-trust { grid-template-columns: minmax(0, 1fr); }
@@ -351,7 +345,7 @@ b, strong { font-weight: 600; }
     <div class="lp-wrap">
       <span class="lp-chip">Loreum · Onchain governance <span class="note">1</span></span>
       <h1 id="lp-title">Accountable boards for <span class="lp-grad">onchain treasuries.</span></h1>
-      <p class="lede">Humans and AI directors work from <b>one queue</b>. Holders delegate to decide <b>who sits on the board</b>. Nothing moves without a quorum, and an AI director's key can do only what its on-chain scope allows.</p>
+      <p class="lede">Humans and AI directors work from <b>one queue</b>. Holders delegate to decide <b>who sits on the board</b>. Nothing moves without a quorum, and an AI director acts only through a wallet its owner controls.</p>
       <div class="ctas">
         <a class="lp-btn solid" href="app-overview.html">Open the app <span class="arr" aria-hidden="true">&#8250;</span></a>
         <a class="lp-btn line" href="eco-landing.html#how">See how it works</a>
@@ -369,8 +363,8 @@ b, strong { font-weight: 600; }
             <div class="lp-pane-h"><h3>Board · 5 seats · quorum 3</h3><span class="lp-muted" style="font-size:12px">Delegated LORE</span></div>
             <ol class="lp-seats">
               <li><span class="rk">1</span><span class="who"><span>aria.eth · Explorer #7</span><span>Person · EOA</span></span><span class="w">2,410,000<i style="width:100%"></i></span></li>
-              <li><span class="rk">2</span><span class="who"><span>kofi.eth · Explorer #12</span><span>Person · Safe 2-of-3 · session key</span></span><span class="w">1,905,000<i style="width:79%"></i></span></li>
-              <li><span class="rk">3</span><span class="who"><span>Treasury Agent · Explorer #31 <span class="lp-tag ai">AI</span></span><span>Policy account · session key</span></span><span class="w">1,120,000<i style="width:46%"></i></span></li>
+              <li><span class="rk">2</span><span class="who"><span>kofi.eth · Explorer #12</span><span>Person · Safe 2-of-3</span></span><span class="w">1,905,000<i style="width:79%"></i></span></li>
+              <li><span class="rk">3</span><span class="who"><span>Treasury Agent · Explorer #31 <span class="lp-tag ai">AI</span></span><span>Policy account · Safe</span></span><span class="w">1,120,000<i style="width:46%"></i></span></li>
               <li><span class="rk">4</span><span class="who"><span>lena.eth · Explorer #44</span><span>Person · EOA</span></span><span class="w">980,000<i style="width:41%"></i></span></li>
               <li><span class="rk">5</span><span class="who"><span>marco.eth · Explorer #58</span><span>Person · EOA</span></span><span class="w">612,000<i style="width:25%"></i></span></li>
               <li class="next"><span class="rk">6</span><span class="who"><span>nadia.eth · Explorer #63</span><span>Next in line · needs 72,001 more</span></span><span class="w">540,000<i style="width:22%"></i></span></li>
@@ -432,12 +426,12 @@ b, strong { font-weight: 600; }
       <div class="lp-chainwrap reveal">
         <div>
           <h3>Who can act for a seat <span class="note">4</span></h3>
-          <p>The seat's owner, and a session key only if the owner is a contract and set one up. Keys are limited to specific actions, always expire, and are cleared when the NFT changes hands.</p>
+          <p>Only the seat's owner. An agent can act through the owner's own wallet, such as a Safe module or a smart-account session key. Authority moves with the NFT.</p>
         </div>
         <div class="lp-auth" role="group" aria-label="Authority chain for Explorer #12">
           <div class="n"><span class="k">Seat</span><span class="v">Explorer #12 · seat 2</span><span class="s">1,905,000 LORE delegated</span></div>
           <div class="n"><span class="k">Owner</span><span class="v">kofi.eth</span><span class="s">Safe, 2-of-3 signers</span></div>
-          <div class="n key"><span class="k">Session key</span><span class="v">0xA11c…04e5</span><span class="s">Submit, revoke, cancel · expires Mar 28, 2027</span></div>
+          <div class="n key"><span class="k">Signed by</span><span class="v">Owner wallet</span><span class="s">2 of 3 signers</span></div>
         </div>
       </div>
     </div>
@@ -451,9 +445,8 @@ b, strong { font-weight: 600; }
         <h2 id="ai-h" class="lp-h2 reveal">AI on the board, inside limits anyone can check.</h2>
         <ul class="lp-guard">
           <li class="reveal"><span class="gi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 20h16M6 20V9l6-5 6 5v11"/><path d="M10 20v-6h4v6"/></svg></span><div><h3>It holds a seat because holders chose it</h3><p>An AI director is seated the same way a person is: by delegation. If delegators move their weight, it loses the seat and the next Explorer takes it after 1 block.</p></div></li>
-          <li class="reveal d1"><span class="gi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span><div><h3>Its key does only what the scope allows</h3><p>The Chamber contract enforces each session key's scope and expiry. Treasury Agent's key can submit, execute, revoke and cancel. It can't confirm.</p></div></li>
-          <li class="reveal d2"><span class="gi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 3l8 4v5c0 5-3.5 7.5-8 9-4.5-1.5-8-4-8-9V7l8-4z"/><path d="M9 12l2 2 4-4"/></svg></span><div><h3>It confirms through a policy account</h3><p>To count toward quorum, the agent confirms through a Safe. The Safe signs only when the transaction fits the agent's published mandate and a human co-signer approves. Today people check the mandate; a contract that enforces it comes later.</p></div></li>
-          <li class="reveal d3"><span class="gi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 5h14v10H9l-4 4V5z"/><path d="M9 9h6M9 12h4"/></svg></span><div><h3>Drafts are text. Approvals are calldata.</h3><p>A model can draft a proposal. Every director, human or AI, confirms the decoded call and its simulation, never the model's summary of it.</p></div></li>
+          <li class="reveal d1"><span class="gi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 3l8 4v5c0 5-3.5 7.5-8 9-4.5-1.5-8-4-8-9V7l8-4z"/><path d="M9 12l2 2 4-4"/></svg></span><div><h3>It acts through a policy account</h3><p>The agent submits and confirms through the Safe that owns its seat. Chamber sees only the Safe. The Safe signs only when the transaction fits the agent's published mandate and a human co-signer approves. Today people check the mandate; a contract that enforces it comes later.</p></div></li>
+          <li class="reveal d2"><span class="gi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 5h14v10H9l-4 4V5z"/><path d="M9 9h6M9 12h4"/></svg></span><div><h3>Drafts are text. Approvals are calldata.</h3><p>A model can draft a proposal. Every director, human or AI, confirms the decoded call and its simulation, never the model's summary of it.</p></div></li>
         </ul>
       </div>
 
@@ -466,17 +459,10 @@ b, strong { font-weight: 600; }
           <div class="lp-auth" role="group" aria-label="Authority chain for Explorer #31">
             <div class="n"><span class="k">Seat</span><span class="v">#31 · seat 3</span></div>
             <div class="n"><span class="k">Owner</span><span class="v">Policy account</span><span class="s">Safe 0x9aB3…40d1</span></div>
-            <div class="n key"><span class="k">Session key</span><span class="v">0x7E0f…19b2</span><span class="s">Expires Mar 30, 2027</span></div>
+            <div class="n key"><span class="k">Signed by</span><span class="v">Agent via owner's Safe</span><span class="s">Policy module</span></div>
           </div>
           <div>
-            <div class="lp-lbl">Session key scope · 0x35</div>
-            <div class="lp-scopes">
-              <span class="on">SUBMIT</span><span>CONFIRM</span><span class="on">EXECUTE</span>
-              <span>UPDATE_SEATS</span><span class="on">REVOKE</span><span class="on">CANCEL</span>
-            </div>
-          </div>
-          <div>
-            <div class="lp-lbl">Mandate v2 · checked before every confirm</div>
+            <div class="lp-lbl">Mandate v2 · checked before the Safe signs</div>
             <ul class="lp-checks">
               <li><span class="ck" aria-hidden="true">&#10003;</span><span>USDC transfers to allowlisted recipients, such as the Grants Safe</span></li>
               <li><span class="ck" aria-hidden="true">&#10003;</span><span>Up to 150,000 USDC per transaction and 400,000 USDC per rolling 30 days</span></li>
@@ -485,7 +471,7 @@ b, strong { font-weight: 600; }
             <p class="lp-mhint">A human co-signer on the policy Safe checks the mandate before it signs. No contract enforces the mandate yet.</p>
           </div>
         </div>
-        <div class="lp-agent-f"><span>ERC-8004 agent #212 · shown for identity only, grants no authority</span><span>Key expires in 14 days</span></div>
+        <div class="lp-agent-f"><span>ERC-8004 agent #212 · shown for identity only, grants no authority</span></div>
       </div>
     </div>
   </section>
@@ -629,8 +615,8 @@ b, strong { font-weight: 600; }
         <li><b>Positioning comes from the review:</b> accountable boards for onchain treasuries, with humans and AI directors in one queue and delegation deciding who sits. It replaces the current "Decentralized Governance System" headline and the unscoped "compliant" and "credibly neutral" language. This page is the public face of the strategy v2.0 rewrite (<code>D-12</code>). The look evolves <code>landing/src</code> (Bellefair, space navy, star field, square tracked buttons) instead of borrowing the app console. It keeps the rules that apply to every surface: weights 300/400/600 only, depth from layered surfaces rather than drop shadows, and the authority chain as the signature element.</li>
         <li><b>The product window shows real state, not a stock illustration.</b> It's Loreum DAO's board and queue as chamber-indexer reports them (<code>I-12</code>/<code>I-14</code>), with the freshness line, so the landing page costs no RPC either (<code>I-21</code>). The numbers match <code>_mock-data.md</code>. Dogfooding the LORE Chamber is the first customer the review recommends.</li>
         <li><b>The contract rules are stated exactly:</b> quorum <code>1 + n*51/100</code>, <code>SEATING_DELAY</code> = 1 block, <code>SEAT_UPDATE_TIMELOCK</code> = 7 days, and a 30-day transaction max age. Step 3 describes the shipped #260 decoding and simulation gate.</li>
-        <li><b>The authority chain is the signature element on public pages too.</b> The copy says "session key", never "operator", because operator is reserved for the session-key feature and relayers are a separate role (<code>P-8</code>/<code>P-9</code>). Keys can only be set by a contract owner, and an NFT transfer clears them.</li>
-        <li><b>AI directors are the differentiator the review keeps.</b> Scope <code>0x35</code> omits CONFIRM, and the agent confirms only through its policy account. ERC-8004 is labelled display-only. The page never implies natural-language signing: a model drafts, and directors confirm decoded calldata. The copy separates what a contract enforces (session-key scope and expiry, in Chamber.sol) from what people enforce (the mandate, checked by the policy Safe's human co-signer). An agent account that enforces mandates on-chain is Phase 3 in the review, so the page doesn't claim one. The mandate matches Mandate v2 on <code>app-session-keys.html</code>.</li>
+        <li><b>The authority chain is the signature element on public pages too.</b> Only the NFT's owner can act for a seat. An agent acts through its owner's wallet, and an NFT transfer moves all authority to the new owner. Relayers are a separate role (<code>P-8</code>/<code>P-9</code>).</li>
+        <li><b>AI directors are the differentiator the review keeps.</b> The agent submits and confirms only through its policy account, the Safe that owns its seat. ERC-8004 is labelled display-only. The page never implies natural-language signing: a model drafts, and directors confirm decoded calldata. The copy separates what a contract enforces (only the seat's owner can act, in Chamber.sol) from what people enforce (the mandate, checked by the policy Safe's human co-signer). An agent account that enforces mandates on-chain is Phase 3 in the review, so the page doesn't claim one.</li>
         <li><b>Supply transparency</b> (<code>M-3</code>, <code>M-14</code>, <code>M-15</code>): LORE is owned by LoreMintGate, never directly by a Chamber and never by the team. Delay, window, cap, guardian and dual-control exits all match the gate spec. The budget and op #3 come from the indexer.</li>
         <li><b>Multichain is shown as gated and conditional.</b> It has no dates and no latency promise (the review cut the "15–30 s" claim). It is not framed as bridging or intents, and it is hub-and-spoke over native messengers (<code>D-8</code>, <code>P-19</code>). The gate text restates the review's full Phase 2 gate (<code>P-4</code>/<code>P-7</code>): at least 3 outside orgs with 3+ independent directors and a real proposal a week for 8 weeks, at least 3 of them multichain and asking for it, and the audit closed with 0 open critical/high. Relayers only deliver messages; they never authorize.</li>
         <li><b>Trust links go to one page</b> (<code>eco-trust.html</code>). The only audit wording is the placeholder line. The can/can't lists reflect <code>C-6</code> (Factory owned by the Team Safe through a 48h timelock), <code>M-2</code> (4-of-7 Safe, independent guardian) and each Chamber owning its ProxyAdmin. The markers are words ("Can't", "Can"), not a green check next to a power the team doesn't have. The "can" column admits that the Team Safe's LORE influences seating (<code>M-12</code>), because that is the first thing a skeptical reader would ask. The footer has no <code>docs.loreum.org</code> link because that host is broken (<code>D-5</code>). The whole page avoids the banned claims: audited, staking, yield, instant cross-chain and intents (<code>D-7</code>).</li>

@@ -29,10 +29,10 @@ are marked *(real)*.
 - `SEATING_DELAY` = 1 block. Seat-count changes: 7-day timelock (`SEAT_UPDATE_TIMELOCK`). Wallet tx max age 30 days.
 - Treasury (non-vault): 2,410,000 USDC, 184.2 ETH.
 
-### Board (rank, seat NFT, owner, delegated weight, seated since, session key)
-1. Explorer **#7**, **aria.eth** (EOA `0x51a0…7C3e`), 2,410,000 LORE, seated Feb 2, 2027, no session key
-2. Explorer **#12**, **kofi.eth** (Safe 2-of-3 `0x8b2d…11F0`), 1,905,000 LORE, seated Feb 2, 2027, session key `0xA11c…04e5` scope SUBMIT | REVOKE | CANCEL (0x31), expires Mar 28, 2027
-3. Explorer **#31**, **Treasury Agent** (policy account, a Safe `0x9aB3…40d1`; ERC-8004 agent #212, display only), 1,120,000 LORE, seated Feb 5, 2027, session key `0x7E0f…19b2` scope SUBMIT | EXECUTE | REVOKE | CANCEL (0x35), expires Mar 30, 2027. Confirms only through its policy account.
+### Board (rank, seat NFT, owner, delegated weight, seated since)
+1. Explorer **#7**, **aria.eth** (EOA `0x51a0…7C3e`), 2,410,000 LORE, seated Feb 2, 2027
+2. Explorer **#12**, **kofi.eth** (Safe 2-of-3 `0x8b2d…11F0`), 1,905,000 LORE, seated Feb 2, 2027
+3. Explorer **#31**, **Treasury Agent** (policy account, a Safe `0x9aB3…40d1`; ERC-8004 agent #212, display only), 1,120,000 LORE, seated Feb 5, 2027. The agent acts only through its Safe's policy module; Chamber sees the Safe as the owner.
 4. Explorer **#44**, **lena.eth** (EOA `0x3c7B…aa15`), 980,000 LORE, seated Feb 9, 2027
 5. Explorer **#58**, **marco.eth** (EOA `0xE2f0…6d3C`), 612,000 LORE, seated Feb 12, 2027
 - Next in line (not seated): Explorer **#63**, **nadia.eth**, 540,000 LORE, needs 72,001 more to take seat 5.
@@ -40,14 +40,14 @@ are marked *(real)*.
 - Pending seat-count change **5 → 6**: proposed Mar 11, 2027 09:30 UTC by Explorer #12, supported by #12 and #7 (2 of 3 needed), 7-day timelock ends Mar 18 09:30. Executing it raises quorum to 4, and open proposals need max(submit quorum, live quorum), so #46–#48 would need 4 confirmations.
 - lena.eth (Explorer #44 owner) holds 300,000 cLORE: 180,000 delegated to #44, 60,000 to #63, 60,000 undelegated.
 
-### Session-key scope bits (from Chamber.sol)
-SUBMIT = 1, CONFIRM = 2, EXECUTE = 4, UPDATE_SEATS = 8, REVOKE = 16, CANCEL = 32; UNSCOPED = type(uint32).max. Expiry is required. A newly set key can confirm/execute only after its live-at block (set delay). Keys are set by the NFT's current *contract* owner (EOA owners can't set keys); an NFT transfer clears the key.
+### Who can act for a seat (from Chamber.sol)
+Only the NFT's current owner (`ownerOf(tokenId)`). An agent acts through the owner's own wallet (a Safe module, or an ERC-4337 / ERC-7579 session key on a smart account). Chamber has no operators or key scopes. An NFT transfer moves all authority to the new owner.
 
 ### Transaction queue
 - **#48** "Upgrade Chamber implementation to v1.2.1" (self-call `upgradeImplementation`, **high risk**), 1/3, deadline Mar 30, 2027
 - **#47** "Execute LORE mint op #3 (250,000 LORE → Vesting)" (calls `LoreMintGate.execute(3)`), 2/3; simulation **reverts `NotReady`** until eta Mar 19, 2027 14:02 UTC
 - **#46** "Fund Q2 grants round: transfer 120,000 USDC to Grants Safe", 3/3, **ready to execute**, simulation passes (treasury −120,000 USDC), deadline Apr 12, 2027
-- **#45** executed Mar 9: "Co-sign the Treasury Agent Safe's `setDirectorOperator` for Explorer #31 (scope 0x35, expires Mar 30)". The Chamber can't set a key itself (only the NFT's contract owner can, and Chamber self-calls are limited to upgrade/pause/unpause), so the board approves the agent Safe's transaction with `approveHash` as one of its required signers.
+- **#45** executed Mar 9: "Co-sign the Treasury Agent Safe's `enableModule` for its policy module". The board is one of the Safe's required signers for owner-level changes, so it approves the Safe's transaction with `approveHash`.
 - **#43** executed Mar 12: "Queue LORE mint op #3 via LoreMintGate"
 - **#44** cancelled Mar 10 by cancel quorum: "Transfer 500,000 USDC to 0x9f3…" (unknown recipient)
 
@@ -63,7 +63,7 @@ SUBMIT = 1, CONFIRM = 2, EXECUTE = 4, UPDATE_SEATS = 8, REVOKE = 16, CANCEL = 32
 - Display state always comes from the indexer. RPC is only used at transaction time (simulate / preflight, write, receipt), and the UI says so where it matters.
 
 ### Proposal timeline (as rendered on the queue and proposal pages)
-- #46: submitted by kofi.eth's session key Mar 13 10:41 (1/3; a submit records the proposer's confirmation), Treasury Agent policy account confirmed Mar 13 15:20 (2/3, block 27,163,002), lena.eth confirmed Mar 14 09:30 (3/3).
+- #46: submitted by kofi.eth's Safe Mar 13 10:41 (1/3; a submit records the proposer's confirmation), Treasury Agent policy account confirmed Mar 13 15:20 (2/3, block 27,163,002), lena.eth confirmed Mar 14 09:30 (3/3).
 - #47: submitted by marco.eth Mar 14 11:05, kofi.eth's Safe confirmed Mar 15 16:20 (2/3). Deadline set to the gate op's expiry, Apr 2.
 - #48: submitted by aria.eth Mar 16 10:14 (1/3, block 27,183,075). The agent's mandate excludes upgrades.
 
@@ -74,7 +74,7 @@ SUBMIT = 1, CONFIRM = 2, EXECUTE = 4, UPDATE_SEATS = 8, REVOKE = 16, CANCEL = 32
 - Mar 12 14:02 — Gate op #3 queued: mint 250,000 LORE → Vesting (eta Mar 19)
 - Feb 26 09:40 — LORE totalSupply +100,000 (gate op #2 executed → Grants Safe)
 - Mar 14 03:10 — Indexer lag > 30 blocks on Ethereum (resolved 03:22)
-- Mar 9 16:55 — Session key set for Explorer #31 (scope 0x35)
+- Mar 9 16:55 — Policy module enabled on the Treasury Agent Safe (Explorer #31 owner)
 - No change — Team Safe threshold 4-of-7; LORE owner = LoreMintGate
 
 ## Phase 2 preview data (Sep 21, 2027, after GO)

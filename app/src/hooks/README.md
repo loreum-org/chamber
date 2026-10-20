@@ -167,7 +167,7 @@ function CustomTransaction() {
 
   const handleSubmit = async () => {
     await execute({
-      args: [tokenId, target, value, data],
+      args: [tokenId, target, value, data, '', 0n],
     })
   }
 

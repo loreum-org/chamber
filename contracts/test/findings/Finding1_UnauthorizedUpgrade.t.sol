@@ -8,6 +8,11 @@ import {IChamber} from "src/interfaces/IChamber.sol";
 import {MockERC20} from "test/mock/MockERC20.sol";
 import {MockERC721} from "test/mock/MockERC721.sol";
 import {DeployChamber} from "test/utils/DeployChamber.sol";
+import {ProxyAdmin} from "lib/openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
+import {
+    ITransparentUpgradeableProxy
+} from "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {Ownable} from "lib/openzeppelin-contracts/contracts/access/Ownable.sol";
 
 contract UnauthorizedUpgradeTest is Test {
     Registry public registry;
@@ -23,7 +28,8 @@ contract UnauthorizedUpgradeTest is Test {
         token = new MockERC20("Test Token", "TEST", 1000000e18);
         nft = new MockERC721("Mock NFT", "MNFT");
         implementation = new Chamber();
-        chamberAddress = address(DeployChamber.deployViaFactory(address(token), address(nft), 5, "Chamber Token", "CHMB", admin));
+        chamberAddress =
+            address(DeployChamber.deployViaFactory(address(token), address(nft), 5, "Chamber Token", "CHMB", admin));
         chamber = IChamber(chamberAddress);
     }
 
@@ -34,11 +40,17 @@ contract UnauthorizedUpgradeTest is Test {
         bytes32 implSlot = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
         address initialImpl = address(uint160(uint256(vm.load(chamberAddress, implSlot))));
 
-        // Attacker calls upgradeImplementation directly
-        // This function should be restricted and now reverts
+        // Since 1.3.0 the only upgrade path is the chamber-owned ProxyAdmin. An outsider calling it
+        // directly is rejected by Ownable.
+        ProxyAdmin proxyAdmin = ProxyAdmin(chamber.getProxyAdmin());
         vm.prank(attacker);
-        vm.expectRevert(IChamber.NotAuthorized.selector);
-        chamber.upgradeImplementation(address(maliciousImpl), "");
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, attacker));
+        proxyAdmin.upgradeAndCall(ITransparentUpgradeableProxy(chamberAddress), address(maliciousImpl), "");
+
+        // The removed `upgradeImplementation(address,bytes)` selector now reverts in the fallback.
+        vm.prank(attacker);
+        (bool ok,) = chamberAddress.call(abi.encodeWithSelector(bytes4(0xc89311b6), address(maliciousImpl), ""));
+        assertFalse(ok);
 
         // Verify upgrade did NOT happen
         address currentImpl = address(uint160(uint256(vm.load(chamberAddress, implSlot))));

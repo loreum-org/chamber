@@ -28,12 +28,13 @@ At any moment:
 1. Read how many **seats** the Chamber has (for example 5).  
 2. Take the **top 5 token IDs** from the leaderboard.  
 3. A wallet is a director for **token ID 42** only if:
-   - It **controls** that NFT — the connected address is the NFT **owner**, or a
-     **session key** the contract owner registered on Chamber — **and**
+   - It **owns** that NFT (`ownerOf(42)` is the caller) — **and**
    - Token **42** is still in the top seats.
 
 See **[Director authorization](./director-authorization.md)** for the exact
-caller list. Chamber does **not** accept ERC-1271 signatures (M-01).
+caller list. Chamber does **not** accept ERC-1271 signatures (M-01). Agents
+act through the owner's own wallet (a Safe module or smart-account session key),
+not through Chamber.
 
 If delegation shifts and token 42 drops out of the top five, that wallet is **no longer a director** — even if it was yesterday. That is different from a Safe where signers stay until someone manually removes them.
 

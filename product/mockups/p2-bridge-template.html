@@ -79,7 +79,6 @@
       <a class="brand" href="index.html"><span class="brand-mark">L</span><span>Loreum</span></a>
       <nav class="nav" aria-label="Main">
         <a href="app-overview.html" class="on">My Chambers</a>
-        <a href="app-session-keys.html">Operators</a>
         <a href="#">Deploy Chamber</a>
         <a href="#">Compliance</a>
         <a href="app-migrate.html">Migrate from Safe</a>
@@ -126,7 +125,6 @@
     <a href="app-queue.html">Queue <span class="badge warn">2</span></a>
     <a href="p2-multichain-treasury.html" class="on">Treasury</a>
     <a href="app-supply-authority.html">Supply authority</a>
-    <a href="app-session-keys.html">Session keys</a>
     <a href="p2-multichain-treasury.html#spokes">Spokes <span class="badge warn">Preview</span></a>
   </nav>
 
@@ -430,7 +428,7 @@
       <li><b>Fill deadline is relative to execution.</b> The template uses fillDeadlineOffset, so time spent in approval doesn't eat the fill window. fillDeadlineBuffer is a per-deployment immutable, so the simulation reads it from the SpokePool instead of hardcoding it (P-10 correction a). That read happens only inside the user-triggered simulation, which keeps draft-time RPC at zero.</li>
       <li><b>Recipient is locked.</b> This proposes an answer to phase 2 open question 2: an allowlist of only this board's registered spoke Safes, read from the indexer's spoke_config. "Move any asset anywhere" isn't a feature. Paying an outside party on Base is a separate spoke action with its own delay.</li>
       <li><b>Exact approve, deposit, revoke, all atomic.</b> Each nonce is one call, so an ERC-20 bridge needs approve then deposit (P-13). executeBatchTransactions (Chamber.sol:797) makes the three legs atomic. The revoke leg protects against an upgradeable spender pulling less than approved (P-10 threat section). Metadata is director-written and untrusted, so the final leg commits to every leg's hash and the app verifies that commitment against indexer rows (P-13 review note). The UI states that the contract can't enforce bundle-only execution.</li>
-      <li><b>Submission tradeoff.</b> This shows n prompts through the deadline overload (P-28), which keeps the deadline and metadata. The alternative, one prompt through submitBatchTransactions, gives a 30-day default deadline and no metadata (phase 2 open question 3).</li>
+      <li><b>Submission tradeoff.</b> This shows n prompts through <code>submitTransaction</code>, which takes a deadline and metadata for each leg. The alternative, one prompt through submitBatchTransactions, gives a 30-day default deadline and no metadata (phase 2 open question 3).</li>
       <li><b>Canonical bridge comparison, honestly.</b> For Ethereum → Base the canonical route delivers in about 1–3 minutes. Its 7-day delay applies only to withdrawals back to Ethereum, which the table says doesn't apply here. The deciding difference is the token: the standard bridge gives bridged USDC, and a wrong L2 token bounces back as a 7-day withdrawal (P-10). No "seconds for everything" claim: Across is fast only because relayers front their own capital.</li>
       <li><b>Tracking without RPC.</b> Status comes from the indexer's <code>bridge_transfer</code> table. It decodes FundsDeposited from the execute receipt, and a sidecar asks the Across status API only while a row is pending (P-16). The card refetches GraphQL only while a row is pending and the tab is visible (P-17), so idle spokes cost nothing.</li>
       <li><b>Simulation runs at transaction time only.</b> It runs the bundle in order as the Chamber, plus destination checks through an on-demand Base client that is never registered as a wagmi chain (P-15, P-29). The panel names the block and says it used RPC. The fill itself can't be simulated, and the panel says that too. The #260 decoder is chain-aware and uses 6 decimals for USDC (P-14), and cross-chain targets get the P-30 warning.</li>

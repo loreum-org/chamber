@@ -83,7 +83,6 @@
       <a class="brand" href="index.html"><span class="brand-mark">L</span><span>Loreum</span></a>
       <nav class="nav" aria-label="Main">
         <a href="app-overview.html" class="on">My Chambers</a>
-        <a href="app-session-keys.html">Operators</a>
         <a href="#">Deploy Chamber</a>
         <a href="#">Compliance</a>
         <a href="app-migrate.html">Migrate from Safe</a>
@@ -124,7 +123,6 @@
     <a href="app-queue.html">Queue <span class="badge warn">3</span></a>
     <a href="p2-multichain-treasury.html">Treasury</a>
     <a href="app-supply-authority.html">Supply authority</a>
-    <a href="app-session-keys.html">Session keys</a>
   </nav>
 
   <!-- Stat row -->
@@ -175,9 +173,9 @@
         <div class="auth" aria-label="Authority chain for your seat">
           <div class="node seat"><span class="k">Seat · rank 4</span><span class="v">Explorer #44</span></div>
           <div class="node"><span class="k">Owner · EOA</span><span class="v">lena.eth <span class="mono faint">0x3c7B…aa15</span></span></div>
-          <div class="node key"><span class="k">Session key</span><span class="v muted">None</span></div>
+          <div class="node key"><span class="k">Signed by</span><span class="v">Owner wallet</span></div>
         </div>
-        <p class="faint" style="font-size:12px;margin-top:8px">You sign from the owner wallet. Only a contract owner, such as a Safe, can set a session key.</p>
+        <p class="faint" style="font-size:12px;margin-top:8px">You sign from the owner wallet. Only the NFT's owner can act for this seat.</p>
       </div>
 
       <ol class="att">
@@ -241,8 +239,6 @@
           <div class="acts"><a class="btn sm" href="app-board.html#seat-change">Review seat change</a></div>
         </li>
       </ol>
-      <div class="divider"></div>
-      <p class="faint" style="font-size:12.5px">Also on the board: Explorer #12's session key expires Mar 28, 2027 (in 12 days). kofi.eth renews it from their Safe.</p>
     </section>
 
     <!-- Side column -->
@@ -318,23 +314,23 @@
         <div class="auth mini">
           <div class="node seat"><span class="k">Seat</span><span class="v">Explorer #7</span></div>
           <div class="node"><span class="k">Owner</span><span class="v">aria.eth · EOA</span></div>
-          <div class="node key"><span class="k">Session key</span><span class="v muted">None</span></div>
+          <div class="node key"><span class="k">Signed by</span><span class="v">Owner wallet</span></div>
         </div>
       </div>
       <div class="seat">
-        <div class="hd"><span><span class="num">2</span> · <span class="num">1,905,000</span> LORE</span><span class="faint">Key expires Mar 28</span></div>
+        <div class="hd"><span><span class="num">2</span> · <span class="num">1,905,000</span> LORE</span></div>
         <div class="auth mini">
           <div class="node seat"><span class="k">Seat</span><span class="v">Explorer #12</span></div>
           <div class="node"><span class="k">Owner</span><span class="v">kofi.eth · Safe 2-of-3</span></div>
-          <div class="node key"><span class="k">Session key · 0x31</span><span class="v mono">0xA11c…04e5</span></div>
+          <div class="node key"><span class="k">Signed by</span><span class="v">Safe 2-of-3</span></div>
         </div>
       </div>
       <div class="seat">
-        <div class="hd"><span><span class="num">3</span> · <span class="num">1,120,000</span> LORE · <span class="badge acc">Agent director</span></span><span class="faint">Key expires Mar 30</span></div>
+        <div class="hd"><span><span class="num">3</span> · <span class="num">1,120,000</span> LORE · <span class="badge acc">Agent director</span></span></div>
         <div class="auth mini">
           <div class="node seat"><span class="k">Seat</span><span class="v">Explorer #31</span></div>
           <div class="node"><span class="k">Owner</span><span class="v">Treasury Agent · policy Safe</span></div>
-          <div class="node key"><span class="k">Session key · 0x35</span><span class="v mono">0x7E0f…19b2</span></div>
+          <div class="node key"><span class="k">Signed by</span><span class="v">Agent via owner's Safe</span></div>
         </div>
       </div>
       <div class="seat">
@@ -342,7 +338,7 @@
         <div class="auth mini">
           <div class="node seat"><span class="k">Seat</span><span class="v">Explorer #44</span></div>
           <div class="node"><span class="k">Owner</span><span class="v">lena.eth · EOA</span></div>
-          <div class="node key"><span class="k">Session key</span><span class="v muted">None</span></div>
+          <div class="node key"><span class="k">Signed by</span><span class="v">Owner wallet</span></div>
         </div>
       </div>
       <div class="seat">
@@ -350,7 +346,7 @@
         <div class="auth mini">
           <div class="node seat"><span class="k">Seat</span><span class="v">Explorer #58</span></div>
           <div class="node"><span class="k">Owner</span><span class="v">marco.eth · EOA</span></div>
-          <div class="node key"><span class="k">Session key</span><span class="v muted">None</span></div>
+          <div class="node key"><span class="k">Signed by</span><span class="v">Owner wallet</span></div>
         </div>
       </div>
       <div class="inset" style="margin-top:10px">
@@ -416,7 +412,7 @@
               <div class="node seat"><span class="v">Explorer #31</span></div>
               <div class="node"><span class="v">Treasury Agent policy Safe <span class="mono faint">0x9aB3…40d1</span></span></div>
             </div>
-            <p class="faint" style="font-size:12px;margin-top:4px">Through the agent's policy account, after its mandate check passed. Its session key has no CONFIRM bit.</p>
+            <p class="faint" style="font-size:12px;margin-top:4px">Through its owner's Safe policy module, after its mandate check passed.</p>
           </div>
         </li>
         <li>
@@ -425,10 +421,9 @@
             <div class="what">Submitted <span class="num">#46</span>: Fund Q2 grants round · 1 of 3</div>
             <div class="auth mini">
               <div class="node seat"><span class="v">Explorer #12</span></div>
-              <div class="node"><span class="v">kofi.eth · Safe</span></div>
-              <div class="node key"><span class="v mono">0xA11c…04e5</span></div>
+              <div class="node"><span class="v">kofi.eth · Safe 2-of-3</span></div>
             </div>
-            <p class="faint" style="font-size:12px;margin-top:4px">Sent by the session key (scope 0x31). The key has no CONFIRM bit, but the submit still counts as Explorer #12's confirmation.</p>
+            <p class="faint" style="font-size:12px;margin-top:4px">Sent from kofi.eth's Safe. The submit counts as Explorer #12's confirmation.</p>
           </div>
         </li>
         <li>
@@ -443,7 +438,7 @@
               <div class="node seat"><span class="v">Explorer #12</span></div>
               <div class="node"><span class="v">kofi.eth · Safe 2-of-3</span></div>
             </div>
-            <p class="faint" style="font-size:12px;margin-top:4px">Signed by the Safe. The session key has no UPDATE_SEATS bit.</p>
+            <p class="faint" style="font-size:12px;margin-top:4px">Signed by the Safe.</p>
           </div>
         </li>
         <li>
@@ -452,7 +447,7 @@
         </li>
         <li>
           <div class="when">Mar 9 16:55</div>
-          <div class="what">Executed Proposal <span class="num">#45</span>: set session key for Explorer #31 (scope 0x35, expires Mar 30).</div>
+          <div class="what">Executed Proposal <span class="num">#45</span>: co-signed the Treasury Agent Safe's <code>enableModule</code> for its policy module.</div>
         </li>
       </ol>
       <div style="margin-top:10px"><a href="app-queue.html">Full history in the queue →</a></div>
@@ -466,14 +461,14 @@
       <li>Vault assets and treasury are separate stats. <code>totalAssets</code> is the Chamber's LORE balance and backs cLORE; USDC and ETH in the wallet don't. Showing them together would invite people to read the treasury as share backing. The review makes the same point about spoke balances, which must never count toward <code>totalAssets</code> (<code>I-20</code>, review "Don't move vault assets to spokes").</li>
       <li>Quorum shows the formula and the reachable count, not just "3". Quorum uses reachable directors (<code>BoardLib.quorumFor</code>, PMN-M01): a seat whose NFT can't be resolved, or that the Chamber itself holds, doesn't count. Each proposal needs the higher of its submit-time quorum and the live quorum.</li>
       <li>The attention list is computed from indexer rows for the connected wallet's seat and ordered by what this person can do now. It replaces the old "Recent transactions" panel, which listed raw targets and ETH values. Each button names the exact action (<code>Execute #46</code>, <code>Review #48</code>). Interactions between items are spelled out, for example that the pending seat change would raise #46 to 4 confirmations (<code>_requiredConfirmations</code> = max(submit, live)).</li>
-      <li>The authority chain (seat → owner → session key) opens the page, because it answers "who am I acting as?" before any button. lena.eth owns her NFT from an EOA, so there's no session key: only a contract owner can set one. Copy says "session key", never "operator" (<code>P-8</code>, <code>P-9</code>).</li>
+      <li>The authority chain (seat → owner → signer) opens the page, because it answers "who am I acting as?" before any button. lena.eth owns her NFT from an EOA and signs from it. Only the NFT's owner can act for a seat; an agent acts through its owner's wallet.</li>
       <li>The page never shows a simulation result it didn't just run. Simulation is RPC, so it happens at transaction time, inside the execute flow (#260, <code>txSimulation.ts</code>). The overview only says that it will run.</li>
       <li>High-risk items get the red badge and an explicit consequence: an upgrade executes immediately at quorum and has no delay. Risk classification comes from the #260 decoder. The proposal page does the full review.</li>
       <li>Gate op #3 and Chamber tx #47 are shown as one item, because they're one decision: the Chamber proposes, LoreMintGate enforces the 7-day wait, and #47 executes after the eta. The countdown uses the indexer head clock (<code>useIndexerHead</code>), not <code>useBlockNumber</code> or the wall clock (<code>I-10</code>, <code>I-26</code>, <code>M-15</code>).</li>
       <li>The supply authority summary is the M-15 panel in small: LORE owner, proposer, guardian, cap usage and pending ops, all from the indexer (<code>M-14</code>, <code>I-25</code>). LORE's owner is LoreMintGate, never the Chamber (review "Critical: the LORE handoff…", <code>M-3</code>, <code>D-9</code> ADR-0003). If the owner ever differs from the expected gate, or an exit op is queued, the badge turns red and a banner appears across every Loreum DAO page (<code>M-15</code>, <code>M-17</code>).</li>
       <li>The freshness card explains the top-bar chip in plain words: which block the page shows, the estimated head, and that display RPC is zero. It links to the state sheet. Freshness comes from polling the indexer while the tab is visible, which replaces the Alchemy WebSocket subscription; hidden tabs make no requests (<code>I-10</code>, <code>I-19</code>).</li>
       <li>The board summary lists every seat with its full chain, because 5 seats fit. The agent director is labelled, and its seat shows its policy Safe as owner. ERC-8004 identity is display only. "Next in line" shows the exact margin (612,000 − 540,000 + 1), so delegators can see how close the seat line is (<code>I-13</code>).</li>
-      <li>Activity comes from typed <code>chamberEvent</code> columns (actor, tokenId, nonce), not per-event RPC or <code>getLogs</code> from block 0 (<code>I-6</code>). Each actor is rendered as its authority chain, so you can see whether an owner, a Safe or a session key acted. Submissions show their count because <code>submitTransaction*</code> records the proposer's confirmation (WalletLib calls <code>confirmTransaction</code>). That means a SUBMIT-only key, like #12's, still adds its seat's confirmation. Whether that should stay is a <code>C-17</code> pre-freeze question. Watcher alerts (<code>M-17</code>, <code>I-33</code>) appear inline. Times and blocks match the queue and proposal pages.</li>
+      <li>Activity comes from typed <code>chamberEvent</code> columns (actor, tokenId, nonce), not per-event RPC or <code>getLogs</code> from block 0 (<code>I-6</code>). Each actor is rendered as its authority chain, so you can see whether an owner EOA, a Safe or an agent through its owner's Safe acted. Submissions show their count because <code>submitTransaction</code> records the proposer's confirmation (WalletLib calls <code>confirmTransaction</code>). Watcher alerts (<code>M-17</code>, <code>I-33</code>) appear inline. Times and blocks match the queue and proposal pages.</li>
       <li>Proposal numbers and Explorer token IDs overlap (#44 is both a cancelled proposal and lena's seat). Copy always says "Proposal #44" or "Explorer #44" where both could appear.</li>
     </ol>
   </section>

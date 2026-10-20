@@ -8,13 +8,13 @@ Chamber’s **trust surface** is the Solidity in **`contracts/src/`** (`Factory`
 
 - **Vault funds** — ERC‑4626 shares and underlying assets.  
 - **Governance integrity** — delegation, seat ranking, quorum, proposal lifecycle.  
-- **Upgrade path** — ProxyAdmin + `upgradeImplementation` only through controlled queue rules.
+- **Upgrade path** — a quorum transaction to the chamber-owned ProxyAdmin (`upgradeAndCall`) is the only path since 1.3.0. ProxyAdmin is the single upgrade path and has no version or migration checks of its own; the board is responsible for what it approves.
 
 ## Review phases
 
 1. **Architecture** — inheritance, storage slots, Factory → Chamber deploy path.  
 2. **Per-function analysis** — access control, reentrancy, arithmetic, external calls.  
-3. **Cross-contract** — delegation vs transfers, stale confirmations, owner / session-key director auth.  
+3. **Cross-contract** — delegation vs transfers, stale confirmations, owner-only director auth (Chamber session keys were removed in 1.3.0).  
 4. **Tooling** — Slither, Foundry tests/fuzz, manual threat modeling.
 
 ## Common question areas

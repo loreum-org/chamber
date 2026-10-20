@@ -3,7 +3,7 @@
  *
  * DecodedTxSummary — plain-English action line with a labelled counterparty,
  * USD value of any ETH/token transfer, and an expandable raw-calldata section.
- * It makes no RPC reads: token metadata comes from the built-in list or from
+ * It makes no RPC reads (the ProxyAdmin address is passed in): token metadata comes from the built-in list or from
  * the transaction-time simulation.
  * TxSimulationPanel — runs the pending action as an impersonated eth_call,
  * renders a before/after state diff, and surfaces the revert reason so the
@@ -141,6 +141,7 @@ export function DecodedTxSummary({
   dataHash,
   functionNameHint,
   simulatedToken,
+  proxyAdmin,
 }: {
   chainId: number
   chamberAddress: Address
@@ -152,10 +153,12 @@ export function DecodedTxSummary({
   functionNameHint?: string
   /** Token metadata from a simulation run on this card, if any. */
   simulatedToken?: SimTokenMeta
+  /** The chamber's ProxyAdmin, if known; ownership calls to it render as high risk. */
+  proxyAdmin?: Address
 }) {
   const decoded = useMemo(
-    () => decodeTransactionAction({ target, value, calldata, functionNameHint }),
-    [target, value, calldata, functionNameHint],
+    () => decodeTransactionAction({ target, value, calldata, functionNameHint, proxyAdmin }),
+    [target, value, calldata, functionNameHint, proxyAdmin],
   )
 
   const intent = decoded?.intent ?? null
@@ -263,6 +266,17 @@ export function DecodedTxSummary({
             ))}
           </>
         )}
+        {decoded?.highRisk && (
+          <>
+            <span className="inline-flex items-center gap-1.5">
+              <FiAlertTriangle className="w-4 h-4 text-red-400" />
+              <span className="text-red-300 font-medium">{decoded.summary}</span>
+            </span>
+            {counterparties.map((c) => (
+              <CounterpartyLabel key={c.address} address={c.address} chainId={chainId} knownLabel={c.knownLabel} />
+            ))}
+          </>
+        )}
         {decoded?.isChamberSelfCall && (
           <>
             <span className="inline-flex items-center gap-1.5">
@@ -274,7 +288,7 @@ export function DecodedTxSummary({
             ))}
           </>
         )}
-        {!intent && !decoded?.isChamberSelfCall && decoded && (
+        {!intent && !decoded?.isChamberSelfCall && !decoded?.highRisk && decoded && (
           <span className="text-slate-300">{decoded.summary}</span>
         )}
       </div>

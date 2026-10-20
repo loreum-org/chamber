@@ -49,6 +49,7 @@ library BoardTypes {
         uint32 size;
         uint32 seats;
         mapping(uint256 tokenId => uint256 seatedAtBlock) seatedAt;
+        /// @dev Unused since 1.3.0 (pre-upgrade delegation backfill removed). Kept for layout stability.
         EnumerableSet.UintSet evictedTokenIds;
         /// @dev `ownerOf` snapshotted when seating last bound. Appended so existing ERC-7201 slots stay stable.
         mapping(uint256 tokenId => address) seatedOwner;
