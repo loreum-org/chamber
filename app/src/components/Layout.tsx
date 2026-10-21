@@ -11,9 +11,9 @@ import { erc721Abi, erc20Abi } from '@/contracts'
 import { formatLocalTestMintToast, formatWalletSendError } from '@/lib/utils'
 import toast from 'react-hot-toast'
 
-const navItems = [
+const navItems: { path: string; label: string; umamiEvent?: string }[] = [
   { path: '/', label: 'My Chambers' },
-  { path: '/deploy', label: 'Deploy Chamber' },
+  { path: '/deploy', label: 'Deploy Chamber', umamiEvent: 'cta-create-chamber' },
   { path: '/compliance', label: 'Compliance' },
   { path: '/docs', label: 'Docs' },
 ]
@@ -165,6 +165,7 @@ export default function Layout() {
                     key={item.path}
                     to={item.path}
                     aria-current={isActive ? 'page' : undefined}
+                    {...(item.umamiEvent ? { 'data-umami-event': item.umamiEvent } : {})}
                     className={`px-3 py-1.5 rounded-md text-[13px] transition-colors ${
                       isActive
                         ? 'text-slate-100 bg-surface-2'
@@ -202,6 +203,7 @@ export default function Layout() {
                   key={item.path}
                   to={item.path}
                   onClick={() => setMobileMenuOpen(false)}
+                  {...(item.umamiEvent ? { 'data-umami-event': item.umamiEvent } : {})}
                   className={`block px-3 py-2.5 rounded-md text-sm ${
                     isActive ? 'text-slate-100 bg-surface-2' : 'text-slate-400 hover:text-slate-100 hover:bg-surface-2'
                   }`}

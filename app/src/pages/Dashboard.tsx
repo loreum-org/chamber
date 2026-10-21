@@ -146,7 +146,7 @@ export default function Dashboard() {
         title="My chambers"
         description="Chambers you created, direct, or hold shares in."
         actions={
-          <Link to="/deploy" className="btn btn-primary">
+          <Link to="/deploy" className="btn btn-primary" data-umami-event="cta-create-chamber">
             Deploy chamber
           </Link>
         }
@@ -293,7 +293,7 @@ function EmptyChambers({ disconnected = false }: { disconnected?: boolean }) {
           : 'Deploy a chamber, or open one by address if it is not in this wallet’s list yet.'
       }
       action={
-        <Link to="/deploy" className="btn btn-primary">
+        <Link to="/deploy" className="btn btn-primary" data-umami-event="cta-create-chamber">
           Deploy a chamber
         </Link>
       }

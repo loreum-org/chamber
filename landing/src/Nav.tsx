@@ -59,7 +59,7 @@ export default function Nav({ active = 'none' }: { active?: NavKey }) {
         </nav>
 
         <div className="flex items-center gap-3">
-          <a href={chamberAppUrl} className="btn btn-primary !py-2 !px-4 text-[13px]">
+          <a href={chamberAppUrl} className="btn btn-primary !py-2 !px-4 text-[13px]" data-umami-event="cta-launch-app">
             Open the app
           </a>
           <button
