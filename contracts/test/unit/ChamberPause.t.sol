@@ -53,7 +53,7 @@ contract ChamberPauseTest is Test {
         deal(address(chamber), 1 ether);
 
         vm.prank(user1);
-        chamber.submitTransaction(1, recipient, 1 ether, data);
+        chamber.submitTransaction(1, recipient, 1 ether, data, "", 0);
         vm.prank(user2);
         chamber.confirmTransaction(2, 0);
         vm.prank(user3);
@@ -88,7 +88,7 @@ contract ChamberPauseTest is Test {
         deal(address(chamber), 1 ether);
 
         vm.prank(user1);
-        chamber.submitTransaction(1, recipient, 1 ether, data);
+        chamber.submitTransaction(1, recipient, 1 ether, data, "", 0);
         vm.prank(user2);
         chamber.confirmTransaction(2, 0);
         vm.prank(user3);
@@ -115,7 +115,7 @@ contract ChamberPauseTest is Test {
         bytes memory pauseData = abi.encodeWithSelector(IChamber.pause.selector);
         vm.prank(stranger);
         vm.expectRevert(IChamber.NotDirector.selector);
-        chamber.submitTransaction(999, address(chamber), 0, pauseData);
+        chamber.submitTransaction(999, address(chamber), 0, pauseData, "", 0);
     }
 
     function test_DirectorDirectPause_Reverts() public {
@@ -148,7 +148,7 @@ contract ChamberPauseTest is Test {
     function test_SubmitPauseSelector_Allowed() public {
         bytes memory pauseData = abi.encodeWithSelector(IChamber.pause.selector);
         vm.prank(user1);
-        chamber.submitTransaction(1, address(chamber), 0, pauseData);
+        chamber.submitTransaction(1, address(chamber), 0, pauseData, "", 0);
 
         (,, address target,, bytes32 dataHash) = chamber.getTransaction(0);
         assertEq(target, address(chamber));
@@ -200,7 +200,7 @@ contract ChamberPauseTest is Test {
         uint256 txId = chamber.getTransactionCount();
 
         vm.prank(user1);
-        chamber.submitTransaction(1, address(chamber), 0, data);
+        chamber.submitTransaction(1, address(chamber), 0, data, "", 0);
         vm.prank(user2);
         chamber.confirmTransaction(2, txId);
         vm.prank(user3);

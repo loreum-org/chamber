@@ -157,7 +157,7 @@ contract FindingM02SharedGuardSlotTest is Test {
         deal(address(chamber), 1 ether);
 
         vm.prank(user2);
-        chamber.submitTransaction(2, address(target), 0.1 ether, "");
+        chamber.submitTransaction(2, address(target), 0.1 ether, "", "", 0);
         vm.prank(user3);
         chamber.confirmTransaction(3, 0);
         vm.prank(user2);

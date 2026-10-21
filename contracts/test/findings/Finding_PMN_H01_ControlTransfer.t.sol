@@ -71,7 +71,7 @@ contract FindingPMNH01ControlTransferTest is Test {
     /// @notice H-02 regression: a tokenId that newly enters the top-seat set waits the delay.
     function test_PMNH01_newTopSeatStillWaitsDelay() public {
         vm.prank(user1);
-        chamber.submitTransaction(1, address(0x3), 0, "");
+        chamber.submitTransaction(1, address(0x3), 0, "", "", 0);
 
         _seat(user3, 3, 50 ether);
 
@@ -79,7 +79,7 @@ contract FindingPMNH01ControlTransferTest is Test {
 
         vm.prank(user3);
         vm.expectRevert(IChamber.DirectorNotSeated.selector);
-        chamber.submitTransaction(3, address(0x3), 0, "");
+        chamber.submitTransaction(3, address(0x3), 0, "", "", 0);
 
         vm.prank(user3);
         vm.expectRevert(IChamber.DirectorNotSeated.selector);
@@ -94,64 +94,13 @@ contract FindingPMNH01ControlTransferTest is Test {
         assertTrue(chamber.getConfirmation(2, 0), "existing seated director can still confirm");
     }
 
-    /// @notice Keep current session-key behavior: transfer clears the previous operator.
-    function test_PMNH01_sessionKeyClearsOnTransfer() public {
-        address sessionKey = address(0xB0B);
-        MockERC1271Wallet wallet = new MockERC1271Wallet(address(0xDEAD));
-
-        nft.mintWithTokenId(address(wallet), 4);
-        token.mint(user1, 50 ether);
-        vm.startPrank(user1);
-        token.approve(address(chamber), 50 ether);
-        chamber.deposit(50 ether, user1);
-        chamber.delegate(4, 50 ether);
-        vm.stopPrank();
-        vm.roll(block.number + SEATING_DELAY);
-
-        wallet.execute(
-            address(chamber),
-            abi.encodeCall(
-                chamber.setDirectorOperator,
-                (4, sessionKey, block.timestamp + 30 days, chamber.SESSION_SCOPE_UNSCOPED())
-            )
-        );
-        assertEq(ChamberReads.directorOperator(chamber, 4), sessionKey);
-        assertTrue(chamber.isTokenAuthorized(4, sessionKey));
-
-        MockERC1271Wallet newWallet = new MockERC1271Wallet(address(0xBEEF));
-        vm.prank(address(wallet));
-        nft.transferFrom(address(wallet), address(newWallet), 4);
-
-        assertEq(ChamberReads.directorOperator(chamber, 4), address(0), "session key is stale after transfer");
-        assertFalse(chamber.isTokenAuthorized(4, sessionKey));
-        assertTrue(chamber.isTokenAuthorized(4, address(newWallet)), "only the new owner is authorized");
-
-        vm.prank(sessionKey);
-        vm.expectRevert(IChamber.NotDirector.selector);
-        chamber.submitTransaction(4, address(0x3), 0, "");
-
-        uint32 unscoped = type(uint32).max;
-        vm.prank(sessionKey);
-        vm.expectRevert(IChamber.NotDirector.selector);
-        chamber.setDirectorOperator(4, address(0xFEE1), block.timestamp + 30 days, unscoped);
-
-        address newKey = address(0xA11);
-        newWallet.execute(
-            address(chamber),
-            abi.encodeCall(
-                chamber.setDirectorOperator, (4, newKey, block.timestamp + 30 days, chamber.SESSION_SCOPE_UNSCOPED())
-            )
-        );
-        assertEq(ChamberReads.directorOperator(chamber, 4), newKey, "only the new owner can register a session key");
-    }
-
     /// @notice Solution A: transferring a mature seated token resets the seating clock.
     function test_PMNH01_controlTransfer_caseA_resetsClock() public {
         uint256 seatedAtBefore = chamber.getSeatedAt(1);
         assertTrue(block.number >= seatedAtBefore, "precondition: token 1 is mature");
 
         vm.prank(user1);
-        chamber.submitTransaction(1, address(0x3), 0, "");
+        chamber.submitTransaction(1, address(0x3), 0, "", "", 0);
 
         vm.prank(user1);
         nft.transferFrom(user1, userB, 1);
@@ -165,7 +114,7 @@ contract FindingPMNH01ControlTransferTest is Test {
 
         vm.prank(userB);
         vm.expectRevert(IChamber.DirectorNotSeated.selector);
-        chamber.submitTransaction(1, address(0x3), 0, "");
+        chamber.submitTransaction(1, address(0x3), 0, "", "", 0);
 
         vm.prank(userB);
         vm.expectRevert(IChamber.DirectorNotSeated.selector);
@@ -179,7 +128,7 @@ contract FindingPMNH01ControlTransferTest is Test {
         assertTrue(block.number >= chamber.getSeatedAt(1));
 
         vm.prank(userB);
-        chamber.submitTransaction(1, address(0x3), 0, "");
+        chamber.submitTransaction(1, address(0x3), 0, "", "", 0);
         assertEq(chamber.getTransactionCount(), 2, "new controller can submit after the reset delay");
     }
 
@@ -188,7 +137,7 @@ contract FindingPMNH01ControlTransferTest is Test {
         deal(address(chamber), 1 ether);
 
         vm.prank(user1);
-        chamber.submitTransaction(1, address(0x4), 1 ether, "");
+        chamber.submitTransaction(1, address(0x4), 1 ether, "", "", 0);
         vm.prank(user2);
         chamber.confirmTransaction(2, 0);
         assertTrue(chamber.getConfirmation(1, 0), "A confirmed before transfer");

@@ -44,7 +44,7 @@ contract FindingR1012ApprovalPullTest is Test {
         bytes memory d = abi.encodeCall(IERC20.transferFrom, (victim, address(0x1), 500 ether));
         vm.prank(address(0x1));
         vm.expectRevert(IWallet.InvalidTarget.selector);
-        chamber.submitTransaction(1, address(token), 0, d);
+        chamber.submitTransaction(1, address(token), 0, d, "", 0);
     }
 
     function test_cannotBatchSubmitTransferFromThirdParty() public {
@@ -63,11 +63,11 @@ contract FindingR1012ApprovalPullTest is Test {
         bytes memory d = abi.encodeCall(IERC20.transferFrom, (address(chamber), address(0x1), 0));
         vm.prank(address(0x1));
         vm.expectRevert(IWallet.InvalidTarget.selector);
-        chamber.submitTransaction(1, address(token), 0, d);
+        chamber.submitTransaction(1, address(token), 0, d, "", 0);
 
         vm.startPrank(address(0x1));
-        chamber.submitTransaction(1, address(token), 0, abi.encodeCall(IERC20.transfer, (address(0x1), 0)));
-        chamber.submitTransaction(1, address(token), 0, abi.encodeCall(IERC20.approve, (address(0x1), 0)));
+        chamber.submitTransaction(1, address(token), 0, abi.encodeCall(IERC20.transfer, (address(0x1), 0)), "", 0);
+        chamber.submitTransaction(1, address(token), 0, abi.encodeCall(IERC20.approve, (address(0x1), 0)), "", 0);
         vm.stopPrank();
     }
 
@@ -75,6 +75,6 @@ contract FindingR1012ApprovalPullTest is Test {
         MockERC20 other = new MockERC20("O", "O", 0);
         bytes memory d = abi.encodeCall(IERC20.transferFrom, (address(chamber), address(0x1), 0));
         vm.prank(address(0x1));
-        chamber.submitTransaction(1, address(other), 0, d);
+        chamber.submitTransaction(1, address(other), 0, d, "", 0);
     }
 }

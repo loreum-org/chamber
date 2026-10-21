@@ -115,6 +115,7 @@ const KNOWN_ACTION_ABI = parseAbi([
   'function pause()',
   'function unpause()',
   'function upgradeImplementation(address newImplementation, bytes data)',
+  'function upgradeAndCall(address proxy, address implementation, bytes data)',
   'function deposit()',
   'function deposit(uint256 assets, address receiver)',
   'function withdraw(uint256 amount)',
@@ -176,7 +177,9 @@ function summarizeDecodedCall(name: string, args: readonly unknown[] | undefined
     case 'unpause':
       return 'Unpause'
     case 'upgradeImplementation':
-      return `Upgrade implementation to ${formatDecodedArg(a[0])}`
+      return `Upgrade implementation to ${formatDecodedArg(a[0])} (legacy)`
+    case 'upgradeAndCall':
+      return `Upgrade implementation to ${formatDecodedArg(a[1])} via ProxyAdmin`
     case 'deposit':
       return a.length >= 1 ? `Deposit ${formatDecodedArg(a[0])}` : 'Deposit'
     case 'withdraw':

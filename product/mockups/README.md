@@ -22,7 +22,7 @@ notes that cite the plan tasks it implements (for example `M-15`, `I-10`,
 
 | Group | Pages |
 |---|---|
-| App · governance (M1) | `app-overview`, `app-board`, `app-queue`, `app-proposal`, `app-session-keys`, `app-migrate`, `app-indexer-states` |
+| App · governance (M1) | `app-overview`, `app-board`, `app-queue`, `app-proposal`, `app-migrate`, `app-indexer-states` |
 | Supply authority & safety (M1) | `app-supply-authority`, `app-guardian`, `app-handoff-preflight` |
 | Phase 2 previews (gated) | `p2-multichain-treasury`, `p2-cross-chain-proposal`, `p2-bridge-template` |
 | Ecosystem | `eco-landing`, `eco-explorers`, `eco-trust` |
@@ -33,7 +33,7 @@ notes that cite the plan tasks it implements (for example `M-15`, `I-10`,
 
 - **Design system:** Chamber Design System v1.0 (epic #258): IBM Plex Sans/Mono,
   weights 300/400/600, one functional accent (#4A2F8F), depth by surface
-  layering, the authority chain (seat → owner → session key) as the signature
+  layering, the authority chain (seat → owner → signer) as the signature
   element, and destructive actions as a ghost button plus a typed confirmation.
   The Explorers site is the exception: it's a bold, art-forward showcase.
 - **Reads:** all display state comes from chamber-indexer, with a freshness chip

@@ -72,7 +72,7 @@ contract FindingPMNM01ReachableQuorumTest is Test {
 
         deal(address(chamber), 1 ether);
         vm.prank(user1);
-        chamber.submitTransaction(1, spendTarget, 1 ether, "");
+        chamber.submitTransaction(1, spendTarget, 1 ether, "", "", 0);
 
         uint256 before = spendTarget.balance;
         vm.prank(user1);
@@ -99,11 +99,9 @@ contract FindingPMNM01ReachableQuorumTest is Test {
         assertEq(chamber.getSeats(), 3, "configured seats unchanged");
         assertEq(ChamberReads.reachableDirectorCount(chamber), 1, "cleaned-up burned slots drop from denominator");
         assertEq(chamber.getQuorum(), 1, "reachable quorum, not the old configured 2");
-        assertFalse(chamber.isTokenAuthorized(2, user2), "burned token cannot authorize");
-        assertFalse(chamber.isTokenAuthorized(3, user3));
 
         vm.prank(user1);
-        chamber.submitTransaction(1, spendTarget, 0, "");
+        chamber.submitTransaction(1, spendTarget, 0, "", "", 0);
         vm.prank(user1);
         chamber.executeTransaction(1, 0, "");
         (bool executed,,,,) = chamber.getTransaction(0);
@@ -148,7 +146,7 @@ contract FindingPMNM01ReachableQuorumTest is Test {
 
         deal(address(chamber), 1 ether);
         vm.prank(user1);
-        chamber.submitTransaction(1, spendTarget, 1 ether, "");
+        chamber.submitTransaction(1, spendTarget, 1 ether, "", "", 0);
         vm.prank(user1);
         chamber.executeTransaction(1, 0, "");
         assertEq(spendTarget.balance, 1 ether, "ordinary wallet spend still uses confirm/execute");
@@ -156,7 +154,7 @@ contract FindingPMNM01ReachableQuorumTest is Test {
         bytes memory recoveryCall = abi.encodeCall(IChamber.recoverSeats, (1, 1));
         vm.prank(user1);
         vm.expectRevert(IChamber.InvalidTransaction.selector);
-        chamber.submitTransaction(1, address(chamber), 0, recoveryCall);
+        chamber.submitTransaction(1, address(chamber), 0, recoveryCall, "", 0);
 
         Chamber filled = DeployChamber.deploy(address(token), address(nft), SEATS, "Full", "F", address(0xB));
         chamber = filled;

@@ -112,7 +112,6 @@
       <a class="brand" href="index.html"><span class="brand-mark">L</span><span>Loreum</span></a>
       <nav class="nav" aria-label="Main">
         <a href="app-overview.html" class="on">My Chambers</a>
-        <a href="app-session-keys.html">Operators</a>
         <a href="#">Deploy Chamber</a>
         <a href="#">Compliance</a>
         <a href="app-migrate.html">Migrate from Safe</a>
@@ -236,7 +235,7 @@
           <div class="upper" style="margin-bottom:8px">Also drives</div>
           <ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:5px;color:var(--t2);font-size:13px">
             <li>Seat maturity: a seat can act once the indexed head reaches its <code>seatedAt</code>, which the contract stores as the seating block + <code>SEATING_DELAY</code> (1 block).</li>
-            <li>Session key expiry, proposal deadlines and gate op eta countdowns.</li>
+            <li>Proposal deadlines and gate op eta countdowns.</li>
             <li>Countdowns tick with the corrected clock. A status flips to "ready" only when an indexed block's timestamp passes the eta, because that's when execution can succeed.</li>
           </ul>
           <div class="raw" style="margin-top:10px">query Head { _meta { status } chamber(id: "1:0x3f1c…a92e") { updatedBlock } }<br>every 15 s while the tab is visible · 0 requests while hidden · 1 on focus</div>
@@ -344,7 +343,6 @@
                 <a class="brand" href="index.html"><span class="brand-mark">L</span><span>Loreum</span></a>
                 <nav class="nav" aria-label="Main (healthy preview)">
                   <a href="app-overview.html" class="on">My Chambers</a>
-                  <a href="app-session-keys.html">Operators</a>
                   <a href="app-migrate.html">Migrate from Safe</a>
                 </nav>
               </div>
@@ -411,7 +409,6 @@
                 <a class="brand" href="index.html"><span class="brand-mark">L</span><span>Loreum</span></a>
                 <nav class="nav" aria-label="Main (lagging preview)">
                   <a href="app-overview.html" class="on">My Chambers</a>
-                  <a href="app-session-keys.html">Operators</a>
                   <a href="app-migrate.html">Migrate from Safe</a>
                 </nav>
               </div>
@@ -484,7 +481,6 @@
                 <a class="brand" href="index.html"><span class="brand-mark">L</span><span>Loreum</span></a>
                 <nav class="nav" aria-label="Main (stalled preview)">
                   <a href="app-overview.html" class="on">My Chambers</a>
-                  <a href="app-session-keys.html">Operators</a>
                   <a href="app-migrate.html">Migrate from Safe</a>
                 </nav>
               </div>
@@ -553,7 +549,7 @@
             <li>Red chip and banner on every page. The <code>ready</code> flag is ignored.</li>
             <li>Values stay visible, hatched, labelled "last known" with their time. Nothing is blanked.</li>
             <li>State-dependent writes are disabled, each with its reason.</li>
-            <li>Protective actions stay on: revoke a confirmation, vote to cancel, clear a session key, export a guardian cancel.</li>
+            <li>Protective actions stay on: revoke a confirmation, vote to cancel, export a guardian cancel.</li>
             <li>No RPC display reads, no retry storm: one query every 15 s with backoff to 60 s.</li>
             <li>The staleness monitor pages the team independently of this tab (<code>I-3</code>).</li>
           </ul>
@@ -622,10 +618,8 @@
             <tr><td>Submit a proposal</td><td><span class="badge ok">On</span></td><td><span class="badge warn">On · warns</span></td><td><span class="badge bad">Paused</span></td><td class="w">The composer relies on indexed balances, deadlines and the allowlist.</td></tr>
             <tr><td>Delegate or undelegate</td><td><span class="badge ok">On</span></td><td><span class="badge warn">On · preview stale</span></td><td><span class="badge bad">Paused</span></td><td class="w">The ranking preview would be wrong.</td></tr>
             <tr><td>Support or execute a seat change</td><td><span class="badge ok">On</span></td><td><span class="badge warn">On · warns</span></td><td><span class="badge bad">Paused</span></td><td class="w">Supporter count and quorum may have moved.</td></tr>
-            <tr><td>Set a session key</td><td><span class="badge ok">On</span></td><td><span class="badge warn">On · warns</span></td><td><span class="badge bad">Paused</span></td><td class="w">Seat ownership may have changed; a key set for a transferred NFT is cleared.</td></tr>
             <tr><td>Revoke my confirmation</td><td><span class="badge ok">On</span></td><td><span class="badge ok">On</span></td><td><span class="badge ok">On · protective</span></td><td class="w">Only removes your support. Simulated before signing.</td></tr>
             <tr><td>Vote to cancel a proposal</td><td><span class="badge ok">On</span></td><td><span class="badge ok">On</span></td><td><span class="badge ok">On · protective</span></td><td class="w">Typed confirmation plus simulation. Stops harm; can't cause it.</td></tr>
-            <tr><td>Clear a session key</td><td><span class="badge ok">On</span></td><td><span class="badge ok">On</span></td><td><span class="badge ok">On · protective</span></td><td class="w">Removes authority. Worth doing fast during an incident.</td></tr>
             <tr><td>Export guardian cancel payload</td><td><span class="badge ok">On</span></td><td><span class="badge ok">On</span></td><td><span class="badge ok">On · protective</span></td><td class="w">Gate op ids never change. The guardian signs in its own Safe.</td></tr>
           </tbody>
         </table>
@@ -661,11 +655,11 @@
     <h3>Design notes</h3>
     <ol>
       <li>The Sep 2026 stall is the reason for this sheet. The indexer reported <code>ready: true</code> while it was 46,768 blocks (6.5 days) behind, and the app trusted it (<code>I-1</code>). The same month, display-time RPC polling burned the Alchemy quota, so "fall back to RPC" is ruled out by the standing rule that display reads come only from chamber-indexer (<code>D-9</code> ADR-0002). This page is the UI half of those decisions. The ops half is the staleness monitor and reconcile job (<code>I-3</code>) and the lag alert (<code>I-33</code>).</li>
-      <li>The head clock replaces <code>useBlockNumber</code>, which is RPC, with <code>useIndexerHead(chainId)</code>, built from <code>_meta.status</code> (<code>I-10</code>). Freshness is block age against a skew-corrected clock, not the <code>ready</code> flag. Production still runs Ponder 0.8, which reports <code>ready</code>; in 0.17 the <code>_meta.status</code> rows are <code>{id, block}</code> with no <code>ready</code>, and <code>block</code> can be null for a chain that hasn't started, which shows as Unavailable. The estimated head needs no RPC: indexed block + age ÷ slot time. Seat maturity, key expiry and gate eta countdowns all use this clock (<code>I-13</code>, <code>I-26</code>).</li>
+      <li>The head clock replaces <code>useBlockNumber</code>, which is RPC, with <code>useIndexerHead(chainId)</code>, built from <code>_meta.status</code> (<code>I-10</code>). Freshness is block age against a skew-corrected clock, not the <code>ready</code> flag. Production still runs Ponder 0.8, which reports <code>ready</code>; in 0.17 the <code>_meta.status</code> rows are <code>{id, block}</code> with no <code>ready</code>, and <code>block</code> can be null for a chain that hasn't started, which shows as Unavailable. The estimated head needs no RPC: indexed block + age ÷ slot time. Seat maturity, proposal deadlines and gate eta countdowns all use this clock (<code>I-13</code>, <code>I-26</code>).</li>
       <li>The client is chain-aware: one indexer URL per chain (<code>VITE_INDEXER_URLS</code>), head parsing per chain key, and freshness gates keyed <code>chainId:chamber</code>, so the same address on two chains can't collide (<code>I-10</code>, <code>I-5</code>). Base and Arbitrum appear only as "not configured" rows. Spoke indexing waits for the Phase 2 gate (<code>I-23</code>, <code>P-24</code>), and a chain with no indexer shows Unavailable instead of polling RPC.</li>
       <li>The chip is on every page, in the top bar, next to the chain. It's the one place users learn where numbers come from. The details popover reports display RPC calls (always 0) and transaction RPC calls, the same numbers the CI RPC budget test asserts per route (<code>I-21</code>). "Refresh now" is a single indexer query.</li>
       <li>The four previews share one layout, so the only differences are the chip, the banner, the as-of labels and the buttons. The fresh-load case has nothing to show, so it gets an empty state with no actions. Healthy stays quiet; the block label is enough. Lagging warns but keeps actions on, because every write simulates at the latest block via RPC (#260) and that catches stale-state mistakes. Stalled pauses decisions that need current state and says why on each button. Freshness polling runs only while the tab is visible, replacing the Alchemy WebSocket and its 60 s invalidate-everything fallback (<code>I-19</code>). The stalled banner links the incident runbook (<code>D-18</code>), because the Chamber keeps working without the app.</li>
-      <li>The rule for pausing: pause an action if a reasonable person could decide differently with current state, and keep it on if it only reduces authority or stops harm. That's why cancel votes, revoking a confirmation, clearing a session key and the guardian cancel export (<code>M-16</code>) stay available during an incident. Those are exactly when they matter.</li>
+      <li>The rule for pausing: pause an action if a reasonable person could decide differently with current state, and keep it on if it only reduces authority or stops harm. That's why cancel votes, revoking a confirmation and the guardian cancel export (<code>M-16</code>) stay available during an incident. Those are exactly when they matter.</li>
       <li>The freshness gate already exists (<code>requireIndexerBlock</code>, <code>IndexerBehindError</code>, 40 retries × 1.5 s in <code>lib/indexer.ts</code>). This design keys it by chain and Chamber (<code>I-10</code>), shows it in the chip, and defines the timeout copy. RPC appears only in the first three steps: simulate, send, receipt.</li>
     </ol>
   </section>

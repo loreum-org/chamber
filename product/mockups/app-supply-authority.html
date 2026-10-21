@@ -70,7 +70,6 @@
       <a class="brand" href="index.html"><span class="brand-mark">L</span><span>Loreum</span></a>
       <nav class="nav" aria-label="Main">
         <a href="app-overview.html" class="on">My Chambers</a>
-        <a href="app-session-keys.html">Operators</a>
         <a href="#">Deploy Chamber</a>
         <a href="#">Compliance</a>
         <a href="app-migrate.html">Migrate from Safe</a>
@@ -111,7 +110,6 @@
     <a href="app-queue.html">Queue <span class="badge warn">3</span></a>
     <a href="p2-multichain-treasury.html">Treasury</a>
     <a href="app-supply-authority.html" class="on">Supply authority</a>
-    <a href="app-session-keys.html">Session keys</a>
   </nav>
 
   <nav class="subnav" aria-label="Supply authority">
@@ -476,7 +474,7 @@
           <div class="auth compact" role="group" aria-label="Your authority chain">
             <div class="node seat"><span class="k">Seat</span><span class="v">Explorer #44 · rank 4</span></div>
             <div class="node"><span class="k">Owner</span><span class="v">lena.eth · EOA 0x3c7B…aa15</span></div>
-            <div class="node key"><span class="k">Session key</span><span class="v">None · signs directly</span></div>
+            <div class="node key"><span class="k">Signed by</span><span class="v">Owner wallet</span></div>
           </div>
         </div>
 
@@ -503,7 +501,7 @@
       <li>The template builds a normal Chamber proposal (<code>M-16</code>). The preview is rendered from the calldata using the #260 decoder, so what directors confirm is always decoded calldata. The rationale goes to metadataURI. The path shows the two quorum proposals and the 30-day transaction maximum age (<code>WalletTypes</code>).</li>
       <li>The recipient policy from <code>M-7</code>: the vault is disabled in the picker because the gate rejects it on-chain (<code>InvalidAccount</code>). Any other Chamber whose asset is LORE triggers a warning, checked against the indexer (<code>M-7</code>(d)). The warning spells out the sniping risk in plain words.</li>
       <li>RPC appears only at transaction time, and the page says so with the block number (#260 simulation gate, reused as is). The diff shows that queueing changes the cap but not the supply.</li>
-      <li>The authority chain appears wherever a seat acts. lena.eth owns her seat from an EOA, so she has no session key: only contract owners can set keys (<code>Chamber.sol</code> session scope rules).</li>
+      <li>The authority chain appears wherever a seat acts. lena.eth owns her seat from an EOA and signs from it. Only the NFT's owner can act for a seat (<code>ownerOf(tokenId)</code>).</li>
     </ol>
   </section>
 </main>

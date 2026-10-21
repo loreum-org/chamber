@@ -29,7 +29,7 @@ Review blockers that the old checklist marked open are **merged**:
 | PMN-M01 reachable quorum | [#209](https://github.com/loreum-org/chamber/issues/209) | [#223](https://github.com/loreum-org/chamber/pull/223) | merged |
 | PMN-M02 inert seated NFTs | [#210](https://github.com/loreum-org/chamber/issues/210) | [#224](https://github.com/loreum-org/chamber/pull/224) | merged |
 | PMN-M03 Factory-only create / impl probe | [#211](https://github.com/loreum-org/chamber/issues/211) | [#225](https://github.com/loreum-org/chamber/pull/225) | merged |
-| PMN-M04 session-key expiry/scope | [#212](https://github.com/loreum-org/chamber/issues/212) | [#226](https://github.com/loreum-org/chamber/pull/226) | merged |
+| PMN-M04 session-key expiry/scope | [#212](https://github.com/loreum-org/chamber/issues/212) | [#226](https://github.com/loreum-org/chamber/pull/226) | merged; moot since 1.3.0 removed session keys |
 | 1.1.7 / 1.1.9 eviction hot-path | — | [#213](https://github.com/loreum-org/chamber/pull/213) | merged (`Chamber.VERSION` is `1.1.9`) |
 | Halmos harness (not a full proof) | — | [#206](https://github.com/loreum-org/chamber/pull/206) | merged |
 | Verified deploy package | [#188](https://github.com/loreum-org/chamber/issues/188) | [#214](https://github.com/loreum-org/chamber/pull/214) | merged; Factory fields still TBD |
@@ -44,7 +44,7 @@ Live tokens already on Ethereum (not Chamber / Factory):
 | LoreumNFT Explorers | `0xB99DEdbDe082B8Be86f06449f2fC7b9FED044E15` |
 | Team Safe (LORE owner / Factory admin) | `0x5d45A213B2B6259F0b3c116a8907B56AB5E22095` |
 
-Sepolia is already deployed. Do not redeploy Sepolia as a substitute for mainnet.
+Sepolia is already deployed. Do not treat a Sepolia redeploy as a substitute for the mainnet steps here. Separately, Sepolia chambers older than 1.2.0 (the current deployment reports 1.1.5) cannot be upgraded in place to 1.3.0 and must be redeployed on 1.3.0 to test it; see `CHANGELOG.md`.
 
 ## What this package is
 
@@ -58,6 +58,10 @@ Sepolia is already deployed. Do not redeploy Sepolia as a substitute for mainnet
 | Verify | `make verify-mainnet-factory` | No (Etherscan only; refuses TBD / Sepolia) |
 | Receipt extract | `script/extract-mainnet-broadcast.sh` | No (prints labels; does not write the file as live) |
 | Address template | `deployments/mainnet.txt` | TBD until a chain-id-1 receipt |
+| Upgrade step 1: new implementation | `script/DeployChamberImplementation.s.sol` | Gated on chain id 1 (**Chad only**) |
+| Upgrade step 2: queue board tx | `script/ProposeChamberUpgrade.s.sol` | Prints calldata by default; `SUBMIT=true` + `--broadcast` gated on chain id 1 (**Chad only**) |
+
+Upgrades after deploy: since 1.3.0 the only path is a quorum transaction from the chamber to its own ProxyAdmin, `upgradeAndCall(chamber, newImplementation, data)`. `ProposeChamberUpgrade` checks that the ProxyAdmin is owned by the chamber, that the implementation has code and a `VERSION()`, and that it differs from the current one. It refuses an in-place upgrade of a pre-1.2.0 chamber to 1.3.0+ (redeploy instead) and warns on a downgrade. ProxyAdmin has no version or migration checks of its own; the board is responsible for what it approves.
 
 `DeployFactory.s.sol` remains the generic script (any chain). Use **DeployMainnetFactory** on Ethereum so libs are logged and Sepolia is refused. Do not invent a new Make broadcast target.
 

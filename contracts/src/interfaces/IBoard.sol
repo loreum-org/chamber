@@ -156,4 +156,8 @@ interface IBoard {
 
     /// @notice Thrown when `cleanupInertSeat` is called on a tokenId whose `ownerOf` still succeeds
     error SeatNotInert();
+
+    /// @notice Thrown when a delegation row written before 1.2.0 (no live-weight epoch) would move
+    ///         weight on a node still on the board. 1.3.0 cannot account for it; redeploy the chamber.
+    error LegacyDelegation();
 }

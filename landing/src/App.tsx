@@ -185,7 +185,7 @@ const QUEUE = [
   {
     id: 48,
     title: 'Upgrade the chamber implementation',
-    decoded: 'upgradeImplementation(0x8bF1…c0De)',
+    decoded: 'ProxyAdmin.upgradeAndCall(chamber, 0x8bF1…c0De, 0x)',
     sim: 'Self-call · takes effect the moment it executes',
     status: 'High risk',
     tone: 'chip-bad',

@@ -13,7 +13,6 @@ import toast from 'react-hot-toast'
 
 const navItems: { path: string; label: string; umamiEvent?: string }[] = [
   { path: '/', label: 'My Chambers' },
-  { path: '/operators', label: 'Operators' },
   { path: '/deploy', label: 'Deploy Chamber', umamiEvent: 'cta-create-chamber' },
   { path: '/compliance', label: 'Compliance' },
   { path: '/docs', label: 'Docs' },
