@@ -9,37 +9,30 @@ import { FactoryAbi } from "./abis/FactoryAbi";
 import { RegistryAbi } from "./abis/RegistryAbi";
 
 /**
- * Sepolia sources — must match loreum-org/chamber `contracts/deployments/sepolia.txt`
- * (loreum-org/chamber#159).
+ * Base Sepolia (chain 84532) — must match loreum-org/chamber
+ * `contracts/deployments/base-sepolia.txt`.
  *
- * Registry (May 2, 2026 TransparentUpgradeableProxy, DeployRegistry broadcast
- * block 0xa47447 / 10777671). This is the Registry the Chamber app uses.
- * Five `createChamber` txs: 10777917, 10778003, 10789272, 10903741, 10967086.
+ * Factory (Oct 22, 2026, DeployFactory broadcast block 0x2e7c2ca / 48743114,
+ * tx 0x57b2222ab86525ab3b1b8e13f44f94d874466deeae0b7d20102159b4eced7820).
+ * Chamber implementation 0xC6e817C021D4fADA5Ed27B62112991ec48522E90.
+ * Ethereum Sepolia addresses stay in that repo's `deployments/sepolia.txt`.
  *
- * Factory (Aug 26, 2026, DeployFactory broadcast block 0xb08ff1 / 11571185,
- * tx 0x6e87eb26fe311dfa2b73a0ad10865e3abc631d53ee0abd4ed18a69098bc0c614).
- * Create uses this as the in-repo default after chamber#147. No `createChamber`
- * yet — `factory_ChamberCreateds` stays 0 until someone creates. Indexed by
- * default so new Factory chambers appear without a Railway env change.
+ * This deploy has no Registry. Registry / Chamber / RegistryNft stay in the
+ * config because their handlers are registered. They watch a non-registry
+ * address from the Factory block so the backfill stays empty. Set
+ * PONDER_REGISTRY_* only after a Registry exists on this chain.
  *
- * Legacy Registry (not indexed): 0xB028110234375A368Aa0b5fFB138ae1dDfb0b4cc
- * from 7453704, one `createChamber` at 7453727. Override
- * PONDER_REGISTRY_* to index it instead.
- *
- * RPC: set PONDER_RPC_URL_11155111 to a dedicated Alchemy/Infura Sepolia
- * HTTPS URL (not an origin-locked frontend key, not publicnode).
- * `https://ethereum-sepolia-rpc.publicnode.com` rejects eth_getLogs wider
- * than 50_000 blocks (`exceed maximum block range: 50000`) and can return
- * `[]` for ranges that have events. Ponder then marks sepolia ready with
- * an empty directory.
+ * RPC: set PONDER_RPC_URL_84532 to a dedicated Alchemy Base Sepolia HTTPS URL
+ * (network `base-sepolia`). Do not use an origin-locked frontend key.
  */
-const DEFAULT_REGISTRY_ADDRESS =
-  "0x7AECf59eAD4B054A58bD42Af8704d381FdD9E821" as const;
-const DEFAULT_REGISTRY_START_BLOCK = 10_777_671;
-
 const DEFAULT_FACTORY_ADDRESS =
-  "0x43aA92c8A26392f21F63cdA88B6BaB5031C40550" as const;
-const DEFAULT_FACTORY_START_BLOCK = 11_571_185;
+  "0x9bd245B992f0ba869D208bdABecB608080984701" as const;
+const DEFAULT_FACTORY_START_BLOCK = 48_743_114;
+
+/** Not a Chamber registry. Handlers require a Registry source; this one emits nothing. */
+const DEFAULT_REGISTRY_ADDRESS =
+  "0x000000000000000000000000000000000000dEaD" as const;
+const DEFAULT_REGISTRY_START_BLOCK = DEFAULT_FACTORY_START_BLOCK;
 
 const registryAddress = addressFromEnv(
   process.env.PONDER_REGISTRY_ADDRESS,
@@ -103,16 +96,16 @@ function blockFromEnv(
 
 export default createConfig({
   networks: {
-    sepolia: {
-      chainId: 11155111,
-      transport: http(process.env.PONDER_RPC_URL_11155111),
+    baseSepolia: {
+      chainId: 84532,
+      transport: http(process.env.PONDER_RPC_URL_84532),
     },
   },
   contracts: {
     Registry: {
       abi: RegistryAbi,
       network: {
-        sepolia: {
+        baseSepolia: {
           address: registryAddress,
         },
       },
@@ -121,7 +114,7 @@ export default createConfig({
     Factory: {
       abi: FactoryAbi,
       network: {
-        sepolia: {
+        baseSepolia: {
           address: factoryAddress,
           startBlock: factoryStartBlock,
         },
@@ -131,7 +124,7 @@ export default createConfig({
     Chamber: {
       abi: ChamberAbi,
       network: {
-        sepolia: {
+        baseSepolia: {
           address: factory({
             address: registryAddress,
             event: registryChamberCreatedEvent,
@@ -146,7 +139,7 @@ export default createConfig({
     FactoryChamber: {
       abi: ChamberAbi,
       network: {
-        sepolia: {
+        baseSepolia: {
           address: factory({
             address: factoryAddress,
             event: factoryChamberCreatedEvent,
@@ -161,7 +154,7 @@ export default createConfig({
     RegistryNft: {
       abi: Erc721Abi,
       network: {
-        sepolia: {
+        baseSepolia: {
           address: factory({
             address: registryAddress,
             event: registryChamberCreatedEvent,
@@ -174,7 +167,7 @@ export default createConfig({
     FactoryNft: {
       abi: Erc721Abi,
       network: {
-        sepolia: {
+        baseSepolia: {
           address: factory({
             address: factoryAddress,
             event: factoryChamberCreatedEvent,
