@@ -17,6 +17,9 @@ interface ImportMetaEnv {
   readonly VITE_MAINNET_REGISTRY_START_BLOCK?: string
   readonly VITE_BASE_FACTORY_START_BLOCK?: string
   readonly VITE_BASE_REGISTRY_START_BLOCK?: string
+  readonly VITE_BASE_SEPOLIA_FACTORY?: string
+  readonly VITE_BASE_SEPOLIA_CHAMBER_IMPL?: string
+  readonly VITE_BASE_SEPOLIA_FACTORY_START_BLOCK?: string
   readonly VITE_ARBITRUM_FACTORY_START_BLOCK?: string
   readonly VITE_ARBITRUM_REGISTRY_START_BLOCK?: string
 }

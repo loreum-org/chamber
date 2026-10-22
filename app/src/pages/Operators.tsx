@@ -98,7 +98,7 @@ export default function Operators() {
         return
       }
     }
-    toast.error(`Switch your wallet to ${getNetworkName(preferredChainId ?? 11155111)}`)
+    toast.error(`Switch your wallet to ${getNetworkName(preferredChainId ?? 84532)}`)
   }
 
   const setChamberParam = (value: string | undefined) => {
@@ -122,7 +122,7 @@ export default function Operators() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <p className="text-slate-300 text-sm">
               This deployment does not include <strong className="text-slate-200">Ethereum mainnet</strong>.
-              Switch to <strong className="text-slate-200">{getNetworkName(preferredChainId ?? 11155111)}</strong>{' '}
+              Switch to <strong className="text-slate-200">{getNetworkName(preferredChainId ?? 84532)}</strong>{' '}
               to manage operators.
             </p>
             <button
