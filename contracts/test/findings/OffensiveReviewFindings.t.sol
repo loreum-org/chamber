@@ -82,7 +82,7 @@ contract OffensiveReviewFindingsTest is Test {
         deal(address(chamber), 1 ether);
 
         vm.prank(user1);
-        chamber.submitTransaction(1, attacker, 1 ether, "");
+        chamber.submitTransaction(1, attacker, 1 ether, "", "", 0);
 
         vm.prank(user2);
         chamber.confirmTransaction(2, 0);
@@ -122,7 +122,7 @@ contract OffensiveReviewFindingsTest is Test {
         address user6 = address(0x6);
 
         vm.prank(user1);
-        chamber.submitTransaction(1, attacker, 1 ether, "");
+        chamber.submitTransaction(1, attacker, 1 ether, "", "", 0);
 
         _evictInitialDirectors();
 
@@ -152,7 +152,7 @@ contract OffensiveReviewFindingsTest is Test {
         _setupInitialDirectors();
 
         vm.prank(user1);
-        chamber.submitTransaction(1, attacker, 0, "");
+        chamber.submitTransaction(1, attacker, 0, "", "", 0);
         vm.prank(user2);
         chamber.confirmTransaction(2, 0);
 
@@ -174,7 +174,7 @@ contract OffensiveReviewFindingsTest is Test {
         _setupInitialDirectors();
 
         vm.prank(user1);
-        chamber.submitTransaction(1, attacker, 0, "");
+        chamber.submitTransaction(1, attacker, 0, "", "", 0);
 
         vm.prank(user1);
         chamber.cancelTransaction(1, 0);
@@ -201,7 +201,7 @@ contract OffensiveReviewFindingsTest is Test {
         deal(address(chamber), 1 ether);
 
         vm.prank(user1);
-        chamber.submitTransaction(1, attacker, 1 ether, "");
+        chamber.submitTransaction(1, attacker, 1 ether, "", "", 0);
         vm.prank(user2);
         chamber.confirmTransaction(2, 0);
         vm.prank(user3);
@@ -264,7 +264,7 @@ contract OffensiveReviewFindingsTest is Test {
         address randomCaller = address(0xDEAD);
         vm.prank(randomCaller);
         vm.expectRevert(IChamber.NotDirector.selector);
-        chamber.submitTransaction(tokenId, address(0x9999), 0, "");
+        chamber.submitTransaction(tokenId, address(0x9999), 0, "", "", 0);
 
         assertEq(chamber.getTransactionCount(), 0, "promiscuous ERC1271 must not authorize a random caller");
     }

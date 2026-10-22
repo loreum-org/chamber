@@ -23,7 +23,6 @@ import {
 } from '@/hooks'
 import BoardVisualization from '@/components/BoardVisualization'
 import { DirectorCallerStatus } from '@/components/DirectorCallerStatus'
-import { DirectorOperatorManager } from '@/components/DirectorOperatorManager'
 import TreasuryOverview from '@/components/TreasuryOverview'
 import DelegationManager from '@/components/DelegationManager'
 import SeatTheBoard, { SeatTheBoardLink } from '@/components/SeatTheBoard'
@@ -192,8 +191,6 @@ function ChamberDetailContent({ chamberAddress }: { chamberAddress: `0x${string}
         <DirectorCallerStatus
           role={directorGate.role}
           tokenId={directorGate.tokenId}
-          nftOwner={directorGate.nftOwner}
-          sessionOperator={directorGate.sessionOperator}
         />
       </ChamberHeader>
 
@@ -283,11 +280,10 @@ function ChamberDetailContent({ chamberAddress }: { chamberAddress: `0x${string}
             boardMembersPending={boardMembersPending}
             onRefreshBoard={refreshBoardViews}
           />
-          <DirectorOperatorManager
-            chamberAddress={chamberAddress}
-            nftToken={nftForImages}
-            preferredTokenId={directorGate.role === 'owner' ? directorGate.tokenId : undefined}
-          />
+          <p className="text-xs text-slate-500">
+            Directors act as the membership NFT owner. To let an agent act for a seat, give it a
+            session key on the owner wallet (for example a Safe module or smart-account session key).
+          </p>
         </div>
       )}
 

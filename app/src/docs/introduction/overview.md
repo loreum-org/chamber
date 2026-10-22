@@ -25,9 +25,8 @@ A **director** is whoever controls a **membership NFT token ID** that currently 
 
 - A person with a normal wallet (`msg.sender` is the NFT owner)  
 - A **multisig or other contract wallet** that **holds** the NFT and calls Chamber as itself  
-- A **session key** the contract owner registered with `setDirectorOperator` (the live agent path)  
 
-Chamber **never** calls ERC-1271. See **[Director authorization](../protocol/director-authorization.md)**.
+Either way the caller must be the NFT owner. Agents act through the owner's wallet (for example a Safe module or smart-account session key). Chamber **never** calls ERC-1271. See **[Director authorization](../protocol/director-authorization.md)**.
 
 There is no separate “admin bypass” for day-to-day spending — the queue is the path.
 

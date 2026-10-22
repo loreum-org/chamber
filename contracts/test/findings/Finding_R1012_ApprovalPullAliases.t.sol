@@ -65,7 +65,7 @@ contract FindingR1012ApprovalPullAliasesTest is Test {
     function _expectBlocked(address target, bytes memory d) internal {
         vm.prank(director);
         vm.expectRevert(IWallet.InvalidTarget.selector);
-        chamber.submitTransaction(1, target, 0, d);
+        chamber.submitTransaction(1, target, 0, d, "", 0);
     }
 
     function test_assetAliasesBlocked() public {
@@ -91,6 +91,6 @@ contract FindingR1012ApprovalPullAliasesTest is Test {
 
     function test_plainValueSendToAssetAllowed() public {
         vm.prank(director);
-        chamber.submitTransaction(1, address(token), 0, "");
+        chamber.submitTransaction(1, address(token), 0, "", "", 0);
     }
 }

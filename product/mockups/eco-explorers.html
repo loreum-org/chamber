@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@300;400;600&display=swap">
 <link rel="stylesheet" href="assets/app.css">
 <style>
-/* Explorers showcase. Not the operator console: deeper void, blue brand accent
+/* Explorers showcase. Not the app console: deeper void, blue brand accent
    from explorers/tailwind.config.js, Space Grotesk display, art-frame glows and
    purposeful motion. app.css is linked only for .mock-bar and .note/.notes. */
 :root {
@@ -201,9 +201,6 @@ b, strong { font-weight: 600; }
 .x-auth .v { font-size: 14px; color: var(--xink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .x-auth .s { font-size: 12px; color: var(--xt3); overflow-wrap: anywhere; }
 .x-auth .n.key .v { color: var(--xa3); font-family: var(--xmono); font-size: 13px; }
-.x-scopes { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
-.x-scopes span { font-family: var(--xmono); font-size: 10px; padding: 1px 6px; border-radius: 5px; border: 1px solid var(--xl2); color: var(--xt4); }
-.x-scopes span.on { color: var(--xa3); border-color: rgba(96, 165, 250, 0.45); background: rgba(37, 99, 235, 0.14); }
 .x-auth.compact .n { padding: 10px 12px 10px 18px; }
 .x-auth.compact .n:first-child { padding-left: 12px; }
 .x-auth.compact .v { font-size: 13px; }
@@ -545,15 +542,12 @@ b, strong { font-weight: 600; }
       <div class="x-authwrap x-glass rv">
         <div>
           <h3>Who acts for a seat <span class="note">5</span></h3>
-          <p>The owner of a seated Explorer acts for it. An owner that is a contract, like a Safe, can also add a session key that is limited to certain actions and expires. Treasury Agent, an AI director, submits with its key and confirms only through its policy account.</p>
+          <p>Only the owner of a seated Explorer acts for it. An agent can act through the owner's own wallet, such as a Safe module. Treasury Agent, an AI director, acts only through its policy account, the Safe that owns its seat.</p>
         </div>
         <div class="x-auth" role="group" aria-label="Authority chain for Explorer #31">
           <div class="n"><span class="k">Seat</span><span class="v">Explorer #31 · seat 3</span><span class="s">1,120,000 LORE delegated</span></div>
           <div class="n"><span class="k">Owner</span><span class="v">Treasury Agent</span><span class="s">Policy account · Safe 0x9aB3…40d1</span></div>
-          <div class="n key"><span class="k">Session key</span><span class="v">0x7E0f…19b2</span>
-            <span class="x-scopes" role="img" aria-label="Scope 0x35: submit, execute, revoke and cancel. No confirm."><span class="on">SUBMIT</span><span>CONFIRM</span><span class="on">EXECUTE</span><span class="on">REVOKE</span><span class="on">CANCEL</span></span>
-            <span class="s">Expires Mar 30, 2027</span>
-          </div>
+          <div class="n key"><span class="k">Signed by</span><span class="v">Agent via owner's Safe</span><span class="s">Policy module</span></div>
         </div>
       </div>
     </div>
@@ -669,9 +663,9 @@ b, strong { font-weight: 600; }
             <div class="x-auth compact" role="group" aria-label="Authority chain for Explorer #44">
               <div class="n"><span class="k">Seat</span><span class="v">#44 · seat 4</span></div>
               <div class="n"><span class="k">Owner</span><span class="v">lena.eth</span><span class="s">EOA</span></div>
-              <div class="n key"><span class="k">Session key</span><span class="v">None</span><span class="s">EOAs can't set one</span></div>
+              <div class="n key"><span class="k">Signed by</span><span class="v">Owner wallet</span><span class="s">lena.eth</span></div>
             </div>
-            <p>You act for this seat directly from lena.eth. Only a contract owner, like a Safe, can add a session key.</p>
+            <p>You act for this seat directly from lena.eth. Only the NFT's owner can act for a seat.</p>
             <a class="x-link" href="app-queue.html">Review the queue in the Loreum app</a>
           </div>
         </article>
@@ -772,14 +766,14 @@ b, strong { font-weight: 600; }
     <section class="notes">
       <h3>Design notes</h3>
       <ol>
-        <li><b>Full-bleed art hero.</b> Chad's direction for Explorers is a bold, art-forward showcase in the Art Blocks / Azuki register, not the operator console. The newest mint (#1247) fills the viewport, with a slow drift, pointer parallax and twinkling stars. Everything stops under <code>prefers-reduced-motion</code>. The art on this page is generated in the browser as a placeholder for the real IPFS images, and the Form/Palette labels are placeholder traits, not the collection's metadata.</li>
+        <li><b>Full-bleed art hero.</b> Chad's direction for Explorers is a bold, art-forward showcase in the Art Blocks / Azuki register, not the app console. The newest mint (#1247) fills the viewport, with a slow drift, pointer parallax and twinkling stars. Everything stops under <code>prefers-reduced-motion</code>. The art on this page is generated in the browser as a placeholder for the real IPFS images, and the Form/Palette labels are placeholder traits, not the collection's metadata.</li>
         <li><b>Mint panel.</b> Name, supply, price and the per-wallet limit are read from <code>LoreumNFT</code> (<code>totalSupply</code>, <code>MAX_SUPPLY</code>, <code>mintCost</code>, <code>MAX_MINT</code>), as <code>Claim.tsx</code> does. The Explorers site reads the NFT contract and IPFS directly because it has no collection indexer; the app-only indexer rule doesn't apply here. It reads once on page load and never polls or watches, so an idle tab costs no RPC; the source line under the panel says so. The mint is simulated at click time ("Simulated at block … via RPC just now"), and a price change is shown as a designed state, not a toast. The minted count (1,247) is a mock value and isn't in <code>_mock-data.md</code>; on-chain supply was 70 in Sep 2026 (review read cited in <code>I-6</code>).</li>
         <li><b>Recent-mints marquee and grid.</b> Token IDs are sequential, so "newest first" is <code>totalSupply</code> counting down. This matches <code>Home.tsx</code> (<code>FEATURED_COUNT</code> = 8) and costs no enumeration. The marquee pauses on hover and focus, and its duplicate track is hidden from assistive tech.</li>
         <li><b>Honest statement of what an Explorer does</b> (<code>D-6</code>). The page never says the NFT <em>is</em> a seat and makes no yield or income claims. It uses the exact framing: an Explorer can hold a seat when LORE holders delegate to it. The ranked bars show the real rule (top 5 by delegated LORE, quorum 3 of 5 from <code>1 + n*51/100</code>, <code>SEATING_DELAY</code> = 1 block).</li>
-        <li><b>The authority chain carries over</b> from the app's signature element (seat, then owner, then session key) in showcase styling. The copy says "session key", never "operator" (<code>P-8</code>/<code>P-9</code>). Treasury Agent's scope <code>0x35</code> omits CONFIRM because it confirms only through its policy account.</li>
+        <li><b>The authority chain carries over</b> from the app's signature element (seat, then owner, then signer) in showcase styling. Treasury Agent acts only through its policy account, the Safe that owns its seat.</li>
         <li><b>Board wall from chamber-indexer.</b> Seats, owners and delegated LORE come from chamber-indexer, the same GraphQL API the app uses (<code>I-6</code> NFT ownership, <code>I-13</code> board and delegation), so showing the board costs no RPC. The board wall and the seat status on My Explorers cards are the site's only indexer reads, and the freshness chip says where the data came from. All values match <code>_mock-data.md</code>.</li>
         <li><b>The full public gallery is out of scope.</b> Browsing and filtering all 10,000 tokens by trait needs a collection index. The card says so plainly and points to what does exist (My Explorers) instead of a disabled "later" button or a link to a gallery that doesn't exist.</li>
-        <li><b>My Explorers stays wallet-scoped</b> (<code>tokenOfOwnerByIndex</code>, as in <code>Gallery.tsx</code>). Seat status on each card comes from the indexer. lena.eth owns #44 from an EOA, so the card explains why there's no session key rather than offering a button that would fail (<code>setDirectorOperator</code> reverts unless the owner has code). The owner and key nodes carry their detail on a second line so nothing truncates in the compact chain.</li>
+        <li><b>My Explorers stays wallet-scoped</b> (<code>tokenOfOwnerByIndex</code>, as in <code>Gallery.tsx</code>). Seat status on each card comes from the indexer. lena.eth owns #44 from an EOA and signs from it. The owner and signer nodes carry their detail on a second line so nothing truncates in the compact chain.</li>
         <li><b>Contract facts</b> come from <code>explorers/deployments/mainnet.txt</code>: owner Team Safe, <code>MAX_MINT</code> 100, royalty 500 bps. Because the owner can change the price, the page says so next to the price and explains the pre-sign check. The Team Safe threshold is 4-of-7 after <code>M-2</code>.</li>
         <li><b>Trust callout replaces the Story page's audit claim</b> (<code>Story.tsx:161</code>, <code>D-6</code>; the <code>D-7</code> banned-claims check keeps it from returning). It links to <code>eco-trust.html</code> instead of asserting anything.</li>
       </ol>

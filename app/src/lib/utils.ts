@@ -195,6 +195,7 @@ export function parseDataField(data: string): { method?: string; decoded?: strin
     '0x8456cb59': 'pause()',
     '0x3f4ba83a': 'unpause()',
     '0xc89311b6': 'upgradeImplementation(address,bytes)',
+    '0x9623609d': 'upgradeAndCall(address,address,bytes)',
   }
 
   const methodId = data.slice(0, 10).toLowerCase()

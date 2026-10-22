@@ -23,7 +23,6 @@ import {
 } from 'react-icons/fi'
 import { chamberAbi, erc721Abi } from '@/contracts/abis'
 import { useChamberInfo, useBoardMembers, useNftTokenImage } from '@/hooks'
-import { DirectorOperatorManager } from '@/components/DirectorOperatorManager'
 import { getBlockExplorerAddressUrl } from '@/lib/utils'
 import { NftRetryableImage } from '@/components/NftRetryableImage'
 import { ChamberRouteGate } from '@/components/ChamberRouteGate'
@@ -374,18 +373,6 @@ function DirectorProfileContent({
         </div>
         </div>
       </motion.div>
-
-      {tokenId > 0n && (
-        <DirectorOperatorManager
-          chamberAddress={chamberAddress}
-          nftToken={
-            chamberInfo.nftToken && chamberInfo.nftToken !== zeroAddress
-              ? (chamberInfo.nftToken as `0x${string}`)
-              : undefined
-          }
-          tokenId={tokenId}
-        />
-      )}
 
       {/* Two-column layout: Activity + Details */}
       <div className="grid md:grid-cols-3 gap-6">

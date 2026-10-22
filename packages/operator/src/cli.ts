@@ -1,12 +1,6 @@
 import { type Address, type Hex, isAddress, isHex, parseEther } from 'viem'
 import { createOperator } from './client.ts'
 import { ChamberOperatorError } from './errors.ts'
-import {
-  SESSION_SCOPE_UNSCOPED,
-  defaultSessionExpiry,
-  describeSessionScope,
-  directorSessionStatusLabel,
-} from './session.ts'
 
 const USAGE = `chamber-operator — typed Chamber board / queue actions (same ABI as the app)
 
@@ -17,7 +11,6 @@ Commands:
   board                 Read board seats, quorum, pause, and seating
   quorum                Read live quorum
   tx --nonce <n>        Read one queued nonce
-  operator              Read live session key (operator, expiry, scope, liveAt)
   delegate              Delegate vault shares to a membership tokenId
   undelegate            Undelegate vault shares from a membership tokenId
   submit                submitTransaction (director)
@@ -25,8 +18,6 @@ Commands:
   revoke                revokeConfirmation (director)
   cancel                cancelTransaction (director)
   execute               executeTransaction (director)
-  set-operator          setDirectorOperator (tokenId, operator, expiry, scope)
-  clear-operator        setDirectorOperator(tokenId, address(0), 0, 0)
 
 Required (or env):
   --rpc <url>           RPC_URL / CHAMBER_RPC
@@ -39,24 +30,14 @@ Writes:
   --target <addr>       submit target
   --value <wei|ether>   submit ETH value (default 0)
   --data <hex>          submit / execute calldata (default 0x)
-  --deadline <unix>     optional submit deadline
+  --metadata <uri>      optional submit metadataURI (default "")
+  --deadline <unix>     optional submit deadline (default 0 = 30 days)
   --nonce <n>           confirm / execute / tx
-  --operator <addr>     set-operator session key
-  --expiry <unix>       set-operator exclusive-after unix (default: now + 30 days)
-  --scope <uint32>      set-operator bitmask, or "unscoped" (default: 0xffffffff)
 
-Session keys: only a contract-owned membership NFT can register an operator.
-EOA-owned NFTs revert (NotDirector / You are not a director). There is no
-ERC-1271 fallback — Chamber never calls isValidSignature. set-operator and
-clear-operator must be sent by the NFT owner (a 4337 / smart-account signer
-whose address is that owner). Defaults: 30-day future expiry and
-SESSION_SCOPE_UNSCOPED (type(uint32).max). expiry 0 and scope 0 are rejected.
-Confirm/execute wait until liveAt (SEATING_DELAY after set). Reads return
-address(0) / 0 when unset, stale, expired, or EOA-owned.
-
-A 4337 smart-account client is supported from the library API
-(createOperator({ signer: { type: 'walletClient', walletClient } })),
-not from this CLI.
+Directors act as ownerOf(tokenId). An agent acts for a director by signing as
+the NFT owner. This CLI signs with a private key; a 4337 smart-account client
+(e.g. one using a session key) is supported from the library API
+(createOperator({ signer: { type: 'walletClient', walletClient } })).
 
 Exit status is non-zero on revert. Seating delay, pause, expired nonce,
 and not-a-director use the same copy as the React app.
@@ -131,28 +112,6 @@ function parseUint(raw: string, label: string): bigint {
   return BigInt(raw.trim())
 }
 
-function parseScope(raw: string): number {
-  const trimmed = raw.trim().toLowerCase()
-  if (trimmed === 'unscoped' || trimmed === 'max' || trimmed === 'all') {
-    return SESSION_SCOPE_UNSCOPED
-  }
-  if (/^0x[0-9a-f]+$/.test(trimmed)) {
-    const value = Number(BigInt(trimmed))
-    if (!Number.isSafeInteger(value) || value < 0 || value > SESSION_SCOPE_UNSCOPED) {
-      throw new ChamberOperatorError(`Invalid scope: ${raw}`)
-    }
-    return value >>> 0
-  }
-  if (!/^\d+$/.test(trimmed)) {
-    throw new ChamberOperatorError(`Invalid scope: ${raw}`)
-  }
-  const value = Number(trimmed)
-  if (!Number.isSafeInteger(value) || value < 0 || value > SESSION_SCOPE_UNSCOPED) {
-    throw new ChamberOperatorError(`Invalid scope: ${raw}`)
-  }
-  return value >>> 0
-}
-
 function jsonReplacer(_key: string, value: unknown): unknown {
   return typeof value === 'bigint' ? value.toString() : value
 }
@@ -194,43 +153,6 @@ async function main(): Promise<void> {
       printJson(await operator.getTransaction(nonce))
       return
     }
-    case 'operator': {
-      const tokenId = parseUint(requireFlag(flags, 'token-id'), 'token-id')
-      const state = await operator.getDirectorOperatorState(tokenId)
-      printJson({
-        tokenId: state.tokenId,
-        operator: state.operator,
-        expiry: state.expiry,
-        scope: state.scope,
-        scopeLabel: describeSessionScope(state.scope),
-        liveAt: state.liveAt,
-        status: state.status,
-        statusLabel: directorSessionStatusLabel(state.status, state.liveAt, state.blockNumber),
-        blockNumber: state.blockNumber,
-        raw: state.raw,
-      })
-      return
-    }
-    case 'set-operator': {
-      const tokenId = parseUint(requireFlag(flags, 'token-id'), 'token-id')
-      const next = requireAddress(requireFlag(flags, 'operator'), 'operator')
-      const expiryRaw = flag(flags, 'expiry')
-      const scopeRaw = flag(flags, 'scope')
-      printJson(
-        await operator.setDirectorOperator(
-          tokenId,
-          next,
-          expiryRaw ? parseUint(expiryRaw, 'expiry') : defaultSessionExpiry(),
-          scopeRaw ? parseScope(scopeRaw) : SESSION_SCOPE_UNSCOPED,
-        ),
-      )
-      return
-    }
-    case 'clear-operator': {
-      const tokenId = parseUint(requireFlag(flags, 'token-id'), 'token-id')
-      printJson(await operator.clearDirectorOperator(tokenId))
-      return
-    }
     case 'delegate': {
       const tokenId = parseUint(requireFlag(flags, 'token-id'), 'token-id')
       const amount = parseAmount(requireFlag(flags, 'amount'))
@@ -256,6 +178,7 @@ async function main(): Promise<void> {
           target,
           value: valueRaw ? parseAmount(valueRaw) : 0n,
           data,
+          metadataURI: flag(flags, 'metadata') ?? '',
           deadline: deadlineRaw ? parseUint(deadlineRaw, 'deadline') : undefined,
         }),
       )

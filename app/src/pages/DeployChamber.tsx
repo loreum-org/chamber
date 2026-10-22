@@ -577,6 +577,7 @@ export default function DeployChamber() {
                     type="submit"
                     disabled={!canProceedToReview}
                     className="btn btn-primary w-full py-3.5 text-base"
+                    data-umami-event="cta-create-chamber"
                   >
                     <span>Review & Deploy</span>
                     <FiArrowRight className="w-5 h-5" />
@@ -687,6 +688,7 @@ export default function DeployChamber() {
                       onClick={handleConfirmDeploy}
                       disabled={!canCreate || isPending || isConfirming || step === 'deploying'}
                       className="btn btn-primary flex-1 py-3.5"
+                      data-umami-event="cta-create-chamber"
                     >
                       {isPending || isConfirming ? (
                         <>

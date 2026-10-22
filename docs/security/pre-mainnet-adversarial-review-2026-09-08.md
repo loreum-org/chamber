@@ -1,5 +1,7 @@
 # Pre-mainnet adversarial review — Chamber `contracts/src`
 
+> **Note (2026-10-18):** Chamber 1.3.0 removed director session keys (`setDirectorOperator`). Session-key items below are history.
+
 **Date**: 2026-09-08 (reconciled 2026-09-16)  
 **Reviewer**: Cursor Cloud Agent  
 **Repo / commit reviewed**: `loreum-org/chamber` `ce7845e` (`main` at review start). Rebased onto `fdd530b` (`main` after PMN-H01 / M01 / M04). Localized H02 hot-path skip in this PR.  

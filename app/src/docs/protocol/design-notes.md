@@ -26,7 +26,7 @@ Governance and vault logic share **one proxy address** (`TransparentUpgradeableP
 
 ## Self-target calls
 
-Calls where `target == Chamber` are limited to **`upgradeImplementation`** selector — arbitrary self-calls are rejected.
+Calls where `target == Chamber` are limited to **`pause`** and **`unpause`** — arbitrary self-calls are rejected. Upgrades are not self-calls: they go to the chamber's ProxyAdmin (`upgradeAndCall`). ProxyAdmin is the single upgrade path and has no version or migration checks of its own; the board is responsible for what it approves.
 
 ## Quorum formula
 

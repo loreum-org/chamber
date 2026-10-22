@@ -47,8 +47,17 @@ export type DecodedTransaction = {
   intent: TxTransferIntent
   /** True when the proposal calls the Chamber itself (upgrade / pause / unpause). */
   isChamberSelfCall: boolean
+  /** Set for ProxyAdmin ownership changes: hands over or destroys upgrade control. */
+  highRisk?: boolean
 }
 
+const PROXY_ADMIN_UPGRADE_ABI = parseAbi([
+  'function upgradeAndCall(address proxy, address implementation, bytes data)',
+])
+
+const PROXY_ADMIN_OWNERSHIP_ABI = parseAbi(['function transferOwnership(address newOwner)', 'function renounceOwnership()'])
+
+/** `upgradeImplementation` was removed in Chamber 1.3.0; kept to label older queued proposals. */
 const CHAMBER_SELF_CALL_ABI = parseAbi([
   'function upgradeImplementation(address newImplementation, bytes data)',
   'function pause()',
@@ -89,8 +98,10 @@ export function decodeTransactionAction(params: {
   value: bigint
   calldata?: string | null
   functionNameHint?: string
+  /** The chamber's ProxyAdmin, when known, so ownership calls to it are flagged. */
+  proxyAdmin?: Address
 }): DecodedTransaction | null {
-  const { target, value, functionNameHint } = params
+  const { target, value, functionNameHint, proxyAdmin } = params
   const hex =
     params.calldata && params.calldata !== '0x'
       ? ((params.calldata.startsWith('0x') ? params.calldata : `0x${params.calldata}`) as Hex)
@@ -110,6 +121,38 @@ export function decodeTransactionAction(params: {
   }
 
   const selector = hex.slice(0, 10).toLowerCase()
+
+  // ProxyAdmin ownership: whoever owns it can upgrade the chamber; nobody can after renounce.
+  if (proxyAdmin && target.toLowerCase() === proxyAdmin.toLowerCase()) {
+    try {
+      const decoded = decodeFunctionData({ abi: PROXY_ADMIN_OWNERSHIP_ABI, data: hex })
+      if (decoded.functionName === 'transferOwnership') {
+        const to = (decoded.args as readonly unknown[])[0]
+        if (isAddress_(to)) {
+          return {
+            functionName: 'transferOwnership',
+            summary: 'Transfer this chamber’s ProxyAdmin (upgrade control) to',
+            counterparty: to,
+            counterpartyRole: 'recipient',
+            intent: null,
+            isChamberSelfCall: false,
+            highRisk: true,
+          }
+        }
+      }
+      if (decoded.functionName === 'renounceOwnership') {
+        return {
+          functionName: 'renounceOwnership',
+          summary: 'Renounce this chamber’s ProxyAdmin: the chamber can never be upgraded again',
+          intent: null,
+          isChamberSelfCall: false,
+          highRisk: true,
+        }
+      }
+    } catch {
+      // Not an ownership call.
+    }
+  }
 
   // ERC-20 patterns decode from raw bytes — canonical signatures, no ABI needed.
   const words = hex.slice(10)
@@ -176,7 +219,25 @@ export function decodeTransactionAction(params: {
     }
   }
 
-  // Chamber self-calls (upgrade / pause / unpause).
+  // Chamber upgrade (1.3.0+ path, works on every version): ProxyAdmin.upgradeAndCall(proxy, impl, data).
+  try {
+    const decoded = decodeFunctionData({ abi: PROXY_ADMIN_UPGRADE_ABI, data: hex })
+    const impl = (decoded.args as readonly unknown[])[1]
+    if (isAddress_(impl)) {
+      return {
+        functionName: 'upgradeAndCall',
+        summary: 'Upgrade the Chamber implementation via its ProxyAdmin (governance change)',
+        counterparty: impl,
+        counterpartyRole: 'implementation',
+        intent: null,
+        isChamberSelfCall: false,
+      }
+    }
+  } catch {
+    // Not a ProxyAdmin upgrade.
+  }
+
+  // Chamber self-calls (pause / unpause; legacy upgradeImplementation before 1.3.0).
   try {
     const decoded = decodeFunctionData({ abi: CHAMBER_SELF_CALL_ABI, data: hex })
     const args = (decoded.args as readonly unknown[] | undefined) ?? []
@@ -185,7 +246,7 @@ export function decodeTransactionAction(params: {
       if (isAddress_(impl)) {
         return {
           functionName: 'upgradeImplementation',
-          summary: 'Upgrade the Chamber implementation (governance change)',
+          summary: 'Upgrade the Chamber implementation (legacy upgradeImplementation, removed in 1.3.0)',
           counterparty: impl,
           counterpartyRole: 'implementation',
           intent: null,

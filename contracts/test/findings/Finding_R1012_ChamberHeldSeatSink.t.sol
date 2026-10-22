@@ -81,7 +81,7 @@ contract FindingR1012ChamberHeldSeatSinkTest is Test {
 
         bytes memory d = abi.encodeCall(IERC20.transfer, (attacker, token.balanceOf(address(chamber))));
         vm.startPrank(attacker);
-        chamber.submitTransaction(1, address(token), 0, d);
+        chamber.submitTransaction(1, address(token), 0, d, "", 0);
         vm.expectRevert(IChamber.NotEnoughConfirmations.selector);
         chamber.executeTransaction(1, 0, d);
         vm.stopPrank();

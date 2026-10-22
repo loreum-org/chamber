@@ -46,7 +46,7 @@ contract FindingM06WalletExpiryTest is Test {
         deal(address(chamber), value);
 
         vm.prank(user1);
-        chamber.submitTransaction(1, target, value, EMPTY, deadline);
+        chamber.submitTransaction(1, target, value, EMPTY, "", deadline);
         vm.prank(user2);
         chamber.confirmTransaction(2, 0);
         vm.prank(user3);
@@ -67,7 +67,7 @@ contract FindingM06WalletExpiryTest is Test {
         deal(address(chamber), value);
 
         vm.prank(user1);
-        chamber.submitTransaction(1, target, value, EMPTY, deadline);
+        chamber.submitTransaction(1, target, value, EMPTY, "", deadline);
         vm.prank(user2);
         chamber.confirmTransaction(2, 0);
         vm.prank(user3);
@@ -88,7 +88,7 @@ contract FindingM06WalletExpiryTest is Test {
         uint256 submittedAt = block.timestamp;
 
         vm.prank(user1);
-        chamber.submitTransaction(1, address(0x3), 0, EMPTY);
+        chamber.submitTransaction(1, address(0x3), 0, EMPTY, "", 0);
 
         assertEq(chamber.getTransactionDeadline(0), submittedAt + chamber.DEFAULT_TRANSACTION_MAX_AGE());
         assertEq(chamber.DEFAULT_TRANSACTION_MAX_AGE(), 30 days);
@@ -100,7 +100,7 @@ contract FindingM06WalletExpiryTest is Test {
         deal(address(chamber), value);
 
         vm.prank(user1);
-        chamber.submitTransaction(1, target, value, EMPTY);
+        chamber.submitTransaction(1, target, value, EMPTY, "", 0);
         _clearStoredDeadline(0);
 
         assertEq(chamber.getTransactionDeadline(0), 0);
@@ -128,7 +128,7 @@ contract FindingM06WalletExpiryTest is Test {
         deal(address(chamber), value);
 
         vm.prank(user1);
-        chamber.submitTransaction(1, target, value, EMPTY);
+        chamber.submitTransaction(1, target, value, EMPTY, "", 0);
         vm.prank(user2);
         chamber.confirmTransaction(2, 0);
         vm.prank(user3);

@@ -83,26 +83,6 @@ abstract contract Wallet {
         WalletLib.requireNoThirdPartyPull(target, asset, data);
     }
 
-    function _submitTransaction(uint256 tokenId, address target, uint256 value, bytes memory data) internal {
-        _submitTransaction(tokenId, target, value, data, 0);
-    }
-
-    function _submitTransaction(uint256 tokenId, address target, uint256 value, bytes memory data, uint256 deadline)
-        internal
-    {
-        _submitTransactionWithMetadata(tokenId, target, value, data, "", deadline);
-    }
-
-    function _submitTransactionWithMetadata(
-        uint256 tokenId,
-        address target,
-        uint256 value,
-        bytes memory data,
-        string memory metadataURI
-    ) internal {
-        _submitTransactionWithMetadata(tokenId, target, value, data, metadataURI, 0);
-    }
-
     function _submitTransactionWithMetadata(
         uint256 tokenId,
         address target,
@@ -120,8 +100,7 @@ abstract contract Wallet {
             metadataURI,
             deadline,
             _submitQuorum(),
-            address(this),
-            _submitAutoConfirms(tokenId)
+            _storesCalldata(target)
         );
     }
 
@@ -129,9 +108,9 @@ abstract contract Wallet {
         return 0;
     }
 
-    /// @dev Whether a submit also records the submitting token's confirmation.
-    function _submitAutoConfirms(uint256) internal view virtual returns (bool) {
-        return true;
+    /// @dev Whether a submitted nonce keeps its full calldata onchain (L-04). Self-calls by default.
+    function _storesCalldata(address target) internal view virtual returns (bool) {
+        return target == address(this);
     }
 
     function _confirmTransaction(uint256 tokenId, uint256 nonce) internal virtual {
@@ -165,13 +144,14 @@ abstract contract Wallet {
         returns (bool executed, uint8 confirmations, address target, uint256 value, bytes32 dataHash)
     {
         WalletTypes.Transaction storage transaction = _getWalletStorage().transactions[nonce];
-        return (
-            transaction.executed,
-            transaction.confirmations,
-            transaction.target,
-            transaction.value,
-            transaction.dataHash
-        );
+        return
+            (
+                transaction.executed,
+                transaction.confirmations,
+                transaction.target,
+                transaction.value,
+                transaction.dataHash
+            );
     }
 
     function getTransactionMetadata(uint256 nonce) public view virtual returns (string memory) {
@@ -202,7 +182,6 @@ abstract contract Wallet {
         return _getWalletStorage().transactionDeadline[nonce];
     }
 
-
     function getCancelConfirmation(uint256 tokenId, uint256 nonce) public view virtual returns (bool) {
         return _getWalletStorage().isCancelConfirmed[nonce][tokenId];
     }
@@ -210,6 +189,4 @@ abstract contract Wallet {
     function getCancelConfirmations(uint256 nonce) public view virtual returns (uint8) {
         return _getWalletStorage().cancelConfirmations[nonce];
     }
-
-
 }

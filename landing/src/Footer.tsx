@@ -26,7 +26,7 @@ function Footer() {
         <div>
           <h4 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 mb-4">Product</h4>
           <ul className="space-y-2.5 text-sm text-slate-400">
-            <li><a href={chamberAppUrl} className={itemClass}>Open the app</a></li>
+            <li><a href={chamberAppUrl} className={itemClass} data-umami-event="cta-launch-app">Open the app</a></li>
             <li><a href={`${chamberAppUrl}/docs`} target="_blank" rel="noopener noreferrer" className={itemClass}>Documentation</a></li>
             <li><Link to="/whitepaper" className={itemClass}>Whitepaper</Link></li>
             <li><Link to="/blog" className={itemClass}>Blog</Link></li>

@@ -185,7 +185,7 @@ const QUEUE = [
   {
     id: 48,
     title: 'Upgrade the chamber implementation',
-    decoded: 'upgradeImplementation(0x8bF1…c0De)',
+    decoded: 'ProxyAdmin.upgradeAndCall(chamber, 0x8bF1…c0De, 0x)',
     sim: 'Self-call · takes effect the moment it executes',
     status: 'High risk',
     tone: 'chip-bad',
@@ -332,7 +332,7 @@ function App() {
             transition={{ duration: 0.6, delay: 0.25 }}
             className="mt-8 flex flex-col sm:flex-row gap-3"
           >
-            <a href={chamberAppUrl} className="btn btn-primary">
+            <a href={chamberAppUrl} className="btn btn-primary" data-umami-event="cta-launch-app">
               Open the app
               <ArrowRight className="w-4 h-4" />
             </a>
@@ -581,7 +581,7 @@ function App() {
               contract does the rest. Try it on Sepolia first.
             </p>
             <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
-              <a href={chamberAppUrl} className="btn btn-primary">
+              <a href={chamberAppUrl} className="btn btn-primary" data-umami-event="cta-launch-app">
                 Open the app
                 <ArrowRight className="w-4 h-4" />
               </a>

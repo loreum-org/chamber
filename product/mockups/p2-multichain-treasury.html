@@ -64,7 +64,6 @@
       <a class="brand" href="index.html"><span class="brand-mark">L</span><span>Loreum</span></a>
       <nav class="nav" aria-label="Main">
         <a href="app-overview.html" class="on">My Chambers</a>
-        <a href="app-session-keys.html">Operators</a>
         <a href="#">Deploy Chamber</a>
         <a href="#">Compliance</a>
         <a href="app-migrate.html">Migrate from Safe</a>
@@ -111,7 +110,6 @@
     <a href="app-queue.html">Queue <span class="badge warn">2</span></a>
     <a href="p2-multichain-treasury.html" class="on">Treasury</a>
     <a href="app-supply-authority.html">Supply authority</a>
-    <a href="app-session-keys.html">Session keys</a>
     <a href="p2-multichain-treasury.html#spokes">Spokes <span class="badge warn">Preview</span></a>
   </nav>
 
@@ -245,7 +243,7 @@
       <dt>Relayers</dt><dd>Deliver and replay messages. Liveness only: they can't create, change or approve anything.</dd>
       <dt>Guardian</dt><dd>Loreum Guardian Safe, 3-of-5. Can cancel queued entries on a spoke. Can't queue, approve or move anything.</dd>
       <dt>Watchers</dt><dd>Compare every queued spoke entry with its home proposal and raise alerts.</dd>
-      <dt>Session keys</dt><dd>Stay a home-chain concept. A director's session key can submit on Ethereum; nothing on a spoke recognizes it.</dd>
+      <dt>Directors</dt><dd>Stay a home-chain concept. A seat's owner can submit on Ethereum; nothing on a spoke recognizes it.</dd>
     </dl>
   </div>
 
@@ -486,7 +484,7 @@
       <li><b>Balances come from the indexer.</b> Home balances come from the periodic vault and treasury snapshots (I-7, I-20). Spoke balances come from spoke-chain tables with a slower poll interval and their own RPC budget (P-24, P-29), because the review warned that Ponder's default one-second polling on every chain would bring back the Alchemy quota burn.</li>
       <li><b>Vault assets never move.</b> The review: "Don't move vault assets to spokes" and "Counting spoke balances in the vault's totalAssets" is deferred. The banner says why in one sentence, so nobody proposes it by accident.</li>
       <li><b>Per-chain freshness.</b> With three chains, one "Indexed 24 s ago" chip would hide a stalled spoke. The chip shows each chain's head age, and the side card shows head, age and poll interval. If one chain goes stale, only its numbers get marked (I-10 chain-aware client and head clock; I-11/I-21 zero display-time RPC). Ethereum keeps the app-wide 30-block warn threshold; spokes use a time threshold because their block times differ (Base 2 s, Arbitrum about 0.25 s).</li>
-      <li><b>The authority chain, extended.</b> The <code>.auth</code> element usually shows seat → owner → session key. For a spoke, the same element shows board → Chamber → verifier → receiver → Delay → Roles → Safe. The role list uses the P-8/P-9 names: "operator" still means a director's session key, and relayers, verifiers, guardians and watchers are separate roles.</li>
+      <li><b>The authority chain, extended.</b> The <code>.auth</code> element usually shows seat → owner → signer. For a spoke, the same element shows board → Chamber → verifier → receiver → Delay → Roles → Safe. The role list uses the P-8/P-9 names: directors act as their seat's owner, and relayers, verifiers, guardians and watchers are separate roles.</li>
       <li><b>L2BEAT-style security panel.</b> One row per trust question, with a green or amber bar and a rosette summary that has one slice per rated row (the receiver rule folds into verification), so the summary can't look safer than the rows. Data comes from the indexer's <code>spoke_config</code> (P-25). The parameters follow the P-19 spec defaults: 72 h cooldown and a 7-day expiration. Expiration must be above zero, because a failing head entry otherwise blocks the Delay queue forever.</li>
       <li><b>Guardian semantics are stated honestly.</b> <code>Delay.setTxNonce</code> skips every entry below the new nonce, not just one (phase 2 open question 5). The panel says so, so nobody is surprised by a mass cancel.</li>
       <li><b>Home dependency is amber on purpose.</b> From the P-19 review note: the spoke trusts the Chamber's address, not its code, so a quorum self-upgrade re-points every spoke. This is the one place the design inherits home-chain governance risk, so it isn't shown as green.</li>

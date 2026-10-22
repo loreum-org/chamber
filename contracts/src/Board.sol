@@ -174,7 +174,12 @@ abstract contract Board is ReentrancyGuardTransientUpgradeable {
     function _countCurrentDirectorFlags(
         IERC721 nft,
         mapping(uint256 nonce => mapping(uint256 tokenId => bool)) storage flags,
-        mapping(uint256 nonce => mapping(uint256 tokenId => address)) storage flagOwners,
+        mapping(
+            uint256 nonce
+                => mapping(
+                uint256 tokenId => address
+            )
+        ) storage flagOwners,
         uint256 nonce
     ) internal view returns (uint256) {
         return BoardLib.countCurrentDirectorFlags(_getBoardStorage(), nft, flags, flagOwners, nonce);
@@ -186,23 +191,9 @@ abstract contract Board is ReentrancyGuardTransientUpgradeable {
 
     function _collectDelegations(
         mapping(address => mapping(uint256 => uint256)) storage holderDelegation,
-        mapping(address => uint256) storage totalHolderDelegations,
         mapping(address => EnumerableSet.UintSet) storage holderDelegatedTokenIds,
         address holder
     ) internal view returns (uint256[] memory, uint256[] memory) {
-        return BoardLib.collectDelegations(
-            _getBoardStorage(), holderDelegation, totalHolderDelegations, holderDelegatedTokenIds, holder
-        );
-    }
-
-    function _syncTrackedDelegations(
-        mapping(address => mapping(uint256 => uint256)) storage holderDelegation,
-        mapping(address => uint256) storage totalHolderDelegations,
-        mapping(address => EnumerableSet.UintSet) storage holderDelegatedTokenIds,
-        address holder
-    ) internal {
-        BoardLib.syncTrackedDelegations(
-            _getBoardStorage(), holderDelegation, totalHolderDelegations, holderDelegatedTokenIds, holder
-        );
+        return BoardLib.collectDelegations(holderDelegation, holderDelegatedTokenIds, holder);
     }
 }

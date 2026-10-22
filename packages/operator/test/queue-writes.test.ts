@@ -116,3 +116,63 @@ test('README documents undelegate, revokeConfirmation, and cancelTransaction', a
   assert.match(readme, /op\.revokeConfirmation/)
   assert.match(readme, /op\.cancelTransaction/)
 })
+
+test('chamberAbi has one 6-arg submitTransaction and no session-key entries', () => {
+  const submits = chamberAbi.filter(
+    (item) => item.type === 'function' && 'name' in item && item.name.startsWith('submitTransaction'),
+  )
+  assert.equal(submits.length, 1)
+  const submit = submits[0] as { name: string; inputs: readonly { type: string }[] }
+  assert.equal(submit.name, 'submitTransaction')
+  assert.deepEqual(
+    submit.inputs.map((i) => i.type),
+    ['uint256', 'address', 'uint256', 'bytes', 'string', 'uint256'],
+  )
+
+  const names = chamberAbi.flatMap((item) => ('name' in item ? [item.name as string] : []))
+  for (const removed of [
+    'setDirectorOperator',
+    'getDirectorSession',
+    'isTokenAuthorized',
+    'DirectorOperatorSet',
+    'InvalidSessionExpiry',
+    'InvalidSessionScope',
+    'submitTransactionWithMetadata',
+  ]) {
+    assert.ok(!names.includes(removed), `${removed} should not be in chamberAbi`)
+  }
+  assert.ok(!names.some((n) => n.startsWith('SESSION_SCOPE_')))
+})
+
+test('submitTransaction encodes metadataURI and deadline', () => {
+  const data = encodeFunctionData({
+    abi: chamberAbi,
+    functionName: 'submitTransaction',
+    args: [1n, '0x000000000000000000000000000000000000dEaD', 0n, '0x', '', 0n],
+  })
+  const decoded = decodeFunctionData({ abi: chamberAbi, data })
+  assert.equal(decoded.functionName, 'submitTransaction')
+  assert.deepEqual([...(decoded.args ?? [])], [
+    1n,
+    '0x000000000000000000000000000000000000dEaD',
+    0n,
+    '0x',
+    '',
+    0n,
+  ])
+})
+
+test('ChamberOperator has no session-key methods', () => {
+  const proto = ChamberOperator.prototype as unknown as Record<string, unknown>
+  for (const name of [
+    'setDirectorOperator',
+    'clearDirectorOperator',
+    'getDirectorOperator',
+    'getDirectorOperatorScope',
+    'getDirectorOperatorLiveAt',
+    'getDirectorOperatorState',
+    'getDirectorSession',
+  ]) {
+    assert.equal(proto[name], undefined, name)
+  }
+})
