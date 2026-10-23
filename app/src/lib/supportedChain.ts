@@ -10,6 +10,8 @@ export function getNetworkName(chainId: number, configuredName?: string): string
       return 'Sepolia'
     case 8453:
       return 'Base'
+    case 84532:
+      return 'Base Sepolia'
     case 42161:
       return 'Arbitrum'
     case 31337:

@@ -13,7 +13,9 @@ import {
   getEventLogsPaged,
   isChamberDiscoveryIncomplete,
   parseStartBlock,
+  BASE_SEPOLIA_FACTORY_START_BLOCK,
   SEPOLIA_DISCOVERY_START_BLOCK,
+  discoveryStartBlock,
   shouldShowDiscoveryGap,
   factoryCreatedEvent,
 } from '../src/lib/chamberDiscovery.ts'
@@ -59,6 +61,9 @@ function testStartBlocks() {
   assert.equal(parseStartBlock(''), undefined)
   assert.equal(parseStartBlock('nope'), undefined)
   assert.equal(SEPOLIA_DISCOVERY_START_BLOCK, 7453704n)
+  assert.equal(BASE_SEPOLIA_FACTORY_START_BLOCK, 48_743_114n)
+  assert.equal(discoveryStartBlock(84532, 'factory'), 48_743_114n)
+  assert.equal(discoveryStartBlock(11155111, 'factory'), 7453704n)
 
   const latest = 8_000_000n
   assert.equal(clampDiscoveryFromBlock(7453704n, latest, false), 7453704n)

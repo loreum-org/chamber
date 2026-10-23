@@ -54,18 +54,20 @@ npm install
 2. Optional — **Ponder indexer** ([loreum-org/chamber-indexer](https://github.com/loreum-org/chamber-indexer)) for **My chambers** that survive public-RPC log truncation and a new browser (no `localStorage` recents). Dual discovery: Factory `ChamberCreated` (when `PONDER_FACTORY_ADDRESS` is set on the indexer) plus leftover Registry creates. GraphQL `chambers` / `chamberHolders` = creator OR current share balance.
    ```bash
    VITE_INDEXER_URL=https://your-ponder-host.example
-   # VITE_INDEXER_CHAIN_ID=11155111
+   # VITE_INDEXER_CHAIN_ID=84532
    ```
-   The app POSTs to `{VITE_INDEXER_URL}/graphql` (`MyChambers`). If the host is unset or down, discovery falls back to chunked Factory/Registry `getLogs` from the configured start block (Sepolia default `7453704`, same as the indexer). A live Ponder host is not required. See `app/.env.template`.
+   The app POSTs to `{VITE_INDEXER_URL}/graphql` (`MyChambers`). If the host is unset or down, discovery falls back to chunked Factory/Registry `getLogs` from the configured start block (Base Sepolia Factory `48743114`). A live Ponder host is not required. See `app/.env.template`.
 
 3. Update the WalletConnect Project ID in `src/lib/wagmi.ts`:
    ```typescript
    projectId: 'YOUR_WALLETCONNECT_PROJECT_ID'
    ```
 
-4. Sepolia Factory / Registry / demo ERC-20 / membership ERC-721 come from
-   `contracts/deployments/sepolia.txt` (parsed by `getContractAddresses(11155111)`).
-   Env vars (`VITE_SEPOLIA_*`) still override. Other networks: set `VITE_*` in `.env`.
+4. The live Factory is Base Sepolia (chain 84532) from
+   `contracts/deployments/base-sepolia.txt` (`getContractAddresses(84532)`).
+   Ethereum Sepolia Factory / Registry / demo tokens stay in
+   `contracts/deployments/sepolia.txt` (`getContractAddresses(11155111)`).
+   Env vars (`VITE_BASE_SEPOLIA_*`, `VITE_SEPOLIA_*`) still override. Other networks: set `VITE_*` in `.env`.
    Ethereum mainnet (`getContractAddresses(1)`) reads `VITE_MAINNET_*` then
    `contracts/deployments/mainnet.txt`. The committed file is TBD — chain id 1
    stays unset and never uses Sepolia addresses. Paste Factory / impl / Chamber

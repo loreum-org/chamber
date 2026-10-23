@@ -62,7 +62,19 @@ The Chamber represents a novel smart account architecture that fundamentally rei
 ```
 ## Contract Addresses
 
-### Sepolia Testnet (26 Aug 2026)
+### Base Sepolia (22 Oct 2026, chain 84532)
+
+Live Factory. Record: [`contracts/deployments/base-sepolia.txt`](./contracts/deployments/base-sepolia.txt). `getContractAddresses(84532)`.
+
+- Factory: `0x9bd245B992f0ba869D208bdABecB608080984701`
+- Chamber implementation: `0xC6e817C021D4fADA5Ed27B62112991ec48522E90`
+- BoardLib: `0x38653a098a83c334f5CeBB588df7625Be50dc4ea`
+- WalletLib: `0x679077aAc6941dce5256715d9CC22D54925B9A4e`
+- Admin: `0x5d45A213B2B6259F0b3c116a8907B56AB5E22095`
+- Start block: `48743114`
+- Factory tx: `0x57b2222ab86525ab3b1b8e13f44f94d874466deeae0b7d20102159b4eced7820`
+
+### Ethereum Sepolia (26 Aug 2026, chain 11155111)
 - Factory: `0x43aA92c8A26392f21F63cdA88B6BaB5031C40550`
 - Chamber implementation: `0xd441f1FDad2d3a447d2621DE4DE8b5738e02d39c`
 - BoardLib: `0xC3E0Fe4e89e01ca69e384bd61DA78a5a6379762D`

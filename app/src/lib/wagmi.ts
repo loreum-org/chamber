@@ -1,6 +1,6 @@
 import { getDefaultConfig } from '@rainbow-me/rainbowkit'
 import { fallback, http, webSocket } from 'wagmi'
-import { mainnet, sepolia, base, arbitrum, Chain } from 'wagmi/chains'
+import { mainnet, sepolia, base, baseSepolia, arbitrum, Chain } from 'wagmi/chains'
 import type { Transport } from 'viem'
 import localDeployments from '@/contracts/deployments.json'
 import { getAlchemyApiKeyFromEnv } from '@/lib/alchemy'
@@ -12,6 +12,7 @@ import {
 } from '@/lib/chamberLiveUpdates'
 import { ZERO_ADDRESS, isNonZeroAddress } from '@/lib/address'
 import { sepoliaDeploymentAddresses } from '@/lib/sepoliaDeployments'
+import { baseSepoliaDeploymentAddresses } from '@/lib/baseSepoliaDeployments'
 import { mainnetDeploymentAddresses } from '@/lib/mainnetDeployments'
 import { getNetworkName as networkNameFromId, pickPreferredSupportedChainId } from '@/lib/supportedChain'
 
@@ -54,6 +55,7 @@ const PUBLIC_RPC: Record<number, string> = {
   // sepolia.drpc.org now rejects free-tier Sepolia ("chain is not available on free plan").
   [sepolia.id]: 'https://ethereum-sepolia-rpc.publicnode.com',
   [base.id]: 'https://mainnet.base.org',
+  [baseSepolia.id]: 'https://sepolia.base.org',
   [arbitrum.id]: 'https://arb1.arbitrum.io/rpc',
 }
 
@@ -125,19 +127,20 @@ if (!walletConnectProjectId) {
 }
 
 if (import.meta.env.DEV && alchemyApiKey) {
-  console.info('[wagmi] Alchemy RPC enabled for Ethereum, Sepolia, Base, Arbitrum, and local RPC')
+  console.info('[wagmi] Alchemy RPC enabled for Ethereum, Sepolia, Base, Base Sepolia, Arbitrum, and local RPC')
 }
 
-/** Production: Sepolia, plus Mainnet when factory or registry env is set. Dev adds Base, Arbitrum, local. */
+/** Production: Base Sepolia (live Factory), Ethereum Sepolia, plus Mainnet when configured. Dev adds Base, Arbitrum, local. */
 export const config = productionApp
   ? isMainnetConfigured
     ? getDefaultConfig({
         appName: 'Chamber',
         projectId: walletConnectProjectId,
-        chains: [mainnet, sepolia],
+        chains: [baseSepolia, mainnet, sepolia],
         ssr: false,
         pollingInterval: POLLING_INTERVAL_MS,
         transports: {
+          [baseSepolia.id]: chainTransport(baseSepolia.id, PUBLIC_RPC[baseSepolia.id]),
           [mainnet.id]: chainTransport(mainnet.id, PUBLIC_RPC[mainnet.id]),
           [sepolia.id]: chainTransport(sepolia.id, PUBLIC_RPC[sepolia.id]),
         },
@@ -145,10 +148,11 @@ export const config = productionApp
     : getDefaultConfig({
         appName: 'Chamber',
         projectId: walletConnectProjectId,
-        chains: [sepolia],
+        chains: [baseSepolia, sepolia],
         ssr: false,
         pollingInterval: POLLING_INTERVAL_MS,
         transports: {
+          [baseSepolia.id]: chainTransport(baseSepolia.id, PUBLIC_RPC[baseSepolia.id]),
           [sepolia.id]: chainTransport(sepolia.id, PUBLIC_RPC[sepolia.id]),
         },
       })
@@ -156,10 +160,11 @@ export const config = productionApp
     ? getDefaultConfig({
         appName: 'Chamber',
         projectId: walletConnectProjectId,
-        chains: [mainnet, sepolia, base, arbitrum, localhost],
+        chains: [baseSepolia, mainnet, sepolia, base, arbitrum, localhost],
         ssr: false,
         pollingInterval: POLLING_INTERVAL_MS,
         transports: {
+          [baseSepolia.id]: chainTransport(baseSepolia.id, PUBLIC_RPC[baseSepolia.id]),
           [mainnet.id]: chainTransport(mainnet.id, PUBLIC_RPC[mainnet.id]),
           [sepolia.id]: chainTransport(sepolia.id, PUBLIC_RPC[sepolia.id]),
           [base.id]: chainTransport(base.id, PUBLIC_RPC[base.id]),
@@ -172,10 +177,11 @@ export const config = productionApp
     : getDefaultConfig({
         appName: 'Chamber',
         projectId: walletConnectProjectId,
-        chains: [sepolia, base, arbitrum, localhost],
+        chains: [baseSepolia, sepolia, base, arbitrum, localhost],
         ssr: false,
         pollingInterval: POLLING_INTERVAL_MS,
         transports: {
+          [baseSepolia.id]: chainTransport(baseSepolia.id, PUBLIC_RPC[baseSepolia.id]),
           [sepolia.id]: chainTransport(sepolia.id, PUBLIC_RPC[sepolia.id]),
           [base.id]: chainTransport(base.id, PUBLIC_RPC[base.id]),
           [arbitrum.id]: chainTransport(arbitrum.id, PUBLIC_RPC[arbitrum.id]),
@@ -237,6 +243,21 @@ export const CONTRACT_ADDRESSES = {
     mockERC20: ZERO_ADDRESS as `0x${string}`,
     mockERC721: ZERO_ADDRESS as `0x${string}`,
   },
+  // Base Sepolia (84532) — committed defaults from base-sepolia.txt. Env overrides.
+  // Ethereum Sepolia stays on `sepolia` / sepolia.txt.
+  baseSepolia: {
+    registry: ZERO_ADDRESS as `0x${string}`,
+    factory: addressFromEnv(
+      import.meta.env.VITE_BASE_SEPOLIA_FACTORY,
+      baseSepoliaDeploymentAddresses.factory,
+    ),
+    chamberImplementation: addressFromEnv(
+      import.meta.env.VITE_BASE_SEPOLIA_CHAMBER_IMPL,
+      baseSepoliaDeploymentAddresses.chamberImplementation,
+    ),
+    mockERC20: ZERO_ADDRESS as `0x${string}`,
+    mockERC721: ZERO_ADDRESS as `0x${string}`,
+  },
   arbitrum: {
     registry: addressFromEnv(import.meta.env.VITE_ARBITRUM_REGISTRY),
     factory: addressFromEnv(import.meta.env.VITE_ARBITRUM_FACTORY),
@@ -282,6 +303,8 @@ export function getContractAddresses(chainId: number) {
       return CONTRACT_ADDRESSES.sepolia
     case 8453:
       return CONTRACT_ADDRESSES.base
+    case 84532:
+      return CONTRACT_ADDRESSES.baseSepolia
     case 42161:
       return CONTRACT_ADDRESSES.arbitrum
     case 31337:
@@ -316,9 +339,9 @@ export function getConfiguredChainIds(): number[] {
 }
 
 /**
- * Prefer Sepolia when it has a Factory or Registry, otherwise the first wagmi
- * chain that does. Does not invent addresses — only reads configured maps.
+ * Prefer Base Sepolia when that Factory is configured, otherwise the first
+ * wagmi chain that has a Factory or Registry.
  */
 export function getPreferredSupportedChainId(): number | undefined {
-  return pickPreferredSupportedChainId(getConfiguredChainIds())
+  return pickPreferredSupportedChainId(getConfiguredChainIds(), baseSepolia.id)
 }

@@ -3,7 +3,7 @@
  *
  * Order:
  * 1. Ponder GraphQL (`VITE_INDEXER_URL`) — loreum-org/chamber-indexer `chambers` /
- *    `chamberHolders` (creator OR share balance). Sepolia by default.
+ *    `chamberHolders` (creator OR share balance). Base Sepolia (84532) by default.
  * 2. Factory / Registry `ChamberCreated` via chunked `eth_getLogs` (not one
  *    getLogs-from-0). Factory remains the source of creation events; Registry
  *    logs are leftover legacy deploys only.
@@ -35,6 +35,9 @@ export const registryCreatedEvent = parseAbiItem(
 
 /** chamber-indexer `REGISTRY_START_BLOCK` — Factory default matches when unset. */
 export const SEPOLIA_DISCOVERY_START_BLOCK = 7453704n
+
+/** Base Sepolia Factory deploy block (`contracts/deployments/base-sepolia.txt`). */
+export const BASE_SEPOLIA_FACTORY_START_BLOCK = 48_743_114n
 
 /** Catch-up window after a successful indexer query (~2 days on 12s Sepolia). */
 export const INDEXER_CATCHUP_BLOCKS = 16_384n
@@ -104,6 +107,7 @@ export function discoveryStartBlock(chainId: number, kind: 'factory' | 'registry
           1: import.meta.env?.VITE_MAINNET_FACTORY_START_BLOCK,
           11155111: import.meta.env?.VITE_SEPOLIA_FACTORY_START_BLOCK,
           8453: import.meta.env?.VITE_BASE_FACTORY_START_BLOCK,
+          84532: import.meta.env?.VITE_BASE_SEPOLIA_FACTORY_START_BLOCK,
           42161: import.meta.env?.VITE_ARBITRUM_FACTORY_START_BLOCK,
         }[chainId]
       : {
@@ -116,6 +120,7 @@ export function discoveryStartBlock(chainId: number, kind: 'factory' | 'registry
   const parsed = parseStartBlock(env)
   if (parsed !== undefined) return parsed
   if (chainId === 11155111) return SEPOLIA_DISCOVERY_START_BLOCK
+  if (chainId === 84532 && kind === 'factory') return BASE_SEPOLIA_FACTORY_START_BLOCK
   return 0n
 }
 
