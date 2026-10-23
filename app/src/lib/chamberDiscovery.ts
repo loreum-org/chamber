@@ -100,7 +100,12 @@ export function parseStartBlock(raw: string | undefined): bigint | undefined {
   }
 }
 
-export function discoveryStartBlock(chainId: number, kind: 'factory' | 'registry'): bigint {
+/** `recorded` is the chain's `Factory start block` from its deployments file, if any. */
+export function discoveryStartBlock(
+  chainId: number,
+  kind: 'factory' | 'registry',
+  recorded?: bigint,
+): bigint {
   const env =
     kind === 'factory'
       ? {
@@ -109,6 +114,8 @@ export function discoveryStartBlock(chainId: number, kind: 'factory' | 'registry
           8453: import.meta.env?.VITE_BASE_FACTORY_START_BLOCK,
           84532: import.meta.env?.VITE_BASE_SEPOLIA_FACTORY_START_BLOCK,
           42161: import.meta.env?.VITE_ARBITRUM_FACTORY_START_BLOCK,
+          421614: import.meta.env?.VITE_ARBITRUM_SEPOLIA_FACTORY_START_BLOCK,
+          11155420: import.meta.env?.VITE_OP_SEPOLIA_FACTORY_START_BLOCK,
         }[chainId]
       : {
           1: import.meta.env?.VITE_MAINNET_REGISTRY_START_BLOCK,
@@ -121,7 +128,8 @@ export function discoveryStartBlock(chainId: number, kind: 'factory' | 'registry
   if (parsed !== undefined) return parsed
   if (chainId === 11155111) return SEPOLIA_DISCOVERY_START_BLOCK
   if (chainId === 84532 && kind === 'factory') return BASE_SEPOLIA_FACTORY_START_BLOCK
-  return 0n
+  // Other testnets: `Factory start block` written by `make deploy-testnet`.
+  return (kind === 'factory' ? recorded : undefined) ?? 0n
 }
 
 export function clampDiscoveryFromBlock(fromBlock: bigint, latest: bigint, catchupOnly: boolean): bigint {
@@ -302,6 +310,10 @@ export async function discoverChambers(options: {
   chainId: number
   userAddress: Address
   factoryAddress?: `0x${string}`
+  /** Older Factories on the same chain, scanned too (deduped with `factoryAddress`). */
+  extraFactoryAddresses?: readonly `0x${string}`[]
+  /** Oldest Factory deploy block from the chain's deployments file. */
+  factoryStartBlock?: bigint
   registryAddress?: `0x${string}`
   /** Test override. Unset uses `VITE_INDEXER_URL` when the chain matches. */
   indexerUrl?: string
@@ -311,7 +323,12 @@ export async function discoverChambers(options: {
   const seen = new Set<string>()
   const creators = new Map<string, `0x${string}`>()
 
-  const factoryOk = isNonZeroAddress(factoryAddress)
+  const factoryAddresses = [factoryAddress, ...(options.extraFactoryAddresses ?? [])].filter(
+    (addr, i, all): addr is `0x${string}` =>
+      isNonZeroAddress(addr) &&
+      all.findIndex((other) => other?.toLowerCase() === addr!.toLowerCase()) === i,
+  )
+  const factoryOk = factoryAddresses.length > 0
   const registryOk = isNonZeroAddress(registryAddress)
   const indexerUrl =
     options.indexerUrl !== undefined
@@ -346,19 +363,18 @@ export async function discoverChambers(options: {
 
   const latest = await client.getBlockNumber()
 
-  const collectFactory = async () => {
-    if (!factoryOk || !factoryAddress) return
+  const collectFactory = async (address: `0x${string}`) => {
     const sink: LogPageSink = {}
     try {
       const fromBlock = clampDiscoveryFromBlock(
-        discoveryStartBlock(chainId, 'factory'),
+        discoveryStartBlock(chainId, 'factory', options.factoryStartBlock),
         latest,
         indexerOk,
       )
       const logs = await getEventLogsPaged(
         client,
         {
-          address: factoryAddress,
+          address,
           event: factoryCreatedEvent,
           fromBlock,
           toBlock: latest,
@@ -405,6 +421,6 @@ export async function discoverChambers(options: {
     if (sink.errored) health.rpcErrored = true
   }
 
-  await Promise.all([collectFactory(), collectRegistry()])
+  await Promise.all([...factoryAddresses.map(collectFactory), collectRegistry()])
   return { addresses, creators, health }
 }

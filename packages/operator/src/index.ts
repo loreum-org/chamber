@@ -17,4 +17,5 @@ export {
   formatChamberError,
   wrapChamberError,
 } from './errors.ts'
+export { NETWORKS, resolveNetwork, type NetworkName } from './networks.ts'
 export { isSeatingMature } from './seating.ts'

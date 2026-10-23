@@ -15,6 +15,8 @@ const CHAIN_ALCHEMY_NETWORK: Record<number, string> = {
   8453: 'base-mainnet',
   84532: 'base-sepolia',
   42161: 'arb-mainnet',
+  421614: 'arb-sepolia',
+  11155420: 'opt-sepolia',
 }
 
 export function alchemySupportsChain(chainId: number): boolean {

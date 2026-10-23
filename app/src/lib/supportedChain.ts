@@ -1,5 +1,16 @@
 /** Sepolia — preferred when a Factory or Registry is already configured. */
 export const SEPOLIA_CHAIN_ID = 11_155_111
+export const BASE_SEPOLIA_CHAIN_ID = 84_532
+export const ARBITRUM_SEPOLIA_CHAIN_ID = 421_614
+export const OP_SEPOLIA_CHAIN_ID = 11_155_420
+
+/** Testnets the app offers, in display order. */
+export const TESTNET_CHAIN_IDS = [
+  SEPOLIA_CHAIN_ID,
+  BASE_SEPOLIA_CHAIN_ID,
+  ARBITRUM_SEPOLIA_CHAIN_ID,
+  OP_SEPOLIA_CHAIN_ID,
+] as const
 
 /** Display name for wallet/config banners. Does not invent chain metadata. */
 export function getNetworkName(chainId: number, configuredName?: string): string {
@@ -10,10 +21,14 @@ export function getNetworkName(chainId: number, configuredName?: string): string
       return 'Sepolia'
     case 8453:
       return 'Base'
-    case 84532:
+    case BASE_SEPOLIA_CHAIN_ID:
       return 'Base Sepolia'
     case 42161:
       return 'Arbitrum'
+    case ARBITRUM_SEPOLIA_CHAIN_ID:
+      return 'Arbitrum Sepolia'
+    case OP_SEPOLIA_CHAIN_ID:
+      return 'OP Sepolia'
     case 31337:
       return 'Localhost'
     default:

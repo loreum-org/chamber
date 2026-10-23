@@ -4,16 +4,21 @@ import { useAccount, useChainId, useReadContracts, useSwitchChain } from 'wagmi'
 import { isAddress } from 'viem'
 import { useChainModal, useConnectModal } from '@rainbow-me/rainbowkit'
 import { FiAlertTriangle, FiLoader, FiRefreshCw } from 'react-icons/fi'
-import { useHasValidConfig, useMyChambers, useOrganizationsByNFT } from '@/hooks'
+import { useHasValidConfig, useMyChambers, useOpenChamber, useOrganizationsByNFT } from '@/hooks'
 import { erc721Abi } from '@/contracts'
-import { getNetworkName, getPreferredSupportedChainId, isMainnetConfigured } from '@/lib/wagmi'
+import {
+  getConfiguredChainIds,
+  getNetworkName,
+  getPreferredSupportedChainId,
+  isMainnetConfigured,
+} from '@/lib/wagmi'
 import {
   readSimulatedChainId,
   showMainnetUnsupportedBanner,
   switchToSupportedChainLabel,
 } from '@/lib/supportedChain'
 import ChamberCard from '@/components/ChamberCard'
-import { Banner, EmptyState, PageHeader, Segmented } from '@/components/ui'
+import { Banner, EmptyState, NetworkBadge, PageHeader, Segmented } from '@/components/ui'
 import { shortenAddress } from '@/lib/utils'
 
 const GRID = 'grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr))]'
@@ -27,6 +32,8 @@ export default function Dashboard() {
   const { openChainModal } = useChainModal()
   const { openConnectModal } = useConnectModal()
   const [viewMode, setViewMode] = useState<'mine' | 'organizations'>('mine')
+  const [networkFilter, setNetworkFilter] = useState<string>('all')
+  const openChamber = useOpenChamber()
   const [openAddress, setOpenAddress] = useState('')
   const [openError, setOpenError] = useState<string | null>(null)
   const preferredChainId = getPreferredSupportedChainId()
@@ -35,8 +42,10 @@ export default function Dashboard() {
   const switchLabel = switchToSupportedChainLabel(preferredChainId)
 
   const {
-    chambers: myChambers,
+    chambers: allMyChambers,
     isLoading,
+    isFetchingMore,
+    failedChainIds,
     refetch: refetchMine,
     error: chambersError,
     discoveryIncomplete,
@@ -45,8 +54,15 @@ export default function Dashboard() {
     factoryAddress,
     registryAddress,
   } = useMyChambers()
-  const myAddresses = myChambers.map((entry) => entry.address)
-  const { organizations, isLoading: orgsLoading } = useOrganizationsByNFT(myAddresses)
+  // Networks in display order that hold at least one of the user's chambers.
+  const chainOrder = getConfiguredChainIds()
+  const chamberChainIds = chainOrder.filter((id) => allMyChambers.some((c) => c.chainId === id))
+  const activeFilter =
+    networkFilter !== 'all' && chamberChainIds.includes(Number(networkFilter)) ? networkFilter : 'all'
+  const myChambers = allMyChambers
+    .filter((c) => activeFilter === 'all' || c.chainId === Number(activeFilter))
+    .sort((a, b) => chainOrder.indexOf(a.chainId) - chainOrder.indexOf(b.chainId))
+  const { organizations, isLoading: orgsLoading } = useOrganizationsByNFT(myChambers)
   const { isValid } = useHasValidConfig()
 
   useEffect(() => {
@@ -115,8 +131,9 @@ export default function Dashboard() {
       )}
 
       {!isValid && !showUnsupportedMainnet && (
-        <Banner tone="warn" title="Contract addresses not configured" icon={<FiAlertTriangle className="w-4 h-4 text-amber-400" aria-hidden />}>
-          No Factory or Registry address is configured for {getNetworkName(chainId)} (chain {chainId}).
+        <Banner tone="info" title={`Chambers can't be deployed on ${getNetworkName(chainId)}`}>
+          Your wallet is on {getNetworkName(chainId)} (chain {chainId}), which has no Chamber Factory. Chambers on
+          other networks still show below.
           {chainId === 31337 ? (
             <>
               {' '}Deploy contracts to Anvil and set <code className="font-mono">VITE_LOCALHOST_FACTORY</code> (or{' '}
@@ -144,7 +161,7 @@ export default function Dashboard() {
 
       <PageHeader
         title="My chambers"
-        description="Chambers you created, direct, or hold shares in."
+        description="Chambers you created, direct, or hold shares in, on every network."
         actions={
           <Link to="/deploy" className="btn btn-primary" data-umami-event="cta-create-chamber">
             Deploy chamber
@@ -190,18 +207,41 @@ export default function Dashboard() {
       {recents.length > 0 && (
         <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
           <span>Recent</span>
-          {recents.map((addr) => (
-            <Link key={addr} to={`/chamber/${addr}`} className="font-mono text-slate-400 hover:text-slate-100 transition-colors">
-              {shortenAddress(addr, 6)}
-            </Link>
+          {recents.map((recent) => (
+            <button
+              key={`${recent.chainId}:${recent.address}`}
+              type="button"
+              onClick={() => void openChamber(recent.address, recent.chainId)}
+              className="font-mono text-slate-400 hover:text-slate-100 transition-colors"
+              title={getNetworkName(recent.chainId)}
+            >
+              {shortenAddress(recent.address, 6)}
+            </button>
           ))}
         </p>
       )}
 
       {isConnected && discoveryIncomplete && (
         <Banner tone="warn" title="This list may be incomplete" icon={<FiAlertTriangle className="w-4 h-4 text-amber-400" aria-hidden />}>
-          Chamber lookup failed for part of the network. Open a chamber by address above, or pick one from Recent.
+          Chamber lookup failed on {failedChainIds.map((id) => getNetworkName(id)).join(', ')}. Open a chamber by
+          address above, or pick one from Recent.
         </Banner>
+      )}
+
+      {isConnected && chamberChainIds.length > 1 && (
+        <Segmented
+          ariaLabel="Network"
+          items={[
+            { id: 'all', label: 'All networks', count: allMyChambers.length },
+            ...chamberChainIds.map((id) => ({
+              id: String(id),
+              label: getNetworkName(id),
+              count: allMyChambers.filter((c) => c.chainId === id).length,
+            })),
+          ]}
+          active={activeFilter}
+          onChange={setNetworkFilter}
+        />
       )}
 
       {viewMode === 'mine' ? (
@@ -218,11 +258,24 @@ export default function Dashboard() {
             ))}
           </div>
         ) : myChambers.length > 0 ? (
-          <div className={GRID}>
-            {myChambers.map((entry) => (
-              <ChamberCard key={entry.address} address={entry.address} />
-            ))}
+          <div className="space-y-3">
+            <div className={GRID}>
+              {myChambers.map((entry) => (
+                <ChamberCard key={`${entry.chainId}:${entry.address}`} address={entry.address} chainId={entry.chainId} />
+              ))}
+            </div>
+            {isFetchingMore && (
+              <p className="flex items-center gap-2 text-xs text-slate-500">
+                <FiLoader className="w-3.5 h-3.5 animate-spin" aria-hidden />
+                Checking other networks…
+              </p>
+            )}
           </div>
+        ) : isFetchingMore ? (
+          <p className="flex items-center gap-2 text-sm text-slate-500">
+            <FiLoader className="w-4 h-4 animate-spin" aria-hidden />
+            Checking other networks…
+          </p>
         ) : (
           <EmptyChambers />
         )
@@ -244,7 +297,12 @@ export default function Dashboard() {
       ) : organizations && organizations.length > 0 ? (
         <div className="space-y-8">
           {organizations.map((org) => (
-            <OrganizationGroup key={org.nft} nftToken={org.nft} chambers={org.chambers} />
+            <OrganizationGroup
+              key={`${org.chainId}:${org.nft}`}
+              nftToken={org.nft}
+              chainId={org.chainId}
+              chambers={org.chambers}
+            />
           ))}
         </div>
       ) : (
@@ -254,11 +312,19 @@ export default function Dashboard() {
   )
 }
 
-function OrganizationGroup({ nftToken, chambers }: { nftToken: `0x${string}`; chambers: `0x${string}`[] }) {
+function OrganizationGroup({
+  nftToken,
+  chainId,
+  chambers,
+}: {
+  nftToken: `0x${string}`
+  chainId: number
+  chambers: `0x${string}`[]
+}) {
   const { data } = useReadContracts({
     contracts: [
-      { address: nftToken, abi: erc721Abi, functionName: 'symbol' as const },
-      { address: nftToken, abi: erc721Abi, functionName: 'name' as const },
+      { address: nftToken, abi: erc721Abi, functionName: 'symbol' as const, chainId },
+      { address: nftToken, abi: erc721Abi, functionName: 'name' as const, chainId },
     ],
   })
 
@@ -273,10 +339,11 @@ function OrganizationGroup({ nftToken, chambers }: { nftToken: `0x${string}`; ch
         <h2 className="section-title">{nftName || 'Loading…'}</h2>
         {nftSymbol && <span className="text-slate-500 text-sm">{nftSymbol}</span>}
         <span className="font-mono text-xs text-slate-500">membership {shortenAddress(nftToken, 6)}</span>
+        <NetworkBadge chainId={chainId} />
       </div>
       <div className={GRID}>
         {chambers.map((address) => (
-          <ChamberCard key={address} address={address} />
+          <ChamberCard key={address} address={address} chainId={chainId} />
         ))}
       </div>
     </section>

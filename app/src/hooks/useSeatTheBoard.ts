@@ -1,8 +1,7 @@
 import { useAccount, useChainId } from 'wagmi'
-import { sepolia } from 'wagmi/chains'
 import { zeroAddress } from 'viem'
 import { useBoardMembers, useChamberBalance, useDelegations, useUserNFTs } from './useChamber'
-import { getContractAddresses, LOCAL_CHAIN_ID } from '@/lib/wagmi'
+import { getContractAddresses, getTestnetChainIds, LOCAL_CHAIN_ID } from '@/lib/wagmi'
 
 export type SeatTheBoardAction = 'mint' | 'receive' | 'deposit' | 'delegate'
 
@@ -12,8 +11,7 @@ function canMintMembershipNft(
 ): boolean {
   if (!nftToken || nftToken === zeroAddress || typeof chainId !== 'number') return false
   const onLocal = chainId === LOCAL_CHAIN_ID
-  const onSepolia = chainId === sepolia.id
-  if (!onLocal && !onSepolia) return false
+  if (!onLocal && !getTestnetChainIds().includes(chainId)) return false
   const mockNft = getContractAddresses(chainId)?.mockERC721
   return !!mockNft && mockNft !== zeroAddress && mockNft.toLowerCase() === nftToken.toLowerCase()
 }

@@ -100,7 +100,13 @@ export default function Compliance() {
   const [searchParams, setSearchParams] = useSearchParams()
   const { isConnected, address: account } = useAccount()
   const chainId = useChainId()
-  const { chambers, recents } = useMyChambers()
+  const { chambers: allChambers, recents: allRecents } = useMyChambers()
+  // Compliance reads the wallet's chain only.
+  const chambers = useMemo(() => allChambers.filter((c) => c.chainId === chainId), [allChambers, chainId])
+  const recents = useMemo(
+    () => allRecents.filter((r) => r.chainId === chainId).map((r) => r.address),
+    [allRecents, chainId],
+  )
 
   const urlChamber = searchParams.get('chamber')
   const [manualAddress, setManualAddress] = useState('')

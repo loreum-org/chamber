@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { FiArrowLeft, FiCopy, FiExternalLink } from 'react-icons/fi'
 import toast from 'react-hot-toast'
 import { getBlockExplorerAddressUrl, shortenAddress } from '@/lib/utils'
+import { getNetworkName } from '@/lib/supportedChain'
 
 /*
  * Shared layout primitives. Every page is built from the same handful of
@@ -139,6 +140,11 @@ export function Segmented<T extends string>({
       })}
     </div>
   )
+}
+
+/** Small chain label, e.g. on a chamber card. */
+export function NetworkBadge({ chainId }: { chainId: number }) {
+  return <span className="badge badge-muted">{getNetworkName(chainId)}</span>
 }
 
 export function Section({
