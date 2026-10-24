@@ -36,7 +36,7 @@ notes that cite the plan tasks it implements (for example `M-15`, `I-10`,
   layering, the authority chain (seat → owner → signer) as the signature
   element, and destructive actions as a ghost button plus a typed confirmation.
   The Explorers site is the exception: it's a bold, art-forward showcase.
-- **Reads:** all display state comes from chamber-indexer, with a freshness chip
+- **Reads:** all display state comes from the Ponder indexer (`indexer/`), with a freshness chip
   in the top bar. RPC is used only at transaction time (simulate/preflight,
   write, receipt).
 - **Scope:** no cut features (operator staking, 15–30 s bridging, solver

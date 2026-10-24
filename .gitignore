@@ -11,6 +11,7 @@ contracts/.anvil/
 !.env.template
 !app/.env.template
 !explorers/.env.example
+!indexer/.env.example
 coverage
 coverage.json
 .DS_Store

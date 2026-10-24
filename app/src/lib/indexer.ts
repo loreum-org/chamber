@@ -1,5 +1,5 @@
 /**
- * Ponder GraphQL client for loreum-org/chamber-indexer.
+ * Ponder GraphQL client for the `indexer/` package.
  *
  * Dual discovery: Registry (legacy) + Factory when PONDER_FACTORY_ADDRESS is set.
  * “Mine” = chamber.creator OR chamberHolder.shares > 0. Directors stay on-chain
@@ -12,7 +12,7 @@
 import type { Address } from 'viem'
 import { isNonZeroAddress } from '@/lib/address'
 
-/** Base Sepolia (chamber-indexer `ponder.config.ts`). Override with `VITE_INDEXER_CHAIN_ID`. */
+/** Base Sepolia (`indexer/ponder.config.ts`). Override with `VITE_INDEXER_CHAIN_ID`. */
 export const DEFAULT_INDEXER_CHAIN_ID = 84532
 
 const MY_CHAMBERS_QUERY = /* GraphQL */ `

@@ -51,7 +51,7 @@ npm install
    ```
    Enable Ethereum, Sepolia, Base, and Arbitrum apps in the Alchemy dashboard. The same key powers **wagmi RPC** (read/write on those chains) and the **Chamber assets** panel. Production `eth_getLogs` pagination for **My chambers** also uses this RPC (not a single getLogs-from-0).
 
-2. Optional — **Ponder indexer** ([loreum-org/chamber-indexer](https://github.com/loreum-org/chamber-indexer)) for **My chambers** that survive public-RPC log truncation and a new browser (no `localStorage` recents). Dual discovery: Factory `ChamberCreated` (when `PONDER_FACTORY_ADDRESS` is set on the indexer) plus leftover Registry creates. GraphQL `chambers` / `chamberHolders` = creator OR current share balance.
+2. Optional — **Ponder indexer** ([`indexer/`](../indexer/README.md) in this repo) for **My chambers** that survive public-RPC log truncation and a new browser (no `localStorage` recents). Dual discovery: Factory `ChamberCreated` (from `contracts/deployments/base-sepolia.txt`, unless `PONDER_FACTORY_ADDRESS` overrides it) plus leftover Registry creates. GraphQL `chambers` / `chamberHolders` = creator OR current share balance.
    ```bash
    VITE_INDEXER_URL=https://your-ponder-host.example
    # VITE_INDEXER_CHAIN_ID=84532

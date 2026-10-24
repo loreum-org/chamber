@@ -7,15 +7,13 @@ import { ChamberAbi } from "./abis/ChamberAbi";
 import { Erc721Abi } from "./abis/Erc721Abi";
 import { FactoryAbi } from "./abis/FactoryAbi";
 import { RegistryAbi } from "./abis/RegistryAbi";
+import { readBaseSepoliaDeployment } from "./baseSepoliaDeployment.mjs";
 
 /**
- * Base Sepolia (chain 84532) — must match loreum-org/chamber
- * `contracts/deployments/base-sepolia.txt`.
- *
- * Factory (Oct 22, 2026, DeployFactory broadcast block 0x2e7c2ca / 48743114,
- * tx 0x57b2222ab86525ab3b1b8e13f44f94d874466deeae0b7d20102159b4eced7820).
- * Chamber implementation 0xC6e817C021D4fADA5Ed27B62112991ec48522E90.
- * Ethereum Sepolia addresses stay in that repo's `deployments/sepolia.txt`.
+ * Base Sepolia (chain 84532). Factory address and start block come from
+ * `contracts/deployments/base-sepolia.txt`. `PONDER_FACTORY_*` overrides that
+ * file. This package does not keep a second copy of those values.
+ * Ethereum Sepolia stays in `contracts/deployments/sepolia.txt` and is not indexed.
  *
  * This deploy has no Registry. Registry / Chamber / RegistryNft stay in the
  * config because their handlers are registered. They watch a non-registry
@@ -25,14 +23,11 @@ import { RegistryAbi } from "./abis/RegistryAbi";
  * RPC: set PONDER_RPC_URL_84532 to a dedicated Alchemy Base Sepolia HTTPS URL
  * (network `base-sepolia`). Do not use an origin-locked frontend key.
  */
-const DEFAULT_FACTORY_ADDRESS =
-  "0x9bd245B992f0ba869D208bdABecB608080984701" as const;
-const DEFAULT_FACTORY_START_BLOCK = 48_743_114;
+const deployment = readBaseSepoliaDeployment();
 
 /** Not a Chamber registry. Handlers require a Registry source; this one emits nothing. */
 const DEFAULT_REGISTRY_ADDRESS =
   "0x000000000000000000000000000000000000dEaD" as const;
-const DEFAULT_REGISTRY_START_BLOCK = DEFAULT_FACTORY_START_BLOCK;
 
 const registryAddress = addressFromEnv(
   process.env.PONDER_REGISTRY_ADDRESS,
@@ -41,18 +36,18 @@ const registryAddress = addressFromEnv(
 );
 const registryStartBlock = blockFromEnv(
   process.env.PONDER_REGISTRY_START_BLOCK,
-  DEFAULT_REGISTRY_START_BLOCK,
+  deployment.factoryStartBlock,
   "PONDER_REGISTRY_START_BLOCK",
 );
 
 const factoryAddress = addressFromEnv(
   process.env.PONDER_FACTORY_ADDRESS,
-  DEFAULT_FACTORY_ADDRESS,
+  deployment.factory,
   "PONDER_FACTORY_ADDRESS",
 );
 const factoryStartBlock = blockFromEnv(
   process.env.PONDER_FACTORY_START_BLOCK,
-  DEFAULT_FACTORY_START_BLOCK,
+  deployment.factoryStartBlock,
   "PONDER_FACTORY_START_BLOCK",
 );
 

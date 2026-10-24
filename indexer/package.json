@@ -9,7 +9,9 @@
     "codegen": "ponder codegen",
     "serve": "ponder serve",
     "lint": "eslint . --ext .ts",
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "check-deployment": "node scripts/check-deployment.mjs",
+    "stage-deployment": "node scripts/stage-deployment.mjs"
   },
   "dependencies": {
     "ponder": "^0.8.22",

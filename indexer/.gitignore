@@ -16,3 +16,6 @@ yarn-error.log*
 # Ponder
 /generated/
 /.ponder/
+
+# Staged copy of contracts/deployments/base-sepolia.txt
+/.deployment/

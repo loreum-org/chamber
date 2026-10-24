@@ -1,6 +1,6 @@
 # chamber-indexer
 
-Ponder indexer for [loreum-org/chamber](https://github.com/loreum-org/chamber) on Base Sepolia (chain 84532). The Chamber app reads display state from this GraphQL API; it calls the chain directly only to check parameters and send a transaction.
+Ponder indexer for Chamber on Base Sepolia (chain 84532). Package root: `indexer/` in [loreum-org/chamber](https://github.com/loreum-org/chamber). The Vite app does not build or serve this package. It reads this GraphQL API when `VITE_INDEXER_URL` is set, and calls the chain directly only to check parameters and send a transaction.
 
 ## State tables
 
@@ -20,16 +20,16 @@ On each Chamber event the indexer re-reads the chamber's own views at that block
 
 Time-based checks (proposal expiry, seating maturity, session-key liveness) are left to the client: compare stored `deadline` / `seatedAt` / `liveAt` with the head from `_meta { status }`. See `src/chamber.graphql` for the queries the app uses.
 
-`abis/ChamberAbi.ts` is generated from the chamber repo's forge build; regenerate it when the contract events or views change.
+`abis/ChamberAbi.ts` is generated from this repo's `contracts/` forge build; regenerate it when the contract events or views change.
 
 ## What it indexes
 
-Defaults match `contracts/deployments/base-sepolia.txt` in loreum-org/chamber (chain 84532). Ethereum Sepolia stays in that repo's `sepolia.txt` and is not indexed here.
+Factory address and Factory start block are read from [`contracts/deployments/base-sepolia.txt`](../contracts/deployments/base-sepolia.txt). That file is the only copy. Ethereum Sepolia stays in `contracts/deployments/sepolia.txt` and is not indexed here.
 
 | Source | Address | Start block | Why |
 | --- | --- | --- | --- |
-| Factory (Oct 22, 2026) | `0x9bd245B992f0ba869D208bdABecB608080984701` | `48743114` | Verified Base Sepolia Factory. Chamber implementation `0xC6e817C021D4fADA5Ed27B62112991ec48522E90`. |
-| Registry | none on this deploy | `48743114` | Handlers still require a Registry source. The default address is not a registry, so those tables stay empty until `PONDER_REGISTRY_*` is set. |
+| Factory | `Factory` in `base-sepolia.txt` | `Factory start block` in that file | Verified Base Sepolia Factory deploy. |
+| Registry | none on this deploy | same Factory start block | Handlers still require a Registry source. The default address is not a registry, so those tables stay empty until `PONDER_REGISTRY_*` is set. |
 
 Each Factory chamber's membership NFT is indexed (`FactoryNft`): directors change on ERC-721 transfer with no Chamber event.
 
@@ -43,24 +43,30 @@ A public RPC for a smoke check, not production load: `https://sepolia.base.org`.
 
 **RPC cost:** state refreshes add a few `eth_call`s (one Multicall3 batch) per indexed event, made once by the indexer rather than by every open browser tab. Ponder caches them, so a re-sync against a warm cache does not repeat them.
 
-## Railway (production)
+## Host
 
-Service: `chamber-indexer` on Loreum.org. Host: `https://chamber-indexer-production.up.railway.app`.
+Package root is `indexer/`. Ponder is its own deploy. Do not fold it into the Vite app.
 
-After this config is deployed, a human must set (values except the RPC secret). This schema adds tables, so the deploy re-syncs from the start blocks.
+Railway service `chamber-indexer` on Loreum.org. Host: `https://chamber-indexer-production.up.railway.app`.
 
-| Variable | Value |
+| Setting | Value |
 | --- | --- |
-| `PONDER_RPC_URL_84532` | Dedicated Alchemy Base Sepolia HTTPS URL (secret) |
+| Repository | `loreum-org/chamber` |
+| Root directory | `indexer` |
+| Config | `indexer/railway.toml` |
+| Start | `pnpm start` |
+| `PONDER_RPC_URL_84532` | Dedicated Alchemy Base Sepolia HTTPS URL (secret). Keep this set. |
 
-Address/start defaults are in `ponder.config.ts`. Override only if you intend a different source:
+`railway.toml` runs `node scripts/stage-deployment.mjs` before start. A full checkout reads `../contracts/deployments/base-sepolia.txt`. With the root directory set to `indexer`, that sibling directory is not in the checkout, so the script loads the same file from this git commit into `indexer/.deployment/` (not committed).
 
-| Variable | Default (no need to set) |
+Override the deployment record only if you intend a different source:
+
+| Variable | When unset |
 | --- | --- |
-| `PONDER_FACTORY_ADDRESS` | `0x9bd245B992f0ba869D208bdABecB608080984701` |
-| `PONDER_FACTORY_START_BLOCK` | `48743114` |
-| `PONDER_REGISTRY_ADDRESS` | unset — code uses `0x000000000000000000000000000000000000dEaD`, not a registry |
-| `PONDER_REGISTRY_START_BLOCK` | `48743114` |
+| `PONDER_FACTORY_ADDRESS` | `Factory` in `contracts/deployments/base-sepolia.txt` |
+| `PONDER_FACTORY_START_BLOCK` | `Factory start block` in that file |
+| `PONDER_REGISTRY_ADDRESS` | `0x000000000000000000000000000000000000dEaD`, not a registry |
+| `PONDER_REGISTRY_START_BLOCK` | Factory start block from that file |
 
 Changing Factory address or start block creates new Ponder filters, so historical intervals should rebuild on deploy. If `_meta.status.baseSepolia.ready` is true and Factory chambers are still missing, drop the Ponder Postgres schema (or the volume) and restart. The previous Ethereum Sepolia backfill is a different chain.
 
@@ -84,8 +90,10 @@ Changing Factory address or start block creates new Ponder filters, so historica
 ## Local
 
 ```bash
+cd indexer
 cp .env.example .env.local   # set PONDER_RPC_URL_84532
 pnpm install
+pnpm check-deployment
 pnpm dev                     # or: pnpm start --schema local
 ```
 
@@ -95,5 +103,5 @@ pnpm dev                     # or: pnpm start --schema local
 
 ## Out of scope
 
-- Wiring loreum-org/chamber to this host (chamber#144 / draft #151).
-- Landing copy (chamber#158).
+- The Vite app does not import this package. It uses `VITE_INDEXER_URL` and falls back to chunked `getLogs`.
+- Landing copy.
