@@ -119,6 +119,12 @@ make deploy-testnet network=arbitrum-sepolia account=<foundry keystore>
 make deploy-testnet network=all account=<foundry keystore>
 ```
 
+The Factory, Chamber implementation and both libraries are deployed through the standard
+CREATE2 deployer, so they get the **same addresses on every chain**. That holds as long as
+every chain is deployed from the same commit with the same `ADMIN` and `SALT`; any code
+change gives a new set of addresses (again the same on every chain). Re-running on a chain
+that already has them deploys nothing.
+
 The script verifies on the block explorer (`ETHERSCAN_API_KEY`), appends the addresses
 and start block to the network's file, and copies it into `app/contracts/deployments/`.
 Commit both files. Older Factories stay in the file so their chambers are still listed.

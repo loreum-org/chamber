@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Deploy the Chamber Factory (plus demo tokens) to one supported testnet and
 # write the addresses to deployments/<network>.txt, which the app reads.
+# The Factory, Chamber implementation and libraries go through CREATE2, so they
+# get the same addresses on every chain (see script/DeployFactoryCreate2.s.sol).
+# Re-running on a chain that already has them deploys nothing new.
 #
 # Usage (from contracts/):
 #   make deploy-testnet network=arbitrum-sepolia account=deployer
@@ -9,7 +12,10 @@
 # Networks: sepolia, base-sepolia, arbitrum-sepolia, op-sepolia, all
 #
 # Env (optional, from contracts/.env):
-#   ADMIN                     Factory admin (default 0x5d45…2095)
+#   ADMIN                     Factory admin (default 0x5d45…2095). Part of the
+#                             Factory address: keep it the same on every chain.
+#   SALT                      CREATE2 salt, 32-byte hex (default: "loreum.chamber.factory.v1"
+#                             as bytes32). Same salt on every chain.
 #   SENDER                    Address of --account (default 0x0C6F…19c9)
 #   <NET>_RPC_URL             SEPOLIA_RPC_URL, BASE_SEPOLIA_RPC_URL,
 #                             ARBITRUM_SEPOLIA_RPC_URL, OP_SEPOLIA_RPC_URL
@@ -81,29 +87,65 @@ actual_chain="$(cast chain-id --rpc-url "$RPC_URL")"
 }
 
 FORGE_FLAGS=(--rpc-url "$RPC_URL" --account "$ACCOUNT" --sender "$SENDER" -vvv)
-if [[ -z "${DRY_RUN:-}" ]]; then
-	FORGE_FLAGS+=(--broadcast)
-	if [[ -z "${SKIP_VERIFY:-}" ]]; then
-		[[ -n "${ETHERSCAN_API_KEY:-}" ]] || { echo "Set ETHERSCAN_API_KEY or SKIP_VERIFY=1." >&2; exit 1; }
-		FORGE_FLAGS+=(--verify --etherscan-api-key "$ETHERSCAN_API_KEY" --chain "$CHAIN_ID")
-	fi
+[[ -z "${DRY_RUN:-}" ]] && FORGE_FLAGS+=(--broadcast)
+if [[ -z "${DRY_RUN:-}" && -z "${SKIP_VERIFY:-}" ]]; then
+	[[ -n "${ETHERSCAN_API_KEY:-}" ]] || { echo "Set ETHERSCAN_API_KEY or SKIP_VERIFY=1." >&2; exit 1; }
 fi
 
-echo ">>> $LABEL (chain $CHAIN_ID): Factory + Chamber implementation"
-ADMIN="$ADMIN" forge script script/DeployFactory.s.sol:DeployFactory "${FORGE_FLAGS[@]}"
+# CREATE2 through the standard deployer: same code + SALT + ADMIN = same addresses on every chain.
+echo ">>> $LABEL (chain $CHAIN_ID): BoardLib, WalletLib, Chamber implementation, Factory (CREATE2)"
+LOG="$(mktemp)"
+ADMIN="$ADMIN" forge script script/DeployFactoryCreate2.s.sol:DeployFactoryCreate2 "${FORGE_FLAGS[@]}" | tee "$LOG"
+logged() { awk -v k="$1" '$1 == k { print $2 }' "$LOG" | tail -1; }
+BOARD_LIB="$(logged BOARD_LIB_ADDRESS)"
+WALLET_LIB="$(logged WALLET_LIB_ADDRESS)"
+CHAMBER_IMPL="$(logged CHAMBER_IMPL_ADDRESS)"
+FACTORY="$(logged FACTORY_ADDRESS)"
+rm -f "$LOG"
+[[ -n "$FACTORY" ]] || { echo "DeployFactoryCreate2 printed no Factory address." >&2; exit 1; }
 
-if [[ -z "${SKIP_MOCKS:-}" ]]; then
+MOCKS_RUN="broadcast/DeploySepoliaMocks.s.sol/$CHAIN_ID/run-latest.json"
+DEPLOY_MOCKS=""
+if [[ -z "${SKIP_MOCKS:-}" ]] && ! grep -q "MockERC20" "$OUT" 2>/dev/null; then
+	DEPLOY_MOCKS=1
 	echo ">>> $LABEL: demo ERC-20 and membership ERC-721"
 	forge script script/DeploySepoliaMocks.s.sol:DeploySepoliaMocks "${FORGE_FLAGS[@]}"
 fi
 
 if [[ -n "${DRY_RUN:-}" ]]; then
-	echo "DRY_RUN: nothing broadcast, $OUT not written."
+	echo "DRY_RUN: nothing broadcast, $OUT not written. Factory would be $FACTORY."
 	exit 0
 fi
 
-FACTORY_RUN="broadcast/DeployFactory.s.sol/$CHAIN_ID/run-latest.json"
-MOCKS_RUN="broadcast/DeploySepoliaMocks.s.sol/$CHAIN_ID/run-latest.json"
+if [[ -z "${SKIP_VERIFY:-}" ]]; then
+	verify() { # <address> <src> [extra forge flags...]
+		forge verify-contract "$1" "$2" --chain "$CHAIN_ID" --rpc-url "$RPC_URL" \
+			--verifier etherscan --etherscan-api-key "$ETHERSCAN_API_KEY" --watch "${@:3}" ||
+			echo "!!! Verify failed for $2 at $1 (already verified is fine). Re-run later." >&2
+	}
+	verify "$BOARD_LIB" src/libraries/BoardLib.sol:BoardLib
+	verify "$WALLET_LIB" src/libraries/WalletLib.sol:WalletLib
+	verify "$CHAMBER_IMPL" src/Chamber.sol:Chamber \
+		--libraries "src/libraries/BoardLib.sol:BoardLib:$BOARD_LIB" \
+		--libraries "src/libraries/WalletLib.sol:WalletLib:$WALLET_LIB"
+	verify "$FACTORY" src/Factory.sol:Factory \
+		--constructor-args "$(cast abi-encode "constructor(address,address)" "$CHAMBER_IMPL" "$ADMIN")"
+fi
+
+if grep -qi "Factory  *$FACTORY" "$OUT" 2>/dev/null; then
+	echo ">>> $FACTORY is already in $OUT. Nothing to write."
+	exit 0
+fi
+
+# Block and tx of this run's Factory deploy (absent if the Factory already existed on-chain).
+FACTORY_RUN="broadcast/DeployFactoryCreate2.s.sol/$CHAIN_ID/run-latest.json"
+FACTORY_TX="$(jq -r --arg a "$(echo "$FACTORY" | tr '[:upper:]' '[:lower:]')" \
+	'[.transactions[] | select((.contractAddress // "" | ascii_downcase) == $a) | .hash] | first // empty' \
+	"$FACTORY_RUN" 2>/dev/null || true)"
+START_BLOCK=""
+if [[ -n "$FACTORY_TX" ]]; then
+	START_BLOCK="$(cast receipt "$FACTORY_TX" blockNumber --rpc-url "$RPC_URL")"
+fi
 
 checksum() { [[ -n "$1" ]] && cast to-check-sum-address "$1" || true; }
 
@@ -113,46 +155,23 @@ created() { # <run.json> <contractName>
 		"$1")"
 }
 
-created_block() { # <run.json> <address>
-	jq -r --arg a "$(echo "$2" | tr '[:upper:]' '[:lower:]')" \
-		'[.receipts[] | select((.contractAddress // "" | ascii_downcase) == $a) | .blockNumber] | first // empty' \
-		"$1"
-}
-
-created_tx() { # <run.json> <address>
-	jq -r --arg a "$(echo "$2" | tr '[:upper:]' '[:lower:]')" \
-		'[.receipts[] | select((.contractAddress // "" | ascii_downcase) == $a) | .transactionHash] | first // empty' \
-		"$1"
-}
-
-FACTORY="$(created "$FACTORY_RUN" Factory)"
-CHAMBER_IMPL="$(created "$FACTORY_RUN" Chamber)"
-library() { # <run.json> <name>; linked libraries are listed as path:Name:address
-	jq -r --arg n "$2" '[.libraries[]? | split(":") | select(.[1] == $n) | .[2]] | last // empty' "$1"
-}
-BOARD_LIB="$(library "$FACTORY_RUN" BoardLib)"
-WALLET_LIB="$(library "$FACTORY_RUN" WalletLib)"
-[[ -n "$FACTORY" ]] || { echo "No Factory in $FACTORY_RUN." >&2; exit 1; }
-START_BLOCK="$(printf '%d' "$(created_block "$FACTORY_RUN" "$FACTORY")")"
-FACTORY_TX="$(created_tx "$FACTORY_RUN" "$FACTORY")"
-
 {
 	echo ""
-	echo "  $(date -u '+%b %d, %Y') - $LABEL (chain $CHAIN_ID, Factory path)"
+	echo "  $(date -u '+%b %d, %Y') - $LABEL (chain $CHAIN_ID, Factory path, CREATE2)"
 	echo "  ===================================================================="
-	echo "  DeployFactory"
+	echo "  DeployFactoryCreate2 (same addresses on every chain)"
 	echo "  ===================================================================="
 	printf '  %-26s%s\n' "Chain" "$CHAIN_ID"
 	printf '  %-26s%s\n' "Deployer" "$SENDER"
 	printf '  %-26s%s\n' "ADMIN" "$ADMIN"
 	printf '  %-26s%s\n' "Factory" "$FACTORY"
-	[[ -n "$CHAMBER_IMPL" ]] && printf '  %-26s%s\n' "Chamber implementation" "$CHAMBER_IMPL"
-	[[ -n "$BOARD_LIB" ]] && printf '  %-26s%s\n' "BoardLib" "$BOARD_LIB"
-	[[ -n "$WALLET_LIB" ]] && printf '  %-26s%s\n' "WalletLib" "$WALLET_LIB"
-	printf '  %-26s%s\n' "Factory start block" "$START_BLOCK"
-	printf '  %-26s%s\n' "Factory tx" "$FACTORY_TX"
+	printf '  %-26s%s\n' "Chamber implementation" "$CHAMBER_IMPL"
+	printf '  %-26s%s\n' "BoardLib" "$BOARD_LIB"
+	printf '  %-26s%s\n' "WalletLib" "$WALLET_LIB"
+	[[ -n "$START_BLOCK" ]] && printf '  %-26s%s\n' "Factory start block" "$START_BLOCK"
+	[[ -n "$FACTORY_TX" ]] && printf '  %-26s%s\n' "Factory tx" "$FACTORY_TX"
 	printf '  %-26s%s\n' "Explorer" "$EXPLORER/address/$FACTORY"
-	if [[ -z "${SKIP_MOCKS:-}" && -f "$MOCKS_RUN" ]]; then
+	if [[ -n "$DEPLOY_MOCKS" && -f "$MOCKS_RUN" ]]; then
 		printf '  %-26s%s\n' "MockERC20 (demo)" "$(created "$MOCKS_RUN" MockERC20)"
 		printf '  %-26s%s\n' "MockERC721 (membership)" "$(created "$MOCKS_RUN" MockERC721)"
 	fi
