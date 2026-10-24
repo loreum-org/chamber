@@ -1,0 +1,21 @@
+version: "3.8"
+
+services:
+  chamber-indexer-db:
+    image: postgres:16
+    deploy:
+      resources:
+        limits:
+          cpus: '4'  # Limit to 0.5 CPUs
+          memory: 2G  # Limit to 500 MB of memory
+        reservations:
+          cpus: '2'  # Reserve 0.25 CPUs
+          memory: 1G  # Reserve 200 MB of memory    
+    restart: always
+    container_name: 'chamber-indexer-db'
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: chamber-indexer-db
+    ports:
+      - 5433:5432      
