@@ -288,6 +288,12 @@ verify :; forge verify-contract \
 	${address} \
 	src/${contract}.sol:${contract}
 
+# Factory + demo tokens on one testnet, or all four (network=all).
+# Writes deployments/<network>.txt, which the app reads. See script/deploy-testnet.sh.
+# Usage: make deploy-testnet network=arbitrum-sepolia account=deployer
+# Networks: sepolia, base-sepolia, arbitrum-sepolia, op-sepolia, all
+deploy-testnet :; ACCOUNT=${account} bash script/deploy-testnet.sh ${network}
+
 # Sepolia Factory path (26 Aug 2026): BoardLib, WalletLib, Chamber impl, Factory.
 # Addresses + verify URLs: deployments/sepolia.txt
 # Requires ETHERSCAN_API_KEY (foundry.toml [etherscan].sepolia) and SEPOLIA_RPC_URL.

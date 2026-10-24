@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAccount, useReadContract, useSwitchChain } from 'wagmi'
@@ -11,8 +11,10 @@ import {
   getConfiguredChainIds,
   getContractAddresses,
   getNetworkName,
+  getPreferredSupportedChainId,
+  getTestnetChainIds,
+  hasValidAddresses,
   isNonZeroAddress,
-  LOCAL_CHAIN_ID,
 } from '@/lib/wagmi'
 import { addRecentChamber } from '@/lib/recentChambers'
 import { factoryAbi, registryAbi } from '@/contracts/abis'
@@ -47,10 +49,7 @@ export default function DeployChamber() {
   const { switchChain, isPending: isSwitching } = useSwitchChain()
   const { address: createAddress, abi: createAbi, source: createSource } = useCreateChamberTarget()
   const canCreate = createSource !== 'none' && !!createAddress
-  const configuredCreateChainIds = getConfiguredChainIds()
-  const preferredCreateChainId = configuredCreateChainIds.includes(sepolia.id)
-    ? sepolia.id
-    : configuredCreateChainIds[0]
+  const preferredCreateChainId = getPreferredSupportedChainId()
   const preferredCreateChainName =
     preferredCreateChainId != null ? getNetworkName(preferredCreateChainId) : 'this network'
   const currentNetworkName = typeof chainId === 'number' ? getNetworkName(chainId) : 'this network'
@@ -58,12 +57,9 @@ export default function DeployChamber() {
   const sepoliaDemoReady =
     isNonZeroAddress(sepoliaAddrs?.mockERC20) && isNonZeroAddress(sepoliaAddrs?.mockERC721)
   const chainAddrs = typeof chainId === 'number' ? getContractAddresses(chainId) : undefined
-  const onDemoChain =
-    typeof chainId === 'number' && (chainId === sepolia.id || chainId === LOCAL_CHAIN_ID)
+  // Any testnet (or Anvil) whose deployments file lists the demo tokens.
   const demoPrefillReady =
-    onDemoChain &&
-    isNonZeroAddress(chainAddrs?.mockERC20) &&
-    isNonZeroAddress(chainAddrs?.mockERC721)
+    isNonZeroAddress(chainAddrs?.mockERC20) && isNonZeroAddress(chainAddrs?.mockERC721)
   const queryClient = useQueryClient()
 
   const [step, setStep] = useState<Step>('form')
@@ -126,6 +122,8 @@ export default function DeployChamber() {
   })
 
   const [searchParams] = useSearchParams()
+  // Demo tokens we pre-filled, so a network switch can swap them for that network's.
+  const prefilled = useRef({ erc20Token: '', erc721Token: '' })
 
   useEffect(() => {
     const erc20 = searchParams.get('erc20')
@@ -140,19 +138,19 @@ export default function DeployChamber() {
       addresses?.mockERC20 &&
       addresses.mockERC20 !== zeroAddress
         ? addresses.mockERC20
-        : undefined
+        : ''
     const mock721 =
       addresses?.mockERC721 &&
       addresses.mockERC721 !== zeroAddress
         ? addresses.mockERC721
-        : undefined
-    if (mock20 && mock721) {
-      setFormData((prev) => ({
-        ...prev,
-        erc20Token: prev.erc20Token || mock20,
-        erc721Token: prev.erc721Token || mock721,
-      }))
-    }
+        : ''
+    const last = prefilled.current
+    prefilled.current = { erc20Token: mock20, erc721Token: mock721 }
+    setFormData((prev) => ({
+      ...prev,
+      erc20Token: !prev.erc20Token || prev.erc20Token === last.erc20Token ? mock20 : prev.erc20Token,
+      erc721Token: !prev.erc721Token || prev.erc721Token === last.erc721Token ? mock721 : prev.erc721Token,
+    }))
   }, [searchParams, chainId])
 
   // Live validation: read token names/symbols to confirm addresses are real contracts
@@ -358,6 +356,8 @@ export default function DeployChamber() {
               )}
             </div>
           ) : !canCreate ? (
+            <>
+            {step === 'form' && <NetworkPicker chainId={chainId} />}
             <CreateTargetMissing
               chainId={chainId}
               networkName={currentNetworkName}
@@ -366,7 +366,10 @@ export default function DeployChamber() {
               isSwitching={isSwitching}
               onSwitch={handleSwitchToCreateChain}
             />
+            </>
           ) : (
+            <>
+            {step === 'form' && <NetworkPicker chainId={chainId} />}
             <AnimatePresence mode="wait">
               {step === 'form' && (
                 <motion.form
@@ -472,9 +475,9 @@ export default function DeployChamber() {
                       {!erc721Valid && !formData.erc721Token && (
                         <span className="text-slate-500 text-xs">Contract holders can become board members via delegation</span>
                       )}
-                      {chainId === sepolia.id && erc20Valid && erc721Valid && (
+                      {demoPrefillReady && erc20Valid && erc721Valid && (
                         <p className="text-slate-500 text-xs mt-2">
-                          Sepolia demo tokens are pre-filled. Use <span className="text-accent-400">Mint Test NFT</span> and{' '}
+                          {currentNetworkName} demo tokens are pre-filled. Use <span className="text-accent-400">Mint Test NFT</span> and{' '}
                           <span className="text-accent-400">Mint Test ERC20</span> in the header so your wallet holds the
                           membership token and demo asset.
                         </p>
@@ -493,7 +496,7 @@ export default function DeployChamber() {
                           </p>
                           {demoPrefillReady && (
                             <p className="text-slate-400 text-sm leading-relaxed">
-                              On Sepolia or Anvil, demo collections are pre-filled — choose{' '}
+                              On {currentNetworkName}, demo collections are pre-filled — choose{' '}
                               <span className="text-slate-200">Use existing collection</span> to continue with those
                               addresses, then mint from the header.
                             </p>
@@ -540,7 +543,7 @@ export default function DeployChamber() {
                           )}
                           {demoPrefillReady && erc20Valid && erc721Valid && (
                             <p className="text-slate-500 text-xs mt-2">
-                              {chainId === sepolia.id ? 'Sepolia' : 'Anvil'} demo tokens are pre-filled. Use{' '}
+                              {currentNetworkName} demo tokens are pre-filled. Use{' '}
                               <span className="text-accent-400">Mint Test NFT</span> and{' '}
                               <span className="text-accent-400">Mint Test ERC20</span> in the header so your wallet holds
                               the membership NFT and demo asset.
@@ -605,6 +608,7 @@ export default function DeployChamber() {
                 >
                   <div className="space-y-3">
                     {[
+                      { label: 'Network', value: currentNetworkName },
                       { label: 'Chamber Name', value: formData.name },
                       { label: 'Share Token Symbol', value: formData.symbol },
                       {
@@ -706,6 +710,7 @@ export default function DeployChamber() {
                 </motion.div>
               )}
             </AnimatePresence>
+            </>
           )}
         </div>
 
@@ -809,3 +814,55 @@ function CreateTargetMissing({
     </div>
   )
 }
+
+/**
+ * Pick the chain to deploy on. Choosing one switches the wallet; networks
+ * without a Factory yet are shown but cannot be picked.
+ */
+function NetworkPicker({ chainId }: { chainId: number | undefined }) {
+  const { switchChain, isPending, variables } = useSwitchChain()
+  const testnets = getTestnetChainIds()
+  const ids = [...testnets, ...getConfiguredChainIds().filter((id) => !testnets.includes(id))]
+  if (ids.length < 2) return null
+
+  return (
+    <div className="mb-6">
+      <span id="deploy-network-label" className="block text-slate-300 text-sm font-medium mb-2">
+        Network
+      </span>
+      <div role="radiogroup" aria-labelledby="deploy-network-label" className="flex flex-wrap gap-2">
+        {ids.map((id) => {
+          const ready = hasValidAddresses(id)
+          const active = id === chainId
+          const switching = isPending && variables?.chainId === id
+          return (
+            <button
+              key={id}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              disabled={!ready || isPending}
+              title={ready ? undefined : 'No Chamber Factory on this network yet'}
+              onClick={() => {
+                if (active) return
+                switchChain(
+                  { chainId: id },
+                  { onError: (err) => toast.error(err.message || `Failed to switch to ${getNetworkName(id)}`) },
+                )
+              }}
+              className={`btn btn-sm ${active ? 'btn-primary' : 'btn-secondary'} disabled:opacity-50`}
+            >
+              {switching && <FiLoader className="w-3.5 h-3.5 animate-spin" aria-hidden />}
+              {getNetworkName(id)}
+              {!ready && <span className="text-xs text-slate-500">soon</span>}
+            </button>
+          )
+        })}
+      </div>
+      <p className="text-slate-500 text-xs mt-1.5">
+        The chamber lives on this network. Its tokens must be on the same network.
+      </p>
+    </div>
+  )
+}
+
