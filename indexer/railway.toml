@@ -1,0 +1,9 @@
+# Railway: set the service root directory to `indexer/` in the dashboard.
+# Ponder is its own service. Do not deploy it with the Vite app.
+[build]
+builder = "NIXPACKS"
+buildCommand = "node scripts/stage-deployment.mjs"
+
+[deploy]
+startCommand = "pnpm start"
+restartPolicyType = "ON_FAILURE"

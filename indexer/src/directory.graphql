@@ -1,0 +1,91 @@
+# Chamber directory — “my chambers”
+#
+# Mine = creator on `chamber` OR current share balance on `chamberHolder`.
+# Board / directors: see `boardSeats` in chamber.graphql.
+
+query Chamber($id: String!) {
+  chamber(id: $id) {
+    id
+    address
+    asset
+    nft
+    seats
+    name
+    symbol
+    creator
+    source
+    createdBlock
+    createdAt
+  }
+}
+
+query ChambersByCreator($creator: String!) {
+  chambers(where: { creator: $creator }, orderBy: "createdBlock", orderDirection: "desc") {
+    items {
+      id
+      address
+      asset
+      nft
+      seats
+      name
+      symbol
+      creator
+      source
+    }
+    totalCount
+  }
+}
+
+query ChambersHeldBy($account: String!) {
+  chamberHolders(where: { account: $account, shares_gt: "0" }) {
+    items {
+      chamberId
+      account
+      shares
+      chamber {
+        id
+        address
+        asset
+        nft
+        seats
+        name
+        symbol
+        creator
+        source
+      }
+    }
+    totalCount
+  }
+}
+
+query MyChambers($account: String!) {
+  created: chambers(where: { creator: $account }, orderBy: "createdBlock", orderDirection: "desc") {
+    items {
+      id
+      address
+      name
+      symbol
+      asset
+      nft
+      seats
+      source
+      creator
+    }
+  }
+  held: chamberHolders(where: { account: $account, shares_gt: "0" }) {
+    items {
+      shares
+      chamber {
+        id
+        address
+        name
+        symbol
+        asset
+        nft
+        seats
+        source
+        creator
+      }
+    }
+  }
+}

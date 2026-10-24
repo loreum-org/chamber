@@ -120,7 +120,7 @@ Ethereum mainnet Factory / impl come from **`contracts/deployments/mainnet.txt`*
 `VITE_MAINNET_CHAMBER_IMPL`. `getContractAddresses(1)` does not invent addresses
 and does not use Sepolia. See `contracts/docs/mainnet-verified-deploy.md`.
 
-Optional **My chambers** indexer: `VITE_INDEXER_URL` → [loreum-org/chamber-indexer](https://github.com/loreum-org/chamber-indexer) GraphQL. Unset → chunked Factory/Registry `getLogs`.
+Optional **My chambers** indexer: `VITE_INDEXER_URL` → the `indexer/` package GraphQL (see `indexer/README.md`). Unset → chunked Factory/Registry `getLogs`.
 
 See **`app/README.md`** and repo deployment docs under **`docs/guides/deployment.md`**.
 

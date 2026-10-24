@@ -346,7 +346,7 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
 
   const [transactions, setTransactions] = useState<QueueTx[]>([])
 
-  // Proposal state comes from chamber-indexer. The per-proposal RPC reads below
+  // Proposal state comes from the indexer package. The per-proposal RPC reads below
   // only run on chains without an indexer (e.g. local Anvil).
   const indexed = useIndexedProposals(chamberAddress)
   const rpcQueue = !indexed.enabled

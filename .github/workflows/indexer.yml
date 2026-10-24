@@ -1,0 +1,46 @@
+name: Indexer CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'indexer/**'
+      - 'contracts/deployments/base-sepolia.txt'
+      - '.github/workflows/indexer.yml'
+  pull_request:
+    paths:
+      - 'indexer/**'
+      - 'contracts/deployments/base-sepolia.txt'
+      - '.github/workflows/indexer.yml'
+
+jobs:
+  indexer:
+    name: Lint, types, deployment record
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: indexer
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: pnpm
+          cache-dependency-path: indexer/pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Deployment record
+        run: pnpm check-deployment && pnpm stage-deployment

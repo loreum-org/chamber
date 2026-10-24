@@ -2,7 +2,7 @@
  * Discover chambers the user created or might hold — no on-chain world directory.
  *
  * Order:
- * 1. Ponder GraphQL (`VITE_INDEXER_URL`) — loreum-org/chamber-indexer `chambers` /
+ * 1. Ponder GraphQL (`VITE_INDEXER_URL`) — `indexer/` `chambers` /
  *    `chamberHolders` (creator OR share balance). Base Sepolia (84532) by default.
  * 2. Factory / Registry `ChamberCreated` via chunked `eth_getLogs` (not one
  *    getLogs-from-0). Factory remains the source of creation events; Registry
@@ -33,7 +33,7 @@ export const registryCreatedEvent = parseAbiItem(
   'event ChamberCreated(address indexed chamber, uint256 seats, string name, string symbol, address erc20Token, address erc721Token)',
 )
 
-/** chamber-indexer `REGISTRY_START_BLOCK` — Factory default matches when unset. */
+/** `indexer/ponder.config.ts` registry start — Factory default matches when unset. */
 export const SEPOLIA_DISCOVERY_START_BLOCK = 7453704n
 
 /** Base Sepolia Factory deploy block (`contracts/deployments/base-sepolia.txt`). */

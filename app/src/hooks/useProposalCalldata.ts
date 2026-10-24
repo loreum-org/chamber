@@ -8,7 +8,7 @@ export function useProposalCalldata(
   txId: number,
   dataHash: `0x${string}` | undefined,
   metadataCalldata?: string,
-  /** Calldata from chamber-indexer; used without any RPC call when it matches `dataHash`. */
+  /** Calldata from the indexer package; used without any RPC call when it matches `dataHash`. */
   indexedCalldata?: `0x${string}`,
 ) {
   const publicClient = usePublicClient()
