@@ -103,6 +103,16 @@ npx chamber-operator execute --rpc "$CHAMBER_RPC" --chamber "$CHAMBER" --key "$P
   --token-id 1 --nonce 0 --data 0x
 ```
 
+### Networks
+
+`--network` picks one of the four testnets and its public RPC: `sepolia`, `base-sepolia`, `arbitrum-sepolia` or `op-sepolia`. Add `--rpc` to use your own node on that network.
+
+```bash
+npx chamber-operator board --network arbitrum-sepolia --chamber 0x…
+```
+
+In the library, pass `rpcUrl` and `chain` from `NETWORKS['op-sepolia']`.
+
 The CLI signs only with a private key. To use a smart-account signer, call the library.
 
 ## Anvil end-to-end

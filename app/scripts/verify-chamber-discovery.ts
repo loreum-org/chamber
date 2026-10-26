@@ -284,6 +284,26 @@ async function testCatchupOnlyErroredHealth() {
 }
 
 testParseIndexer()
+async function testScansEveryFactory() {
+  const OLD_FACTORY = '0x1111111111111111111111111111111111111111' as const
+  const scanned = new Set<string>()
+  const result = await discoverChambers({
+    client: fakeClient({
+      getLogs: (async ({ address }: { address: string }) => {
+        scanned.add(address.toLowerCase())
+        return [] as never
+      }) as unknown as PublicClient['getLogs'],
+    }),
+    chainId: 421614,
+    userAddress: USER,
+    factoryAddress: FACTORY,
+    extraFactoryAddresses: [OLD_FACTORY, FACTORY],
+    indexerUrl: '',
+  })
+  assert.deepEqual([...scanned].sort(), [OLD_FACTORY, FACTORY].sort(), 'old and current Factory both scanned once')
+  assert.equal(result.health.rpcErrored, false)
+}
+
 testStartBlocks()
 testDiscoveryGapRules()
 await testPagedLogs()
@@ -291,4 +311,5 @@ await testIndexerFailHealth()
 await testEmptyWalletHealth()
 await testRpcErroredHealth()
 await testCatchupOnlyErroredHealth()
+await testScansEveryFactory()
 console.log('verify-chamber-discovery: ok')

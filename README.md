@@ -74,6 +74,10 @@ Live Factory. Record: [`contracts/deployments/base-sepolia.txt`](./contracts/dep
 - Start block: `48743114`
 - Factory tx: `0x57b2222ab86525ab3b1b8e13f44f94d874466deeae0b7d20102159b4eced7820`
 
+### Arbitrum Sepolia (chain 421614) and OP Sepolia (chain 11155420)
+
+Supported by the app, not deployed yet. The deploy uses CREATE2, so the Factory gets the same address on every chain. Deploy with `make deploy-testnet network=arbitrum-sepolia account=<keystore>` (or `network=op-sepolia`, or `network=all`) from `contracts/`. The script writes [`arbitrum-sepolia.txt`](./contracts/deployments/arbitrum-sepolia.txt) / [`op-sepolia.txt`](./contracts/deployments/op-sepolia.txt), which the app reads.
+
 ### Ethereum Sepolia (26 Aug 2026, chain 11155111)
 - Factory: `0x43aA92c8A26392f21F63cdA88B6BaB5031C40550`
 - Chamber implementation: `0xd441f1FDad2d3a447d2621DE4DE8b5738e02d39c`

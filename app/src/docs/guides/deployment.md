@@ -106,7 +106,32 @@ Do not auto-seat addresses that do not hold a membership NFT.
 
 ## App configuration
 
-The live Factory is Base Sepolia (chain 84532), read from
+The app supports four testnets: Ethereum Sepolia, Base Sepolia, Arbitrum Sepolia and OP Sepolia.
+**My chambers** lists chambers from all of them, and the deploy page has a network picker.
+Each network reads its addresses from `contracts/deployments/<network>.txt`. A network
+with no Factory in its file shows in the picker but cannot be picked.
+
+To deploy the Factory and demo tokens to a network, from `contracts/`:
+
+```bash
+make deploy-testnet network=arbitrum-sepolia account=<foundry keystore>
+# or all four at once
+make deploy-testnet network=all account=<foundry keystore>
+```
+
+The Factory, Chamber implementation and both libraries are deployed through the standard
+CREATE2 deployer, so they get the **same addresses on every chain**. That holds as long as
+every chain is deployed from the same commit with the same `ADMIN` and `SALT`; any code
+change gives a new set of addresses (again the same on every chain). Re-running on a chain
+that already has them deploys nothing.
+
+The script verifies on the block explorer (`ETHERSCAN_API_KEY`), appends the addresses
+and start block to the network's file, and copies it into `app/contracts/deployments/`.
+Commit both files. Older Factories stay in the file so their chambers are still listed.
+Env overrides: `VITE_ARBITRUM_SEPOLIA_FACTORY`, `VITE_OP_SEPOLIA_FACTORY` (and `_CHAMBER_IMPL`,
+`_FACTORY_START_BLOCK`).
+
+The default Factory is Base Sepolia (chain 84532), read from
 **`contracts/deployments/base-sepolia.txt`** (`getContractAddresses(84532)`).
 Optional env overrides: `VITE_BASE_SEPOLIA_FACTORY`, `VITE_BASE_SEPOLIA_CHAMBER_IMPL`.
 

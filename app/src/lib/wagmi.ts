@@ -1,6 +1,15 @@
 import { getDefaultConfig } from '@rainbow-me/rainbowkit'
 import { fallback, http, webSocket } from 'wagmi'
-import { mainnet, sepolia, base, baseSepolia, arbitrum, Chain } from 'wagmi/chains'
+import {
+  mainnet,
+  sepolia,
+  base,
+  baseSepolia,
+  arbitrum,
+  arbitrumSepolia,
+  optimismSepolia,
+  Chain,
+} from 'wagmi/chains'
 import type { Transport } from 'viem'
 import localDeployments from '@/contracts/deployments.json'
 import { getAlchemyApiKeyFromEnv } from '@/lib/alchemy'
@@ -14,7 +23,12 @@ import { ZERO_ADDRESS, isNonZeroAddress } from '@/lib/address'
 import { sepoliaDeploymentAddresses } from '@/lib/sepoliaDeployments'
 import { baseSepoliaDeploymentAddresses } from '@/lib/baseSepoliaDeployments'
 import { mainnetDeploymentAddresses } from '@/lib/mainnetDeployments'
-import { getNetworkName as networkNameFromId, pickPreferredSupportedChainId } from '@/lib/supportedChain'
+import { TESTNET_DEPLOYMENTS } from '@/lib/testnetDeployments'
+import {
+  getNetworkName as networkNameFromId,
+  pickPreferredSupportedChainId,
+  TESTNET_CHAIN_IDS,
+} from '@/lib/supportedChain'
 
 export { isNonZeroAddress, ZERO_ADDRESS }
 
@@ -57,6 +71,8 @@ const PUBLIC_RPC: Record<number, string> = {
   [base.id]: 'https://mainnet.base.org',
   [baseSepolia.id]: 'https://sepolia.base.org',
   [arbitrum.id]: 'https://arb1.arbitrum.io/rpc',
+  [arbitrumSepolia.id]: 'https://sepolia-rollup.arbitrum.io/rpc',
+  [optimismSepolia.id]: 'https://sepolia.optimism.io',
 }
 
 function transportFromPlan(entry: PlannedRpcTransport): Transport {
@@ -127,69 +143,38 @@ if (!walletConnectProjectId) {
 }
 
 if (import.meta.env.DEV && alchemyApiKey) {
-  console.info('[wagmi] Alchemy RPC enabled for Ethereum, Sepolia, Base, Base Sepolia, Arbitrum, and local RPC')
+  console.info('[wagmi] Alchemy RPC enabled for every supported chain except local RPC')
 }
 
-/** Production: Base Sepolia (live Factory), Ethereum Sepolia, plus Mainnet when configured. Dev adds Base, Arbitrum, local. */
-export const config = productionApp
-  ? isMainnetConfigured
-    ? getDefaultConfig({
-        appName: 'Chamber',
-        projectId: walletConnectProjectId,
-        chains: [baseSepolia, mainnet, sepolia],
-        ssr: false,
-        pollingInterval: POLLING_INTERVAL_MS,
-        transports: {
-          [baseSepolia.id]: chainTransport(baseSepolia.id, PUBLIC_RPC[baseSepolia.id]),
-          [mainnet.id]: chainTransport(mainnet.id, PUBLIC_RPC[mainnet.id]),
-          [sepolia.id]: chainTransport(sepolia.id, PUBLIC_RPC[sepolia.id]),
-        },
-      })
-    : getDefaultConfig({
-        appName: 'Chamber',
-        projectId: walletConnectProjectId,
-        chains: [baseSepolia, sepolia],
-        ssr: false,
-        pollingInterval: POLLING_INTERVAL_MS,
-        transports: {
-          [baseSepolia.id]: chainTransport(baseSepolia.id, PUBLIC_RPC[baseSepolia.id]),
-          [sepolia.id]: chainTransport(sepolia.id, PUBLIC_RPC[sepolia.id]),
-        },
-      })
-  : isMainnetConfigured
-    ? getDefaultConfig({
-        appName: 'Chamber',
-        projectId: walletConnectProjectId,
-        chains: [baseSepolia, mainnet, sepolia, base, arbitrum, localhost],
-        ssr: false,
-        pollingInterval: POLLING_INTERVAL_MS,
-        transports: {
-          [baseSepolia.id]: chainTransport(baseSepolia.id, PUBLIC_RPC[baseSepolia.id]),
-          [mainnet.id]: chainTransport(mainnet.id, PUBLIC_RPC[mainnet.id]),
-          [sepolia.id]: chainTransport(sepolia.id, PUBLIC_RPC[sepolia.id]),
-          [base.id]: chainTransport(base.id, PUBLIC_RPC[base.id]),
-          [arbitrum.id]: chainTransport(arbitrum.id, PUBLIC_RPC[arbitrum.id]),
-          [localhost.id]: transportsFromPlan(
-            planLocalChainTransports(localhost.rpcUrls.default.http[0]),
-          ),
-        },
-      })
-    : getDefaultConfig({
-        appName: 'Chamber',
-        projectId: walletConnectProjectId,
-        chains: [baseSepolia, sepolia, base, arbitrum, localhost],
-        ssr: false,
-        pollingInterval: POLLING_INTERVAL_MS,
-        transports: {
-          [baseSepolia.id]: chainTransport(baseSepolia.id, PUBLIC_RPC[baseSepolia.id]),
-          [sepolia.id]: chainTransport(sepolia.id, PUBLIC_RPC[sepolia.id]),
-          [base.id]: chainTransport(base.id, PUBLIC_RPC[base.id]),
-          [arbitrum.id]: chainTransport(arbitrum.id, PUBLIC_RPC[arbitrum.id]),
-          [localhost.id]: transportsFromPlan(
-            planLocalChainTransports(localhost.rpcUrls.default.http[0]),
-          ),
-        },
-      })
+/**
+ * Production: the four testnets (Base Sepolia first, the default), plus
+ * Mainnet when configured. Dev adds Base, Arbitrum and local.
+ */
+const appChains: Chain[] = [
+  baseSepolia,
+  sepolia,
+  arbitrumSepolia,
+  optimismSepolia,
+  ...(isMainnetConfigured ? [mainnet] : []),
+  ...(productionApp ? [] : [base, arbitrum, localhost]),
+]
+
+const appTransports: Record<number, Transport> = {}
+for (const chain of appChains) {
+  appTransports[chain.id] =
+    chain.id === localhost.id
+      ? transportsFromPlan(planLocalChainTransports(localhost.rpcUrls.default.http[0]))
+      : chainTransport(chain.id, PUBLIC_RPC[chain.id]!)
+}
+
+export const config = getDefaultConfig({
+  appName: 'Chamber',
+  projectId: walletConnectProjectId,
+  chains: appChains as [Chain, ...Chain[]],
+  ssr: false,
+  pollingInterval: POLLING_INTERVAL_MS,
+  transports: appTransports,
+})
 
 // Sepolia Factory path — 26 Aug 2026 (`contracts/deployments/sepolia.txt`).
 // Env still wins when set (`VITE_SEPOLIA_FACTORY`, `VITE_SEPOLIA_CHAMBER_IMPL`).
@@ -255,8 +240,36 @@ export const CONTRACT_ADDRESSES = {
       import.meta.env.VITE_BASE_SEPOLIA_CHAMBER_IMPL,
       baseSepoliaDeploymentAddresses.chamberImplementation,
     ),
-    mockERC20: ZERO_ADDRESS as `0x${string}`,
-    mockERC721: ZERO_ADDRESS as `0x${string}`,
+    mockERC20: TESTNET_DEPLOYMENTS[baseSepolia.id]!.mockERC20,
+    mockERC721: TESTNET_DEPLOYMENTS[baseSepolia.id]!.mockERC721,
+  },
+  // Arbitrum Sepolia (421614) and OP Sepolia (11155420) — committed defaults
+  // from arbitrum-sepolia.txt / op-sepolia.txt (`make deploy-testnet`). Env overrides.
+  arbitrumSepolia: {
+    registry: ZERO_ADDRESS as `0x${string}`,
+    factory: addressFromEnv(
+      import.meta.env.VITE_ARBITRUM_SEPOLIA_FACTORY,
+      TESTNET_DEPLOYMENTS[arbitrumSepolia.id]!.factory,
+    ),
+    chamberImplementation: addressFromEnv(
+      import.meta.env.VITE_ARBITRUM_SEPOLIA_CHAMBER_IMPL,
+      TESTNET_DEPLOYMENTS[arbitrumSepolia.id]!.chamberImplementation,
+    ),
+    mockERC20: TESTNET_DEPLOYMENTS[arbitrumSepolia.id]!.mockERC20,
+    mockERC721: TESTNET_DEPLOYMENTS[arbitrumSepolia.id]!.mockERC721,
+  },
+  opSepolia: {
+    registry: ZERO_ADDRESS as `0x${string}`,
+    factory: addressFromEnv(
+      import.meta.env.VITE_OP_SEPOLIA_FACTORY,
+      TESTNET_DEPLOYMENTS[optimismSepolia.id]!.factory,
+    ),
+    chamberImplementation: addressFromEnv(
+      import.meta.env.VITE_OP_SEPOLIA_CHAMBER_IMPL,
+      TESTNET_DEPLOYMENTS[optimismSepolia.id]!.chamberImplementation,
+    ),
+    mockERC20: TESTNET_DEPLOYMENTS[optimismSepolia.id]!.mockERC20,
+    mockERC721: TESTNET_DEPLOYMENTS[optimismSepolia.id]!.mockERC721,
   },
   arbitrum: {
     registry: addressFromEnv(import.meta.env.VITE_ARBITRUM_REGISTRY),
@@ -307,6 +320,10 @@ export function getContractAddresses(chainId: number) {
       return CONTRACT_ADDRESSES.baseSepolia
     case 42161:
       return CONTRACT_ADDRESSES.arbitrum
+    case 421614:
+      return CONTRACT_ADDRESSES.arbitrumSepolia
+    case 11155420:
+      return CONTRACT_ADDRESSES.opSepolia
     case 31337:
       return CONTRACT_ADDRESSES.localhost
     default:
@@ -344,4 +361,29 @@ export function getConfiguredChainIds(): number[] {
  */
 export function getPreferredSupportedChainId(): number | undefined {
   return pickPreferredSupportedChainId(getConfiguredChainIds(), baseSepolia.id)
+}
+
+/** Supported testnets in display order, whether or not a Factory is deployed yet. */
+export function getTestnetChainIds(): number[] {
+  return TESTNET_CHAIN_IDS.filter((id) => config.chains.some((chain) => chain.id === id))
+}
+
+/**
+ * Every Factory to scan for `ChamberCreated` on this chain: the current one
+ * plus older ones still listed in the chain's deployments file, so chambers
+ * made before a Factory redeploy stay visible.
+ */
+export function getDiscoveryFactoryAddresses(chainId: number): `0x${string}`[] {
+  const current = getContractAddresses(chainId)?.factory
+  const older = chainId === localDeployments.chainId ? [] : (TESTNET_DEPLOYMENTS[chainId]?.factories ?? [])
+  const out: `0x${string}`[] = []
+  const seen = new Set<string>()
+  for (const addr of [current, ...older]) {
+    if (!addr || !isNonZeroAddress(addr)) continue
+    const key = addr.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(addr)
+  }
+  return out
 }
