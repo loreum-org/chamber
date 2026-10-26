@@ -79,7 +79,7 @@ contract FindingR1012FalseReturnSuccessTest is Test {
         uint256 txId = chamber.getTransactionCount() - 1;
 
         vm.prank(director);
-        vm.expectRevert(IWallet.TransactionFailed.selector);
+        vm.expectRevert(abi.encodeWithSelector(IWallet.TransactionFailed.selector, abi.encode(false)));
         chamber.executeTransaction(1, txId, data);
 
         (bool executed,,,,) = chamber.getTransaction(txId);
@@ -101,7 +101,7 @@ contract FindingR1012FalseReturnSuccessTest is Test {
         chamber.submitTransaction(1, address(target), 0, data, "", 0);
         uint256 txId = chamber.getTransactionCount() - 1;
         vm.prank(director);
-        vm.expectRevert(IWallet.TransactionFailed.selector);
+        vm.expectRevert(abi.encodeWithSelector(IWallet.TransactionFailed.selector, abi.encode(false)));
         chamber.executeTransaction(1, txId, data);
     }
 }
