@@ -882,16 +882,28 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
         return super.maxMint(receiver);
     }
 
-    /// @notice ERC-4626 withdrawals are disabled while paused
+    /// @notice ERC-4626 withdrawals are disabled while paused, and capped by the delegation lock.
+    /// @dev `redeem(maxRedeem(owner))` must succeed (R-1012-L1). Delegated shares cannot move.
     function maxWithdraw(address owner) public view override(ERC4626Upgradeable, IERC4626) returns (uint256) {
         if (paused()) return 0;
-        return super.maxWithdraw(owner);
+        uint256 capped = convertToAssets(_unlockedShares(owner));
+        uint256 maxAssets = super.maxWithdraw(owner);
+        return capped < maxAssets ? capped : maxAssets;
     }
 
-    /// @notice ERC-4626 redemptions are disabled while paused
+    /// @notice ERC-4626 redemptions are disabled while paused, and capped by the delegation lock.
     function maxRedeem(address owner) public view override(ERC4626Upgradeable, IERC4626) returns (uint256) {
         if (paused()) return 0;
-        return super.maxRedeem(owner);
+        uint256 capped = _unlockedShares(owner);
+        uint256 maxShares = super.maxRedeem(owner);
+        return capped < maxShares ? capped : maxShares;
+    }
+
+    /// @dev Shares `owner` can still move. Delegated shares stay locked until `undelegate`.
+    function _unlockedShares(address owner) internal view returns (uint256) {
+        uint256 balance = balanceOf(owner);
+        uint256 locked = _getChamberStorage().totalHolderDelegations[owner];
+        return balance > locked ? balance - locked : 0;
     }
 
     /**
