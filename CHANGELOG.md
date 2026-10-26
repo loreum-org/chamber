@@ -34,6 +34,7 @@ Empty `metadataURI` stores nothing. `deadline = 0` uses the 30-day default. Subm
 - `maxWithdraw` and `maxRedeem` stop at shares the holder has not delegated (R-1012-L1). `redeem(maxRedeem(owner))` no longer reverts `ExceedsDelegatedAmount` for a holder who still has free shares. Paused vaults still report zero.
 - Wallet execution reverts `TransactionFailed` when an ERC-20 `transfer`, `transferFrom`, `approve`, `increaseAllowance`, or `decreaseAllowance` returns a 32-byte zero word, instead of marking the nonce executed (R-1012-L2). Empty return data is still success, and a 32-byte zero from any other selector (including `uint256 0`) is still success.
 - A failed `ownerOf` on a bound seat stores an unbound snap instead of deleting `seatedOwner`, so a remint of that id waits out `SEATING_DELAY` again (R-1012-L4 seat half). The session half of L4 is already moot.
+- Seat-update support records `ownerOf` and does not count after that controller changes. `withdrawSeatSupport(tokenId)` lets the current owner retract a vote or clear a stale one (R-1012-M5). The original proposer token can still cancel. Proposals written before this field existed have an empty controller snap and still count. New storage is appended on the Board ERC-7201 struct (`seatProposalProposer`, `seatSupporter`).
 - Confirm and cancel votes record `msg.sender` as the controller (it is always the owner now) instead of reading `ownerOf` again.
 - `VERSION` is `1.3.0`.
 

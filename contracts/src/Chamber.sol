@@ -319,7 +319,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
     function updateSeats(uint256 tokenId, uint256 numOfSeats) public override directorCall(tokenId) {
         if (numOfSeats == 0) revert IChamber.ZeroSeats();
         if (numOfSeats > MAX_SEATS) revert IChamber.TooManySeats();
-        _setSeats(tokenId, numOfSeats, getQuorum());
+        _setSeats(tokenId, numOfSeats, getQuorum(), _getChamberStorage().nft);
     }
 
     /**
@@ -355,6 +355,13 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
      */
     function cancelSeatUpdate(uint256 tokenId) public override directorCall(tokenId) {
         _cancelSeatUpdate(tokenId);
+    }
+
+    /// @notice Drops `tokenId` from the pending seat proposal.
+    /// @dev The caller must own `tokenId` and be a seated director. A matching controller retracts
+    ///      their vote. A new owner clears a stale endorsement left by the previous one (R-1012-M5).
+    function withdrawSeatSupport(uint256 tokenId) public override directorCall(tokenId) {
+        _withdrawSeatSupport(tokenId, _getChamberStorage().nft);
     }
 
     /// WALLET ///
