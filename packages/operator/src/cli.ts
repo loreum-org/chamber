@@ -1,6 +1,7 @@
-import { type Address, type Hex, isAddress, isHex, parseEther } from 'viem'
+import { type Address, type Hex, createPublicClient, http, isAddress, isHex, parseEther } from 'viem'
 import { createOperator } from './client.ts'
 import { ChamberOperatorError } from './errors.ts'
+import { NETWORKS, resolveNetwork } from './networks.ts'
 
 const USAGE = `chamber-operator — typed Chamber board / queue actions (same ABI as the app)
 
@@ -20,8 +21,10 @@ Commands:
   execute               executeTransaction (director)
 
 Required (or env):
-  --rpc <url>           RPC_URL / CHAMBER_RPC
+  --network <name>      CHAMBER_NETWORK: ${Object.keys(NETWORKS).join(', ')}
+  --rpc <url>           RPC_URL / CHAMBER_RPC   (overrides the network's public RPC)
   --chamber <addr>      CHAMBER
+                        Give --network, --rpc, or both.
   --key <hex>           PRIVATE_KEY / CHAMBER_KEY   (writes only)
 
 Writes:
@@ -127,13 +130,25 @@ async function main(): Promise<void> {
     return
   }
 
-  const rpcUrl = requireFlag(flags, 'rpc', ['CHAMBER_RPC', 'RPC_URL'])
+  const networkName = flag(flags, 'network', ['CHAMBER_NETWORK'])
+  const network = networkName ? resolveNetwork(networkName) : undefined
+  const customRpc = flag(flags, 'rpc', ['CHAMBER_RPC', 'RPC_URL'])
+  const rpcUrl = network ? (customRpc ?? network.rpcUrl) : requireFlag(flags, 'rpc', ['CHAMBER_RPC', 'RPC_URL'])
+  if (network && customRpc) {
+    const actual = await createPublicClient({ transport: http(customRpc) }).getChainId()
+    if (actual !== network.chain.id) {
+      throw new ChamberOperatorError(
+        `--rpc is on chain ${actual}, but --network ${networkName} is chain ${network.chain.id}.`,
+      )
+    }
+  }
   const chamber = requireAddress(requireFlag(flags, 'chamber', ['CHAMBER']), 'chamber')
   const key = flag(flags, 'key', ['CHAMBER_KEY', 'PRIVATE_KEY'])
 
   const operator = await createOperator({
     rpcUrl,
     chamber,
+    chain: network?.chain,
     signer: key
       ? { type: 'privateKey', privateKey: (key.startsWith('0x') ? key : `0x${key}`) as Hex }
       : undefined,

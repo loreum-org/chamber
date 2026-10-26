@@ -6,7 +6,7 @@ import { useAccount, useWriteContract } from 'wagmi'
 import { sepolia } from 'wagmi/chains'
 import { simulateContract } from 'wagmi/actions'
 import { zeroAddress, parseEther } from 'viem'
-import { config, getContractAddresses, LOCAL_CHAIN_ID } from '@/lib/wagmi'
+import { config, getContractAddresses, getTestnetChainIds, LOCAL_CHAIN_ID } from '@/lib/wagmi'
 import { erc721Abi, erc20Abi } from '@/contracts'
 import { formatLocalTestMintToast, formatWalletSendError } from '@/lib/utils'
 import toast from 'react-hot-toast'
@@ -35,7 +35,8 @@ export default function Layout() {
 
   const onLocalRpc = typeof chainId === 'number' && chainId === LOCAL_CHAIN_ID
   const onSepolia = chainId === sepolia.id
-  const canMintTestTokens = onLocalRpc || onSepolia
+  // Anvil, or any testnet whose deployments file lists the demo tokens.
+  const canMintTestTokens = onLocalRpc || (typeof chainId === 'number' && getTestnetChainIds().includes(chainId))
   const mintTargets = canMintTestTokens ? getContractAddresses(chainId) : undefined
   const mintNftAddr = mintTargets?.mockERC721
   const mintErc20Addr = mintTargets?.mockERC20

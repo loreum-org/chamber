@@ -269,12 +269,14 @@ export function useAssets() {
 }
 
 /**
- * Groups the given chambers by their membership NFT (ERC721).
+ * Groups the given chambers by their membership NFT (ERC721) and chain.
  * Pass the user's chambers — do not crawl the world index.
  */
-export function useOrganizationsByNFT(chambers?: readonly `0x${string}`[]) {
+export function useOrganizationsByNFT(
+  chambers?: readonly { address: `0x${string}`; chainId: number }[],
+) {
   const validChambers = (chambers ?? []).filter(
-    (addr): addr is `0x${string}` =>
+    ({ address: addr }) =>
       !!addr &&
       addr !== '0x0000000000000000000000000000000000000000' &&
       addr.startsWith('0x') &&
@@ -282,11 +284,17 @@ export function useOrganizationsByNFT(chambers?: readonly `0x${string}`[]) {
   )
 
   const { data: nftResults, isLoading: nftsLoading } = useReadContracts({
-    contracts: validChambers.map((addr) => ({
-      address: addr,
+    contracts: validChambers.map(({ address, chainId }) => ({
+      address,
       abi: chamberAbi,
       functionName: 'nft',
-    })) as readonly { address: `0x${string}`; abi: typeof chamberAbi; functionName: 'nft' }[],
+      chainId,
+    })) as readonly {
+      address: `0x${string}`
+      abi: typeof chamberAbi
+      functionName: 'nft'
+      chainId: number
+    }[],
     query: {
       enabled: validChambers.length > 0,
     },
@@ -294,20 +302,18 @@ export function useOrganizationsByNFT(chambers?: readonly `0x${string}`[]) {
 
   const organizations = (() => {
     if (!nftResults || nftResults.length !== validChambers.length) return []
-    const byNft = new Map<string, `0x${string}`[]>()
+    const byNft = new Map<string, { nft: `0x${string}`; chainId: number; chambers: `0x${string}`[] }>()
     for (let i = 0; i < validChambers.length; i++) {
       const r = nftResults[i]
       const chamber = validChambers[i]
       if (r?.status === 'success' && r.result && chamber) {
         const nft = (r.result as string).toLowerCase() as `0x${string}`
-        if (!byNft.has(nft)) byNft.set(nft, [])
-        byNft.get(nft)!.push(chamber)
+        const key = `${chamber.chainId}:${nft}`
+        if (!byNft.has(key)) byNft.set(key, { nft, chainId: chamber.chainId, chambers: [] })
+        byNft.get(key)!.chambers.push(chamber.address)
       }
     }
-    return Array.from(byNft.entries()).map(([nft, chams]) => ({
-      nft: nft as `0x${string}`,
-      chambers: chams,
-    }))
+    return Array.from(byNft.values())
   })()
 
   return {

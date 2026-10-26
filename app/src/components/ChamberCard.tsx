@@ -1,12 +1,15 @@
-import { Link } from 'react-router-dom'
-import { useReadContract, useAccount } from 'wagmi'
+import { useAccount, useReadContract, useReadContracts } from 'wagmi'
 import { formatUnits } from 'viem'
-import { useChamberInfo, useChamberBalance, useShareDecimals } from '@/hooks'
 import { erc20Abi } from '@/contracts'
-import { shortenAddress } from '@/lib/utils'
+import { chamberAbi } from '@/contracts/abis'
+import { useOpenChamber } from '@/hooks/useOpenChamber'
+import { resolveTokenDecimals, shortenAddress } from '@/lib/utils'
+import { NetworkBadge } from '@/components/ui'
 
 interface ChamberCardProps {
   address: `0x${string}`
+  /** Chain the chamber lives on. Reads go to this chain, not the wallet's. */
+  chainId: number
 }
 
 function formatAmount(value: bigint | undefined, decimals = 18): string {
@@ -14,22 +17,53 @@ function formatAmount(value: bigint | undefined, decimals = 18): string {
   return parseFloat(formatUnits(value, decimals)).toLocaleString(undefined, { maximumFractionDigits: 2 })
 }
 
+const CARD_READS = [
+  'name',
+  'symbol',
+  'totalAssets',
+  'getSeats',
+  'getQuorum',
+  'getDirectors',
+  'getTransactionCount',
+  'asset',
+  'decimals',
+] as const
+
 /**
  * One chamber in the My Chambers list. One title line, one facts line, and
  * the connected wallet's relationship to it. Everything else lives on the
- * chamber page.
+ * chamber page. Opening a chamber on another chain switches the wallet first.
  */
-export default function ChamberCard({ address }: ChamberCardProps) {
+export default function ChamberCard({ address, chainId }: ChamberCardProps) {
   const { address: userAddress } = useAccount()
-  const { name, symbol, totalAssets, seats, quorum, directors, transactionCount, assetToken } =
-    useChamberInfo(address)
-  const { balance: userBalance } = useChamberBalance(address, userAddress)
-  const shareDecimals = useShareDecimals(address)
+  const openChamber = useOpenChamber()
+
+  const { data } = useReadContracts({
+    contracts: [
+      ...CARD_READS.map((functionName) => ({ address, abi: chamberAbi, functionName, chainId })),
+      ...(userAddress
+        ? [{ address, abi: chamberAbi, functionName: 'balanceOf' as const, args: [userAddress] as const, chainId }]
+        : []),
+    ],
+    query: { retry: 1 },
+  })
+  const read = <T,>(i: number) => (data?.[i]?.status === 'success' ? (data[i]!.result as T) : undefined)
+  const name = read<string>(0)
+  const symbol = read<string>(1)
+  const totalAssets = read<bigint>(2)
+  const seats = read<bigint>(3)
+  const quorum = read<bigint>(4)
+  const directors = read<`0x${string}`[]>(5)
+  const transactionCount = read<bigint>(6)
+  const assetToken = read<`0x${string}`>(7)
+  const shareDecimals = resolveTokenDecimals(read<number>(8))
+  const userBalance = userAddress ? read<bigint>(CARD_READS.length) : undefined
 
   const { data: assetSymbol } = useReadContract({
     address: assetToken,
     abi: erc20Abi,
     functionName: 'symbol',
+    chainId,
     query: { enabled: !!assetToken },
   })
 
@@ -44,7 +78,15 @@ export default function ChamberCard({ address }: ChamberCardProps) {
   if (transactionCount !== undefined) facts.push(`${transactionCount} proposals`)
 
   return (
-    <Link to={`/chamber/${address}`} className="card-hover block group">
+    <a
+      href={`/chamber/${address}`}
+      onClick={(e) => {
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return
+        e.preventDefault()
+        void openChamber(address, chainId)
+      }}
+      className="card-hover block group"
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h3 className="font-heading text-[15px] font-semibold text-slate-100 truncate group-hover:text-accent-300 transition-colors">
@@ -52,7 +94,10 @@ export default function ChamberCard({ address }: ChamberCardProps) {
           </h3>
           <p className="font-mono text-xs text-slate-500 mt-0.5">{shortenAddress(address, 6)}</p>
         </div>
-        {symbol && <span className="badge badge-primary shrink-0">{symbol}</span>}
+        <div className="flex shrink-0 flex-wrap justify-end gap-1.5">
+          <NetworkBadge chainId={chainId} />
+          {symbol && <span className="badge badge-primary">{symbol}</span>}
+        </div>
       </div>
 
       <p className="mt-4 text-sm text-slate-400 tabular-nums">
@@ -77,6 +122,6 @@ export default function ChamberCard({ address }: ChamberCardProps) {
           )}
         </div>
       )}
-    </Link>
+    </a>
   )
 }
