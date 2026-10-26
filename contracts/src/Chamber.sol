@@ -438,6 +438,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
             revert IChamber.NotEnoughConfirmations();
         }
         _requireWalletExecuteAllowed(transaction.target, transactionId, data);
+        _requireUpgradeStillValid(transaction.target, transactionId, data);
 
         _executeTransaction(tokenId, transactionId, data);
         emit IChamber.TransactionExecuted(transactionId, msg.sender);
@@ -575,6 +576,20 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
         if (selector != PAUSE_SELECTOR && selector != UNPAUSE_SELECTOR) {
             revert IChamber.InvalidTransaction();
         }
+    }
+
+    /// @dev Submit checks the implementation once (R-1012-L6). Execute checks it again, because the
+    ///      code at that address can change before the quorum acts. Stored upgrade calldata is used
+    ///      when the caller passes empty `data`. An implementation that keeps `CHAMBER_ID()` and
+    ///      changes its other code is still the board's responsibility.
+    function _requireUpgradeStillValid(address target, uint256 transactionId, bytes calldata data) internal view {
+        address admin = StorageSlot.getAddressSlot(_ADMIN_SLOT).value;
+        if (admin == address(0) || target != admin) return;
+        bytes memory payload = data;
+        if (payload.length == 0) {
+            payload = _getWalletStorage().transactionCalldata[transactionId];
+        }
+        _requireChamberUpgrade(payload);
     }
 
     /// @dev While paused, only a quorum self-call to unpause may execute. This avoids a permanent lock.

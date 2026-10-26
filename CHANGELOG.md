@@ -4,7 +4,7 @@ Contract-level changes to `Chamber` that affect integrations. App, docs, and too
 
 ## 1.3.0 (unreleased; not deployed)
 
-Scope cuts before mainnet (epic #395) took Chamber runtime bytecode from 24,571 to 21,810 bytes. The open-finding fixes below land at 22,385 bytes, 2,191 under the EIP-170 limit of 24,576.
+Scope cuts before mainnet (epic #395) took Chamber runtime bytecode from 24,571 to 21,810 bytes. The open-finding fixes below land at 22,567 bytes, 2,009 under the EIP-170 limit of 24,576.
 
 ### Breaking: session keys removed (#396)
 
@@ -35,7 +35,7 @@ Empty `metadataURI` stores nothing. `deadline = 0` uses the 30-day default. Subm
 - Wallet execution reverts `TransactionFailed` when an ERC-20 `transfer`, `transferFrom`, `approve`, `increaseAllowance`, or `decreaseAllowance` returns a 32-byte zero word, instead of marking the nonce executed (R-1012-L2). Empty return data is still success, and a 32-byte zero from any other selector (including `uint256 0`) is still success.
 - A failed `ownerOf` on a bound seat stores an unbound snap instead of deleting `seatedOwner`, so a remint of that id waits out `SEATING_DELAY` again (R-1012-L4 seat half). The session half of L4 is already moot.
 - Seat-update support records `ownerOf` and does not count after that controller changes. `withdrawSeatSupport(tokenId)` lets the current owner retract a vote or clear a stale one (R-1012-M5). The original proposer token can still cancel. Proposals written before this field existed have an empty controller snap and still count. New storage is appended on the Board ERC-7201 struct (`seatProposalProposer`, `seatSupporter`).
-- A quorum call to the chamber's ProxyAdmin is accepted only for `upgradeAndCall` of this proxy to a deployed implementation whose `CHAMBER_ID()` returns `keccak256("loreum.chamber.implementation")` (R-1012-L6). `transferOwnership`, `renounceOwnership`, and every other ProxyAdmin selector revert `InvalidTarget` at submit. The id is stable across versions; it does not prove bytecode equality. A design note for a delay between quorum and execute is in `docs/security/execution-delay-design.md` (not implemented).
+- A quorum call to the chamber's ProxyAdmin is accepted only for `upgradeAndCall` of this proxy to a deployed implementation whose `CHAMBER_ID()` returns `keccak256("loreum.chamber.implementation")` (R-1012-L6). `transferOwnership`, `renounceOwnership`, and every other ProxyAdmin selector revert `InvalidTarget` at submit, and execute runs the same check again. The id is stable across versions; it does not prove bytecode equality. A design note for a delay between quorum and execute is in `docs/security/execution-delay-design.md` (not implemented).
 - Confirm and cancel votes record `msg.sender` as the controller (it is always the owner now) instead of reading `ownerOf` again.
 - `VERSION` is `1.3.0`.
 

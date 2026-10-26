@@ -100,4 +100,22 @@ contract FindingR1012UpgradeCompatibilityTest is Test {
         assertEq(chamber.VERSION(), bytes32("1.3.0"));
         assertEq(ProxyAdmin(admin).owner(), address(chamber));
     }
+
+    function test_executeRechecksImplementation() public {
+        Chamber next = new Chamber();
+        address admin = chamber.getProxyAdmin();
+        bytes memory data = abi.encodeCall(
+            ProxyAdmin.upgradeAndCall, (ITransparentUpgradeableProxy(address(chamber)), address(next), "")
+        );
+        _submit(admin, data);
+
+        vm.etch(address(next), type(NotAChamber).runtimeCode);
+        vm.prank(director);
+        vm.expectRevert(IWallet.InvalidTarget.selector);
+        chamber.executeTransaction(1, 0, "");
+
+        (bool executed,,,,) = chamber.getTransaction(0);
+        assertFalse(executed, "a changed implementation was upgraded");
+        assertEq(chamber.VERSION(), bytes32("1.3.0"));
+    }
 }
