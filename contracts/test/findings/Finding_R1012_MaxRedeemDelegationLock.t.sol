@@ -48,6 +48,29 @@ contract FindingR1012MaxRedeemDelegationLockTest is Test {
         vm.stopPrank();
     }
 
+    /// @dev ERC-4626 also requires withdraw(maxWithdraw(owner)) to succeed, and the shares it burns
+    ///      must stay inside the unlocked amount so `_update` does not revert.
+    function test_withdrawMaxWithdrawLeavesOnlyDelegatedShares() public {
+        uint256 assets = 100 ether;
+        nft.mintWithTokenId(holder, 1);
+        token.mint(holder, assets);
+        vm.startPrank(holder);
+        token.approve(address(chamber), assets);
+        chamber.deposit(assets, holder);
+
+        uint256 shares = chamber.balanceOf(holder);
+        uint256 locked = shares / 2;
+        chamber.delegate(1, locked);
+
+        uint256 maxAssets = chamber.maxWithdraw(holder);
+        uint256 sharesBurned = chamber.withdraw(maxAssets, holder, holder);
+        assertLe(sharesBurned, shares - locked);
+        assertEq(token.balanceOf(holder), maxAssets);
+        assertEq(chamber.balanceOf(holder), locked);
+        assertEq(chamber.maxWithdraw(holder), 0);
+        vm.stopPrank();
+    }
+
     function test_maxRedeemIsFullBalanceWithoutDelegation() public {
         uint256 assets = 10 ether;
         token.mint(holder, assets);
