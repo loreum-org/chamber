@@ -1,0 +1,6 @@
+  OP Sepolia (chain 11155420)
+  ====================================================================
+  Not deployed yet. Run from contracts/:
+    make deploy-testnet network=op-sepolia account=<keystore>
+  The script appends the Factory, Chamber implementation, start block and
+  demo token addresses here. The app reads the last entry for each label.

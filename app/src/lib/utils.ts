@@ -86,6 +86,8 @@ const BLOCK_EXPLORERS: Record<number, string> = {
   8453: 'https://basescan.org',
   84532: 'https://sepolia.basescan.org',
   42161: 'https://arbiscan.io',
+  421614: 'https://sepolia.arbiscan.io',
+  11155420: 'https://sepolia-optimism.etherscan.io',
   31337: 'http://localhost:8545', // Anvil - no block explorer by default
 }
 
