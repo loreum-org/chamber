@@ -187,7 +187,7 @@ library WalletLib {
         transaction.executed = true;
 
         (bool success, bytes memory returnData) = target.call{value: value}(payload);
-        if (!success) {
+        if (!success || _returnedFalse(returnData)) {
             transaction.executed = false;
             revert IWallet.TransactionFailed(returnData);
         }
@@ -210,5 +210,16 @@ library WalletLib {
             payload = data;
         }
         if (keccak256(payload) != transaction.dataHash) revert IWallet.DataHashMismatch();
+    }
+
+    /// @dev A 32-byte zero word is the ABI encoding of `false` (R-1012-L2). Empty return data stays
+    ///      success, matching tokens that do not return a bool. Any other length is left alone.
+    function _returnedFalse(bytes memory returnData) internal pure returns (bool) {
+        if (returnData.length != 32) return false;
+        uint256 word;
+        assembly {
+            word := mload(add(returnData, 32))
+        }
+        return word == 0;
     }
 }
