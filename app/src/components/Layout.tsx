@@ -7,6 +7,7 @@ import { sepolia } from 'wagmi/chains'
 import { simulateContract } from 'wagmi/actions'
 import { zeroAddress, parseEther } from 'viem'
 import { config, getContractAddresses, getTestnetChainIds, LOCAL_CHAIN_ID } from '@/lib/wagmi'
+import { COMPLIANCE_ENABLED } from '@/lib/features'
 import { erc721Abi, erc20Abi } from '@/contracts'
 import { formatLocalTestMintToast, formatWalletSendError } from '@/lib/utils'
 import toast from 'react-hot-toast'
@@ -14,7 +15,7 @@ import toast from 'react-hot-toast'
 const navItems: { path: string; label: string; umamiEvent?: string }[] = [
   { path: '/', label: 'My Chambers' },
   { path: '/deploy', label: 'Deploy Chamber', umamiEvent: 'cta-create-chamber' },
-  { path: '/compliance', label: 'Compliance' },
+  ...(COMPLIANCE_ENABLED ? [{ path: '/compliance', label: 'Compliance' }] : []),
   { path: '/docs', label: 'Docs' },
 ]
 

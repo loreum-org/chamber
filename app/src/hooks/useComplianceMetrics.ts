@@ -13,6 +13,7 @@ import {
   type ComplianceMetrics,
 } from '@/lib/complianceMetrics'
 import { fetchComplianceSnapshot, type ComplianceSnapshot } from '@/lib/complianceQuery'
+import { COMPLIANCE_ENABLED } from '@/lib/features'
 
 /** Story 3.2 — metrics updated ~every 5 minutes. */
 export const COMPLIANCE_REFRESH_INTERVAL_MS = 5 * 60 * 1000
@@ -37,7 +38,7 @@ export function useComplianceMetrics(
       chamberAddress?.toLowerCase() ?? '',
       windowDays,
     ],
-    enabled: !!publicClient && !!chamberAddress,
+    enabled: COMPLIANCE_ENABLED && !!publicClient && !!chamberAddress,
     staleTime: COMPLIANCE_REFRESH_INTERVAL_MS,
     refetchInterval: COMPLIANCE_REFRESH_INTERVAL_MS,
     retry: 1,
