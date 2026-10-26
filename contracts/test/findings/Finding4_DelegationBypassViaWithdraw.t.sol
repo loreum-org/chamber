@@ -9,7 +9,9 @@ import {MockERC20} from "test/mock/MockERC20.sol";
 import {MockERC721} from "test/mock/MockERC721.sol";
 import {DeployChamber} from "test/utils/DeployChamber.sol";
 import {ChamberReads} from "test/utils/ChamberReads.sol";
-import {ERC4626Upgradeable} from "lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/ERC4626Upgradeable.sol";
+import {
+    ERC4626Upgradeable
+} from "lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/ERC4626Upgradeable.sol";
 
 /**
  * @title Finding 4: ERC4626 Withdraw Bypasses Delegation Locks [CRITICAL] — FIXED
@@ -29,7 +31,8 @@ contract DelegationBypassViaWithdrawTest is Test {
     function setUp() public {
         token = new MockERC20("Test Token", "TEST", 0);
         nft = new MockERC721("Mock NFT", "MNFT");
-        chamberAddress = address(DeployChamber.deployViaFactory(address(token), address(nft), 3, "Chamber Token", "CHMB", admin));
+        chamberAddress =
+            address(DeployChamber.deployViaFactory(address(token), address(nft), 3, "Chamber Token", "CHMB", admin));
         chamber = IChamber(chamberAddress);
 
         token.mint(attacker, 1000e18);
@@ -77,7 +80,9 @@ contract DelegationBypassViaWithdrawTest is Test {
 
         // Redeem stops at maxRedeem, which excludes delegated shares (R-1012-L1).
         assertEq(chamber.maxRedeem(attacker), 0);
-        vm.expectRevert(abi.encodeWithSelector(ERC4626Upgradeable.ERC4626ExceededMaxRedeem.selector, attacker, shares, 0));
+        vm.expectRevert(
+            abi.encodeWithSelector(ERC4626Upgradeable.ERC4626ExceededMaxRedeem.selector, attacker, shares, 0)
+        );
         chamber.redeem(shares, attacker, attacker);
         vm.stopPrank();
     }

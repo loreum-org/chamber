@@ -8,7 +8,9 @@ import {MockERC20} from "test/mock/MockERC20.sol";
 import {MockERC721} from "test/mock/MockERC721.sol";
 import {DeployChamber} from "test/utils/DeployChamber.sol";
 import {ChamberReads} from "test/utils/ChamberReads.sol";
-import {ERC4626Upgradeable} from "lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/ERC4626Upgradeable.sol";
+import {
+    ERC4626Upgradeable
+} from "lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/ERC4626Upgradeable.sol";
 
 /**
  * @title M-03: Evicted delegations are undiscoverable via getDelegations — FIXED
@@ -35,7 +37,8 @@ contract EvictedDelegationDiscoveryTest is Test {
     function setUp() public {
         token = new MockERC20("Test Token", "TEST", 1000000e18);
         nft = new MockERC721("Mock NFT", "MNFT");
-        chamberAddress = address(DeployChamber.deployViaFactory(address(token), address(nft), 20, "Chamber Token", "CHMB", admin));
+        chamberAddress =
+            address(DeployChamber.deployViaFactory(address(token), address(nft), 20, "Chamber Token", "CHMB", admin));
         chamber = IChamber(chamberAddress);
 
         token.mint(alice, 1000e18);

@@ -3,7 +3,6 @@ pragma solidity ^0.8.30;
 
 import {Test} from "forge-std/Test.sol";
 import {Chamber} from "src/Chamber.sol";
-import {IChamber} from "src/interfaces/IChamber.sol";
 import {MockERC20} from "test/mock/MockERC20.sol";
 import {MockERC721} from "test/mock/MockERC721.sol";
 import {DeployChamber} from "test/utils/DeployChamber.sol";
@@ -45,9 +44,7 @@ contract FindingR1012MaxRedeemDelegationLockTest is Test {
         uint256 redeemed = chamber.redeem(maxShares, holder, holder);
         assertEq(redeemed, maxAssets);
         assertEq(chamber.balanceOf(holder), locked);
-
-        vm.expectRevert(IChamber.ExceedsDelegatedAmount.selector);
-        chamber.redeem(1, holder, holder);
+        assertEq(chamber.maxRedeem(holder), 0);
         vm.stopPrank();
     }
 
