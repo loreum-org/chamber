@@ -44,11 +44,16 @@ contract FindingR1012RemintSeatMaturityTest is Test {
 
         assertGt(chamber.getSeatedAt(1), block.number, "reminted id inherited a mature seat");
 
+        // Persist the new checkpoint. A reverting director call would roll that write back.
+        chamber.syncSeating(1);
+        uint256 readyAt = chamber.getSeatedAt(1);
+        assertGt(readyAt, block.number);
+
         vm.prank(buyer);
         vm.expectRevert(IChamber.DirectorNotSeated.selector);
         chamber.updateSeats(1, 2);
 
-        vm.roll(block.number + BoardTypes.SEATING_DELAY);
+        vm.roll(readyAt);
         vm.prank(buyer);
         chamber.updateSeats(1, 2);
         (uint256 proposed,,,) = chamber.getSeatUpdate();
