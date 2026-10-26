@@ -118,6 +118,19 @@ That run reads board + quorum, delegates, then `submitTransaction` / `confirm` /
 
 Library / CLI details: [`packages/operator/README.md`](./packages/operator/README.md).
 
+## Indexer
+
+The `indexer/` package is the Ponder GraphQL service. It is not part of the Vite app and it deploys on its own. Factory address and start block are read from [`contracts/deployments/base-sepolia.txt`](./contracts/deployments/base-sepolia.txt).
+
+```bash
+cd indexer
+cp .env.example .env.local   # set PONDER_RPC_URL_84532
+pnpm install
+pnpm dev
+```
+
+Host package root is `indexer/` (Railway service `chamber-indexer`, root directory `indexer`). See [`indexer/README.md`](./indexer/README.md). CI for this package is `.github/workflows/indexer.yml`. App-only changes do not run it.
+
 ## Explorers
 
 The `explorers/` app is a standalone Vite + React SPA for browsing the Loreum NFT collection. It shares design tokens with `app/` (copied, never imported) and connects to Ethereum mainnet and Sepolia only.

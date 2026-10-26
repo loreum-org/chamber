@@ -1,0 +1,122 @@
+# Chamber state queries (Ponder 0.8: limit / items, not first / skip).
+# Ids are lowercase hex. Select `_meta { status }` to get the indexed head
+# (block number + timestamp) for freshness and time-based checks.
+
+query ChamberState($chamber: String!) {
+  chamber(id: $chamber) {
+    address
+    name
+    symbol
+    asset
+    nft
+    decimals
+    seats
+    quorum
+    boardSize
+    reachableDirectors
+    transactionCount
+    totalAssets
+    totalSupply
+    ethBalance
+    paused
+    implementation
+    version
+    updatedBlock
+  }
+  seatUpdate(chamberId: $chamber) {
+    proposedSeats
+    timestamp
+    requiredQuorum
+    supporters
+  }
+  _meta {
+    status
+  }
+}
+
+# Ranked board. Top seats are rank < chamber.seats; directors are their owners.
+query ChamberBoard($chamber: String!) {
+  boardSeats(where: { chamberId: $chamber }, orderBy: "rank", orderDirection: "asc", limit: 1000) {
+    items {
+      tokenId
+      rank
+      amount
+      owner
+      seatedAt
+    }
+  }
+  _meta {
+    status
+  }
+}
+
+query ChamberProposals($chamber: String!) {
+  proposals(where: { chamberId: $chamber }, orderBy: "nonce", orderDirection: "asc", limit: 1000) {
+    items {
+      nonce
+      proposerTokenId
+      target
+      value
+      data
+      dataHash
+      metadataURI
+      deadline
+      requiredQuorum
+      confirmations
+      cancelConfirmations
+      executed
+      cancelled
+      submittedAt
+      submittedTx
+      executedTx
+    }
+  }
+  proposalVotes(where: { chamberId: $chamber }, limit: 1000) {
+    items {
+      nonce
+      tokenId
+      confirmed
+      cancelVoted
+    }
+  }
+  _meta {
+    status
+  }
+}
+
+query HolderDelegations($chamber: String!, $holder: String!) {
+  delegations(where: { chamberId: $chamber, holder: $holder, amount_gt: "0" }) {
+    items {
+      tokenId
+      amount
+    }
+  }
+  chamberHolder(chamberId: $chamber, account: $holder) {
+    shares
+  }
+}
+
+query DirectorOperators($chamber: String!) {
+  directorOperators(where: { chamberId: $chamber }) {
+    items {
+      tokenId
+      owner
+      operator
+      expiry
+      scope
+      liveAt
+    }
+  }
+}
+
+query ChamberActivity($chamber: String!, $limit: Int) {
+  chamberEvents(where: { chamberId: $chamber }, orderBy: "blockNumber", orderDirection: "desc", limit: $limit) {
+    items {
+      name
+      args
+      blockNumber
+      timestamp
+      txHash
+    }
+  }
+}

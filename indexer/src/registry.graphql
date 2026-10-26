@@ -1,0 +1,72 @@
+# Registry / Factory creation events
+
+query GetRegistryChamberCreatedEvents($limit: Int) {
+  registry_ChamberCreateds(limit: $limit, orderBy: "id", orderDirection: "desc") {
+    items {
+      id
+      chamber
+      seats
+      name
+      symbol
+      erc20Token
+      erc721Token
+    }
+  }
+}
+
+query GetFactoryChamberCreatedEvents($limit: Int, $creator: String) {
+  factory_ChamberCreateds(where: { creator: $creator }, limit: $limit, orderBy: "id", orderDirection: "desc") {
+    items {
+      id
+      chamber
+      asset
+      nft
+      seats
+      name
+      symbol
+      creator
+    }
+  }
+}
+
+query GetInitializedEvents($limit: Int) {
+  registry_Initializeds(limit: $limit, orderBy: "id", orderDirection: "desc") {
+    items {
+      id
+      version
+    }
+  }
+}
+
+query GetRoleAdminChangedEvents($limit: Int, $role: String) {
+  registry_RoleAdminChangeds(where: { role: $role }, limit: $limit, orderBy: "id", orderDirection: "desc") {
+    items {
+      id
+      role
+      previousAdminRole
+      newAdminRole
+    }
+  }
+}
+
+query GetRoleGrantedEvents($limit: Int, $account: String) {
+  registry_RoleGranteds(where: { account: $account }, limit: $limit, orderBy: "id", orderDirection: "desc") {
+    items {
+      id
+      role
+      account
+      sender
+    }
+  }
+}
+
+query GetRoleRevokedEvents($limit: Int, $account: String) {
+  registry_RoleRevokeds(where: { account: $account }, limit: $limit, orderBy: "id", orderDirection: "desc") {
+    items {
+      id
+      role
+      account
+      sender
+    }
+  }
+}

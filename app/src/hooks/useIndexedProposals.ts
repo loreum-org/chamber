@@ -113,7 +113,7 @@ function parseProposal(row: RawProposal): IndexedProposal | undefined {
 }
 
 /**
- * All wallet transactions and per-seat votes for a chamber, from chamber-indexer.
+ * All wallet transactions and per-seat votes for a chamber, from the indexer package.
  * `enabled` is false when no indexer serves the connected chain; callers fall back to RPC.
  */
 export function useIndexedProposals(chamberAddress: `0x${string}` | undefined) {
