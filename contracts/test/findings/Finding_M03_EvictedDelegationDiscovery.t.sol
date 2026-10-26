@@ -8,6 +8,7 @@ import {MockERC20} from "test/mock/MockERC20.sol";
 import {MockERC721} from "test/mock/MockERC721.sol";
 import {DeployChamber} from "test/utils/DeployChamber.sol";
 import {ChamberReads} from "test/utils/ChamberReads.sol";
+import {ERC4626Upgradeable} from "lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/ERC4626Upgradeable.sol";
 
 /**
  * @title M-03: Evicted delegations are undiscoverable via getDelegations — FIXED
@@ -111,8 +112,12 @@ contract EvictedDelegationDiscoveryTest is Test {
         assertTrue(_containsDelegation(alice, EVICTED_TOKEN, ALICE_AMOUNT));
 
         uint256 aliceShares = chamber.balanceOf(alice);
+        uint256 aliceMax = chamber.maxRedeem(alice);
+        assertLt(aliceMax, aliceShares);
         vm.prank(alice);
-        vm.expectRevert(IChamber.ExceedsDelegatedAmount.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(ERC4626Upgradeable.ERC4626ExceededMaxRedeem.selector, alice, aliceShares, aliceMax)
+        );
         chamber.redeem(aliceShares, alice, alice);
 
         vm.prank(alice);
@@ -207,8 +212,12 @@ contract EvictedDelegationDiscoveryTest is Test {
         assertTrue(_containsDelegation(carol, EVICTED_TOKEN, CAROL_AMOUNT));
 
         uint256 carolShares = chamber.balanceOf(carol);
+        uint256 carolMax = chamber.maxRedeem(carol);
+        assertLt(carolMax, carolShares);
         vm.prank(carol);
-        vm.expectRevert(IChamber.ExceedsDelegatedAmount.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(ERC4626Upgradeable.ERC4626ExceededMaxRedeem.selector, carol, carolShares, carolMax)
+        );
         chamber.redeem(carolShares, carol, carol);
 
         vm.prank(carol);

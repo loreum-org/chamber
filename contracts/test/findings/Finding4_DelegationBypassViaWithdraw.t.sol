@@ -9,6 +9,7 @@ import {MockERC20} from "test/mock/MockERC20.sol";
 import {MockERC721} from "test/mock/MockERC721.sol";
 import {DeployChamber} from "test/utils/DeployChamber.sol";
 import {ChamberReads} from "test/utils/ChamberReads.sol";
+import {ERC4626Upgradeable} from "lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/ERC4626Upgradeable.sol";
 
 /**
  * @title Finding 4: ERC4626 Withdraw Bypasses Delegation Locks [CRITICAL] — FIXED
@@ -50,8 +51,11 @@ contract DelegationBypassViaWithdrawTest is Test {
         uint256 shares = chamber.balanceOf(attacker);
         chamber.delegate(1, shares);
 
-        // Withdraw should now revert because delegation check is in _update()
-        vm.expectRevert(IChamber.ExceedsDelegatedAmount.selector);
+        // Withdraw stops at maxWithdraw, which excludes delegated shares (R-1012-L1).
+        assertEq(chamber.maxWithdraw(attacker), 0);
+        vm.expectRevert(
+            abi.encodeWithSelector(ERC4626Upgradeable.ERC4626ExceededMaxWithdraw.selector, attacker, 1000e18, 0)
+        );
         chamber.withdraw(1000e18, attacker, attacker);
         vm.stopPrank();
 
@@ -71,8 +75,9 @@ contract DelegationBypassViaWithdrawTest is Test {
         uint256 shares = chamber.balanceOf(attacker);
         chamber.delegate(1, shares);
 
-        // Redeem should now revert
-        vm.expectRevert(IChamber.ExceedsDelegatedAmount.selector);
+        // Redeem stops at maxRedeem, which excludes delegated shares (R-1012-L1).
+        assertEq(chamber.maxRedeem(attacker), 0);
+        vm.expectRevert(abi.encodeWithSelector(ERC4626Upgradeable.ERC4626ExceededMaxRedeem.selector, attacker, shares, 0));
         chamber.redeem(shares, attacker, attacker);
         vm.stopPrank();
     }
