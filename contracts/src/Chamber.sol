@@ -18,6 +18,7 @@ import {ERC20Upgradeable} from "lib/openzeppelin-contracts-upgradeable/contracts
 import {PausableUpgradeable} from "lib/openzeppelin-contracts-upgradeable/contracts/utils/PausableUpgradeable.sol";
 import {StorageSlot} from "lib/openzeppelin-contracts/contracts/utils/StorageSlot.sol";
 import {EnumerableSet} from "lib/openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
+import {ChamberId} from "src/libraries/ChamberId.sol";
 import {TransientSlot} from "lib/openzeppelin-contracts/contracts/utils/TransientSlot.sol";
 
 /**
@@ -86,6 +87,10 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
      *      inlined at compile time: zero runtime gas, zero storage slots.
      */
     bytes32 public constant VERSION = "1.3.0";
+
+    /// @notice Id the next implementation must return before a ProxyAdmin upgrade is accepted.
+    /// @dev Stable across versions. See {ChamberId}.
+    bytes32 public constant CHAMBER_ID = ChamberId.ID;
 
     /// @notice Function selector for pause()
     bytes4 private constant PAUSE_SELECTOR = 0x8456cb59;
@@ -545,8 +550,13 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
     function _validateTransaction(address target, uint256 value, bytes memory data) internal view {
         if (target == address(0)) revert IChamber.ZeroAddress();
 
+        address admin = StorageSlot.getAddressSlot(_ADMIN_SLOT).value;
         if (target == address(this)) {
             _requireAllowedSelfCall(data);
+        } else if (admin != address(0) && target == admin) {
+            // R-1012-L6: ownership handoff is rejected, and upgradeAndCall must name this proxy
+            // and a deployed implementation that returns CHAMBER_ID.
+            _requireChamberUpgrade(data);
         } else {
             _requireNoThirdPartyPull(target, asset(), data);
         }

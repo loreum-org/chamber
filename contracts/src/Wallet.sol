@@ -83,6 +83,11 @@ abstract contract Wallet {
         WalletLib.requireNoThirdPartyPull(target, asset, data);
     }
 
+    /// @dev ProxyAdmin calls are restricted to a Chamber-id upgrade of this proxy (R-1012-L6).
+    function _requireChamberUpgrade(bytes memory data) internal view {
+        WalletLib.requireChamberUpgrade(data);
+    }
+
     function _submitTransactionWithMetadata(
         uint256 tokenId,
         address target,

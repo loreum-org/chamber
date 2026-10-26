@@ -115,8 +115,10 @@ interface IChamber is IERC4626, IBoard, IWallet {
      * @notice Returns the `ProxyAdmin` contract address for this transparent proxy (ERC-1967 admin slot).
      * @return adminContract The OpenZeppelin `ProxyAdmin` instance controlling upgrades for this chamber
      * @dev Since 1.3.0 this is the only upgrade path: the board queues `upgradeAndCall(chamber, impl, data)`
-     *      with `target = getProxyAdmin()`. ProxyAdmin has no version or migration checks of its own;
-     *      the board is responsible for what it approves. Calldata for such a nonce is stored onchain (L-04).
+     *      with `target = getProxyAdmin()`. The wallet accepts that call only when `impl` returns this
+     *      chamber's `CHAMBER_ID()` and the proxy argument is this chamber (R-1012-L6).
+     *      `transferOwnership` and `renounceOwnership` are rejected. Calldata is stored onchain (L-04).
+     *      ProxyAdmin still has no migration of its own; the board is responsible for which Chamber build it approves.
      */
     function getProxyAdmin() external view returns (address adminContract);
 

@@ -3,6 +3,7 @@ pragma solidity ^0.8.30;
 
 import {IWallet} from "src/interfaces/IWallet.sol";
 import {WalletTypes} from "src/types/WalletTypes.sol";
+import {ChamberId} from "src/libraries/ChamberId.sol";
 
 /**
  * @title WalletLib
@@ -43,6 +44,42 @@ library WalletLib {
     }
 
     using WalletTypes for WalletTypes.WalletStorage;
+
+    /// @dev The only accepted call to this chamber's ProxyAdmin (R-1012-L6).
+    ///      `transferOwnership` and `renounceOwnership` are rejected, and so is every other selector.
+    ///      `upgradeAndCall` must target this chamber and a deployed implementation whose `CHAMBER_ID()`
+    ///      returns {ChamberId.ID}. Runs in the chamber's context, so `address(this)` is the proxy.
+    function requireChamberUpgrade(bytes memory data) external view {
+        if (data.length < 4 + 64) revert IWallet.InvalidTarget();
+        bytes4 selector = bytes4(data);
+        if (selector != ChamberId.UPGRADE_AND_CALL) revert IWallet.InvalidTarget();
+
+        address proxy;
+        address impl;
+        assembly {
+            proxy := mload(add(data, 36))
+            impl := mload(add(data, 68))
+        }
+        if (proxy != address(this)) revert IWallet.InvalidTarget();
+        if (impl.code.length == 0) revert IWallet.InvalidTarget();
+
+        bytes32 id;
+        uint256 size;
+        bool ok;
+        // `bytes4` is left-aligned, so the first four bytes of the word are the selector.
+        bytes4 probeSelector = ChamberId.SELECTOR;
+        assembly {
+            let ptr := mload(0x40)
+            mstore(ptr, probeSelector)
+            ok := staticcall(gas(), impl, ptr, 4, 0, 0)
+            size := returndatasize()
+            if and(ok, eq(size, 32)) {
+                returndatacopy(ptr, 0, 32)
+                id := mload(ptr)
+            }
+        }
+        if (!ok || size != 32 || id != ChamberId.ID) revert IWallet.InvalidTarget();
+    }
 
     function txExists(WalletTypes.WalletStorage storage $, uint256 nonce) internal view {
         if (nonce >= $.transactions.length) revert IWallet.TransactionDoesNotExist();
