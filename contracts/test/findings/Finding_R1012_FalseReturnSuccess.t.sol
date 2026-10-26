@@ -20,6 +20,22 @@ contract FalseReturnToken {
     function transfer(address, uint256) external pure returns (bool) {
         return false;
     }
+
+    function transferFrom(address, address, uint256) external pure returns (bool) {
+        return false;
+    }
+
+    function approve(address, uint256) external pure returns (bool) {
+        return false;
+    }
+
+    function increaseAllowance(address, uint256) external pure returns (bool) {
+        return false;
+    }
+
+    function decreaseAllowance(address, uint256) external pure returns (bool) {
+        return false;
+    }
 }
 
 /// @dev Successful bool, empty return, and a 32-byte zero word that is not a revert.
@@ -32,6 +48,10 @@ contract ReturnShapeTarget {
 
     function returnsZeroWord() external pure returns (uint256) {
         return 0;
+    }
+
+    function returnsFalse() external pure returns (bool) {
+        return false;
     }
 }
 
@@ -87,6 +107,14 @@ contract FindingR1012FalseReturnSuccessTest is Test {
         assertEq(asset.balanceOf(address(chamber)), 10 ether);
     }
 
+    function test_otherBoolSelectorsDoNotConsumeNonce() public {
+        FalseReturnToken asset = new FalseReturnToken();
+        _expectFalse(abi.encodeCall(asset.transferFrom, (address(chamber), director, 1)));
+        _expectFalse(abi.encodeCall(asset.approve, (director, 1)));
+        _expectFalse(abi.encodeCall(asset.increaseAllowance, (director, 1)));
+        _expectFalse(abi.encodeCall(asset.decreaseAllowance, (director, 1)));
+    }
+
     function test_trueAndEmptyReturnsStillExecute() public {
         ReturnShapeTarget target = new ReturnShapeTarget();
         _execute(address(target), abi.encodeCall(target.returnsTrue, ()));
@@ -94,14 +122,22 @@ contract FindingR1012FalseReturnSuccessTest is Test {
         assertEq(chamber.getTransactionCount(), 2);
     }
 
-    function test_zeroWordReturnIsFailure() public {
+    function test_zeroWordAndCustomBoolStillExecute() public {
         ReturnShapeTarget target = new ReturnShapeTarget();
-        bytes memory data = abi.encodeCall(target.returnsZeroWord, ());
+        _execute(address(target), abi.encodeCall(target.returnsZeroWord, ()));
+        _execute(address(target), abi.encodeCall(target.returnsFalse, ()));
+        assertEq(chamber.getTransactionCount(), 2);
+    }
+
+    function _expectFalse(bytes memory data) internal {
+        FalseReturnToken asset = new FalseReturnToken();
         vm.prank(director);
-        chamber.submitTransaction(1, address(target), 0, data, "", 0);
+        chamber.submitTransaction(1, address(asset), 0, data, "", 0);
         uint256 txId = chamber.getTransactionCount() - 1;
         vm.prank(director);
         vm.expectRevert(abi.encodeWithSelector(IWallet.TransactionFailed.selector, abi.encode(false)));
         chamber.executeTransaction(1, txId, data);
+        (bool executed,,,,) = chamber.getTransaction(txId);
+        assertFalse(executed);
     }
 }
