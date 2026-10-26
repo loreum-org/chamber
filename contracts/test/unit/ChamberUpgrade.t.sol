@@ -279,23 +279,11 @@ contract ChamberUpgradeTest is Test {
     function test_Chamber_UpgradeViaTransaction_ZeroImplementation_Reverts() public {
         bytes memory upgradeData = _upgradeCall(address(0));
 
-        // Submit upgrade transaction
+        // A zero implementation has no CHAMBER_ID and is rejected at submit (R-1012-L6).
         vm.prank(user1);
+        vm.expectRevert(IWallet.InvalidTarget.selector);
         chamber.submitTransaction(1, proxyAdminAddr, 0, upgradeData, "", 0);
-
-        uint256 txId = chamber.getTransactionCount() - 1;
-
-        // Confirm by directors
-        vm.prank(user2);
-        chamber.confirmTransaction(2, txId);
-
-        vm.prank(user3);
-        chamber.confirmTransaction(3, txId);
-
-        // ERC1967 rejects a zero implementation; the error is wrapped in TransactionFailed
-        vm.prank(user1);
-        vm.expectRevert(); // TransactionFailed with ZeroAddress error inside
-        chamber.executeTransaction(1, txId, upgradeData);
+        assertEq(chamber.getTransactionCount(), 0);
     }
 
     /// Nobody but the chamber (via a quorum transaction) can drive its ProxyAdmin.
@@ -415,47 +403,19 @@ contract ChamberUpgradeTest is Test {
     }
 
     /**
-     * @notice Once the board hands ProxyAdmin ownership away, the chamber can no longer upgrade itself.
-     *   1. Transfer ProxyAdmin ownership to an external address via governance tx.
-     *   2. Queue an upgrade to ProxyAdmin; executing it reverts (ProxyAdmin `onlyOwner`), wrapped as
-     *      TransactionFailed. ProxyAdmin has no checks beyond ownership; the board owns that decision.
+     * @notice The board cannot hand ProxyAdmin ownership away (R-1012-L6).
+     *         `transferOwnership` is rejected at submit, so the chamber stays the owner.
      */
-    function test_Chamber_UpgradeImplementation_NotProxyAdminOwner_Reverts() public {
+    function test_Chamber_ProxyAdminOwnershipTransfer_RejectedAtSubmit() public {
         address proxyAdminAddress = chamber.getProxyAdmin();
-
-        // Step 1: Submit a governance tx that transfers ProxyAdmin ownership away from chamber
         bytes memory transferData = abi.encodeWithSignature("transferOwnership(address)", address(0xDEAD));
 
         vm.prank(user1);
+        vm.expectRevert(IWallet.InvalidTarget.selector);
         chamber.submitTransaction(1, proxyAdminAddress, 0, transferData, "", 0);
-        uint256 transferTxId = chamber.getTransactionCount() - 1;
 
-        vm.prank(user2);
-        chamber.confirmTransaction(2, transferTxId);
-        vm.prank(user3);
-        chamber.confirmTransaction(3, transferTxId);
-        vm.prank(user1);
-        chamber.executeTransaction(1, transferTxId, transferData);
-
-        // Verify ProxyAdmin owner is now 0xDEAD
-        assertEq(ProxyAdmin(proxyAdminAddress).owner(), address(0xDEAD));
-
-        // Step 2: Submit an upgrade transaction to the ProxyAdmin the chamber no longer owns
-        bytes memory upgradeData = _upgradeCall(address(newImplementation));
-
-        vm.prank(user1);
-        chamber.submitTransaction(1, proxyAdminAddr, 0, upgradeData, "", 0);
-        uint256 upgradeTxId = chamber.getTransactionCount() - 1;
-
-        vm.prank(user2);
-        chamber.confirmTransaction(2, upgradeTxId);
-        vm.prank(user3);
-        chamber.confirmTransaction(3, upgradeTxId);
-
-        // Step 3: Execute — ProxyAdmin rejects the chamber (not owner) → wrapped as TransactionFailed
-        vm.prank(user1);
-        vm.expectRevert();
-        chamber.executeTransaction(1, upgradeTxId, upgradeData);
+        assertEq(ProxyAdmin(proxyAdminAddress).owner(), chamberAddress);
+        assertEq(chamber.getTransactionCount(), 0);
     }
 
     /// (2) Below quorum an upgrade cannot execute: 2 of the 3 required confirmations.
