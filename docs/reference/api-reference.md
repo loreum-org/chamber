@@ -674,5 +674,5 @@ Transfers tokens from another address.
 - `TransactionAlreadyExecuted()`: Transaction already executed
 - `TransactionAlreadyConfirmed()`: Transaction already confirmed
 - `TransactionNotConfirmed()`: Transaction not confirmed
-- `TransactionFailed(bytes reason)`: Transaction execution failed
+- `TransactionFailed(bytes reason)`: The call reverted, or an ERC-20 `transfer`, `transferFrom`, `approve`, `increaseAllowance`, or `decreaseAllowance` returned a 32-byte zero word. Empty return data is success. A 32-byte zero from any other selector is success.
 - `InvalidTarget()`: Invalid target address

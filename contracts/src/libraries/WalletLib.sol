@@ -187,7 +187,7 @@ library WalletLib {
         transaction.executed = true;
 
         (bool success, bytes memory returnData) = target.call{value: value}(payload);
-        if (!success) {
+        if (!success || _returnedFalse(payload, returnData)) {
             transaction.executed = false;
             revert IWallet.TransactionFailed(returnData);
         }
@@ -210,5 +210,29 @@ library WalletLib {
             payload = data;
         }
         if (keccak256(payload) != transaction.dataHash) revert IWallet.DataHashMismatch();
+    }
+
+    /// @dev ERC-20 methods specified to return `bool` (R-1012-L2). A 32-byte zero word from one of
+    ///      these is `false` and must not consume the nonce. The same word from any other selector
+    ///      (a `uint256` success code, `address(0)`, a custom function) stays success: the wallet
+    ///      cannot see the ABI. Empty return data stays success, matching tokens that return nothing.
+    function _returnedFalse(bytes memory payload, bytes memory returnData) internal pure returns (bool) {
+        if (returnData.length != 32 || !_selectorReturnsBool(payload)) return false;
+        uint256 word;
+        assembly {
+            word := mload(add(returnData, 32))
+        }
+        return word == 0;
+    }
+
+    /// @dev `transfer`, `transferFrom`, `approve`, `increaseAllowance`, `decreaseAllowance`.
+    function _selectorReturnsBool(bytes memory payload) internal pure returns (bool) {
+        if (payload.length < 4) return false;
+        bytes4 selector;
+        assembly {
+            selector := mload(add(payload, 32))
+        }
+        return selector == 0xa9059cbb || selector == 0x23b872dd || selector == 0x095ea7b3 || selector == 0x39509351
+            || selector == 0xa457c2d7;
     }
 }
