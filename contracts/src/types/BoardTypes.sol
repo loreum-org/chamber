@@ -72,4 +72,8 @@ library BoardTypes {
 
     /// @notice Age after which any current director may delete a seat-update proposal
     uint256 internal constant SEAT_UPDATE_EXPIRY = 14 days;
+
+    /// @dev Written when `ownerOf` fails after a seat was bound, so a later mint is a new controller
+    ///      (R-1012-L4). Not `address(0)`, which is the "never bound" snap.
+    address internal constant UNBOUND_SEAT_OWNER = address(uint160(uint256(keccak256("loreum.board.unbound-seat"))));
 }
