@@ -448,10 +448,15 @@ library BoardLib {
     }
 
     /// @dev Bind or reset the seating clock when `ownerOf` changes. Call after board mutations and before director checks.
+    ///      A failed `ownerOf` after the seat was bound stores {BoardTypes.UNBOUND_SEAT_OWNER} instead of
+    ///      clearing the snap. Clearing it made a remint look like a first bind and kept the old `seatedAt`
+    ///      (R-1012-L4).
     function syncSeatingControl(BoardTypes.BoardStorage storage $, IERC721 nft, uint256 tokenId) public {
         address owner = tryOwnerOf(nft, tokenId);
         if (owner == address(0)) {
-            delete $.seatedOwner[tokenId];
+            if ($.seatedAt[tokenId] != 0 || $.seatedOwner[tokenId] != address(0)) {
+                $.seatedOwner[tokenId] = BoardTypes.UNBOUND_SEAT_OWNER;
+            }
             return;
         }
 
