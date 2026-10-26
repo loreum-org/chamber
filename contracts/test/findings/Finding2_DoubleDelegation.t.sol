@@ -8,6 +8,7 @@ import {IChamber} from "src/interfaces/IChamber.sol";
 import {MockERC20} from "test/mock/MockERC20.sol";
 import {MockERC721} from "test/mock/MockERC721.sol";
 import {DeployChamber} from "test/utils/DeployChamber.sol";
+import {ChamberReads} from "test/utils/ChamberReads.sol";
 
 contract DoubleDelegationTest is Test {
     Registry public registry;
@@ -47,7 +48,7 @@ contract DoubleDelegationTest is Test {
         vm.stopPrank();
 
         // Verify total delegation is correct
-        uint256 totalDelegated = chamber.getTotalHolderDelegations(attacker);
+        uint256 totalDelegated = ChamberReads.totalHolderDelegations(chamber, attacker);
         uint256 balance = chamber.balanceOf(attacker);
 
         assertEq(totalDelegated, shares, "Delegated amount should NOT be inflated");

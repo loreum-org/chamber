@@ -47,7 +47,7 @@ contract FindingM04QuorumSnapshotTest is Test {
 
     function test_SeatDecreaseDoesNotMakeUnderQuorumTxExecutable() public {
         vm.prank(user1);
-        chamber.submitTransaction(1, address(0x1234), 0, "");
+        chamber.submitTransaction(1, address(0x1234), 0, "", "", 0);
 
         vm.prank(user2);
         chamber.confirmTransaction(2, 0);
@@ -80,7 +80,7 @@ contract FindingM04QuorumSnapshotTest is Test {
 
     function test_TxBecomesExecutableAfterReachingSnapshottedQuorum() public {
         vm.prank(user1);
-        chamber.submitTransaction(1, address(0x1234), 0, "");
+        chamber.submitTransaction(1, address(0x1234), 0, "", "", 0);
         vm.prank(user2);
         chamber.confirmTransaction(2, 0);
 
@@ -101,7 +101,7 @@ contract FindingM04QuorumSnapshotTest is Test {
         assertEq(chamber.getQuorum(), 2);
 
         vm.prank(user1);
-        chamber.submitTransaction(1, address(0x1234), 0, "");
+        chamber.submitTransaction(1, address(0x1234), 0, "", "", 0);
         assertEq(chamber.getTransactionRequiredQuorum(0), 2);
 
         vm.prank(user2);

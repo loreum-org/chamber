@@ -4,7 +4,7 @@ pragma solidity ^0.8.30;
 import {Script, console} from "forge-std/Script.sol";
 import {Registry} from "src/Registry.sol";
 import {Factory} from "src/Factory.sol";
-import {DeployRegistry as DeployRegistryLib} from "test/utils/DeployRegistry.sol";
+import {ScriptDeploy} from "script/ScriptDeploy.sol";
 import {MockERC20} from "test/mock/MockERC20.sol";
 import {MockERC721} from "test/mock/MockERC721.sol";
 
@@ -30,7 +30,7 @@ contract DeployAllAnvil is Script {
         vm.startBroadcast();
 
         // Deploy Registry (deprecated index + legacy create path)
-        Registry registry = DeployRegistryLib.deploy(admin);
+        Registry registry = ScriptDeploy.deployRegistry(admin);
         console.log("Registry deployed at:", address(registry));
 
         // Deploy Factory (preferred create path; shares the Registry Chamber implementation)

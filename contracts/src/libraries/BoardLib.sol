@@ -81,11 +81,8 @@ library BoardLib {
 
         if ($.size >= BoardTypes.MAX_NODES) {
             if (amount <= $.nodes[$.tail].amount) revert IBoard.MaxNodesReached();
-            uint256 evicted = $.tail;
-            remove($, evicted);
-            $.evictedTokenIds.add(evicted);
+            remove($, $.tail);
         }
-        $.evictedTokenIds.remove(tokenId);
 
         if ($.head == 0) {
             initializeFirstNode($, tokenId, amount);
@@ -120,6 +117,9 @@ library BoardLib {
         }
 
         delete $.nodes[tokenId];
+        unchecked {
+            ++$.nodeEpoch[tokenId];
+        }
         if ($.seatedAt[tokenId] != 0) {
             delete $.seatedAt[tokenId];
         }
@@ -197,6 +197,64 @@ library BoardLib {
         }
     }
 
+    /// @dev Records `amount` as live in `tokenId`'s current node (R-1012-M1). Weight from an earlier
+    ///      node epoch stays in `holderDelegation` but is no longer live. `holderEpoch` stores
+    ///      `nodeEpoch + 1`, so every row written by 1.2.0+ has a non-zero epoch.
+    ///      A positive row with epoch 0 was written before 1.2.0. If its node is still on the board,
+    ///      1.3.0 cannot tell how much of it is live, so it fails closed (`LegacyDelegation`).
+    function trackLiveDelegation(
+        BoardTypes.BoardStorage storage $,
+        mapping(address => mapping(uint256 => uint256)) storage holderEpoch,
+        mapping(address => mapping(uint256 => uint256)) storage liveDelegation,
+        address holder,
+        uint256 tokenId,
+        uint256 priorDelegation,
+        uint256 amount
+    ) external {
+        uint256 epoch = $.nodeEpoch[tokenId] + 1;
+        uint256 stored = holderEpoch[holder][tokenId];
+        uint256 live = liveDelegation[holder][tokenId];
+        if (stored != epoch) {
+            if (stored == 0 && priorDelegation != 0 && $.nodes[tokenId].tokenId == tokenId) {
+                revert IBoard.LegacyDelegation();
+            }
+            live = 0;
+            holderEpoch[holder][tokenId] = epoch;
+        }
+        liveDelegation[holder][tokenId] = live + amount;
+    }
+
+    /// @dev How much of an `amount` undelegation comes off the current node (live weight first).
+    ///      Stranded weight (evicted or cleaned-up node) returns 0 and never touches the board.
+    ///      A pre-1.2.0 row (epoch 0) on a node still on the board reverts `LegacyDelegation`:
+    ///      returning 0 would lower `holderDelegation` but leave the weight on the board.
+    function consumeLiveDelegation(
+        BoardTypes.BoardStorage storage $,
+        mapping(address => mapping(uint256 => uint256)) storage holderEpoch,
+        mapping(address => mapping(uint256 => uint256)) storage liveDelegation,
+        address holder,
+        uint256 tokenId,
+        uint256 amount
+    ) external returns (uint256 boardAmount) {
+        if ($.nodes[tokenId].tokenId != tokenId) return 0;
+        uint256 nodeAmount = $.nodes[tokenId].amount;
+        uint256 stored = holderEpoch[holder][tokenId];
+        if (stored == 0) revert IBoard.LegacyDelegation();
+        if (stored != $.nodeEpoch[tokenId] + 1) return 0;
+        uint256 live = liveDelegation[holder][tokenId];
+        boardAmount = amount < live ? amount : live;
+        if (boardAmount > nodeAmount) boardAmount = nodeAmount;
+        liveDelegation[holder][tokenId] = live - boardAmount;
+    }
+
+    /// @dev Occupied top seats: `min(seats, size)`. Inert ids count until {cleanupInertSeat}
+    ///      removes them, so pushing chamber-held or burned ids up cannot lower quorum (R-1012-G1).
+    function countFilledSeats(BoardTypes.BoardStorage storage $) public view returns (uint256) {
+        uint256 s = $.seats;
+        uint256 n = $.size;
+        return n < s ? n : s;
+    }
+
     function getSeats(BoardTypes.BoardStorage storage $) external view returns (uint256) {
         return $.seats;
     }
@@ -245,6 +303,14 @@ library BoardLib {
     }
 
     function executeSeatsUpdate(BoardTypes.BoardStorage storage $, uint256 tokenId, IERC721 nft) external {
+        executeSeatsUpdate($, tokenId, nft, 0);
+    }
+
+    /// @dev Support must meet `max(proposal.requiredQuorum, liveQuorum)` so a board that grew
+    ///      during the timelock is not outvoted by the proposal-time bar (same rule as M-04).
+    function executeSeatsUpdate(BoardTypes.BoardStorage storage $, uint256 tokenId, IERC721 nft, uint256 liveQuorum)
+        public
+    {
         uint256[] memory prevTop = topTokenIds($);
         BoardTypes.SeatUpdate storage proposal = $.seatUpdate;
 
@@ -282,7 +348,8 @@ library BoardLib {
             }
         }
 
-        if (validSupport < proposal.requiredQuorum) {
+        uint256 required = proposal.requiredQuorum > liveQuorum ? proposal.requiredQuorum : liveQuorum;
+        if (validSupport < required) {
             revert IBoard.InsufficientVotes();
         }
 
@@ -295,9 +362,7 @@ library BoardLib {
     }
 
     /// @dev Immediate seat decrease for PMN-M01 Solution C. Caller enforces recovery preconditions.
-    function recoverSeats(BoardTypes.BoardStorage storage $, uint256 tokenId, uint256 newSeats, IERC721 nft)
-        external
-    {
+    function recoverSeats(BoardTypes.BoardStorage storage $, uint256 tokenId, uint256 newSeats, IERC721 nft) external {
         if (newSeats == 0 || newSeats >= $.seats) revert IBoard.InvalidNumSeats();
         uint256[] memory prevTop = topTokenIds($);
         $.seats = uint32(newSeats);
@@ -440,13 +505,18 @@ library BoardLib {
     }
 
     /// @dev Live top-seat flags with a current owner path (PMN-H01 A, PMN-M02 A).
-    ///      Skips `ownerOf` failure. A control change with no live session key is
+    ///      Skips `ownerOf` failure. A control change is
     ///      dropped when the recorded controller no longer matches `ownerOf`.
     function countCurrentDirectorFlags(
         BoardTypes.BoardStorage storage $,
         IERC721 nft,
         mapping(uint256 nonce => mapping(uint256 tokenId => bool)) storage flags,
-        mapping(uint256 nonce => mapping(uint256 tokenId => address)) storage flagOwners,
+        mapping(
+            uint256 nonce
+                => mapping(
+                uint256 tokenId => address
+            )
+        ) storage flagOwners,
         uint256 nonce
     ) external view returns (uint256 count) {
         uint256 current = $.head;
@@ -476,10 +546,13 @@ library BoardLib {
         return owner == recorded;
     }
 
-    /// @dev Permissionless rank drop for a burned / `ownerOf`-failing node (PMN-M02 B).
+    /// @dev Permissionless rank drop for a burned / `ownerOf`-failing node (PMN-M02 B), or one the
+    ///      chamber itself owns (it can never act as a director). Runs in the chamber's context,
+    ///      so `address(this)` is the chamber. Holders' delegations stay recorded but leave the board.
     function cleanupInertSeat(BoardTypes.BoardStorage storage $, IERC721 nft, uint256 tokenId) external {
         if ($.nodes[tokenId].tokenId != tokenId) revert IBoard.NodeDoesNotExist();
-        if (tryOwnerOf(nft, tokenId) != address(0)) revert IBoard.SeatNotInert();
+        address owner = tryOwnerOf(nft, tokenId);
+        if (owner != address(0) && owner != address(this)) revert IBoard.SeatNotInert();
         uint256[] memory prevTop = topTokenIds($);
         remove($, tokenId);
         refreshSeating($, prevTop);
@@ -608,138 +681,17 @@ library BoardLib {
         revert IBoard.OnlyProposerCanCancel();
     }
 
+    /// @dev Every tokenId the holder still has weight on, including evicted ids, in insertion order.
     function collectDelegations(
-        BoardTypes.BoardStorage storage $b,
         mapping(address => mapping(uint256 => uint256)) storage holderDelegation,
-        mapping(address => uint256) storage totalHolderDelegations,
         mapping(address => EnumerableSet.UintSet) storage holderDelegatedTokenIds,
         address holder
     ) external view returns (uint256[] memory tokenIds, uint256[] memory amounts) {
-        EnumerableSet.UintSet storage tracked = holderDelegatedTokenIds[holder];
-        uint256[] memory setIds = tracked.values();
-        uint256 setLen = setIds.length;
-
-        uint256 trackedTotal;
-        for (uint256 i = 0; i < setLen;) {
-            trackedTotal += holderDelegation[holder][setIds[i]];
-            unchecked {
-                ++i;
-            }
-        }
-
-        if (trackedTotal == totalHolderDelegations[holder]) {
-            tokenIds = setIds;
-            amounts = new uint256[](setLen);
-            for (uint256 i = 0; i < setLen;) {
-                amounts[i] = holderDelegation[holder][setIds[i]];
-                unchecked {
-                    ++i;
-                }
-            }
-            return (tokenIds, amounts);
-        }
-
-        uint256 maxLen = setLen + uint256($b.size) + $b.evictedTokenIds.length();
-        uint256[] memory tmpIds = new uint256[](maxLen);
-        uint256[] memory tmpAmts = new uint256[](maxLen);
-        uint256 n;
-
-        for (uint256 i = 0; i < setLen;) {
-            uint256 id = setIds[i];
-            uint256 amount = holderDelegation[holder][id];
-            if (amount > 0) {
-                tmpIds[n] = id;
-                tmpAmts[n] = amount;
-                unchecked {
-                    ++n;
-                }
-            }
-            unchecked {
-                ++i;
-            }
-        }
-
-        uint256 tokenId = $b.head;
-        while (tokenId != 0) {
-            uint256 amount = holderDelegation[holder][tokenId];
-            if (amount > 0 && !tracked.contains(tokenId)) {
-                tmpIds[n] = tokenId;
-                tmpAmts[n] = amount;
-                unchecked {
-                    ++n;
-                }
-            }
-            tokenId = uint256($b.nodes[tokenId].next);
-        }
-
-        uint256 evictedLen = $b.evictedTokenIds.length();
-        for (uint256 i = 0; i < evictedLen;) {
-            uint256 evictedId = $b.evictedTokenIds.at(i);
-            uint256 amount = holderDelegation[holder][evictedId];
-            if (amount > 0 && !tracked.contains(evictedId) && $b.nodes[evictedId].tokenId != evictedId) {
-                tmpIds[n] = evictedId;
-                tmpAmts[n] = amount;
-                unchecked {
-                    ++n;
-                }
-            }
-            unchecked {
-                ++i;
-            }
-        }
-
-        tokenIds = new uint256[](n);
-        amounts = new uint256[](n);
-        for (uint256 i = 0; i < n;) {
-            tokenIds[i] = tmpIds[i];
-            amounts[i] = tmpAmts[i];
-            unchecked {
-                ++i;
-            }
-        }
-    }
-
-    /**
-     * @dev Lazy-backfill the holder set from leftover board/evicted amounts after an upgrade.
-     *      Fresh holders already maintain the set on `delegate`/`undelegate`. Skip the
-     *      board and eviction walks when the set already accounts for `totalHolderDelegations`
-     *      so those paths stay O(holder set) instead of O(evictedTokenIds) (PMN-H02).
-     */
-    function syncTrackedDelegations(
-        BoardTypes.BoardStorage storage $b,
-        mapping(address => mapping(uint256 => uint256)) storage holderDelegation,
-        mapping(address => uint256) storage totalHolderDelegations,
-        mapping(address => EnumerableSet.UintSet) storage holderDelegatedTokenIds,
-        address holder
-    ) external {
-        EnumerableSet.UintSet storage tracked = holderDelegatedTokenIds[holder];
-        uint256[] memory setIds = tracked.values();
-        uint256 setLen = setIds.length;
-        uint256 trackedTotal;
-        for (uint256 i = 0; i < setLen;) {
-            trackedTotal += holderDelegation[holder][setIds[i]];
-            unchecked {
-                ++i;
-            }
-        }
-        if (trackedTotal == totalHolderDelegations[holder]) {
-            return;
-        }
-
-        uint256 tokenId = $b.head;
-        while (tokenId != 0) {
-            if (holderDelegation[holder][tokenId] > 0) {
-                tracked.add(tokenId);
-            }
-            tokenId = uint256($b.nodes[tokenId].next);
-        }
-
-        uint256 evictedLen = $b.evictedTokenIds.length();
-        for (uint256 i = 0; i < evictedLen;) {
-            uint256 evictedId = $b.evictedTokenIds.at(i);
-            if (holderDelegation[holder][evictedId] > 0) {
-                tracked.add(evictedId);
-            }
+        tokenIds = holderDelegatedTokenIds[holder].values();
+        uint256 len = tokenIds.length;
+        amounts = new uint256[](len);
+        for (uint256 i = 0; i < len;) {
+            amounts[i] = holderDelegation[holder][tokenIds[i]];
             unchecked {
                 ++i;
             }

@@ -21,7 +21,7 @@ export default function NotFound() {
       <div className="panel p-8 sm:p-12 max-w-lg w-full text-center">
         <FiAlertCircle className="w-10 h-10 text-accent-500 mx-auto mb-4" aria-hidden />
         <p className="text-xs font-mono uppercase tracking-widest text-slate-500 mb-2">404</p>
-        <h1 className="font-heading text-2xl sm:text-3xl font-bold text-slate-100 mb-3">Page not found</h1>
+        <h1 className="font-heading text-2xl sm:text-3xl font-semibold text-slate-100 mb-3">Page not found</h1>
         <p className="text-slate-400 text-sm leading-relaxed mb-8">
           Nothing lives at <code className="font-mono text-accent-300 break-all">{pathname}</code>. The link may be
           mistyped or out of date.

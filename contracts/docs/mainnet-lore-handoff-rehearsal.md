@@ -84,7 +84,7 @@ The test also checks vault asset / NFT / seats, empty board, and `ProxyAdmin.own
 | **Ownable vs 2-step** | Mainnet LORE ABI is single-step Ownable (`owner` / `transferOwnership` / `renounceOwnership`; no `pendingOwner`). Chamber does not need `acceptOwnership`. |
 | **CCA sequencing** | Still undecided. This fork does not claim a production order vs CCA. |
 | **PMN-H01 (#208)** | Fixed on `main` via #220. |
-| **PMN-M01 (#209) / PMN-M04 (#212)** | Fixed on `main` via #223 / #226. Quorum is over reachable authorized directors; session keys have expiry, scope, and set delay. |
+| **PMN-M01 (#209) / PMN-M04 (#212)** | Fixed on `main` via #223 / #226. Quorum is over reachable authorized directors. Session keys were later removed in 1.3.0, so M04 no longer applies. |
 | **PMN-M02 (#210) / PMN-M03 (#211)** | Fixed on `main` via #224 / #225. Factory is the only Ethereum create path; inert seated NFTs skip flags and drop rank. |
 | **#213 / #206** | Merged (1.1.9 eviction hot-path; Halmos harness, not a full proof). |
 | **Verified package (#214)** | `make print-mainnet-factory-deploy` / `make verify-mainnet-factory`. Paste addresses into `deployments/mainnet.txt` only from a chain-id-1 receipt. Agents stop before `MAINNET_DEPLOY_UNBLOCKED=1`. |

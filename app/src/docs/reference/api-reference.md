@@ -78,7 +78,7 @@ Single proxy instance per organization. **`VERSION`** is a public **`bytes32`** 
 
 Standard **`deposit` / `mint` / `withdraw` / `redeem`** with OpenZeppelin ERC‑4626 behavior. Vault assets must be **standard ERC‑20**; `deposit`/`mint` revert **`AssetAmountMismatch`** if the observed `balanceOf` delta is not the requested amount (fee-on-transfer). Transfers and withdrawals enforce **non-underflow vs `totalHolderDelegations`** (**`ExceedsDelegatedAmount`**). ERC‑20 **`transfer`/`transferFrom`** disallow zero amount and zero **to** (**`ZeroAmount`**, **`TransferToZeroAddress`**).
 
-Public ETH / NFT receive: **`receive`**, **`fallback`**, **`onERC721Received`**.
+Public ETH / NFT receive: **`receive`**, **`fallback`**, **`onERC721Received`**. The payable `fallback` reverts when called with no ETH.
 
 `onERC721Received` accepts **any** ERC-721 collection (treasury custody; not a membership whitelist). Receipt does not mint shares. There is **no** `onERC1155Received` — ERC-1155 `safeTransferFrom` to Chamber reverts. Directors transfer received ERC-721s out via the wallet queue.
 
@@ -89,8 +89,6 @@ Public ETH / NFT receive: **`receive`**, **`fallback`**, **`onERC721Received`**.
 | **`delegate(uint256 tokenId, uint256 amount)`** | Updates `holderDelegation` and board; requires share balance; NFT must exist (**`InvalidTokenId`** on `ownerOf` failure). |
 | **`undelegate(uint256 tokenId, uint256 amount)`** | Reduces holder maps; updates board if node still present. |
 | **`getDelegations(address holder) → (uint256[] tokenIds, uint256[] amounts)`** | Scans board list for this holder’s positive weights. |
-| **`getHolderDelegation(address holder, uint256 tokenId)`** | Single cell. |
-| **`getTotalHolderDelegations(address holder)`** | Aggregate. |
 
 ### Board
 
@@ -102,9 +100,6 @@ Public ETH / NFT receive: **`receive`**, **`fallback`**, **`onERC721Received`**.
 | **`getQuorum()`** | `1 + (n * 51) / 100` over reachable authorized director `tokenId`s (PMN-M01; token-weighted, not 1-address-1-vote). Empty/inert slots do not inflate `n`. |
 | **`getSeats()`** | Seat count. |
 | **`getDirectors()`** | **`ownerOf`** for each top **`getSeats()`** token ID; `address(0)` on failure. |
-| **`setDirectorOperator(tokenId, operator)`** | Contract NFT owner registers or clears the session key. No ERC-1271. |
-| **`getDirectorOperator(tokenId)`** | Live session key, or zero if unset / stale / EOA-owned. |
-| **`isTokenAuthorized(tokenId, account)`** | Owner or live session key (does not check seats). |
 | **`syncSeating(tokenId)`** | Permissionless seating-clock bind after `ownerOf` change (PMN-H01). |
 | **`cleanupInertSeat(tokenId)`** | Permissionless: drop a burned `tokenId` from the top set (PMN-M02 B). Live tokens revert `SeatNotInert`. |
 | **`updateSeats(uint256 tokenId, uint256 numOfSeats)`** | Director-only seat proposal / support. |
@@ -113,31 +108,30 @@ Public ETH / NFT receive: **`receive`**, **`fallback`**, **`onERC721Received`**.
 
 ### Wallet multisig
 
-All director-gated with **`isDirector(tokenId)`** and **`nonReentrant`** where marked on `Chamber`. Directorship and confirmations are **per membership token**, so one address holding **`quorum`** top-seat NFTs is a **single-actor treasury**.
+All director-gated with **`isDirector(tokenId)`** (caller must be **`ownerOf(tokenId)`**; there are no Chamber session keys since 1.3.0) and **`nonReentrant`** where marked on `Chamber`. Directorship and confirmations are **per membership token**, so one address holding **`quorum`** top-seat NFTs is a **single-actor treasury**.
 
 | Function | Role |
 |---------|------|
-| **`submitTransaction(tokenId, target, value, data)`** | Validates target/value (see below); stores **`keccak256(data)`**; also stores full bytes for self-calls (`upgradeImplementation`); auto-confirms submitter. |
-| **`submitTransactionWithMetadata(..., string metadataURI)`** | Same + optional durable URI / hash string. |
+| **`submitTransaction(tokenId, target, value, data, metadataURI, deadline)`** | The only single-transaction submit. Validates target/value (see below); stores **`keccak256(data)`**; also stores full bytes for self-calls (`pause` / `unpause`) and for calls to the chamber's ProxyAdmin; records the submitter's confirmation. Pass `""` for no metadata and `0` for the default 30-day deadline. |
 | **`confirmTransaction(tokenId, transactionId)`** | Increments confirmations if not cancelled / executed / duplicate. |
 | **`revokeConfirmation(tokenId, transactionId)`** | Removes this director’s confirmation when allowed. |
-| **`executeTransaction(tokenId, transactionId, bytes calldata data)`** | Requires quorum; verifies hash; empty `data` uses stored self-call bytes. |
+| **`executeTransaction(tokenId, transactionId, bytes calldata data)`** | Requires quorum; verifies hash; empty `data` uses the stored bytes (self-calls and ProxyAdmin calls). |
 | **`cancelTransaction(tokenId, transactionId)`** | Cancels after quorum cancel votes. |
 | **`submitBatchTransactions(tokenId, targets[], values[], data[])`** | Same constraints per row; **`Σ values ≤ address(this).balance`** check for ETH. |
 | **`confirmBatchTransactions(tokenId, transactionIds[])`** | Batched confirms. |
 | **`executeBatchTransactions(tokenId, transactionIds[], bytes[] calldata data)`** | Parallel arrays; per-tx hash check. |
 
-Transaction validation (single and batch): **`target != address(0)`**. If **`target == address(this)`**, calldata selector must be **`upgradeImplementation(address,bytes)`**. **`value`** cannot exceed native balance.
+Transaction validation (single and batch): **`target != address(0)`**. If **`target == address(this)`**, calldata selector must be **`pause()`** or **`unpause()`**. **`value`** cannot exceed native balance.
 
-Read helpers: **`getTransactionCount`**, **`getNextTransactionId`**, **`getTransaction(nonce)`** → **`(..., dataHash)`**, **`getTransactionMetadata`**, **`getTransactionCalldata`**, **`getConfirmation`**, **`getCancelled`**, **`getCancelConfirmation`**, **`getCancelConfirmations`**.
+Read helpers: **`getTransactionCount`**, **`getTransaction(nonce)`** → **`(..., dataHash)`**, **`getTransactionMetadata`**, **`getTransactionCalldata`**, **`getConfirmation`**, **`getCancelled`**, **`getCancelConfirmation`**, **`getCancelConfirmations`**.
 
 ### Proxy upgrades
 
 | Function | Role |
 |---------|------|
 | **`getProxyAdmin() → address`** | Reads ERC‑1967 admin slot (OZ **ProxyAdmin** contract). |
-| **`upgradeImplementation(address newImplementation, bytes calldata data)`** | Requires **`msg.sender == address(this)`** (e.g. via **`executeTransaction`**); **`ProxyAdmin.owner() == address(this)`**; invokes **`upgradeAndCall`**. |
-| **`acceptAdmin()`** | No-op; Factory (or leftover Registry) transfers ProxyAdmin ownership directly. |
+
+Since 1.3.0 Chamber has no upgrade function of its own (`upgradeImplementation` was removed). To upgrade, the board queues a transaction with **`target = getProxyAdmin()`** and **`data = upgradeAndCall(chamber, newImplementation, initData)`**, then confirms and executes it like any other proposal. Its calldata is stored onchain, so it can be executed with empty `data`. ProxyAdmin is the single upgrade path and has no version or migration checks of its own; the board is responsible for what it approves.
 
 ---
 
@@ -159,7 +153,7 @@ From **`IChamber`** / **`IBoard`** / **`IWallet`** / **`IFactory`** / leftover *
 |------|-----------|
 | Factory / leftover Registry | `ZeroAddress`, `InvalidSeats` |
 | Chamber / IChamber | `InsufficientChamberBalance`, `ExceedsDelegatedAmount`, `AssetAmountMismatch`, `NotDirector`, `NotEnoughConfirmations`, `InvalidTransaction`, `NotAuthorized`, seat / token errors |
-| Board | `CircuitBreakerActive`, `TokenIdTooLarge`, `MaxNodesReached`, seat proposal / timelock errors |
+| Board | `CircuitBreakerActive`, `TokenIdTooLarge`, `MaxNodesReached`, `LegacyDelegation` (pre-1.2.0 delegation row on a chamber upgraded in place; redeploy), seat proposal / timelock errors |
 | Wallet / IWallet | `TransactionDoesNotExist`, `TransactionAlreadyExecuted`, `TransactionAlreadyConfirmed`, `TransactionNotConfirmed`, `TransactionAlreadyCancelled`, `DataHashMismatch`, `TransactionFailed`, `InvalidTarget` |
 
 See interface files for full enumerations.

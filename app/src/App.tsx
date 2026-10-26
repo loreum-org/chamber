@@ -2,7 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { useAccount, useConnections } from 'wagmi'
 import Layout from '@/components/Layout'
-import { Dashboard, DeployChamber, ChamberDetail, TransactionQueue, Docs, DirectorProfile, Migrate, Operators, OperatorWizard, Compliance, NotFound } from '@/pages'
+import { Dashboard, DeployChamber, ChamberDetail, TransactionQueue, Docs, DirectorProfile, Migrate, Compliance, NotFound } from '@/pages'
 import { COMPLIANCE_ENABLED } from '@/lib/features'
 
 /**
@@ -58,8 +58,6 @@ function App() {
           <Route path="docs" element={<Docs />} />
           <Route path="docs/*" element={<Docs />} />
           <Route path="migrate" element={<Migrate />} />
-          <Route path="operators" element={<Operators />} />
-          <Route path="operators/wizard" element={<OperatorWizard />} />
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>

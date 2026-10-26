@@ -1,0 +1,23 @@
+  Oct 22, 2026 - Base Sepolia (chain 84532, Factory path)
+  ====================================================================
+  DeployFactory
+  ====================================================================
+  Chain                     84532
+  Deployer                  0x0C6F86b338417B3b7FCB9B344DECC51d072919c9
+  ADMIN                     0x5d45A213B2B6259F0b3c116a8907B56AB5E22095
+  Factory                   0x9bd245B992f0ba869D208bdABecB608080984701
+  Chamber implementation    0xC6e817C021D4fADA5Ed27B62112991ec48522E90
+  BoardLib                  0x38653a098a83c334f5CeBB588df7625Be50dc4ea
+  WalletLib                 0x679077aAc6941dce5256715d9CC22D54925B9A4e
+  Factory start block       48743114
+  Factory tx                0x57b2222ab86525ab3b1b8e13f44f94d874466deeae0b7d20102159b4eced7820
+
+  Basescan (verified)
+  ====================================================================
+  Factory                   https://sepolia.basescan.org/address/0x9bd245B992f0ba869D208bdABecB608080984701#code
+  Chamber implementation    https://sepolia.basescan.org/address/0xC6e817C021D4fADA5Ed27B62112991ec48522E90#code
+  BoardLib                  https://sepolia.basescan.org/address/0x38653a098a83c334f5CeBB588df7625Be50dc4ea#code
+  WalletLib                 https://sepolia.basescan.org/address/0x679077aAc6941dce5256715d9CC22D54925B9A4e#code
+
+  Broadcast                 contracts/broadcast/DeployFactory.s.sol/84532/run-latest.json
+  Ethereum Sepolia stays in deployments/sepolia.txt. This file is chain 84532 only.

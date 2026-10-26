@@ -4,6 +4,7 @@ pragma solidity ^0.8.24;
 import {Test} from "lib/forge-std/src/Test.sol";
 import {MockWallet} from "test/mock/MockWallet.sol";
 import {IWallet} from "src/interfaces/IWallet.sol";
+import {ChamberReads} from "test/utils/ChamberReads.sol";
 
 contract WalletTest is Test {
     MockWallet wallet;
@@ -175,33 +176,15 @@ contract WalletTest is Test {
         assertEq(isNotConfirmed, false);
     }
 
-    function test_Wallet_GetCurrentNonce() public {
-        address target = address(0x3);
-        uint256 value = 1 ether;
-        bytes memory data = "";
-
-        uint256 initialNonce = wallet.getCurrentNonce();
-        assertEq(initialNonce, 0);
-
-        wallet.submitTransaction(1, target, value, data);
-
-        uint256 newNonce = wallet.getCurrentNonce();
-        assertEq(newNonce, 0);
-
-        wallet.submitTransaction(1, target, value, data);
-
-        uint256 newNonce1 = wallet.getCurrentNonce();
-        assertEq(newNonce1, 1);
-    }
 
     function test_Wallet_GetNextTransactionId() public {
-        assertEq(wallet.getNextTransactionId(), 0);
+        assertEq(wallet.getTransactionCount(), 0);
 
         wallet.submitTransaction(1, address(0x3), 0, "");
-        assertEq(wallet.getNextTransactionId(), 1);
+        assertEq(wallet.getTransactionCount(), 1);
 
         wallet.submitTransaction(1, address(0x3), 0, "");
-        assertEq(wallet.getNextTransactionId(), 2);
+        assertEq(wallet.getTransactionCount(), 2);
     }
 
     function test_Wallet_ExecuteTransaction_DataHashMismatch_Reverts() public {
@@ -269,7 +252,7 @@ contract WalletTest is Test {
         wallet.submitTransaction(1, address(0x3), 0, "");
 
         assertEq(wallet.getTransactionDeadline(0), submittedAt + wallet.DEFAULT_TRANSACTION_MAX_AGE());
-        assertFalse(wallet.isTransactionExpired(0));
+        assertFalse(ChamberReads.transactionExpired(address(wallet), 0));
     }
 
     function test_Wallet_SubmitTransaction_ExplicitDeadline() public {
@@ -277,7 +260,7 @@ contract WalletTest is Test {
         wallet.submitTransaction(1, address(0x3), 0, "", deadline);
 
         assertEq(wallet.getTransactionDeadline(0), deadline);
-        assertFalse(wallet.isTransactionExpired(0));
+        assertFalse(ChamberReads.transactionExpired(address(wallet), 0));
     }
 
     function test_Wallet_SubmitTransaction_PastDeadline_Reverts() public {
@@ -315,7 +298,7 @@ contract WalletTest is Test {
         wallet.submitTransaction(1, target, 1 ether, data, deadline);
         vm.warp(deadline + 1);
 
-        assertTrue(wallet.isTransactionExpired(0));
+        assertTrue(ChamberReads.transactionExpired(address(wallet), 0));
         vm.expectRevert(IWallet.TransactionExpired.selector);
         wallet.executeTransaction(1, 0, data);
     }
@@ -338,10 +321,10 @@ contract WalletTest is Test {
         wallet.forceTransactionDeadline(0, 0);
 
         assertEq(wallet.getTransactionDeadline(0), 0);
-        assertFalse(wallet.isTransactionExpired(0));
+        assertFalse(ChamberReads.transactionExpired(address(wallet), 0));
 
         vm.warp(block.timestamp + 365 days);
-        assertFalse(wallet.isTransactionExpired(0));
+        assertFalse(ChamberReads.transactionExpired(address(wallet), 0));
 
         wallet.confirmTransaction(2, 0);
         wallet.executeTransaction(1, 0, data);
@@ -361,10 +344,10 @@ contract WalletTest is Test {
 
         uint256 deadline = wallet.getTransactionDeadline(0);
         assertEq(deadline, submittedAt + wallet.DEFAULT_TRANSACTION_MAX_AGE());
-        assertFalse(wallet.isTransactionExpired(0));
+        assertFalse(ChamberReads.transactionExpired(address(wallet), 0));
 
         vm.warp(deadline + 1);
-        assertTrue(wallet.isTransactionExpired(0));
+        assertTrue(ChamberReads.transactionExpired(address(wallet), 0));
         vm.expectRevert(IWallet.TransactionExpired.selector);
         wallet.executeTransaction(1, 0, data);
     }

@@ -7,6 +7,18 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Flat surfaces: depth comes from layering these, not from shadows.
+        surface: {
+          0: '#0b0f17',
+          1: '#10151f',
+          2: '#151b28',
+          3: '#1b2232',
+          4: '#222a3c',
+        },
+        line: {
+          DEFAULT: 'rgba(148, 163, 184, 0.14)',
+          strong: 'rgba(148, 163, 184, 0.26)',
+        },
         // Neutral slate tuned for dark UI readability
         slate: {
           50: '#f8fafc',
@@ -22,9 +34,8 @@ export default {
           900: '#0f172a',
           950: '#020617',
         },
-        // Primary accent — Chamber Purple (Chamber Design System v1.0 / DESIGN.md)
-        // Interactive + governance weight only. Dark-theme scale keyed to
-        // primary #4A2F8F (controls), #7C5CD6 (hover), #A685F5 (links/text).
+        // Primary accent — Chamber Purple (Chamber Design System v1.0)
+        // Interactive + governance weight only.
         accent: {
           50: '#f5f2fb',
           100: '#ebe5f3',
@@ -46,45 +57,25 @@ export default {
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
-        'gradient-conic': 'conic-gradient(var(--tw-gradient-stops))',
-        'gradient-accent': 'linear-gradient(135deg, #4a2f8f 0%, #3b2473 100%)',
-        'gradient-dark': 'linear-gradient(180deg, #151d2e 0%, #0b0f17 100%)',
-        // Very subtle depth — purple wash only, no neon spots
-        'mesh-gradient':
-          'radial-gradient(at 18% 12%, rgba(74, 47, 143, 0.10) 0px, transparent 45%), radial-gradient(at 92% 8%, rgba(124, 92, 214, 0.06) 0px, transparent 42%), radial-gradient(at 50% 88%, rgba(15, 23, 42, 0.5) 0px, transparent 55%)',
+        // Decorative gradients are retired; keys stay so stray call sites render flat.
+        'gradient-accent': 'none',
+        'gradient-dark': 'none',
+        'mesh-gradient': 'none',
       },
       boxShadow: {
-        soft: '0 1px 2px rgba(0, 0, 0, 0.35), 0 4px 16px rgba(0, 0, 0, 0.22)',
-        card: '0 4px 24px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(148, 163, 184, 0.06)',
-        'card-hover': '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(59, 130, 246, 0.12)',
-        innerGlow: 'inset 0 1px 0 rgba(255, 255, 255, 0.04)',
+        soft: 'none',
+        card: 'none',
+        'card-hover': 'none',
+        innerGlow: 'none',
       },
       animation: {
-        'pulse-soft': 'pulse-soft 2.8s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-        shimmer: 'shimmer 2s linear infinite',
-        float: 'float 6s ease-in-out infinite',
-        'fade-in': 'fade-in 0.5s ease-out',
+        'fade-in': 'fade-in 0.25s ease-out',
       },
       keyframes: {
-        'pulse-soft': {
-          '0%, 100%': { boxShadow: '0 0 0 0 rgba(37, 99, 235, 0.18)' },
-          '50%': { boxShadow: '0 0 24px 2px rgba(37, 99, 235, 0.12)' },
-        },
-        shimmer: {
-          '0%': { backgroundPosition: '-200% 0' },
-          '100%': { backgroundPosition: '200% 0' },
-        },
-        float: {
-          '0%, 100%': { transform: 'translateY(0)' },
-          '50%': { transform: 'translateY(-10px)' },
-        },
         'fade-in': {
-          '0%': { opacity: '0', transform: 'translateY(10px)' },
-          '100%': { opacity: '1', transform: 'translateY(0)' },
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
         },
-      },
-      borderRadius: {
-        '4xl': '2rem',
       },
     },
   },

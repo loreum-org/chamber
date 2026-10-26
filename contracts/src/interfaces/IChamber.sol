@@ -55,75 +55,6 @@ interface IChamber is IERC4626, IBoard, IWallet {
     function getDelegations(address holder) external view returns (uint256[] memory tokenIds, uint256[] memory amounts);
 
     /**
-     * @notice Returns the amount delegated by a holder to a specific membership tokenId
-     * @param holder The delegating holder address
-     * @param tokenId The token ID
-     * @return amount The amount delegated
-     */
-    function getHolderDelegation(address holder, uint256 tokenId) external view returns (uint256);
-
-    /**
-     * @notice Returns the total amount delegated by a holder across all tokenIds
-     * @param holder The delegating holder address
-     * @return amount The total amount delegated
-     */
-    function getTotalHolderDelegations(address holder) external view returns (uint256);
-
-    /**
-     * @notice Registers or clears the session key for a contract-owned membership NFT.
-     * @dev Only `ownerOf(tokenId)` may call, and only when that owner is a contract.
-     *      Chamber never consults ERC-1271. See docs/protocol/director-authorization.md.
-     *      Non-zero `operator` requires a future `expiry` (`0` is rejected) and a non-zero
-     *      `scope`. Pass `type(uint32).max` for explicit unscoped access. Scope `0` is rejected.
-     *      A newly set key cannot confirm or execute until `SEATING_DELAY` elapses.
-     *      Clear with `operator == address(0)` (expiry and scope are ignored).
-     * @param tokenId Membership token the caller owns
-     * @param operator Session key that may act for `tokenId`, or `address(0)` to clear
-     * @param expiry Exclusive-after unix timestamp; rejected if `0` or not in the future
-     * @param scope Bitmask of Chamber director entry points, or `type(uint32).max` (unscoped)
-     */
-    function setDirectorOperator(uint256 tokenId, address operator, uint256 expiry, uint32 scope) external;
-
-    /**
-     * @notice Live session key for `tokenId`, or `address(0)` if none, stale, or expired.
-     * @dev Stale after NFT transfer, while the current owner is an EOA, after `expiry`, or if burned.
-     *      Does not apply scope or the post-set confirm/execute delay. See
-     *      {getDirectorOperatorScope} and {getDirectorOperatorLiveAt}.
-     */
-    function getDirectorOperator(uint256 tokenId) external view returns (address operator);
-
-    /**
-     * @notice `scope` of the live session for `tokenId`, or `0` if none / stale / expired / burned.
-     * @dev Same liveness as {getDirectorOperator}. `0` here means no live session, not unscoped
-     *      (`type(uint32).max`). Raw leftover scope is on {getDirectorSession}.
-     */
-    function getDirectorOperatorScope(uint256 tokenId) external view returns (uint32 scope);
-
-    /**
-     * @notice First block the live session may confirm or execute, or `0` if none / stale / expired / burned.
-     * @dev Same liveness as {getDirectorOperator}. Confirm/execute require `block.number >= liveAt`.
-     *      Raw leftover `liveAt` is on {getDirectorSession}.
-     */
-    function getDirectorOperatorLiveAt(uint256 tokenId) external view returns (uint256 liveAt);
-
-    /**
-     * @notice Stored session fields for `tokenId` (raw; not liveness-filtered).
-     * @dev `operator` / `scope` / `liveAt` here may be stale or expired. Use {getDirectorOperator},
-     *      {getDirectorOperatorScope}, and {getDirectorOperatorLiveAt} for the live session.
-     */
-    function getDirectorSession(uint256 tokenId)
-        external
-        view
-        returns (address sessionOwner, address operator, uint256 expiry, uint32 scope, uint256 liveAt);
-
-    /**
-     * @notice Whether `account` may act for `tokenId` (owner or live session key).
-     * @dev Does not check board seats, seating delay, session scope, or the post-set
-     *      confirm/execute delay. Expired keys return false. Burned tokens return false.
-     */
-    function isTokenAuthorized(uint256 tokenId, address account) external view returns (bool);
-
-    /**
      * @notice Binds `seatedAt` to the current `ownerOf(tokenId)` (PMN-H01 Solution A).
      * @dev Permissionless. Call after a seated NFT changes hands so the new controller's
      *      `SEATING_DELAY` is stored. Director actions that revert do not persist this write.
@@ -132,15 +63,8 @@ interface IChamber is IERC4626, IBoard, IWallet {
     function syncSeating(uint256 tokenId) external;
 
     /**
-     * @notice Top-seat tokenIds that can still authorize (`ownerOf` succeeds, owner is not the chamber).
-     * @dev Denominator for {getQuorum} (PMN-M01). Does not compact leaderboard rank; use
-     *      {cleanupInertSeat} to drop a burned id (PMN-M02 B).
-     */
-    function getReachableDirectorCount() external view returns (uint256);
-
-    /**
-     * @notice Removes a burned membership `tokenId` from the leaderboard (PMN-M02 Solution B).
-     * @dev Permissionless. `ownerOf` must revert (or otherwise fail). `refreshSeating` on a later
+     * @notice Removes a burned or chamber-held membership `tokenId` from the leaderboard (PMN-M02 B).
+     * @dev Permissionless. `ownerOf` must revert (or otherwise fail), or return this chamber. `refreshSeating` on a later
      *      delegate/undelegate does not put the id back while it stays inert. Reminting the same
      *      `tokenId` is not required. Live tokens revert {IBoard.SeatNotInert}.
      * @param tokenId Membership token to drop from the top set
@@ -178,25 +102,13 @@ interface IChamber is IERC4626, IBoard, IWallet {
     function cancelSeatUpdate(uint256 tokenId) external;
 
     /**
-     * @notice Optional hook reserved for registry flows; current implementation is a no-op.
-     * @dev The registry transfers `ProxyAdmin` ownership to the chamber directly after deployment.
-     */
-    function acceptAdmin() external;
-
-    /**
      * @notice Returns the `ProxyAdmin` contract address for this transparent proxy (ERC-1967 admin slot).
      * @return adminContract The OpenZeppelin `ProxyAdmin` instance controlling upgrades for this chamber
+     * @dev Since 1.3.0 this is the only upgrade path: the board queues `upgradeAndCall(chamber, impl, data)`
+     *      with `target = getProxyAdmin()`. ProxyAdmin has no version or migration checks of its own;
+     *      the board is responsible for what it approves. Calldata for such a nonce is stored onchain (L-04).
      */
     function getProxyAdmin() external view returns (address adminContract);
-
-    /**
-     * @notice Performs an implementation upgrade via the chamber-owned `ProxyAdmin`.
-     * @dev Must be called with `msg.sender == address(this)` (e.g. via `executeTransaction`). Requires
-     *      `ProxyAdmin.owner() == address(this)` and non-zero `newImplementation`.
-     * @param newImplementation Address of the new implementation contract
-     * @param data Optional data forwarded to `upgradeAndCall` (e.g. initializer on the new implementation)
-     */
-    function upgradeImplementation(address newImplementation, bytes calldata data) external;
 
     /**
      * @notice Pauses vault deposit/withdraw/mint/redeem and wallet execution.
@@ -272,18 +184,6 @@ interface IChamber is IERC4626, IBoard, IWallet {
     event ReceivedERC721(address indexed token, address indexed from, uint256 indexed tokenId);
 
     /**
-     * @notice Emitted when a contract NFT owner sets or clears a session key.
-     * @param tokenId Membership token
-     * @param owner Owner that registered the key (`ownerOf` at the time of the call)
-     * @param operator Session key, or `address(0)` when cleared
-     * @param expiry Exclusive-after unix timestamp (`0` when cleared)
-     * @param scope Bitmask or `type(uint32).max` unscoped sentinel (`0` when cleared)
-     */
-    event DirectorOperatorSet(
-        uint256 indexed tokenId, address indexed owner, address indexed operator, uint256 expiry, uint32 scope
-    );
-
-    /**
      * @notice Emitted when {recoverSeats} lowers the configured seat count (PMN-M01 C).
      * @param tokenId Director token that authorized the recovery
      * @param previousSeats Seat count before recovery
@@ -354,10 +254,4 @@ interface IChamber is IERC4626, IBoard, IWallet {
     /// @notice Thrown when the vault's observed asset delta does not equal the requested amount
     /// @dev Rejects fee-on-transfer / deflating tokens on deposit and mint
     error AssetAmountMismatch();
-
-    /// @notice Thrown when a session-key expiry is zero, not in the future, or exceeds `uint64`
-    error InvalidSessionExpiry();
-
-    /// @notice Thrown when a session-key scope is zero (unscoped must be `type(uint32).max`)
-    error InvalidSessionScope();
 }

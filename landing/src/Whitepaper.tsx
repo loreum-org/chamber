@@ -1,8 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useSeo } from './seo';
+import Nav from './Nav.tsx';
 
 const FadeIn = ({ children, delay = 0, className = "" }: { children: React.ReactNode, delay?: number, className?: string }) => (
   <motion.div
@@ -27,35 +27,7 @@ function Whitepaper() {
     <div className="min-h-screen bg-space-900 text-white selection:bg-space-accent selection:text-space-900 overflow-hidden relative">
       
       {/* Background Stars Effect */}
-      <div className="fixed inset-0 z-0 opacity-40 pointer-events-none">
-        <div className="absolute top-10 left-20 w-1 h-1 bg-white rounded-full animate-pulse-slow"></div>
-        <div className="absolute top-40 right-40 w-2 h-2 bg-space-accent rounded-full animate-pulse"></div>
-        <div className="absolute bottom-20 left-1/3 w-1 h-1 bg-white rounded-full opacity-50"></div>
-        <div className="absolute top-1/4 right-10 w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse-slow delay-700"></div>
-        {/* Glowing Orb */}
-        <div className="absolute top-[-20%] right-[-10%] w-[800px] h-[800px] bg-blue-900/20 rounded-full blur-[120px]"></div>
-        <div className="absolute bottom-[-20%] left-[-10%] w-[600px] h-[600px] bg-purple-900/20 rounded-full blur-[100px]"></div>
-      </div>
-
-      {/* Navigation */}
-      <nav className="relative z-50 flex items-center justify-between px-8 py-6 max-w-7xl mx-auto">
-        <Link to="/" className="flex items-center gap-2">
-          <img src="https://cdn.loreum.org/logos/white.svg" alt="Loreum Logo" className="w-8 h-8" />
-          <span className="text-2xl font-display tracking-wider">LOREUM</span>
-        </Link>
-        <div className="flex items-center gap-6">
-          <Link to="/blog" className="text-sm tracking-wide hover:text-space-accent transition-colors">
-            BLOG
-          </Link>
-          <Link 
-            to="/"
-            className="flex items-center gap-2 border border-white/20 px-6 py-2 rounded-full hover:bg-white/10 transition-all text-sm tracking-wide"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            BACK TO HOME
-          </Link>
-        </div>
-      </nav>
+      <Nav active="whitepaper" />
 
       {/* Whitepaper Content */}
       <div className="relative z-10 max-w-4xl mx-auto px-6 py-16">
@@ -91,8 +63,7 @@ function Whitepaper() {
               </p>
               <p className="text-gray-300 leading-relaxed">
                 Technical contributions include: (1) NFT-based directorship (live auth is the membership NFT owner as{" "}
-                <code className="text-space-accent">msg.sender</code>, or a session key registered with{" "}
-                <code className="text-space-accent">setDirectorOperator</code> for contract-owned NFTs; Chamber never calls ERC-1271 —
+                <code className="text-space-accent">msg.sender</code>; agents act through the owner&apos;s own smart wallet; Chamber never calls ERC-1271 —
                 EIP-1271 contract-agent directors remain research, not shipped), (2) liquid delegation without governance lockups,
                 subject to solvency checks on delegated balances, (3) circuit-safe linked list repositioning for the governance
                 leaderboard, and (4) self-sovereign upgrade paths executed only through quorum-approved transactions. We provide
@@ -137,9 +108,9 @@ function Whitepaper() {
                 Transparent &amp; programmatic operation</strong> — every material action flows through Chamber&apos;s published
                 solidity; <strong className="text-space-accent font-normal">dispersed authority</strong> — liquid delegation to a
                 ranked board plus majority quorum on execution resists single-actor capture when parameters and seat counts
-                are tuned to policy; <strong className="text-space-accent font-normal">agent parity</strong> — contract-owned
-                membership NFTs register a session key via <code className="text-space-accent">setDirectorOperator</code> so an
-                agent can call Chamber as <code className="text-space-accent">msg.sender</code> without Chamber consulting
+                are tuned to policy; <strong className="text-space-accent font-normal">agent parity</strong> — an agent acts
+                through a smart wallet that owns the membership NFT (a Safe module or a smart-account session key), so the
+                wallet calls Chamber as <code className="text-space-accent">msg.sender</code> without Chamber consulting
                 ERC-1271. A designed EIP-1271 path remains research; it is not shipped.
               </p>
 
@@ -375,43 +346,27 @@ function Whitepaper() {
               <h2 className="text-3xl font-display mb-6 text-space-accent">4. Agent Integration</h2>
               <p className="text-gray-300 leading-relaxed mb-4">
                 Live director authorization is owner-as-
-                <code className="text-space-accent">msg.sender</code>, or a session key
-                registered with <code className="text-space-accent">setDirectorOperator</code>{" "}
-                for <strong className="text-white font-normal">contract-owned</strong> membership
-                NFTs. Chamber <strong className="text-white font-normal">never</strong> calls
+                <code className="text-space-accent">msg.sender</code>. Agents act through the
+                owner&apos;s own wallet. Chamber <strong className="text-white font-normal">never</strong> calls
                 ERC-1271 / <code className="text-space-accent">isValidSignature</code>. EIP-1271
                 agent directors stay research (§4.3); they are not a shipped capability.
               </p>
               
-              <h3 className="text-2xl font-display mb-4 mt-8 text-white">4.1 Live authorization: owner &amp; session keys</h3>
+              <h3 className="text-2xl font-display mb-4 mt-8 text-white">4.1 Live authorization: the owner</h3>
               <p className="text-gray-300 leading-relaxed mb-4">
                 For a seated <code className="text-space-accent">tokenId</code>, Chamber
-                authorizes <code className="text-space-accent">msg.sender</code> if and only if
-                one of the following holds:
+                authorizes <code className="text-space-accent">msg.sender</code> if and only if{" "}
+                <code className="text-space-accent">msg.sender == nft.ownerOf(tokenId)</code>.
+                The NFT owner (EOA or contract wallet) acts as itself.
               </p>
-              
-              <ol className="list-decimal list-inside text-gray-300 space-y-2 mb-4 ml-4">
-                <li>
-                  <code className="text-space-accent">msg.sender == nft.ownerOf(tokenId)</code>{" "}
-                  — the NFT owner (EOA or contract wallet) acts as itself.
-                </li>
-                <li>
-                  The owner is a contract, previously called{" "}
-                  <code className="text-space-accent">setDirectorOperator(tokenId, operator)</code>{" "}
-                  while it was <code className="text-space-accent">ownerOf</code> and{" "}
-                  <code className="text-space-accent">msg.sender</code>, the session is still
-                  bound to the current owner, and{" "}
-                  <code className="text-space-accent">msg.sender == operator</code>.
-                </li>
-              </ol>
 
               <p className="text-gray-300 leading-relaxed mb-4">
                 A Safe, ERC-4337 account, or other contract wallet that holds the membership NFT
                 calls Chamber as itself (for example Safe{" "}
-                <code className="text-space-accent">execTransaction</code>). To let an agent
-                call Chamber directly, that owner wallet registers the operator. Transferring
-                the NFT invalidates the key. EOA-owned NFTs cannot register a session key.
-                Only the current owner may set or clear the key.
+                <code className="text-space-accent">execTransaction</code>). To let an agent act,
+                the wallet grants it a module or session key with its own limits, and the agent
+                calls Chamber through the wallet. Chamber keeps no key list of its own.
+                Transferring the NFT to a new wallet cuts off the old wallet&apos;s keys.
               </p>
 
               <h3 className="text-2xl font-display mb-4 mt-8 text-white">4.2 Agent delegation patterns</h3>
@@ -431,14 +386,12 @@ function Whitepaper() {
                 </div>
                 
                 <div className="bg-space-800/40 border border-white/10 rounded-lg p-4">
-                  <h4 className="text-lg font-display mb-2 text-space-accent">Pattern 2: Session key (live agent path)</h4>
+                  <h4 className="text-lg font-display mb-2 text-space-accent">Pattern 2: Wallet session key</h4>
                   <p className="text-gray-300 text-sm">
-                    A contract wallet holds the NFT and calls{" "}
-                    <code className="text-space-accent">setDirectorOperator(tokenId, operator)</code>.
-                    The operator may then call Chamber directly for that tokenId. This is an
-                    explicit Chamber allowlist — not EIP-1271, not Safe{" "}
-                    <code className="text-space-accent">isModuleEnabled</code>, and not EntryPoint
-                    validation.
+                    A Safe or smart account holds the NFT and gives the agent a module or an
+                    ERC-4337 / ERC-7579 session key. The wallet checks the agent&apos;s limits and
+                    then calls Chamber, so Chamber sees the owner as{" "}
+                    <code className="text-space-accent">msg.sender</code>.
                   </p>
                 </div>
                 
@@ -484,8 +437,8 @@ if (IERC1271(owner).isValidSignature(hash, abi.encode(msg.sender))
 
               <p className="text-gray-300 leading-relaxed mb-4">
                 That scheme was removed (M-01): a promiscuous 1271 contract that returned the
-                magic for arbitrary data would authorize every caller. Session keys never
-                consult the owner&apos;s signature interface.
+                magic for arbitrary data would authorize every caller. Chamber now checks only{" "}
+                <code className="text-space-accent">ownerOf(tokenId) == msg.sender</code>.
               </p>
             </section>
           </FadeIn>
@@ -650,7 +603,8 @@ Node: 4 × uint256 = 4 storage slots (optimal for linked list operations)`}
                 <ol className="list-decimal list-inside text-gray-300 space-y-3">
                   <li>
                     <strong className="text-space-accent">Submission:</strong> A director calls 
-                    <code className="text-space-accent"> submitTransaction()</code>. The transaction is created and 
+                    <code className="text-space-accent"> submitTransaction()</code> with the target, value, calldata,
+                    an optional metadata URI, and a deadline (0 means 30 days). The transaction is created and
                     auto-confirmed by the submitter.
                   </li>
                   <li>
@@ -766,8 +720,8 @@ Node: 4 × uint256 = 4 storage slots (optimal for linked list operations)`}
                 diffuse — not dependent on informal social layers for enforcement.
               </p>
               <p className="text-gray-300 leading-relaxed mb-4">
-                Key innovations include the sorted linked list delegation mechanism, liquid delegation patterns, session-key
-                director operators for contract-owned NFTs, and self-sovereign upgradeability gated by the same transaction
+                Key innovations include the sorted linked list delegation mechanism, liquid delegation patterns, agent directors
+                through the owner&apos;s own smart wallet, and self-sovereign upgradeability gated by the same transaction
                 flow as other chamber actions. EIP-1271 agent directors and Sub-Chamber topologies remain design work — not
                 the live Factory, vault, ranked board, and quorum wallet.
               </p>

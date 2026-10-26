@@ -141,23 +141,6 @@ export const chamberAbi = [
     ],
     stateMutability: 'view',
   },
-  {
-    type: 'function',
-    name: 'getHolderDelegation',
-    inputs: [
-      { name: 'holder', type: 'address' },
-      { name: 'tokenId', type: 'uint256' },
-    ],
-    outputs: [{ name: 'amount', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'getTotalHolderDelegations',
-    inputs: [{ name: 'holder', type: 'address' }],
-    outputs: [{ name: 'amount', type: 'uint256' }],
-    stateMutability: 'view',
-  },
   // Board functions
   {
     type: 'function',
@@ -247,19 +230,8 @@ export const chamberAbi = [
       { name: 'target', type: 'address' },
       { name: 'value', type: 'uint256' },
       { name: 'data', type: 'bytes' },
-    ],
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    name: 'submitTransactionWithMetadata',
-    inputs: [
-      { name: 'tokenId', type: 'uint256' },
-      { name: 'target', type: 'address' },
-      { name: 'value', type: 'uint256' },
-      { name: 'data', type: 'bytes' },
       { name: 'metadataURI', type: 'string' },
+      { name: 'deadline', type: 'uint256' },
     ],
     outputs: [],
     stateMutability: 'nonpayable',
@@ -404,13 +376,6 @@ export const chamberAbi = [
     name: 'getCancelConfirmations',
     inputs: [{ name: 'nonce', type: 'uint256' }],
     outputs: [{ name: '', type: 'uint8' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'getNextTransactionId',
-    inputs: [],
-    outputs: [{ name: '', type: 'uint256' }],
     stateMutability: 'view',
   },
   // Events

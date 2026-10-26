@@ -7,6 +7,9 @@ describe('Alchemy RPC URLs', () => {
     expect(getAlchemyV2RpcUrl(11155111, 'key')).toBe('https://eth-sepolia.g.alchemy.com/v2/key')
     expect(getAlchemyWssUrl(11155111, 'key')).toBe('wss://eth-sepolia.g.alchemy.com/v2/key')
     expect(getAlchemyWssUrl(1, 'key')).toBe('wss://eth-mainnet.g.alchemy.com/v2/key')
+    expect(alchemySupportsChain(84532)).toBe(true)
+    expect(getAlchemyV2RpcUrl(84532, 'key')).toBe('https://base-sepolia.g.alchemy.com/v2/key')
+    expect(getAlchemyWssUrl(84532, 'key')).toBe('wss://base-sepolia.g.alchemy.com/v2/key')
   })
 
   it('returns null for an unsupported chain or empty key', () => {

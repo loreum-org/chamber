@@ -25,7 +25,7 @@ function InvalidChamberAddress() {
   return (
     <div className="flex flex-col items-center justify-center min-h-64 gap-4 text-center">
       <FiAlertTriangle className="w-12 h-12 text-red-400" />
-      <h2 className="font-heading text-xl font-bold text-slate-100">Invalid Address</h2>
+      <h2 className="font-heading text-xl font-semibold text-slate-100">Invalid Address</h2>
       <p className="text-slate-400">The address in this URL is not a valid Ethereum address.</p>
       <Link to="/" className="btn btn-primary">Back to Dashboard</Link>
     </div>
@@ -36,7 +36,7 @@ function NotAChamber({ chainId }: { chainId: number }) {
   return (
     <div className="flex flex-col items-center justify-center min-h-64 gap-4 text-center">
       <FiAlertTriangle className="w-12 h-12 text-red-400" />
-      <h2 className="font-heading text-xl font-bold text-slate-100">Not a Chamber</h2>
+      <h2 className="font-heading text-xl font-semibold text-slate-100">Not a Chamber</h2>
       <p className="text-slate-400 max-w-md">
         This address does not look like a Chamber contract on{' '}
         <strong className="text-slate-200">{getNetworkName(chainId)}</strong>.
@@ -94,7 +94,7 @@ export function WrongNetworkPanel({
         <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-center mx-auto mb-5">
           <FiAlertTriangle className="w-6 h-6 text-amber-400" aria-hidden />
         </div>
-        <h2 className="font-heading text-xl font-bold text-slate-100">Wrong network</h2>
+        <h2 className="font-heading text-xl font-semibold text-slate-100">Wrong network</h2>
         <div className="mt-3 space-y-3 text-sm text-slate-400 leading-relaxed">
           <p>
             You&apos;re connected to{' '}

@@ -7,6 +7,10 @@ import {IChamber} from "src/interfaces/IChamber.sol";
 import {MockERC20} from "test/mock/MockERC20.sol";
 import {MockERC721} from "test/mock/MockERC721.sol";
 import {DeployChamber} from "test/utils/DeployChamber.sol";
+import {ChamberReads} from "test/utils/ChamberReads.sol";
+import {
+    ERC4626Upgradeable
+} from "lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/ERC4626Upgradeable.sol";
 
 /**
  * @title M-03: Evicted delegations are undiscoverable via getDelegations — FIXED
@@ -33,7 +37,8 @@ contract EvictedDelegationDiscoveryTest is Test {
     function setUp() public {
         token = new MockERC20("Test Token", "TEST", 1000000e18);
         nft = new MockERC721("Mock NFT", "MNFT");
-        chamberAddress = address(DeployChamber.deployViaFactory(address(token), address(nft), 20, "Chamber Token", "CHMB", admin));
+        chamberAddress =
+            address(DeployChamber.deployViaFactory(address(token), address(nft), 20, "Chamber Token", "CHMB", admin));
         chamber = IChamber(chamberAddress);
 
         token.mint(alice, 1000e18);
@@ -97,8 +102,8 @@ contract EvictedDelegationDiscoveryTest is Test {
         _fillBoardWithAliceAsTail();
         _evictTail(51);
 
-        assertEq(chamber.getHolderDelegation(alice, EVICTED_TOKEN), ALICE_AMOUNT);
-        assertEq(chamber.getTotalHolderDelegations(alice), ALICE_AMOUNT);
+        assertEq(ChamberReads.holderDelegation(chamber, alice, EVICTED_TOKEN), ALICE_AMOUNT);
+        assertEq(ChamberReads.totalHolderDelegations(chamber, alice), ALICE_AMOUNT);
         assertTrue(_containsDelegation(alice, EVICTED_TOKEN, ALICE_AMOUNT), "getDelegations must include evicted id");
     }
 
@@ -110,15 +115,19 @@ contract EvictedDelegationDiscoveryTest is Test {
         assertTrue(_containsDelegation(alice, EVICTED_TOKEN, ALICE_AMOUNT));
 
         uint256 aliceShares = chamber.balanceOf(alice);
+        uint256 aliceMax = chamber.maxRedeem(alice);
+        assertLt(aliceMax, aliceShares);
         vm.prank(alice);
-        vm.expectRevert(IChamber.ExceedsDelegatedAmount.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(ERC4626Upgradeable.ERC4626ExceededMaxRedeem.selector, alice, aliceShares, aliceMax)
+        );
         chamber.redeem(aliceShares, alice, alice);
 
         vm.prank(alice);
         chamber.undelegate(EVICTED_TOKEN, ALICE_AMOUNT);
 
-        assertEq(chamber.getHolderDelegation(alice, EVICTED_TOKEN), 0);
-        assertEq(chamber.getTotalHolderDelegations(alice), 0);
+        assertEq(ChamberReads.holderDelegation(chamber, alice, EVICTED_TOKEN), 0);
+        assertEq(ChamberReads.totalHolderDelegations(chamber, alice), 0);
         (uint256[] memory tokenIds,) = chamber.getDelegations(alice);
         assertEq(tokenIds.length, 0, "cleared evicted id should leave the enumerable set");
 
@@ -156,7 +165,7 @@ contract EvictedDelegationDiscoveryTest is Test {
         vm.prank(alice);
         chamber.undelegate(EVICTED_TOKEN, 20);
 
-        assertEq(chamber.getHolderDelegation(alice, EVICTED_TOKEN), 30);
+        assertEq(ChamberReads.holderDelegation(chamber, alice, EVICTED_TOKEN), 30);
         assertTrue(_containsDelegation(alice, EVICTED_TOKEN, 30));
 
         uint256 aliceShares = chamber.balanceOf(alice);
@@ -196,18 +205,22 @@ contract EvictedDelegationDiscoveryTest is Test {
         vm.prank(alice);
         chamber.undelegate(EVICTED_TOKEN, ALICE_AMOUNT);
 
-        assertEq(chamber.getHolderDelegation(alice, EVICTED_TOKEN), 0);
-        assertEq(chamber.getTotalHolderDelegations(alice), 0);
+        assertEq(ChamberReads.holderDelegation(chamber, alice, EVICTED_TOKEN), 0);
+        assertEq(ChamberReads.totalHolderDelegations(chamber, alice), 0);
         (uint256[] memory aliceIds,) = chamber.getDelegations(alice);
         assertEq(aliceIds.length, 0);
 
-        assertEq(chamber.getHolderDelegation(carol, EVICTED_TOKEN), CAROL_AMOUNT, "carol stake must remain");
-        assertEq(chamber.getTotalHolderDelegations(carol), CAROL_AMOUNT);
+        assertEq(ChamberReads.holderDelegation(chamber, carol, EVICTED_TOKEN), CAROL_AMOUNT, "carol stake must remain");
+        assertEq(ChamberReads.totalHolderDelegations(chamber, carol), CAROL_AMOUNT);
         assertTrue(_containsDelegation(carol, EVICTED_TOKEN, CAROL_AMOUNT));
 
         uint256 carolShares = chamber.balanceOf(carol);
+        uint256 carolMax = chamber.maxRedeem(carol);
+        assertLt(carolMax, carolShares);
         vm.prank(carol);
-        vm.expectRevert(IChamber.ExceedsDelegatedAmount.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(ERC4626Upgradeable.ERC4626ExceededMaxRedeem.selector, carol, carolShares, carolMax)
+        );
         chamber.redeem(carolShares, carol, carol);
 
         vm.prank(carol);

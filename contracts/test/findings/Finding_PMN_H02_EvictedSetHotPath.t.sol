@@ -7,6 +7,10 @@ import {IChamber} from "src/interfaces/IChamber.sol";
 import {MockERC20} from "test/mock/MockERC20.sol";
 import {MockERC721} from "test/mock/MockERC721.sol";
 import {DeployChamber} from "test/utils/DeployChamber.sol";
+import {ChamberReads} from "test/utils/ChamberReads.sol";
+import {
+    ERC4626Upgradeable
+} from "lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/ERC4626Upgradeable.sol";
 
 /**
  * @title PMN-H02: evictedTokenIds must not sit on the delegate/undelegate hot path
@@ -44,14 +48,18 @@ contract FindingPmnH02EvictedSetHotPathTest is Test {
         _fillBoardAndEvictUniqueTails(EXTRA_EVICTIONS);
 
         uint256 aliceShares = chamber.balanceOf(alice);
+        uint256 aliceMax = chamber.maxRedeem(alice);
+        assertLt(aliceMax, aliceShares);
         vm.prank(alice);
-        vm.expectRevert(IChamber.ExceedsDelegatedAmount.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(ERC4626Upgradeable.ERC4626ExceededMaxRedeem.selector, alice, aliceShares, aliceMax)
+        );
         chamber.redeem(aliceShares, alice, alice);
 
         vm.prank(alice);
         chamber.undelegate(ALICE_TOKEN, ALICE_AMOUNT);
 
-        assertEq(chamber.getTotalHolderDelegations(alice), 0);
+        assertEq(ChamberReads.totalHolderDelegations(chamber, alice), 0);
         (uint256[] memory tokenIds,) = chamber.getDelegations(alice);
         assertEq(tokenIds.length, 0);
 

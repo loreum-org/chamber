@@ -102,7 +102,6 @@
       <a class="brand" href="index.html"><span class="brand-mark">L</span><span>Loreum</span></a>
       <nav class="nav" aria-label="Main">
         <a href="app-overview.html" class="on">My Chambers</a>
-        <a href="app-session-keys.html">Operators</a>
         <a href="#">Deploy Chamber</a>
         <a href="#">Compliance</a>
         <a href="app-migrate.html">Migrate from Safe</a>
@@ -143,7 +142,6 @@
     <a href="app-queue.html">Queue <span class="badge warn">3</span></a>
     <a href="p2-multichain-treasury.html">Treasury</a>
     <a href="app-supply-authority.html">Supply authority</a>
-    <a href="app-session-keys.html">Session keys</a>
   </nav>
 
   <!-- Summary -->
@@ -184,11 +182,11 @@
         <thead>
           <tr>
             <th>Rank</th>
-            <th>Seat NFT → owner → session key</th>
+            <th>Seat NFT → owner → signer <span class="note">5</span></th>
             <th>Delegated weight <span class="note">3</span></th>
             <th>Seated since</th>
             <th>Maturity <span class="note">4</span></th>
-            <th>Session key status <span class="note">5</span></th>
+            <th>Status</th>
           </tr>
         </thead>
         <tbody>
@@ -198,7 +196,7 @@
               <div class="auth compact">
                 <div class="node seat"><span class="k">Seat</span><span class="v">Explorer #7</span></div>
                 <div class="node"><span class="k">Owner · EOA</span><span class="v">aria.eth <span class="mono faint">0x51a0…7C3e</span></span></div>
-                <div class="node key"><span class="k">Session key</span><span class="v muted">None</span></div>
+                <div class="node key"><span class="k">Signed by</span><span class="v">Owner wallet</span></div>
               </div>
             </td>
             <td data-l="Delegated weight">
@@ -207,7 +205,7 @@
             </td>
             <td data-l="Seated since">Feb 2, 2027<div class="cell-s mono">#26,882,428</div></td>
             <td data-l="Maturity"><span class="badge ok"><span class="dot"></span>Mature</span><div class="cell-s">Can act since #26,882,429</div></td>
-            <td data-l="Session key status"><span class="muted">Not available</span><div class="cell-s">EOA owners sign directly. Only a contract owner can set a key.</div></td>
+            <td data-l="Status"><span class="muted">Seated</span></td>
           </tr>
           <tr>
             <td class="rk" data-l="Rank">2</td>
@@ -215,7 +213,7 @@
               <div class="auth compact">
                 <div class="node seat"><span class="k">Seat</span><span class="v">Explorer #12</span></div>
                 <div class="node"><span class="k">Owner · Safe 2-of-3</span><span class="v">kofi.eth <span class="mono faint">0x8b2d…11F0</span></span></div>
-                <div class="node key"><span class="k">Session key</span><span class="v mono">0xA11c…04e5</span></div>
+                <div class="node key"><span class="k">Signed by</span><span class="v">Safe 2-of-3</span></div>
               </div>
             </td>
             <td data-l="Delegated weight">
@@ -224,13 +222,7 @@
             </td>
             <td data-l="Seated since">Feb 2, 2027<div class="cell-s mono">#26,882,612</div></td>
             <td data-l="Maturity"><span class="badge ok"><span class="dot"></span>Mature</span><div class="cell-s">Can act since #26,882,613</div></td>
-            <td data-l="Session key status">
-              <span class="badge warn">Expires in 12 d</span>
-              <div class="scopes" style="margin-top:6px" aria-label="Scope 0x31">
-                <span class="scope on">SUBMIT</span><span class="scope">CONFIRM</span><span class="scope">EXECUTE</span><span class="scope">SEATS</span><span class="scope on">REVOKE</span><span class="scope on">CANCEL</span>
-              </div>
-              <div class="cell-s">Scope 0x31 · expires Mar 28, 2027 14:00 UTC</div>
-            </td>
+            <td data-l="Status"><span class="muted">Seated</span></td>
           </tr>
           <tr>
             <td class="rk" data-l="Rank">3</td>
@@ -238,11 +230,11 @@
               <div class="auth compact">
                 <div class="node seat"><span class="k">Seat</span><span class="v">Explorer #31</span></div>
                 <div class="node"><span class="k">Owner · policy Safe</span><span class="v">Treasury Agent <span class="mono faint">0x9aB3…40d1</span></span></div>
-                <div class="node key"><span class="k">Session key</span><span class="v mono">0x7E0f…19b2</span></div>
+                <div class="node key"><span class="k">Signed by</span><span class="v">Agent via owner's Safe</span></div>
               </div>
               <div class="row" style="gap:6px;margin-top:6px">
                 <span class="badge acc">Agent director <span class="note">12</span></span>
-                <span class="faint" style="font-size:12px">ERC-8004 agent #212 (display only). Confirms through its policy account; its key has no CONFIRM bit.</span>
+                <span class="faint" style="font-size:12px">ERC-8004 agent #212 (display only). Acts only through its owner's Safe policy module.</span>
               </div>
             </td>
             <td data-l="Delegated weight">
@@ -251,13 +243,7 @@
             </td>
             <td data-l="Seated since">Feb 5, 2027<div class="cell-s mono">#26,902,604</div></td>
             <td data-l="Maturity"><span class="badge ok"><span class="dot"></span>Mature</span><div class="cell-s">Can act since #26,902,605</div></td>
-            <td data-l="Session key status">
-              <span class="badge ok"><span class="dot"></span>Live · 14 d left</span>
-              <div class="scopes" style="margin-top:6px" aria-label="Scope 0x35">
-                <span class="scope on">SUBMIT</span><span class="scope">CONFIRM</span><span class="scope on">EXECUTE</span><span class="scope">SEATS</span><span class="scope on">REVOKE</span><span class="scope on">CANCEL</span>
-              </div>
-              <div class="cell-s">Scope 0x35 · expires Mar 30, 2027 16:55 UTC</div>
-            </td>
+            <td data-l="Status"><span class="muted">Seated</span></td>
           </tr>
           <tr class="me">
             <td class="rk" data-l="Rank">4</td>
@@ -265,7 +251,7 @@
               <div class="auth compact">
                 <div class="node seat"><span class="k">Seat · <span class="you">You</span></span><span class="v">Explorer #44</span></div>
                 <div class="node"><span class="k">Owner · EOA</span><span class="v">lena.eth <span class="mono faint">0x3c7B…aa15</span></span></div>
-                <div class="node key"><span class="k">Session key</span><span class="v muted">None</span></div>
+                <div class="node key"><span class="k">Signed by</span><span class="v">Owner wallet</span></div>
               </div>
             </td>
             <td data-l="Delegated weight">
@@ -274,7 +260,7 @@
             </td>
             <td data-l="Seated since">Feb 9, 2027<div class="cell-s mono">#26,930,945</div></td>
             <td data-l="Maturity"><span class="badge ok"><span class="dot"></span>Mature</span><div class="cell-s">Can act since #26,930,946</div></td>
-            <td data-l="Session key status"><span class="muted">Not available</span><div class="cell-s">You sign from lena.eth. To delegate signing, hold the NFT in a Safe first.</div></td>
+            <td data-l="Status"><span class="muted">Seated</span></td>
           </tr>
           <tr>
             <td class="rk" data-l="Rank">5</td>
@@ -282,7 +268,7 @@
               <div class="auth compact">
                 <div class="node seat"><span class="k">Seat</span><span class="v">Explorer #58</span></div>
                 <div class="node"><span class="k">Owner · EOA</span><span class="v">marco.eth <span class="mono faint">0xE2f0…6d3C</span></span></div>
-                <div class="node key"><span class="k">Session key</span><span class="v muted">None</span></div>
+                <div class="node key"><span class="k">Signed by</span><span class="v">Owner wallet</span></div>
               </div>
             </td>
             <td data-l="Delegated weight">
@@ -291,7 +277,7 @@
             </td>
             <td data-l="Seated since">Feb 12, 2027<div class="cell-s mono">#26,952,372</div></td>
             <td data-l="Maturity"><span class="badge ok"><span class="dot"></span>Mature</span><div class="cell-s">Can act since #26,952,373</div></td>
-            <td data-l="Session key status"><span class="muted">Not available</span><div class="cell-s">EOA owner</div></td>
+            <td data-l="Status"><span class="muted">Seated</span></td>
           </tr>
           <tr class="line">
             <td colspan="6"><span class="upper" style="color:var(--warn)">Seat line · 612,000 LORE</span> <span class="faint" style="font-size:12px">Ranks below this line hold no seat. A tie keeps the current holder.</span></td>
@@ -302,7 +288,7 @@
               <div class="auth compact">
                 <div class="node"><span class="k">Explorer</span><span class="v">#63</span></div>
                 <div class="node"><span class="k">Owner</span><span class="v">nadia.eth</span></div>
-                <div class="node key"><span class="k">Session key</span><span class="v muted">None</span></div>
+                <div class="node key"><span class="k">Signed by</span><span class="v">Owner wallet</span></div>
               </div>
             </td>
             <td data-l="Delegated weight">
@@ -519,7 +505,7 @@
         <ul class="checks">
           <li><span class="st pass">✓</span><div><b>5 distinct owners</b> across 5 seats<div class="cell-s">3 EOAs, 2 Safes</div></div><span></span></li>
           <li><span class="st pass">✓</span><div><b>No owner holds 3 seats</b> <span class="note">11</span><div class="cell-s">Largest owner: 1 seat. Quorum is 3, so no owner can pass a proposal alone.</div></div><span></span></li>
-          <li><span class="st pass">✓</span><div><b>1 agent director of 5</b><div class="cell-s">Explorer #31 can't reach quorum alone. Its session key has no CONFIRM bit, but a submit through the key still records #31's confirmation (<code>C-17</code>).</div></div><span></span></li>
+          <li><span class="st pass">✓</span><div><b>1 agent director of 5</b><div class="cell-s">Explorer #31 can't reach quorum alone. It acts only through its owner's Safe, like any other owner.</div></div><span></span></li>
           <li><span class="st wait">?</span><div><b>Safe signer overlap</b><div class="cell-s">Not indexed. Check the signers of kofi.eth's Safe and the Treasury Agent's policy Safe against the other directors yourself.</div></div><span></span></li>
         </ul>
         <p class="faint" style="font-size:12px;margin-top:10px">The indexer sees owner addresses, not people. Two EOAs can belong to one person.</p>
@@ -531,17 +517,17 @@
     <h3>Design notes</h3>
     <ol>
       <li>The seat line is the number delegators care about: the weight to beat for the last seat. It's derived from indexed <code>boardSeat</code> rows. A tie keeps the incumbent, so the "needs" figure is always margin + 1 (612,000 − 540,000 + 1 = 72,001).</li>
-      <li>One ranked table replaces the decorative semicircle and the separate leaderboard in <code>BoardVisualization.tsx</code>. Each row shows the full authority chain (seat NFT → owner → session key), because that's what decides who can act. The rows come from <code>boardSeat</code>, <code>membershipToken</code> and <code>directorOperator</code> in chamber-indexer, with no <code>getTop</code>, <code>ownerOf</code> or <code>getDirectorOperator</code> calls (<code>I-13</code>, <code>I-6</code>).</li>
+      <li>One ranked table replaces the decorative semicircle and the separate leaderboard in <code>BoardVisualization.tsx</code>. Each row shows the full authority chain (seat NFT → owner → signer), because that's what decides who can act. The rows come from <code>boardSeat</code> and <code>membershipToken</code> in chamber-indexer, with no <code>getTop</code> or <code>ownerOf</code> calls (<code>I-13</code>, <code>I-6</code>).</li>
       <li>Weight is stored in cLORE shares, and people think in LORE. The column shows LORE at the current share price, with the cLORE amount in a tooltip. cLORE has 21 decimals (18 + <code>_decimalsOffset</code> 3): about 1,000 share units per LORE base unit, which is about 1 cLORE per LORE in display units. The old leaderboard formatted shares with 18 decimals (<code>BoardVisualization.tsx:482</code>), so weights read 1,000 times too large, with a vault symbol that looked like a different token. The delegate form parses amounts with the share decimals, as <code>DelegationManager</code> already does.</li>
       <li>Maturity comes from the contract's stored <code>seatedAt</code>, which is the seating block + <code>SEATING_DELAY</code> (1 block). A seat can act once the head reaches it, checked against the indexer head clock. An NFT transfer restarts the clock (<code>syncSeatingControl</code>, PMN-H01). "Seated since" shows the seating block and "Can act since" shows <code>seatedAt</code>. Today <code>useDirectorActionGate</code> polls <code>useBlockNumber</code> every 60 s for this (<code>I-10</code>, <code>I-13</code>).</li>
-      <li>The session key column says why a key is missing (EOA owners can't set one), shows scope bits as chips, and warns about expiry before a key lapses. Stale keys (NFT transferred, key cleared) come from the indexer's staleness view (<code>I-6</code>). Copy says "session key"; "Operators" survives only as the top-nav label (<code>P-8</code>, <code>P-9</code>).</li>
+      <li>The signer node shows who signs for the seat. Only the NFT's owner can act (<code>ownerOf(tokenId)</code>). An agent acts through its owner's wallet, such as a Safe module or a smart-account session key; Chamber has no operators or key scopes. An NFT transfer moves all authority to the new owner.</li>
       <li>Seat-count changes have their own card, not a line in the activity list. The lifecycle shows the 7-day timelock (<code>SEAT_UPDATE_TIMELOCK</code>) and the 14-day point (<code>SEAT_UPDATE_EXPIRY</code>) after which any director may delete it; before that only the proposer can. Support is a secondary button, not the primary one: supporting moves the board toward a change that would stall #46. The consequences are spelled out, including the effect on open proposals, because <code>_requiredConfirmations</code> = max(submit quorum, live quorum).</li>
       <li>Quorum math is shown with the reachable count and a lookup row, so a director can predict the effect of a seat change or a burned NFT. Reachability follows <code>BoardLib.countReachableAuthorized</code> (PMN-M01).</li>
       <li>The preview is computed locally from indexer rows and says so. The only RPC is at transaction time: <code>useSimulateDelegate</code> runs before signing, then the receipt. After the receipt, the freshness gate (<code>requireIndexerBlock</code>, keyed by chain and Chamber in <code>I-10</code>) holds the ranking until the indexer reaches that block, so the table never shows pre-write state. Simulate hooks move to <code>src/lib/tx/</code>, the only place the lint rule allows contract reads (<code>I-11</code>, <code>I-13</code>).</li>
       <li>The lock is stated where people delegate. <code>Chamber._update</code> reverts with <code>ExceedsDelegatedAmount</code> when a transfer would dip into delegated shares. Public copy that implied otherwise is being removed (<code>D-6</code>).</li>
       <li>Independence mirrors the seated-board precondition for the LORE handoff: a seated, mature board with quorum 3 or more and independent holders (review "Critical: the LORE handoff…", <code>M-10</code>, <code>M-23</code>). The card is honest about its limits. It checks owner addresses, not humans, and Safe signer overlap isn't indexed yet.</li>
       <li>A seat change or delegation that would give one owner quorum-many seats would flip this card red and add a warning to the seat-change card. That's the concentration the review's 1-of-N finding warns about.</li>
-      <li>The AI seat is labelled as an agent director. Its owner is a policy Safe that checks each confirmation against the agent's mandate, and its session key deliberately lacks CONFIRM. Because a submit records the submitter's confirmation, a submit through that key still counts for seat #31, so the policy account should also vet what the key submits (<code>C-17</code>). ERC-8004 identity is display only; it isn't a security primitive (review "AI agents are directors, not relayers").</li>
+      <li>The AI seat is labelled as an agent director. Its owner is a policy Safe whose module checks each submit and confirmation against the agent's mandate. Chamber sees only the Safe. A submit records the submitter's confirmation, so the policy module should vet what the agent submits. ERC-8004 identity is display only; it isn't a security primitive (review "AI agents are directors, not relayers").</li>
     </ol>
   </section>
 </main>

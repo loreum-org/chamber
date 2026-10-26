@@ -84,6 +84,7 @@ const BLOCK_EXPLORERS: Record<number, string> = {
   1: 'https://etherscan.io',
   11155111: 'https://sepolia.etherscan.io',
   8453: 'https://basescan.org',
+  84532: 'https://sepolia.basescan.org',
   42161: 'https://arbiscan.io',
   31337: 'http://localhost:8545', // Anvil - no block explorer by default
 }
@@ -194,6 +195,7 @@ export function parseDataField(data: string): { method?: string; decoded?: strin
     '0x8456cb59': 'pause()',
     '0x3f4ba83a': 'unpause()',
     '0xc89311b6': 'upgradeImplementation(address,bytes)',
+    '0x9623609d': 'upgradeAndCall(address,address,bytes)',
   }
 
   const methodId = data.slice(0, 10).toLowerCase()

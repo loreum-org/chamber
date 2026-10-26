@@ -110,6 +110,14 @@ export const chamberAbi = [
     outputs: [{ name: '', type: 'bytes32' }],
     stateMutability: 'view',
   },
+  // ProxyAdmin for this proxy: the only upgrade path since 1.3.0 (upgradeAndCall via a quorum tx)
+  {
+    type: 'function',
+    name: 'getProxyAdmin',
+    inputs: [],
+    outputs: [{ name: 'adminContract', type: 'address' }],
+    stateMutability: 'view',
+  },
   // Delegation functions
   {
     type: 'function',
@@ -139,23 +147,6 @@ export const chamberAbi = [
       { name: 'tokenIds', type: 'uint256[]' },
       { name: 'amounts', type: 'uint256[]' },
     ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'getHolderDelegation',
-    inputs: [
-      { name: 'holder', type: 'address' },
-      { name: 'tokenId', type: 'uint256' },
-    ],
-    outputs: [{ name: 'amount', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'getTotalHolderDelegations',
-    inputs: [{ name: 'holder', type: 'address' }],
-    outputs: [{ name: 'amount', type: 'uint256' }],
     stateMutability: 'view',
   },
   // Board functions
@@ -254,62 +245,6 @@ export const chamberAbi = [
   },
   {
     type: 'function',
-    name: 'setDirectorOperator',
-    inputs: [
-      { name: 'tokenId', type: 'uint256' },
-      { name: 'operator', type: 'address' },
-      { name: 'expiry', type: 'uint256' },
-      { name: 'scope', type: 'uint32' },
-    ],
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    name: 'getDirectorOperator',
-    inputs: [{ name: 'tokenId', type: 'uint256' }],
-    outputs: [{ name: 'operator', type: 'address' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'getDirectorOperatorScope',
-    inputs: [{ name: 'tokenId', type: 'uint256' }],
-    outputs: [{ name: 'scope', type: 'uint32' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'getDirectorOperatorLiveAt',
-    inputs: [{ name: 'tokenId', type: 'uint256' }],
-    outputs: [{ name: 'liveAt', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'getDirectorSession',
-    inputs: [{ name: 'tokenId', type: 'uint256' }],
-    outputs: [
-      { name: 'sessionOwner', type: 'address' },
-      { name: 'operator', type: 'address' },
-      { name: 'expiry', type: 'uint256' },
-      { name: 'scope', type: 'uint32' },
-      { name: 'liveAt', type: 'uint256' },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'isTokenAuthorized',
-    inputs: [
-      { name: 'tokenId', type: 'uint256' },
-      { name: 'account', type: 'address' },
-    ],
-    outputs: [{ name: '', type: 'bool' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
     name: 'pause',
     inputs: [],
     outputs: [],
@@ -338,19 +273,8 @@ export const chamberAbi = [
       { name: 'target', type: 'address' },
       { name: 'value', type: 'uint256' },
       { name: 'data', type: 'bytes' },
-    ],
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    name: 'submitTransactionWithMetadata',
-    inputs: [
-      { name: 'tokenId', type: 'uint256' },
-      { name: 'target', type: 'address' },
-      { name: 'value', type: 'uint256' },
-      { name: 'data', type: 'bytes' },
       { name: 'metadataURI', type: 'string' },
+      { name: 'deadline', type: 'uint256' },
     ],
     outputs: [],
     stateMutability: 'nonpayable',
@@ -479,13 +403,6 @@ export const chamberAbi = [
   },
   {
     type: 'function',
-    name: 'isTransactionExpired',
-    inputs: [{ name: 'nonce', type: 'uint256' }],
-    outputs: [{ name: '', type: 'bool' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
     name: 'getConfirmation',
     inputs: [
       { name: 'tokenId', type: 'uint256' },
@@ -516,13 +433,6 @@ export const chamberAbi = [
     name: 'getCancelConfirmations',
     inputs: [{ name: 'nonce', type: 'uint256' }],
     outputs: [{ name: '', type: 'uint8' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'getNextTransactionId',
-    inputs: [],
-    outputs: [{ name: '', type: 'uint256' }],
     stateMutability: 'view',
   },
   // Events
@@ -603,17 +513,6 @@ export const chamberAbi = [
     type: 'event',
     name: 'SeatUpdateCancelled',
     inputs: [{ name: 'tokenId', type: 'uint256', indexed: true }],
-  },
-  {
-    type: 'event',
-    name: 'DirectorOperatorSet',
-    inputs: [
-      { name: 'tokenId', type: 'uint256', indexed: true },
-      { name: 'owner', type: 'address', indexed: true },
-      { name: 'operator', type: 'address', indexed: true },
-      { name: 'expiry', type: 'uint256', indexed: false },
-      { name: 'scope', type: 'uint32', indexed: false },
-    ],
   },
   {
     type: 'event',

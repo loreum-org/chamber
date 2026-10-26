@@ -13,6 +13,7 @@ const CHAIN_ALCHEMY_NETWORK: Record<number, string> = {
   1: 'eth-mainnet',
   11155111: 'eth-sepolia',
   8453: 'base-mainnet',
+  84532: 'base-sepolia',
   42161: 'arb-mainnet',
 }
 
@@ -165,7 +166,7 @@ type NftV3OwnerResponse = {
 
 /** Native symbol label per chain (sufficient for our supported L2s). */
 function nativeSymbolForChain(chainId: number): string {
-  if (chainId === 8453 || chainId === 42161) return 'ETH'
+  if (chainId === 8453 || chainId === 84532 || chainId === 42161) return 'ETH'
   return 'ETH'
 }
 

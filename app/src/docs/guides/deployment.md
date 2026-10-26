@@ -106,8 +106,12 @@ Do not auto-seat addresses that do not hold a membership NFT.
 
 ## App configuration
 
-Sepolia Factory, Registry, Chamber implementation, and demo ERC-20 / membership ERC-721
-are read from **`contracts/deployments/sepolia.txt`**. Optional env overrides:
+The live Factory is Base Sepolia (chain 84532), read from
+**`contracts/deployments/base-sepolia.txt`** (`getContractAddresses(84532)`).
+Optional env overrides: `VITE_BASE_SEPOLIA_FACTORY`, `VITE_BASE_SEPOLIA_CHAMBER_IMPL`.
+
+Ethereum Sepolia Factory, Registry, Chamber implementation, and demo ERC-20 / membership ERC-721
+stay in **`contracts/deployments/sepolia.txt`**. Optional env overrides:
 `VITE_SEPOLIA_REGISTRY`, `VITE_SEPOLIA_FACTORY`, `VITE_SEPOLIA_CHAMBER_IMPL`,
 `VITE_SEPOLIA_MOCK_ERC20`, `VITE_SEPOLIA_MOCK_ERC721`.
 

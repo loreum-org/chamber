@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
 import Footer from './Footer.tsx';
+import Nav from './Nav.tsx';
 import { useSeo } from './seo';
 
 const FadeIn = ({ children, delay = 0, className = "" }: { children: React.ReactNode, delay?: number, className?: string }) => (
@@ -15,11 +15,6 @@ const FadeIn = ({ children, delay = 0, className = "" }: { children: React.React
     {children}
   </motion.div>
 );
-
-/** Production default so CTAs work when env is unset in a static build. */
-const chamberAppUrl =
-  (import.meta.env.VITE_CHAMBER_APP_URL as string | undefined)?.trim() ||
-  'https://app.loreum.org';
 
 const founders = [
   {
@@ -55,36 +50,7 @@ function Team() {
     <div className="min-h-screen w-full min-w-0 bg-space-900 text-white selection:bg-space-accent selection:text-space-900 overflow-x-hidden relative">
 
       {/* Background Stars Effect */}
-      <div className="fixed inset-0 z-0 opacity-40 pointer-events-none">
-        <div className="absolute top-10 left-20 w-1 h-1 bg-white rounded-full animate-pulse-slow"></div>
-        <div className="absolute top-40 right-40 w-2 h-2 bg-space-accent rounded-full animate-pulse"></div>
-        <div className="absolute bottom-20 left-1/3 w-1 h-1 bg-white rounded-full opacity-50"></div>
-        <div className="absolute top-1/4 right-10 w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse-slow delay-700"></div>
-        <div className="absolute top-[-20%] right-[-10%] w-[800px] h-[800px] bg-blue-900/20 rounded-full blur-[120px]"></div>
-        <div className="absolute bottom-[-20%] left-[-10%] w-[600px] h-[600px] bg-purple-900/20 rounded-full blur-[100px]"></div>
-      </div>
-
-      {/* Navigation */}
-      <nav className="relative z-50 flex items-center justify-between gap-4 px-4 sm:px-8 py-6 max-w-7xl mx-auto w-full min-w-0 box-border">
-        <Link to="/" className="flex items-center gap-2">
-          <img src="https://cdn.loreum.org/logos/white.svg" alt="Loreum Logo" className="w-8 h-8" />
-          <span className="text-2xl font-display tracking-wider">LOREUM</span>
-        </Link>
-        <div className="hidden md:flex items-center gap-8 font-light tracking-wide text-sm">
-          <a href="/#imperative" className="hover:text-space-accent transition-colors">IMPERATIVE</a>
-          <a href="/#mission" className="hover:text-space-accent transition-colors">MISSION</a>
-          <a href="/#technology" className="hover:text-space-accent transition-colors">TECHNOLOGY</a>
-          <a href="/#governance" className="hover:text-space-accent transition-colors">GOVERNANCE</a>
-          <Link to="/team" className="text-space-accent transition-colors">TEAM</Link>
-          <Link to="/blog" className="hover:text-space-accent transition-colors">BLOG</Link>
-        </div>
-        <a
-          href={chamberAppUrl}
-          className="hidden md:flex items-center gap-2 border border-white/20 px-6 py-2 rounded-full hover:bg-white/10 transition-all text-sm tracking-wide"
-        >
-          LAUNCH APP
-        </a>
-      </nav>
+      <Nav active="team" />
 
       <section className="relative z-10 py-20 md:py-32 px-4 sm:px-6 w-full min-w-0 box-border">
         <div className="max-w-7xl mx-auto w-full min-w-0 px-1 sm:px-0">

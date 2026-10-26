@@ -41,7 +41,7 @@ contract FactoryBootstrapTest is Test {
 
         vm.prank(creator);
         vm.expectRevert(IChamber.NotDirector.selector);
-        chamber.submitTransaction(tokenId, address(token), 0, "");
+        chamber.submitTransaction(tokenId, address(token), 0, "", "", 0);
 
         token.mint(creator, 100e18);
         vm.startPrank(creator);
@@ -57,12 +57,12 @@ contract FactoryBootstrapTest is Test {
 
         vm.prank(creator);
         vm.expectRevert(IChamber.DirectorNotSeated.selector);
-        chamber.submitTransaction(tokenId, address(token), 0, "");
+        chamber.submitTransaction(tokenId, address(token), 0, "", "", 0);
 
         vm.roll(block.number + SEATING_DELAY);
 
         vm.prank(creator);
-        chamber.submitTransaction(tokenId, address(token), 0, "");
+        chamber.submitTransaction(tokenId, address(token), 0, "", "", 0);
         assertEq(chamber.getTransactionCount(), 1, "seated director can submit");
         assertEq(chamber.getQuorum(), 1, "one reachable director -> quorum 1 (PMN-M01)");
     }

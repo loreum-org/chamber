@@ -67,7 +67,6 @@
       <a class="brand" href="index.html"><span class="brand-mark">L</span><span>Loreum</span></a>
       <nav class="nav" aria-label="Main">
         <a href="app-overview.html" class="on">My Chambers</a>
-        <a href="app-session-keys.html">Operators</a>
         <a href="#">Deploy Chamber</a>
         <a href="#">Compliance</a>
         <a href="app-migrate.html">Migrate from Safe</a>
@@ -109,7 +108,6 @@
     <a href="app-queue.html">Queue <span class="badge warn">3</span></a>
     <a href="p2-multichain-treasury.html">Treasury</a>
     <a href="app-supply-authority.html" class="on">Supply authority</a>
-    <a href="app-session-keys.html">Session keys</a>
   </nav>
 
   <nav class="subnav" aria-label="Supply authority">
@@ -123,7 +121,7 @@
     <div class="card-h">
       <div class="stack-sm">
         <h2 id="role-h">Guardian console <span class="note">1</span></h2>
-        <p class="muted" style="font-size:13px">You are signer 2 of 5 on the Loreum Guardian Safe. You hold no seat and no session key in this Chamber.</p>
+        <p class="muted" style="font-size:13px">You are signer 2 of 5 on the Loreum Guardian Safe. You hold no seat in this Chamber.</p>
       </div>
       <span class="badge info">Guardian signer</span>
     </div>
@@ -319,7 +317,7 @@
           <li><span class="when">Mar 15 09:00</span><div>Weekly heartbeat: no change<span class="sub">Team Safe threshold 4-of-7 · LORE owner is LoreMintGate</span></div><span class="badge ok">OK</span></li>
           <li><span class="when">Mar 14 03:10</span><div>Indexer more than 30 blocks behind on Ethereum<span class="sub">Resolved 03:22. During a lag, check Etherscan before acting.</span></div><span class="badge">Resolved</span></li>
           <li><span class="when">Mar 12 14:02</span><div>Gate op #3 queued: mint 250,000 LORE to Vesting (eta Mar 19)<span class="sub">Live until op #3 executes or is cancelled. Review it against the checks above; acknowledgements are logged in the alert channel.</span></div><span class="badge warn">Live</span></li>
-          <li><span class="when">Mar 9 16:55</span><div>Session key set for Explorer #31 (scope 0x35)<span class="sub">SUBMIT, EXECUTE, REVOKE, CANCEL · expires Mar 30</span></div><span class="badge info">Info</span></li>
+          <li><span class="when">Mar 9 16:55</span><div>Policy module enabled on the Treasury Agent Safe<span class="sub">Owner of Explorer #31 · approved by Chamber tx #45</span></div><span class="badge info">Info</span></li>
           <li><span class="when">Feb 26 09:40</span><div>LORE totalSupply +100,000<span class="sub">Gate op #2 executed to Grants Safe</span></div><span class="badge info">Info</span></li>
           <li><span class="when">Feb 19 09:31</span><div>LORE owner changed: Team Safe → LoreMintGate<span class="sub">Expected: the planned handoff</span></div><span class="badge info">Info</span></li>
         </ul>
@@ -382,7 +380,7 @@
         <div class="divider"></div>
         <ul class="checks">
           <li><span class="st pass">✓</span><span>No signer is a Team Safe owner</span><span></span></li>
-          <li><span class="st pass">✓</span><span>No signer owns a seat or holds a session key</span><span></span></li>
+          <li><span class="st pass">✓</span><span>No signer owns a seat</span><span></span></li>
           <li><span class="st pass">✓</span><span>No signer is a large LORE holder</span><span></span></li>
         </ul>
         <p class="hint" style="margin-top:8px">Last action: cancelled drill op #0 on Feb 11 (nonce 0). Next nonce: 1.</p>
@@ -412,7 +410,7 @@
       <li>RPC is used only at export time, for the simulation and the Safe nonce, and the page names the block. Everything else on the page is indexer data (pinned rule; <code>I-11</code>, <code>I-21</code>).</li>
       <li>Each signer compares the safeTxHash, domain hash and message hash on their own device. This is the same practice <code>M-10</code>/<code>M-11</code> require for the handoff. The hashes are real EIP-712 values for this illustrative Safe, gate and nonce, computed with <code>cast</code>.</li>
       <li>Exits need guardian approval under the dual-control option in <code>M-3</code>(i). The empty state explains that not approving is itself a veto, which is the liveness-for-safety trade the ADR accepts.</li>
-      <li>The feed mirrors the watcher (<code>M-17</code>): gate ops, supply and owner changes, session keys, indexer staleness and the weekly heartbeat. The independent second channel (<code>M-21</code>) is shown as a peer, so the indexer is never the only alarm. "Live" means the op behind the alert can still execute. The 72-hour review target from <code>M-2</code>(c) is tracked where signers acknowledge alerts, in the alert channel, because acknowledgements are off-chain state the indexer does not hold. The page therefore does not claim a review status it cannot know.</li>
+      <li>The feed mirrors the watcher (<code>M-17</code>): gate ops, supply and owner changes, indexer staleness and the weekly heartbeat. The independent second channel (<code>M-21</code>) is shown as a peer, so the indexer is never the only alarm. "Live" means the op behind the alert can still execute. The 72-hour review target from <code>M-2</code>(c) is tracked where signers acknowledge alerts, in the alert channel, because acknowledgements are off-chain state the indexer does not hold. The page therefore does not claim a review status it cannot know.</li>
       <li>Every "cannot" line is backed by a test: <code>symbolicGuardianCannotMint</code> and the related Halmos properties (<code>M-6</code>), and the invariants in <code>M-5</code>. The console does not make claims the contract cannot keep.</li>
       <li>The owner check pushes the guardian to verify against a second source before signing, and says what to do when the sources disagree. The guardian's job exists for the case where something upstream is wrong. The Team Safe card tracks the SEC-17 threshold hardening (<code>M-2</code>) as a capture signal.</li>
       <li>The runbook links point to the guardian playbook sections in the rewritten M1 runbook (<code>M-11</code>). They are not mocked here.</li>

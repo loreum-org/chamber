@@ -1,5 +1,7 @@
 # Halmos coverage of `contracts/src` (2026-09-08)
 
+> **Note (2026-10-18):** Chamber 1.3.0 removed director session keys (`setDirectorOperator`). Session-key items below are history.
+
 This note is the honest close-out for symbolic verification of Chamber
 `contracts/src` before a mainnet deploy. It is **not** a claim that the
 protocol is “fully verified.”

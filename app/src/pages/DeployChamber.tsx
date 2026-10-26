@@ -259,7 +259,7 @@ export default function DeployChamber() {
             <FiCheck className="w-8 h-8 text-emerald-400" />
           </div>
           <div>
-            <h2 className="font-heading text-2xl font-bold text-slate-100 mb-2">Chamber Deployed</h2>
+            <h2 className="font-heading text-2xl font-semibold text-slate-100 mb-2">Chamber Deployed</h2>
             <p className="text-slate-400">
               Your chamber is live. The board is empty until you hold a membership token and delegate to it.
             </p>
@@ -324,26 +324,20 @@ export default function DeployChamber() {
         className="space-y-8"
       >
         {/* Header */}
-        <div className="text-center">
-          <img src="https://cdn.loreum.org/logos/white.svg" alt="Chamber Logo" className="w-20 h-20 object-contain mx-auto mb-5" />
-          <h1 className="font-heading text-3xl font-bold text-slate-100 mb-2 tracking-tight">
-            {step === 'review' ? 'Review Chamber' : 'Deploy New Chamber'}
-          </h1>
-          <p className="text-slate-400">
+        <div>
+          <h1 className="page-title">{step === 'review' ? 'Review chamber' : 'Deploy a chamber'}</h1>
+          <p className="text-slate-400 text-sm mt-1">
             {step === 'review'
-              ? 'Confirm your parameters before committing to the blockchain'
-              : 'Create a new decentralized governance contract.'}
+              ? 'Confirm the parameters before sending the transaction.'
+              : 'A chamber is a board-governed treasury: an ERC-4626 vault whose directors are elected by delegation.'}
           </p>
         </div>
 
         {/* Form / Review Panel */}
-        <div className="panel p-8">
+        <div className="panel p-6 sm:p-8">
           {!isConnected ? (
             <div className="text-center py-8">
-              <div className="w-16 h-16 bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-5">
-                <FiAlertCircle className="w-8 h-8 text-accent-500" />
-              </div>
-              <h3 className="font-heading text-xl font-semibold text-slate-100 mb-2">Connect Your Wallet</h3>
+              <h3 className="font-heading text-xl font-semibold text-slate-100 mb-2">Connect your wallet</h3>
               <p className="text-slate-400 mb-6">Connect your wallet to deploy a new Chamber</p>
               <div className="flex justify-center">
                 <ConnectButton accountStatus="address" chainStatus="icon" showBalance={false} />
@@ -570,7 +564,7 @@ export default function DeployChamber() {
                         onChange={(e) => setFormData({ ...formData, seats: e.target.value })}
                       />
                       <div className="w-16 text-center">
-                        <span className="text-2xl font-heading font-bold gradient-text">{formData.seats}</span>
+                        <span className="text-2xl font-heading font-semibold gradient-text">{formData.seats}</span>
                       </div>
                     </div>
                     <p className="text-slate-500 text-xs mt-1.5">
@@ -583,6 +577,7 @@ export default function DeployChamber() {
                     type="submit"
                     disabled={!canProceedToReview}
                     className="btn btn-primary w-full py-3.5 text-base"
+                    data-umami-event="cta-create-chamber"
                   >
                     <span>Review & Deploy</span>
                     <FiArrowRight className="w-5 h-5" />
@@ -693,6 +688,7 @@ export default function DeployChamber() {
                       onClick={handleConfirmDeploy}
                       disabled={!canCreate || isPending || isConfirming || step === 'deploying'}
                       className="btn btn-primary flex-1 py-3.5"
+                      data-umami-event="cta-create-chamber"
                     >
                       {isPending || isConfirming ? (
                         <>

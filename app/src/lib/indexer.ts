@@ -12,8 +12,8 @@
 import type { Address } from 'viem'
 import { isNonZeroAddress } from '@/lib/address'
 
-/** Sepolia-only today (chamber-indexer `ponder.config.ts`). Override with `VITE_INDEXER_CHAIN_ID`. */
-export const DEFAULT_INDEXER_CHAIN_ID = 11155111
+/** Base Sepolia (chamber-indexer `ponder.config.ts`). Override with `VITE_INDEXER_CHAIN_ID`. */
+export const DEFAULT_INDEXER_CHAIN_ID = 84532
 
 const MY_CHAMBERS_QUERY = /* GraphQL */ `
   query MyChambers($account: String!) {

@@ -4,7 +4,6 @@
  * so they live together here to avoid drift.
  */
 
-export const UPGRADE_SELECTOR = '0xc89311b6' as const
 /** `pause()` — L-02 / OZ Pausable */
 export const PAUSE_SELECTOR = '0x8456cb59' as const
 /** `unpause()` — L-02 / OZ Pausable */
@@ -40,7 +39,10 @@ export function selectorOf(data: `0x${string}` | string): string {
   return hex.slice(0, 10).toLowerCase()
 }
 
-/** Self-calls allowed after L-02: upgradeImplementation, pause, unpause. */
+/**
+ * Self-calls the app will queue: pause and unpause. Upgrades are not self-calls; they go to the
+ * chamber's ProxyAdmin (`lib/chamberUpgrade`). Chamber 1.3.0 also rejects any other self-call.
+ */
 export function isAllowedChamberSelfCall(
   chamberAddress: `0x${string}`,
   target: string,
@@ -49,7 +51,6 @@ export function isAllowedChamberSelfCall(
   if (!isChamberSelfCall(chamberAddress, target)) return true
   const selector = selectorOf(data)
   return (
-    selector === UPGRADE_SELECTOR ||
     selector === PAUSE_SELECTOR ||
     selector === UNPAUSE_SELECTOR
   )

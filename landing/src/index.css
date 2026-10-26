@@ -1,32 +1,52 @@
 @import "tailwindcss";
 
-
+/*
+ * Loreum landing — same family as the app (Chamber Design System v1.0):
+ * flat layered surfaces, IBM Plex, one purple accent. The landing is allowed
+ * more air and larger type than the app, but no glow, blur, or starfields.
+ */
 @theme {
-  --color-space-900: #0b0d17;
-  --color-space-800: #151932;
-  --color-space-accent: #d0d6f9;
+  --color-ink-950: #07090f;
+  --color-ink-900: #0b0f17;
+  --color-ink-800: #10151f;
+  --color-ink-700: #151b28;
+  --color-ink-600: #1b2232;
+  --color-ink-500: #222a3c;
+
+  --color-line: rgba(148, 163, 184, 0.14);
+  --color-line-strong: rgba(148, 163, 184, 0.28);
+
+  --color-accent-200: #dcd5ee;
+  --color-accent-300: #c3a8ff;
+  --color-accent-400: #a685f5;
+  --color-accent-500: #7c5cd6;
+  --color-accent-600: #4a2f8f;
+  --color-accent-700: #3b2473;
+
+  /* Legacy names still used by secondary pages (blog, team, whitepaper). */
+  --color-space-900: #0b0f17;
+  --color-space-800: #151b28;
+  --color-space-accent: #c3a8ff;
   --color-space-highlight: #ffffff;
 
-  --font-sans: 'Inter', sans-serif;
-  --font-display: 'Bellefair', serif;
+  --font-sans: "IBM Plex Sans", Inter, system-ui, sans-serif;
+  --font-display: "IBM Plex Sans", Inter, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", "JetBrains Mono", Menlo, monospace;
 
-  --animate-float: float 6s ease-in-out infinite;
   --animate-pulse-slow: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-
-  @keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-20px); }
-  }
+  --animate-float: none;
 }
 
 @layer base {
   html {
     overflow-x: hidden;
+    color-scheme: dark;
+    scroll-behavior: smooth;
   }
 
   :root {
-    background-color: var(--color-space-900);
-    color: #ffffff;
+    background-color: var(--color-ink-900);
+    color: #e2e8f0;
   }
 
   #root {
@@ -39,17 +59,92 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background-color: var(--color-space-900);
+    background-color: var(--color-ink-900);
+    background-image: radial-gradient(ellipse 120% 60% at 50% -20%, rgba(74, 47, 143, 0.16), transparent 55%);
+    background-attachment: fixed;
     overflow-x: hidden;
   }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent-500);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  ::selection {
+    background: rgba(124, 92, 214, 0.45);
+    color: #fff;
   }
 
   .text-gradient {
-    background: linear-gradient(90deg, #ffffff 0%, #d0d6f9 100%);
+    background: linear-gradient(90deg, #ffffff 0%, #c3a8ff 100%);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
+  }
+}
+
+@layer components {
+  .container-x {
+    @apply max-w-6xl mx-auto px-5 sm:px-8 w-full min-w-0;
+  }
+
+  .eyebrow {
+    @apply text-[11px] font-semibold uppercase tracking-[0.14em] text-accent-300;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-md px-5 py-3 text-sm font-semibold transition-colors;
+  }
+
+  .btn-primary {
+    @apply bg-accent-600 text-white border border-accent-500/50 hover:bg-[#5a3aa8];
+  }
+
+  .btn-secondary {
+    @apply bg-ink-700 text-slate-100 border border-line-strong hover:bg-ink-600;
+  }
+
+  .btn-ghost {
+    @apply text-slate-300 hover:text-white;
+  }
+
+  .surface {
+    @apply bg-ink-800 border border-line rounded-xl;
+  }
+
+  .surface-raised {
+    @apply bg-ink-700 border border-line rounded-lg;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-[5px] px-2 py-0.5 text-[11.5px] font-semibold border border-line bg-ink-600 text-slate-300 whitespace-nowrap;
+  }
+
+  .chip-ok {
+    @apply bg-emerald-500/10 text-emerald-300 border-emerald-400/30;
+  }
+
+  .chip-warn {
+    @apply bg-amber-500/10 text-amber-300 border-amber-400/30;
+  }
+
+  .chip-bad {
+    @apply bg-red-500/10 text-red-300 border-red-400/30;
+  }
+
+  .chip-accent {
+    @apply bg-accent-600/25 text-accent-200 border-accent-500/40;
+  }
+
+  .mono {
+    font-family: var(--font-mono);
   }
 }

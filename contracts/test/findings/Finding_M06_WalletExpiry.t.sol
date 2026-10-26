@@ -7,6 +7,7 @@ import {IWallet} from "src/interfaces/IWallet.sol";
 import {MockERC20} from "test/mock/MockERC20.sol";
 import {MockERC721} from "test/mock/MockERC721.sol";
 import {DeployChamber} from "test/utils/DeployChamber.sol";
+import {ChamberReads} from "test/utils/ChamberReads.sol";
 
 /**
  * @title M-06: Wallet transactions have no deadline — FIXED
@@ -45,7 +46,7 @@ contract FindingM06WalletExpiryTest is Test {
         deal(address(chamber), value);
 
         vm.prank(user1);
-        chamber.submitTransaction(1, target, value, EMPTY, deadline);
+        chamber.submitTransaction(1, target, value, EMPTY, "", deadline);
         vm.prank(user2);
         chamber.confirmTransaction(2, 0);
         vm.prank(user3);
@@ -53,7 +54,7 @@ contract FindingM06WalletExpiryTest is Test {
 
         vm.warp(deadline + 1);
 
-        assertTrue(chamber.isTransactionExpired(0));
+        assertTrue(ChamberReads.transactionExpired(address(chamber), 0));
         vm.expectRevert(IWallet.TransactionExpired.selector);
         vm.prank(user1);
         chamber.executeTransaction(1, 0, EMPTY);
@@ -66,7 +67,7 @@ contract FindingM06WalletExpiryTest is Test {
         deal(address(chamber), value);
 
         vm.prank(user1);
-        chamber.submitTransaction(1, target, value, EMPTY, deadline);
+        chamber.submitTransaction(1, target, value, EMPTY, "", deadline);
         vm.prank(user2);
         chamber.confirmTransaction(2, 0);
         vm.prank(user3);
@@ -74,7 +75,7 @@ contract FindingM06WalletExpiryTest is Test {
 
         vm.warp(deadline);
 
-        assertFalse(chamber.isTransactionExpired(0));
+        assertFalse(ChamberReads.transactionExpired(address(chamber), 0));
         vm.prank(user1);
         chamber.executeTransaction(1, 0, EMPTY);
 
@@ -87,7 +88,7 @@ contract FindingM06WalletExpiryTest is Test {
         uint256 submittedAt = block.timestamp;
 
         vm.prank(user1);
-        chamber.submitTransaction(1, address(0x3), 0, EMPTY);
+        chamber.submitTransaction(1, address(0x3), 0, EMPTY, "", 0);
 
         assertEq(chamber.getTransactionDeadline(0), submittedAt + chamber.DEFAULT_TRANSACTION_MAX_AGE());
         assertEq(chamber.DEFAULT_TRANSACTION_MAX_AGE(), 30 days);
@@ -99,14 +100,14 @@ contract FindingM06WalletExpiryTest is Test {
         deal(address(chamber), value);
 
         vm.prank(user1);
-        chamber.submitTransaction(1, target, value, EMPTY);
+        chamber.submitTransaction(1, target, value, EMPTY, "", 0);
         _clearStoredDeadline(0);
 
         assertEq(chamber.getTransactionDeadline(0), 0);
-        assertFalse(chamber.isTransactionExpired(0));
+        assertFalse(ChamberReads.transactionExpired(address(chamber), 0));
 
         vm.warp(block.timestamp + 365 days);
-        assertFalse(chamber.isTransactionExpired(0));
+        assertFalse(ChamberReads.transactionExpired(address(chamber), 0));
 
         vm.prank(user2);
         chamber.confirmTransaction(2, 0);
@@ -127,7 +128,7 @@ contract FindingM06WalletExpiryTest is Test {
         deal(address(chamber), value);
 
         vm.prank(user1);
-        chamber.submitTransaction(1, target, value, EMPTY);
+        chamber.submitTransaction(1, target, value, EMPTY, "", 0);
         vm.prank(user2);
         chamber.confirmTransaction(2, 0);
         vm.prank(user3);
@@ -137,7 +138,7 @@ contract FindingM06WalletExpiryTest is Test {
         assertEq(deadline, submittedAt + chamber.DEFAULT_TRANSACTION_MAX_AGE());
 
         vm.warp(deadline + 1);
-        assertTrue(chamber.isTransactionExpired(0));
+        assertTrue(ChamberReads.transactionExpired(address(chamber), 0));
         vm.expectRevert(IWallet.TransactionExpired.selector);
         vm.prank(user1);
         chamber.executeTransaction(1, 0, EMPTY);

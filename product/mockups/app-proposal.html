@@ -86,7 +86,6 @@
       <a class="brand" href="index.html"><span class="brand-mark">L</span><span>Loreum</span></a>
       <nav class="nav" aria-label="Main">
         <a href="app-overview.html" class="on">My Chambers</a>
-        <a href="app-session-keys.html">Operators</a>
         <a href="#">Deploy Chamber</a>
         <a href="#">Compliance</a>
         <a href="app-migrate.html">Migrate from Safe</a>
@@ -127,7 +126,6 @@
     <a href="app-queue.html" class="on">Queue <span class="badge warn">3</span></a>
     <a href="p2-multichain-treasury.html">Treasury</a>
     <a href="app-supply-authority.html">Supply authority</a>
-    <a href="app-session-keys.html">Session keys</a>
   </nav>
 
   <div class="crumb"><a href="app-queue.html">Queue</a> / Proposal #46</div>
@@ -230,7 +228,7 @@
               <tr><td>Grants Safe<div class="mono faint">0x2c9F…d810</div></td><td>USDC</td><td class="num">84,500</td><td class="num">204,500</td><td class="num plus">+120,000</td></tr>
               <tr><td>Loreum DAO treasury</td><td>ETH</td><td class="num">184.2</td><td class="num">184.2</td><td class="num same">0</td></tr>
               <tr><td>Vault totalAssets</td><td>LORE</td><td class="num">7,712,450</td><td class="num">7,712,450</td><td class="num same">0</td></tr>
-              <tr><td>Board, quorum, session keys</td><td class="faint">·</td><td class="num faint">·</td><td class="num faint">·</td><td class="num same">unchanged</td></tr>
+              <tr><td>Board, quorum</td><td class="faint">·</td><td class="num faint">·</td><td class="num faint">·</td><td class="num same">unchanged</td></tr>
             </tbody>
           </table>
         </div>
@@ -275,15 +273,15 @@
           <div class="auth vert-sm">
             <div class="node seat"><span class="k">Seat</span><span class="v">Explorer #12 · rank 2</span></div>
             <div class="node"><span class="k">Owner</span><span class="v" title="Safe 0x8b2d…11F0">kofi.eth · Safe 2-of-3</span></div>
-            <div class="node key"><span class="k">Session key</span><span class="v" title="Scope SUBMIT | REVOKE | CANCEL, expires Mar 28, 2027">0xA11c…04e5 · 0x31</span></div>
+            <div class="node key"><span class="k">Signed by</span><span class="v">Safe 2-of-3</span></div>
           </div>
-          <div class="meta">Proposed, confirmed at submit<br><span class="mono">SUBMIT | REVOKE | CANCEL</span><br><span class="mono">Mar 13 10:41 · block 27,161,607</span></div>
+          <div class="meta">Proposed, confirmed at submit<br><span class="mono">Mar 13 10:41 · block 27,161,607</span></div>
         </div>
         <div class="conf">
           <div class="auth vert-sm">
             <div class="node seat"><span class="k">Seat</span><span class="v">Explorer #31 · rank 3</span></div>
             <div class="node"><span class="k">Owner</span><span class="v" title="Policy Safe 0x9aB3…40d1">Treasury Agent · Safe</span></div>
-            <div class="node"><span class="k">Signed by</span><span class="v">policy account</span></div>
+            <div class="node"><span class="k">Signed by</span><span class="v">Agent via owner's Safe</span></div>
           </div>
           <div class="meta">Confirmed · grants mandate check passed<br><span class="mono">Mar 13 15:20 · block 27,163,002</span></div>
         </div>
@@ -309,7 +307,7 @@
           </div>
           <div class="meta">Not confirmed</div>
         </div>
-        <p class="hint" style="margin-top:8px">A confirmation counts only while its seat is in the top 5 and the NFT has the owner it had when it confirmed. kofi.eth's key has no CONFIRM scope, but submitting records the proposer's confirmation.</p>
+        <p class="hint" style="margin-top:8px">A confirmation counts only while its seat is in the top 5 and the NFT has the owner it had when it confirmed. Submitting records the proposer's confirmation.</p>
       </section>
 
       <!-- Cancel votes + rationale -->
@@ -341,7 +339,7 @@
 
         <div class="banner bad" style="margin-bottom:14px">
           <span class="ic">!</span>
-          <span><b>This proposal calls this Chamber itself.</b> <code>upgradeImplementation</code> replaces the code behind the proxy. The new code would control the vault (7,712,450 LORE), the treasury (2,410,000 USDC, 184.2 ETH), the board and every session key. Review the implementation, not just the title.</span>
+          <span><b>This proposal calls this Chamber itself.</b> <code>upgradeImplementation</code> replaces the code behind the proxy. The new code would control the vault (7,712,450 LORE), the treasury (2,410,000 USDC, 184.2 ETH), and the board. Review the implementation, not just the title.</span>
         </div>
 
         <div class="decode" style="margin-bottom:14px">
@@ -457,7 +455,7 @@
         <dl class="kv">
           <dt>Nonce</dt><dd class="mono">46</dd>
           <dt>Chamber</dt><dd>Loreum DAO · <span class="mono">0x3F1c…A92e</span></dd>
-          <dt>Proposer</dt><dd>#12 kofi.eth, via session key</dd>
+          <dt>Proposer</dt><dd>#12 kofi.eth, via Safe</dd>
           <dt>Submitted</dt><dd>Mar 13, 2027 10:41 UTC · block <span class="num">27,161,607</span></dd>
           <dt>Quorum at submit</dt><dd>3 of 5 seats</dd>
           <dt>Required now</dt><dd>3 · 4 if the 5 → 6 seat change executes</dd>
@@ -470,9 +468,9 @@
         <div class="card-h"><h2 id="ev-h">Activity</h2><span class="src"><i></i>indexer</span></div>
         <ul class="ev">
           <li><span class="w">Mar 14 09:30</span><span>lena.eth confirmed (3 of 3). Ready to execute.</span></li>
-          <li><span class="w">Mar 13 15:20</span><span>Treasury Agent confirmed through its policy account (2 of 3).</span></li>
+          <li><span class="w">Mar 13 15:20</span><span>Treasury Agent confirmed through its owner's Safe (2 of 3).</span></li>
           <li><span class="w">Mar 13 10:41</span><span>Deadline set to Apr 12, 10:41 UTC. Metadata attached.</span></li>
-          <li><span class="w">Mar 13 10:41</span><span>kofi.eth submitted with session key 0xA11c…04e5 (1 of 3).</span></li>
+          <li><span class="w">Mar 13 10:41</span><span>kofi.eth submitted from its Safe (1 of 3).</span></li>
         </ul>
       </section>
     </aside>
@@ -486,7 +484,7 @@
       <li><b>The decode is what executes.</b> It comes from the calldata the indexer stored from <code>SubmitTransaction</code>, run through the #260 decoder (<code>txDecoding.ts</code> <code>decodeTransactionAction</code>). Every row shows the raw value next to its human form: amount in base units and USDC, full addresses with labels the indexer can back up (a past recipient, a director, a Chamber-owned Safe). The checks below it catch the classic mismatches: title vs calldata, unknown recipient, self-call, and cross-chain targets (<code>P-30</code>).</li>
       <li><b>The dataHash check is shown, not assumed.</b> For external targets only <code>keccak256(data)</code> is on-chain (<code>WalletLib</code>), and <code>executeTransaction</code> reverts <code>DataHashMismatch</code> when the supplied bytes differ. The page hashes the indexer copy in the browser and compares it to the indexed dataHash. Execute re-reads the dataHash via RPC as a transaction-time preflight. This settles the <code>M-16</code> risk about hash-only calldata without a <code>getLogs</code> display read.</li>
       <li><b>Simulation is a labelled, transaction-time RPC read.</b> This extends #260 <code>TxSimulationPanel</code> in three ways: (a) it runs at the block the page is indexed at, so the balance diff agrees with the numbers on screen; (b) it shows the block and "via RPC"; (c) Execute re-runs it at head and shows both results if they differ. It never runs on page load (<code>I-21</code>).</li>
-      <li><b>Each confirmation shows its authority chain</b>, the signature element: seat → owner → signer (session key, policy account, Safe threshold or owner). Required confirmations are shown as <code>max(submit snapshot, live quorum)</code> (Chamber.sol <code>_requiredConfirmations</code>, audit finding M-04), with the pending seat change's effect next to it. Only live flags count: seat in the top set and the NFT owner unchanged since confirming (audit finding H-01, <code>confirmOwner</code>). The SUBMIT-includes-confirm behaviour is stated plainly (see the queue notes and <code>C-17</code>). Terminology follows <code>P-9</code>.</li>
+      <li><b>Each confirmation shows its authority chain</b>, the signature element: seat → owner → signer (owner wallet, Safe threshold, or an agent via the owner's Safe). Required confirmations are shown as <code>max(submit snapshot, live quorum)</code> (Chamber.sol <code>_requiredConfirmations</code>, audit finding M-04), with the pending seat change's effect next to it. Only live flags count: seat in the top set and the NFT owner unchanged since confirming (audit finding H-01, <code>confirmOwner</code>). Submitting always records the submitter's confirmation, and the page says so. Terminology follows <code>P-9</code>.</li>
       <li><b>Rationale is marked as a claim.</b> Metadata can carry anything, including text written to mislead a reviewer or an AI director. It sits below the decode, is quoted, and is labelled unverified. The review calls for LLM drafting to write here, never into what gets signed.</li>
       <li><b>The high-risk self-call pattern</b> (#48): a red banner says what the new code would control, in numbers. The decode shows <code>newImplementation</code> in full. Implementation checks come from the indexer (<code>I-7</code> <code>implementationSource</code>) and the release pipeline (<code>C-3</code>, <code>C-4</code> size gate). The audit line is an explicit placeholder and states that it covers v1.2.0 only. Confirm stays disabled until the simulation passes and the reviewer ticks the box. This is the per-Chamber quorum upgrade path that <code>C-18</code> rehearses for incident response.</li>
       <li><b>Buttons say exactly what happens</b>, and the preflight checklist says where each check comes from (indexer or RPC). "When you press Execute" spells out the only four moments this page touches RPC: preflight, sign, receipt, then back to the indexer. Revoke is a plain ghost button because it can be undone.</li>

@@ -8,6 +8,7 @@ import {IChamber} from "src/interfaces/IChamber.sol";
 import {MockERC20} from "test/mock/MockERC20.sol";
 import {MockERC721} from "test/mock/MockERC721.sol";
 import {DeployChamber} from "test/utils/DeployChamber.sol";
+import {ChamberReads} from "test/utils/ChamberReads.sol";
 
 /**
  * @title Finding 11: Permanent Delegation Lock on Evicted Board Nodes [HIGH] — FIXED
@@ -63,7 +64,7 @@ contract EvictedNodeDelegationLockTest is Test {
         vm.stopPrank();
 
         assertEq(chamber.getSize(), 50, "Board should be full");
-        assertEq(chamber.getHolderDelegation(alice, 55), 50, "Alice should have 50 delegated to 55");
+        assertEq(ChamberReads.holderDelegation(chamber, alice, 55), 50, "Alice should have 50 delegated to 55");
 
         // Bob delegates 51 to new tokenId 200 — evicts tail (55) since 51 > 50
         vm.startPrank(bob);
@@ -79,8 +80,8 @@ contract EvictedNodeDelegationLockTest is Test {
         vm.prank(alice);
         chamber.undelegate(55, 50);
 
-        assertEq(chamber.getHolderDelegation(alice, 55), 0, "Alice delegation should be cleared");
-        assertEq(chamber.getTotalHolderDelegations(alice), 0, "Alice total delegations should be 0");
+        assertEq(ChamberReads.holderDelegation(chamber, alice, 55), 0, "Alice delegation should be cleared");
+        assertEq(ChamberReads.totalHolderDelegations(chamber, alice), 0, "Alice total delegations should be 0");
 
         // Alice can now withdraw
         uint256 aliceShares = chamber.balanceOf(alice);

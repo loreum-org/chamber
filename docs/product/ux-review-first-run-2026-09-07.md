@@ -1,5 +1,7 @@
 # Chamber app — first-run UX review (2026-09-07)
 
+> **Note (2026-10-18):** Chamber 1.3.0 removed director session keys (`setDirectorOperator`) and merged the submit functions into one `submitTransaction`. B8 and E1 are withdrawn; E2 and E3 are updated below.
+
 Scope: `app/src` as it exists on `main`. Audience for the redesign: a first-time
 director / treasury operator who has never used Chamber. Every claim below cites
 the file it came from; nothing here is inferred from screenshots.
@@ -221,7 +223,7 @@ your confirmation." Move Cancelled and Executed under History.
 
 *Why easier.* The header should tell a director whether they can close the tab.
 
-**8. `setDirectorOperator` has no UI at all. (M–L)**
+**8. ~~`setDirectorOperator` has no UI at all.~~ Withdrawn: session keys were removed in 1.3.0. Agents act through the owner's own wallet (Safe module or smart-account session key), so there is nothing to register in Chamber. (M–L)**
 
 *Problem.* The app reads `getDirectorOperator` (`hooks/useChamber.ts:993`) to
 compute `role: 'owner' | 'operator'` and renders a read-only badge
@@ -359,7 +361,6 @@ Raw hex behind *Advanced*.
 | Proposals & Queue / Transactions / Transaction Activity / Transaction Queue | Four names, one destination | **Proposals** everywhere; the Overview widget is **Recent proposals** |
 | Board seat change vs treasury proposal | Two systems, one queue, different rules (7-day timelock, 14-day cancel, no calldata) | Keep them separate and label the section **Board changes** vs **Treasury proposals** |
 | Directors / seats / rank | Mostly clear | Keep. Add one line on Board: "Directors are the top {seats} members by delegated shares. Ranking changes the moment delegation changes." |
-| Operator / session key | Only appears as a read-only badge | **Operator (session key)** with a one-line definition wherever it appears |
 
 ---
 
@@ -373,16 +374,17 @@ see `packages/operator/README.md` against
 existing link between the two halves. Four things would make them feel like one
 system:
 
-1. **Register operators from the UI.** Today the app can *observe* a session key
+1. ~~**Register operators from the UI.**~~ Withdrawn in 1.3.0 (no Chamber session keys). Today the app can *observe* a session key
    (`useChamber.ts:993`) but not *create* one, so wiring an agent means leaving
    for a CLI. Ship the Operators panel from B8. Enforce and explain the contract
    rule up front: only a contract owner may register, and transferring the NFT
    invalidates the key
    (`app/src/docs/protocol/director-authorization.md`).
 
-2. **Attribute agent actions in the UI.** `DirectorCallerStatus` distinguishes
-   owner from operator for the *connected* wallet only. The queue should show it
-   per action too — "Confirmed by Member #3 (operator 0xabc…)" — using the
+2. **Attribute agent actions in the UI.** Since 1.3.0 every action comes from
+   the NFT owner's wallet, so Chamber cannot tell an agent from a person. The
+   queue should show the acting wallet per action — "Confirmed by Member #3
+   (Safe 0xabc…)" — using the
    `SubmitTransaction` / `ConfirmTransaction` logs `DirectorProfile` already
    queries (`DirectorProfile.tsx:30-34`). A human reviewing a queue should be
    able to tell which confirmations came from an agent.
@@ -393,7 +395,7 @@ system:
    neither. Two consequences: agent-submitted proposals show as a bare "Contract
    call" with no title, and human-submitted proposals may be unexecutable by an
    agent that cannot see the browser's localStorage. Give the operator package
-   the same `submitTransactionWithMetadata` path and a
+   the same `submitTransaction(..., metadataURI, deadline)` path and a
    `chamber-operator calldata <nonce>` command that resolves from the on-chain
    store and events, mirroring `resolveProposalCalldata`.
 

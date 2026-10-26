@@ -6,8 +6,6 @@ import { formatUnits, parseUnits, maxUint256 } from 'viem'
 import {
   FiArrowDownCircle,
   FiArrowUpCircle,
-  FiPieChart,
-  FiTrendingUp,
   FiLoader,
   FiAlertCircle,
   FiCheck,
@@ -16,6 +14,7 @@ import {
 } from 'react-icons/fi'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import toast from 'react-hot-toast'
+import { Stat, StatRow } from '@/components/ui'
 import { 
   useDeposit, 
   useWithdraw, 
@@ -260,111 +259,62 @@ export default function TreasuryOverview({ chamberAddress, chamberInfo, userBala
   return (
     <div className="space-y-6">
       {vaultPaused && (
-        <div className="rounded-xl border border-red-500/30 bg-red-500/5 px-4 py-3 text-sm text-red-200">
+        <div className="banner banner-danger block">
           This chamber is paused. Deposits and withdrawals are halted until the board unpauses.{' '}
           <Link to="/docs/protocol/governance" className="text-accent-400 hover:underline">
             How governance works →
           </Link>
         </div>
       )}
-      {/* Treasury Stats */}
-      <div className="grid md:grid-cols-3 gap-5">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="panel p-6"
-        >
-          <div className="flex items-center gap-3 mb-4">
-            <div className="icon-container-emerald w-12 h-12">
-              <FiPieChart className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-slate-400 text-sm">Total Assets</p>
-              <p className="font-heading text-2xl font-bold gradient-text">
-                {chamberInfo.totalAssets !== undefined
-                  ? parseFloat(formatUnits(chamberInfo.totalAssets, assetDecimals)).toLocaleString(undefined, {
-                      maximumFractionDigits: 2,
-                    })
-                  : '...'
-                }
-                {assetSymbol && (
-                  <span className="text-lg text-slate-400 ml-2">{assetSymbol as string}</span>
-                )}
-              </p>
-            </div>
-          </div>
-          <div className="text-slate-500 text-sm">
-            Held in the vault
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="panel p-6"
-        >
-          <div className="flex items-center gap-3 mb-4">
-            <div className="icon-container bg-accent-500/15 text-accent-400 w-12 h-12">
-              <FiTrendingUp className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-slate-400 text-sm">Total Shares</p>
-              <p className="font-heading text-2xl font-bold text-slate-100">
-                {chamberInfo.totalSupply !== undefined
-                  ? parseFloat(formatUnits(chamberInfo.totalSupply, shareDecimals)).toLocaleString(undefined, {
-                      maximumFractionDigits: 2,
-                    })
-                  : '...'
-                }
-                {chamberInfo.symbol && (
-                  <span className="text-lg text-slate-400 ml-2">{chamberInfo.symbol}</span>
-                )}
-              </p>
-            </div>
-          </div>
-          <div className="text-slate-500 text-sm">
-            1 {chamberInfo.symbol || 'share'} = {chamberInfo.totalSupply && chamberInfo.totalAssets && chamberInfo.totalSupply > 0n
+      <StatRow cols={3}>
+        <Stat
+          label="Total assets"
+          value={
+            chamberInfo.totalAssets !== undefined
+              ? parseFloat(formatUnits(chamberInfo.totalAssets, assetDecimals)).toLocaleString(undefined, {
+                  maximumFractionDigits: 2,
+                })
+              : '…'
+          }
+          unit={assetSymbol as string | undefined}
+          hint="Held in the vault"
+        />
+        <Stat
+          label="Total shares"
+          value={
+            chamberInfo.totalSupply !== undefined
+              ? parseFloat(formatUnits(chamberInfo.totalSupply, shareDecimals)).toLocaleString(undefined, {
+                  maximumFractionDigits: 2,
+                })
+              : '…'
+          }
+          unit={chamberInfo.symbol}
+          hint={`1 ${chamberInfo.symbol || 'share'} = ${
+            chamberInfo.totalSupply && chamberInfo.totalAssets && chamberInfo.totalSupply > 0n
               ? (
                   Number(formatUnits(chamberInfo.totalAssets, assetDecimals)) /
                   Number(formatUnits(chamberInfo.totalSupply, shareDecimals))
                 ).toFixed(4)
               : '1.0000'
-            } {assetSymbol as string || 'assets'}
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="panel p-6"
-        >
-          <div className="flex items-center gap-3 mb-4">
-            <div className="icon-container-accent w-12 h-12">
-              <FiPieChart className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-slate-400 text-sm">Your Shares</p>
-              <p className="font-heading text-2xl font-bold gradient-text">
-                {userBalance !== undefined
-                  ? parseFloat(formatUnits(userBalance, shareDecimals)).toLocaleString(undefined, {
-                      maximumFractionDigits: 4,
-                    })
-                  : '—'}
-                {userBalance !== undefined && chamberInfo.symbol && (
-                  <span className="text-lg text-slate-400 ml-2">{chamberInfo.symbol}</span>
-                )}
-              </p>
-            </div>
-          </div>
-          {userBalance !== undefined && chamberInfo.totalSupply && chamberInfo.totalSupply > 0n ? (
-            <div className="text-slate-500 text-sm">
-              {((Number(userBalance) / Number(chamberInfo.totalSupply)) * 100).toFixed(2)}% of total supply
-            </div>
-          ) : null}
-        </motion.div>
-      </div>
+          } ${(assetSymbol as string) || 'assets'}`}
+        />
+        <Stat
+          label="Your shares"
+          value={
+            userBalance !== undefined
+              ? parseFloat(formatUnits(userBalance, shareDecimals)).toLocaleString(undefined, {
+                  maximumFractionDigits: 4,
+                })
+              : '—'
+          }
+          unit={userBalance !== undefined ? chamberInfo.symbol : undefined}
+          hint={
+            userBalance !== undefined && chamberInfo.totalSupply && chamberInfo.totalSupply > 0n
+              ? `${((Number(userBalance) / Number(chamberInfo.totalSupply)) * 100).toFixed(2)}% of supply`
+              : undefined
+          }
+        />
+      </StatRow>
 
       {!isConnected ? (
         <div className="panel p-10 text-center space-y-4">
@@ -387,9 +337,6 @@ export default function TreasuryOverview({ chamberAddress, chamberInfo, userBala
           className="panel p-6 flex flex-col h-full"
         >
           <div className="flex items-center gap-3 mb-5">
-            <div className="icon-container-emerald shrink-0">
-              <FiArrowDownCircle className="w-5 h-5" />
-            </div>
             <div className="min-w-0">
               <h3 className="font-heading font-semibold text-slate-100 leading-tight">Deposit</h3>
               <p className="text-slate-500 text-xs mt-0.5">Add assets to receive shares</p>
@@ -533,9 +480,6 @@ export default function TreasuryOverview({ chamberAddress, chamberInfo, userBala
           className="panel p-6 flex flex-col h-full"
         >
           <div className="flex items-center gap-3 mb-5">
-            <div className="icon-container-rose shrink-0">
-              <FiArrowUpCircle className="w-5 h-5" />
-            </div>
             <div className="min-w-0">
               <h3 className="font-heading font-semibold text-slate-100 leading-tight">Withdraw</h3>
               <p className="text-slate-500 text-xs mt-0.5">Burn shares to receive assets</p>

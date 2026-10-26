@@ -33,7 +33,7 @@ contract ReentrantTarget {
 
             // Try to re-enter submitTransaction during execution
             // This should now revert due to nonReentrant
-            try chamber.submitTransaction(tokenId, address(0xdead), 0, "") {
+            try chamber.submitTransaction(tokenId, address(0xdead), 0, "", "", 0) {
                 submitReverted = false;
             } catch {
                 submitReverted = true;
@@ -80,7 +80,7 @@ contract WalletReentrancyTest is Test {
 
         // Submit and gather quorum
         vm.prank(user2);
-        chamber.submitTransaction(2, address(target), 0.1 ether, "");
+        chamber.submitTransaction(2, address(target), 0.1 ether, "", "", 0);
 
         vm.prank(user3);
         chamber.confirmTransaction(3, 0);

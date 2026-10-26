@@ -1,14 +1,14 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
+import toast from 'react-hot-toast'
 import { useQuery } from '@tanstack/react-query'
 import { useReadContract, useReadContracts, useWriteContract, useWaitForTransactionReceipt, useSimulateContract, useAccount, useBlockNumber, usePublicClient, useChainId } from 'wagmi'
-import { isAddress, zeroAddress } from 'viem'
+import { isAddress } from 'viem'
 import { chamberAbi, erc20Abi, erc721Abi } from '@/contracts/abis'
 import { chamberVersionBytes32ToLabel, resolveTokenDecimals } from '@/lib/utils'
+import { ChamberSubmitError, planSubmit, readChamberVersionLabel, verifySubmitReceipt } from '@/lib/chamberSubmit'
 import { isSeatingMature } from '@/lib/chamberGovernance'
 import { getAlchemyApiKeyFromEnv } from '@/lib/alchemy'
 import { listOwnedErc721TokenIds } from '@/lib/ownedErc721'
-import { isOnchainContractBytecode } from '@/lib/address'
-import { asUint32 } from '@/lib/directorSession'
 import type { Transaction, BoardMember, SeatUpdate } from '@/types'
 import { useInvalidateOnReceipt } from './invalidateChamberQueries'
 
@@ -387,7 +387,7 @@ export function useTransaction(chamberAddress: `0x${string}` | undefined, transa
 }
 
 export function useSeatUpdate(chamberAddress: `0x${string}` | undefined) {
-  const { data, refetch } = useReadContract({
+  const { data, refetch, isFetched } = useReadContract({
     address: chamberAddress,
     abi: chamberAbi,
     functionName: 'getSeatUpdate',
@@ -405,7 +405,7 @@ export function useSeatUpdate(chamberAddress: `0x${string}` | undefined) {
     }
   }
 
-  return { seatUpdate, refetch }
+  return { seatUpdate, refetch, isFetched }
 }
 
 /**
@@ -507,27 +507,44 @@ export function useDelegations(chamberAddress: `0x${string}` | undefined, accoun
 }
 
 // Write hooks
+/**
+ * Submits one proposal. Reads the chamber's `VERSION()` on-chain first and uses the legacy
+ * `submitTransactionWithMetadata` on chambers older than 1.3.0 (see `lib/chamberSubmit`).
+ * Once mined, the receipt must contain the chamber's `SubmitTransaction` event; if it does
+ * not, `recordError` is set and an error toast is shown.
+ */
 export function useSubmitTransaction(chamberAddress: `0x${string}` | undefined) {
   const { writeContractAsync, data: hash, isPending, error } = useWriteContract()
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
+  const publicClient = usePublicClient()
+  const [recordError, setRecordError] = useState<Error | null>(null)
 
   const submit = async (
     tokenId: bigint,
     target: `0x${string}`,
     value: bigint,
     data: `0x${string}`,
-    metadataURI?: string
+    metadataURI = '',
+    deadline = 0n
   ) => {
     if (!chamberAddress) return
-    return writeContractAsync({
-      address: chamberAddress,
-      abi: chamberAbi,
-      functionName: metadataURI ? 'submitTransactionWithMetadata' : 'submitTransaction',
-      args: metadataURI ? [tokenId, target, value, data, metadataURI] : [tokenId, target, value, data],
+    if (!publicClient) throw new ChamberSubmitError('No RPC connection for this network. Nothing was sent.')
+    setRecordError(null)
+    const versionLabel = await readChamberVersionLabel(publicClient, chamberAddress)
+    const plan = planSubmit(versionLabel, { tokenId, target, value, data, metadataURI, deadline })
+    const txHash =
+      plan.kind === 'single'
+        ? await writeContractAsync({ address: chamberAddress, abi: plan.abi, functionName: plan.functionName, args: plan.args })
+        : await writeContractAsync({ address: chamberAddress, abi: plan.abi, functionName: plan.functionName, args: plan.args })
+    void verifySubmitReceipt(publicClient, txHash, chamberAddress).catch((err: unknown) => {
+      const e = err instanceof Error ? err : new Error(String(err))
+      setRecordError(e)
+      toast.error(e.message)
     })
+    return txHash
   }
 
-  return { submit, isPending, isConfirming, isSuccess, error, hash }
+  return { submit, isPending, isConfirming, isSuccess: isSuccess && !recordError, error, recordError, hash }
 }
 
 export function useSubmitBatchTransactions(chamberAddress: `0x${string}` | undefined) {
@@ -958,158 +975,6 @@ export function useCancelSeatUpdate(chamberAddress: `0x${string}` | undefined) {
   return { cancelSeatUpdate, isPending, isConfirming, isSuccess, error, hash }
 }
 
-export type DirectorSessionView = {
-  liveOperator: `0x${string}` | undefined
-  liveScope: number
-  liveAt: bigint
-  sessionOwner: `0x${string}` | undefined
-  rawOperator: `0x${string}` | undefined
-  expiry: bigint
-  rawScope: number
-  rawLiveAt: bigint
-  isLive: boolean
-}
-
-/**
- * Live session key plus raw `getDirectorSession` leftovers for `tokenId`.
- * Live getters return zero when the session is unset, stale, expired, or EOA-owned.
- */
-export function useDirectorSession(
-  chamberAddress: `0x${string}` | undefined,
-  tokenId: bigint | undefined,
-) {
-  const enabled = !!chamberAddress && tokenId !== undefined
-  const { data, refetch, isFetched } = useReadContracts({
-    contracts: [
-      {
-        address: chamberAddress,
-        abi: chamberAbi,
-        functionName: 'getDirectorOperator',
-        args: tokenId !== undefined ? [tokenId] : undefined,
-      },
-      {
-        address: chamberAddress,
-        abi: chamberAbi,
-        functionName: 'getDirectorOperatorScope',
-        args: tokenId !== undefined ? [tokenId] : undefined,
-      },
-      {
-        address: chamberAddress,
-        abi: chamberAbi,
-        functionName: 'getDirectorOperatorLiveAt',
-        args: tokenId !== undefined ? [tokenId] : undefined,
-      },
-      {
-        address: chamberAddress,
-        abi: chamberAbi,
-        functionName: 'getDirectorSession',
-        args: tokenId !== undefined ? [tokenId] : undefined,
-      },
-    ],
-    query: {
-      enabled,
-      staleTime: 0,
-      retry: false,
-    },
-  })
-
-  const liveOperator = data?.[0]?.status === 'success' ? (data[0].result as `0x${string}`) : undefined
-  const liveScope = data?.[1]?.status === 'success' ? asUint32(data[1].result) : 0
-  const liveAt = data?.[2]?.status === 'success' ? (data[2].result as bigint) : 0n
-  const raw = data?.[3]?.status === 'success'
-    ? (data[3].result as readonly [string, string, bigint, number | bigint, bigint])
-    : undefined
-
-  const sessionOwner = raw?.[0] as `0x${string}` | undefined
-  const rawOperator = raw?.[1] as `0x${string}` | undefined
-  const expiry = raw?.[2] ?? 0n
-  const rawScope = asUint32(raw?.[3])
-  const rawLiveAt = raw?.[4] ?? 0n
-  const isLive = !!liveOperator && liveOperator !== zeroAddress
-
-  const session: DirectorSessionView = {
-    liveOperator,
-    liveScope,
-    liveAt,
-    sessionOwner,
-    rawOperator,
-    expiry,
-    rawScope,
-    rawLiveAt,
-    isLive,
-  }
-
-  return { ...session, session, refetch, isFetched }
-}
-
-/**
- * Live session key for `tokenId`, or zero if unset / stale / EOA-owned.
- */
-export function useDirectorOperator(
-  chamberAddress: `0x${string}` | undefined,
-  tokenId: bigint | undefined,
-) {
-  const { liveOperator, isLive, refetch } = useDirectorSession(chamberAddress, tokenId)
-  return { operator: liveOperator, isSet: isLive, refetch }
-}
-
-/**
- * `address.code.length > 0` for the connected (or given) account.
- * Protocol rejects `setDirectorOperator` for EOA-owned NFTs.
- */
-export function useIsContractAccount(account: `0x${string}` | undefined) {
-  const publicClient = usePublicClient()
-  const chainId = useChainId()
-
-  const { data: bytecode, isFetched, isFetching } = useQuery({
-    queryKey: ['account-bytecode', chainId, account?.toLowerCase() ?? ''],
-    enabled: !!publicClient && !!account,
-    staleTime: 15_000,
-    queryFn: async () => {
-      const code = await publicClient!.getBytecode({ address: account! })
-      return (code ?? '0x') as `0x${string}`
-    },
-  })
-
-  return {
-    isContract: isOnchainContractBytecode(bytecode),
-    bytecode,
-    isFetched,
-    isFetching,
-  }
-}
-
-/**
- * Register or clear the session key for a contract-owned membership NFT.
- * Clear with `operator = address(0)`, `expiry = 0`, `scope = 0`.
- * Non-zero operator requires a future expiry and a non-zero scope.
- */
-export function useSetDirectorOperator(chamberAddress: `0x${string}` | undefined) {
-  const { writeContractAsync, data: hash, isPending, error } = useWriteContract()
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
-
-  const setDirectorOperator = async (
-    tokenId: bigint,
-    operator: `0x${string}`,
-    expiry: bigint,
-    scope: number,
-  ) => {
-    if (!chamberAddress) return
-    return writeContractAsync({
-      address: chamberAddress,
-      abi: chamberAbi,
-      functionName: 'setDirectorOperator',
-      args: [tokenId, operator, expiry, scope],
-    })
-  }
-
-  const clearDirectorOperator = async (tokenId: bigint) => {
-    return setDirectorOperator(tokenId, zeroAddress, 0n, 0)
-  }
-
-  return { setDirectorOperator, clearDirectorOperator, isPending, isConfirming, isSuccess, error, hash }
-}
-
 export function useSeatedAt(chamberAddress: `0x${string}` | undefined, tokenId: bigint | undefined) {
   const { data, refetch } = useReadContract({
     address: chamberAddress,
@@ -1125,12 +990,12 @@ export function useSeatedAt(chamberAddress: `0x${string}` | undefined, tokenId: 
   return { seatedAt: data as bigint | undefined, refetch }
 }
 
-export type DirectorCallerRole = 'owner' | 'operator'
+export type DirectorCallerRole = 'owner'
 
 /**
  * Combined director action gate (H-02): connected address is the NFT owner
- * of a current top-seat tokenId, or the Chamber-registered session key for
- * that token, AND seating is mature (`block.number >= seatedAt`).
+ * of a current top-seat tokenId AND seating is mature (`block.number >= seatedAt`).
+ * Directors act only as `ownerOf(tokenId)`; agents act through the owner's own wallet.
  * If `getSeatedAt` is not deployed yet, treat the seat as mature.
  */
 export function useDirectorActionGate(
@@ -1143,70 +1008,15 @@ export function useDirectorActionGate(
     userAddress && directors
       ? directors.findIndex((d) => d.toLowerCase() === userAddress.toLowerCase())
       : -1
-  const ownerTokenId =
+  const tokenId =
     ownerIndex >= 0 && ownerIndex < members.length ? members[ownerIndex].tokenId : undefined
-  const ownerAddress =
-    ownerIndex >= 0 && directors ? directors[ownerIndex] : undefined
-
-  const directorCount = directors?.length ?? 0
-  const seatedMembers = useMemo(
-    () => members.slice(0, directorCount),
-    [members, directorCount],
-  )
-  const memberTokenKey = seatedMembers.map((m) => m.tokenId.toString()).join(',')
-  const memberTokenIds = useMemo(
-    () => (memberTokenKey ? memberTokenKey.split(',').map((id) => BigInt(id)) : []),
-    [memberTokenKey],
-  )
-
-  const { data: operatorResults } = useReadContracts({
-    contracts: memberTokenIds.map((tokenId) => ({
-      address: chamberAddress,
-      abi: chamberAbi,
-      functionName: 'getDirectorOperator' as const,
-      args: [tokenId] as const,
-    })),
-    query: {
-      enabled:
-        !!chamberAddress &&
-        !!userAddress &&
-        memberTokenIds.length > 0,
-      retry: false,
-    },
-  })
-
-  let operatorTokenId: bigint | undefined
-  let operatorOwner: `0x${string}` | undefined
-  let sessionOperator: `0x${string}` | undefined
-  if (userAddress && operatorResults && directors) {
-    for (let i = 0; i < operatorResults.length; i++) {
-      const result = operatorResults[i]
-      if (result.status !== 'success' || typeof result.result !== 'string') continue
-      const op = result.result as `0x${string}`
-      if (!op || op === zeroAddress) continue
-
-      if (ownerTokenId !== undefined && memberTokenIds[i] === ownerTokenId) {
-        sessionOperator = op
-      } else if (
-        ownerTokenId === undefined &&
-        op.toLowerCase() === userAddress.toLowerCase()
-      ) {
-        operatorTokenId = memberTokenIds[i]
-        operatorOwner = directors[i]
-      }
-    }
-  }
-
-  const tokenId = ownerTokenId ?? operatorTokenId
-  const role: DirectorCallerRole | null =
-    ownerTokenId !== undefined ? 'owner' : operatorTokenId !== undefined ? 'operator' : null
-  const nftOwner = ownerAddress ?? operatorOwner
+  const role: DirectorCallerRole | null = tokenId !== undefined ? 'owner' : null
 
   const { seatedAt } = useSeatedAt(chamberAddress, tokenId)
   const { data: blockNumber } = useBlockNumber({
     query: {
       enabled: !!chamberAddress && tokenId !== undefined,
-      // Seating/session maturity only needs coarse block height; hidden tabs pause.
+      // Seating maturity only needs coarse block height; hidden tabs pause.
       refetchInterval: 60_000,
     },
   })
@@ -1222,7 +1032,5 @@ export function useDirectorActionGate(
     canAct: tokenId !== undefined && seated,
     seatingPending,
     role,
-    nftOwner,
-    sessionOperator,
   }
 }

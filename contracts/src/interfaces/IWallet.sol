@@ -6,7 +6,7 @@ pragma solidity ^0.8.30;
  * @author xhad, Loreum DAO LLC
  * @notice Director-gated multisig: submit, confirm, execute, revoke, and cancel transaction flows.
  * @dev Ordinary calls store only `keccak256(calldata)`; callers must retain full calldata to execute.
- *      Self-calls (`target == address(this)`, Chamber: `upgradeImplementation`) also persist the
+ *      Self-calls (`target == address(this)`) and, on Chamber, calls to its ProxyAdmin also persist the
  *      original bytes onchain so a confirmed upgrade remains executable if logs are unavailable.
  *      Confirmation and execution require a quorum of distinct director token IDs as enforced by `Chamber`.
  *      That quorum is token-weighted: one address that holds `quorum` top-seat membership NFTs
@@ -18,51 +18,15 @@ pragma solidity ^0.8.30;
  */
 interface IWallet {
     /**
-     * @notice Submits a new transaction for approval
+     * @notice Submits a new transaction for approval. The submitting token's confirmation is recorded.
      * @param tokenId The tokenId submitting the transaction
      * @param target The address to send the transaction to
      * @param value The amount of Ether to send
-     * @param data The calldata (hash stored always; full bytes stored when `target` is this wallet)
-     */
-    function submitTransaction(uint256 tokenId, address target, uint256 value, bytes memory data) external;
-
-    /**
-     * @notice Submits a new transaction for approval with an explicit execution deadline
-     * @param tokenId The tokenId submitting the transaction
-     * @param target The address to send the transaction to
-     * @param value The amount of Ether to send
-     * @param data The calldata (stored onchain as keccak256 hash only)
+     * @param data The calldata (hash stored always; full bytes stored when `target` is this wallet or, on a Chamber, its ProxyAdmin)
+     * @param metadataURI URI or content hash describing the proposal; empty stores nothing
      * @param deadline Exclusive-after unix timestamp; `0` applies the 30-day default max age
      */
-    function submitTransaction(uint256 tokenId, address target, uint256 value, bytes memory data, uint256 deadline)
-        external;
-
-    /**
-     * @notice Submits a new transaction for approval with durable proposal metadata
-     * @param tokenId The tokenId submitting the transaction
-     * @param target The address to send the transaction to
-     * @param value The amount of Ether to send
-     * @param data The calldata (hash stored always; full bytes stored when `target` is this wallet)
-     * @param metadataURI URI or content hash describing the proposal rationale and risk context
-     */
-    function submitTransactionWithMetadata(
-        uint256 tokenId,
-        address target,
-        uint256 value,
-        bytes memory data,
-        string memory metadataURI
-    ) external;
-
-    /**
-     * @notice Submits a new transaction with durable proposal metadata and an explicit deadline
-     * @param tokenId The tokenId submitting the transaction
-     * @param target The address to send the transaction to
-     * @param value The amount of Ether to send
-     * @param data The calldata (stored onchain as keccak256 hash only)
-     * @param metadataURI URI or content hash describing the proposal rationale and risk context
-     * @param deadline Exclusive-after unix timestamp; `0` applies the 30-day default max age
-     */
-    function submitTransactionWithMetadata(
+    function submitTransaction(
         uint256 tokenId,
         address target,
         uint256 value,
@@ -80,7 +44,7 @@ interface IWallet {
     /**
      * @notice Executes a transaction if current directors still meet the required quorum
      * @dev Caller must supply the original calldata unless it was stored onchain for a self-call
-     *      (Chamber: `upgradeImplementation`). Empty `data` then uses the stored bytes.
+     *      (Chamber: also calls to its ProxyAdmin, i.e. upgrades). Empty `data` then uses the stored bytes.
      *      The contract always verifies keccak256(payload) == stored hash.
      *      Chamber counts only tokenIds still in the top-seat set, against
      *      `max(submitQuorum, liveQuorum)`. Deadline `0` is unset and is not expired.
@@ -92,7 +56,7 @@ interface IWallet {
 
     /**
      * @notice Revokes a confirmation for a transaction
-     * @dev Chamber allows the token owner or its live session key to revoke after leaving
+     * @dev Chamber allows the token owner to revoke after leaving
      *      the board (no ERC-1271; see director-authorization.md).
      * @param tokenId The tokenId revoking the confirmation
      * @param transactionId The ID of the transaction to revoke confirmation for
@@ -202,13 +166,6 @@ interface IWallet {
     function getTransactionDeadline(uint256 nonce) external view returns (uint256 deadline);
 
     /**
-     * @notice Returns whether a transaction has passed its deadline
-     * @param nonce The index of the transaction to check
-     * @return True if a non-zero deadline is stored and has passed; `false` when deadline is `0`
-     */
-    function isTransactionExpired(uint256 nonce) external view returns (bool);
-
-    /**
      * @notice Checks if a director has voted to cancel a transaction
      * @param tokenId The tokenId of the director to check
      * @param nonce The index of the transaction to check
@@ -222,12 +179,6 @@ interface IWallet {
      * @return The count of cancel votes
      */
     function getCancelConfirmations(uint256 nonce) external view returns (uint8);
-
-    /**
-     * @notice Returns the next transaction ID (current nonce)
-     * @return uint256 The next transaction ID
-     */
-    function getNextTransactionId() external view returns (uint256);
 
     /// Events
     /**

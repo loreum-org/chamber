@@ -26,11 +26,11 @@ Governance and vault logic share **one proxy address** (`TransparentUpgradeableP
 
 ## Self-target calls
 
-Calls where `target == Chamber` are limited to **`upgradeImplementation`** selector — arbitrary self-calls are rejected.
+Calls where `target == Chamber` are limited to **`pause`** and **`unpause`** — arbitrary self-calls are rejected. Upgrades are not self-calls: they go to the chamber's ProxyAdmin (`upgradeAndCall`). ProxyAdmin is the single upgrade path and has no version or migration checks of its own; the board is responsible for what it approves.
 
 ## Quorum formula
 
-`getQuorum() = 1 + (getReachableDirectorCount() * 51) / 100` — integer math in Solidity. Empty/inert slots do not inflate the denominator (PMN-M01). One- and two-director boards require all reachable directors.
+`getQuorum() = 1 + (min(getSeats(), getSize()) * 51) / 100` — integer math in Solidity. Empty/inert slots do not inflate the denominator (PMN-M01). One- and two-director boards require all reachable directors.
 
 That count is **token-weighted** (distinct director `tokenId`s). One address holding `quorum` top-seat membership NFTs can satisfy quorum alone — a single-actor treasury. Confirmations are not capped per owner.
 

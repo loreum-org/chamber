@@ -9,6 +9,7 @@ import {IERC1271} from "lib/openzeppelin-contracts/contracts/interfaces/IERC1271
 import {MockERC20} from "test/mock/MockERC20.sol";
 import {MockERC721} from "test/mock/MockERC721.sol";
 import {DeployChamber} from "test/utils/DeployChamber.sol";
+import {ChamberReads} from "test/utils/ChamberReads.sol";
 
 /// @dev Contract NFT owner that can register a session key (same pattern as Chamber.t.sol).
 contract MockERC1271Wallet {
@@ -75,7 +76,7 @@ contract FindingPMNM02InertSeatedNftTest is Test {
         vm.roll(block.number + SEATING_DELAY);
 
         vm.prank(user1);
-        chamber.submitTransaction(1, spendTarget, 1 ether, "");
+        chamber.submitTransaction(1, spendTarget, 1 ether, "", "", 0);
         vm.prank(user2);
         chamber.confirmTransaction(2, 0);
 
@@ -98,7 +99,7 @@ contract FindingPMNM02InertSeatedNftTest is Test {
         vm.roll(block.number + SEATING_DELAY);
 
         vm.prank(user1);
-        chamber.submitTransaction(1, spendTarget, 1 ether, "");
+        chamber.submitTransaction(1, spendTarget, 1 ether, "", "", 0);
         vm.prank(user2);
         chamber.confirmTransaction(2, 0);
         assertTrue(chamber.getConfirmation(2, 0), "stored bit remains after burn");
@@ -115,7 +116,7 @@ contract FindingPMNM02InertSeatedNftTest is Test {
         assertFalse(executed, "burned ownerOf confirm bit is skipped");
     }
 
-    /// @notice Owner has no Chamber-calling surface and no live session key.
+    /// @notice Owner has no Chamber-calling surface.
     ///         Assert the live tally only.
     function test_PMNM02_caseA_uncallableOwnerFlagSkipped() public {
         InertOwner inert = new InertOwner();
@@ -124,7 +125,7 @@ contract FindingPMNM02InertSeatedNftTest is Test {
         vm.roll(block.number + SEATING_DELAY);
 
         vm.prank(user1);
-        chamber.submitTransaction(1, spendTarget, 1 ether, "");
+        chamber.submitTransaction(1, spendTarget, 1 ether, "", "", 0);
         vm.prank(user2);
         chamber.confirmTransaction(2, 0);
         assertTrue(chamber.getConfirmation(2, 0));
@@ -132,7 +133,6 @@ contract FindingPMNM02InertSeatedNftTest is Test {
         vm.prank(user2);
         nft.transferFrom(user2, address(inert), 2);
         assertEq(nft.ownerOf(2), address(inert));
-        assertEq(chamber.getDirectorOperator(2), address(0), "no live session key");
 
         assertTrue(chamber.getConfirmation(2, 0), "stored bit is still set");
         (, uint8 stored,,,) = chamber.getTransaction(0);
@@ -176,41 +176,6 @@ contract FindingPMNM02InertSeatedNftTest is Test {
         assertFalse(_inTop(1), "refreshSeating does not restore an inert tokenId");
         assertTrue(_inTop(2));
         assertTrue(_inTop(3));
-    }
-
-    /// @notice A burn that clears the session key must not leave rank.
-    function test_PMNM02_caseB_sessionKeyDoesNotKeepBurnedRank() public {
-        address sessionKey = address(0xB0B);
-        MockERC1271Wallet wallet = new MockERC1271Wallet(address(0xDEAD));
-
-        _seat(user1, 1, 100 ether);
-        _seat(address(wallet), 4, 90 ether);
-        _seat(user2, 2, 80 ether);
-        vm.roll(block.number + SEATING_DELAY);
-
-        wallet.execute(
-            address(chamber),
-            abi.encodeCall(
-                chamber.setDirectorOperator, (4, sessionKey, block.timestamp + 30 days, chamber.SESSION_SCOPE_UNSCOPED())
-            )
-        );
-        assertEq(chamber.getDirectorOperator(4), sessionKey);
-        assertTrue(chamber.isTokenAuthorized(4, sessionKey));
-        assertTrue(_inTop(4));
-
-        nft.burn(4);
-        assertEq(chamber.getDirectorOperator(4), address(0), "session key is stale after burn");
-        assertFalse(chamber.isTokenAuthorized(4, sessionKey));
-
-        chamber.cleanupInertSeat(4);
-        assertFalse(_inTop(4), "burned tokenId does not keep rank after session key clears");
-
-        vm.startPrank(user1);
-        chamber.undelegate(1, 1);
-        chamber.delegate(1, 1);
-        vm.stopPrank();
-
-        assertFalse(_inTop(4), "refreshSeating does not restore rank while burned");
     }
 
     function _inTop(uint256 tokenId) internal view returns (bool) {
