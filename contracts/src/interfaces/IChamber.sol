@@ -102,6 +102,16 @@ interface IChamber is IERC4626, IBoard, IWallet {
     function cancelSeatUpdate(uint256 tokenId) external;
 
     /**
+     * @notice Pulls `tokenId` off the pending seat proposal without cancelling it.
+     * @dev The caller must own `tokenId` and currently sit as a director. Use this to retract your
+     *      own endorsement, or to clear one recorded for a previous owner so this id can endorse
+     *      again (R-1012-M5). Support recorded for an owner who no longer holds the id does not
+     *      count at execution either way.
+     * @param tokenId Director token withdrawing support
+     */
+    function withdrawSeatSupport(uint256 tokenId) external;
+
+    /**
      * @notice Returns the `ProxyAdmin` contract address for this transparent proxy (ERC-1967 admin slot).
      * @return adminContract The OpenZeppelin `ProxyAdmin` instance controlling upgrades for this chamber
      * @dev Since 1.3.0 this is the only upgrade path: the board queues `upgradeAndCall(chamber, impl, data)`

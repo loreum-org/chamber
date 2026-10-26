@@ -131,6 +131,14 @@ abstract contract Board is ReentrancyGuardTransientUpgradeable {
         BoardLib.setSeats(_getBoardStorage(), tokenId, numOfSeats, liveQuorum);
     }
 
+    function _setSeats(uint256 tokenId, uint256 numOfSeats, uint256 liveQuorum, IERC721 nft) internal {
+        BoardLib.setSeats(_getBoardStorage(), tokenId, numOfSeats, liveQuorum, nft);
+    }
+
+    function _withdrawSeatSupport(uint256 tokenId, IERC721 nft) internal {
+        BoardLib.withdrawSeatSupport(_getBoardStorage(), tokenId, nft);
+    }
+
     function _recoverSeats(uint256 tokenId, uint256 newSeats, IERC721 nft) internal {
         BoardLib.recoverSeats(_getBoardStorage(), tokenId, newSeats, nft);
     }

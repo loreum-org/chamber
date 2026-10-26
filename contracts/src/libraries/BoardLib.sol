@@ -260,12 +260,25 @@ library BoardLib {
     }
 
     function setSeats(BoardTypes.BoardStorage storage $, uint256 tokenId, uint256 numOfSeats) external {
-        setSeats($, tokenId, numOfSeats, getQuorum($));
+        setSeats($, tokenId, numOfSeats, getQuorum($), IERC721(address(0)));
     }
 
     function setSeats(BoardTypes.BoardStorage storage $, uint256 tokenId, uint256 numOfSeats, uint256 liveQuorum)
         public
     {
+        setSeats($, tokenId, numOfSeats, liveQuorum, IERC721(address(0)));
+    }
+
+    /// @dev `nft` is the membership collection. When it is set, the endorsement records `ownerOf`
+    ///      and a later owner does not count (R-1012-M5). Address zero keeps the pre-recording path
+    ///      for harnesses that have no collection.
+    function setSeats(
+        BoardTypes.BoardStorage storage $,
+        uint256 tokenId,
+        uint256 numOfSeats,
+        uint256 liveQuorum,
+        IERC721 nft
+    ) public {
         if (numOfSeats <= 0) revert IBoard.InvalidNumSeats();
 
         if ($.seats == 0) {
@@ -280,10 +293,11 @@ library BoardLib {
             proposal.proposedSeats = numOfSeats;
             proposal.timestamp = block.timestamp;
             proposal.requiredQuorum = liveQuorum;
+            $.seatProposalProposer = tokenId;
         } else {
             if (proposal.proposedSeats != numOfSeats) {
-                authorizeSeatUpdateCancel(proposal, tokenId);
-                delete $.seatUpdate;
+                authorizeSeatUpdateCancel($, tokenId);
+                _deleteSeatUpdate($);
                 emit IBoard.SeatUpdateCancelled(tokenId);
                 return;
             }
@@ -298,6 +312,11 @@ library BoardLib {
             }
         }
 
+        if (address(nft) != address(0)) {
+            address owner = tryOwnerOf(nft, tokenId);
+            if (owner == address(0)) revert IBoard.InvalidProposal();
+            $.seatSupporter[tokenId] = owner;
+        }
         proposal.supporters.push(tokenId);
         emit IBoard.SetSeats(tokenId, numOfSeats);
     }
@@ -336,8 +355,12 @@ library BoardLib {
             for (uint256 i; i < supportersLen; ++i) {
                 uint256 sup = proposal.supporters[i];
                 // PMN-M01: burned / inert supporters do not count toward seat-change quorum.
-                if (checkOwner && tryOwnerOf(nft, sup) == address(0)) {
-                    continue;
+                // R-1012-M5: a recorded controller who no longer owns the id does not count either.
+                if (checkOwner) {
+                    address owner = tryOwnerOf(nft, sup);
+                    if (owner == address(0)) continue;
+                    address recorded = $.seatSupporter[sup];
+                    if (recorded != address(0) && owner != recorded) continue;
                 }
                 for (uint256 j; j < filled; ++j) {
                     if (topIds[j] == sup) {
@@ -355,7 +378,7 @@ library BoardLib {
 
         uint256 newSeats = proposal.proposedSeats;
         $.seats = uint32(newSeats);
-        delete $.seatUpdate;
+        _deleteSeatUpdate($);
         refreshSeating($, prevTop);
         syncTopSeatControl($, nft);
         emit IBoard.ExecuteSetSeats(tokenId, newSeats);
@@ -366,18 +389,52 @@ library BoardLib {
         if (newSeats == 0 || newSeats >= $.seats) revert IBoard.InvalidNumSeats();
         uint256[] memory prevTop = topTokenIds($);
         $.seats = uint32(newSeats);
-        delete $.seatUpdate;
+        _deleteSeatUpdate($);
         refreshSeating($, prevTop);
         syncTopSeatControl($, nft);
         emit IBoard.ExecuteSetSeats(tokenId, newSeats);
+    }
+
+    /// @dev Current owner of `tokenId` pulls that id out of the live proposal. A matching controller
+    ///      is retracting their vote. A new owner is clearing a stale endorsement so the id can
+    ///      endorse again (R-1012-M5). The proposal itself stays open; the original proposer can
+    ///      still cancel it.
+    function withdrawSeatSupport(BoardTypes.BoardStorage storage $, uint256 tokenId, IERC721 nft) external {
+        BoardTypes.SeatUpdate storage proposal = $.seatUpdate;
+        if (proposal.timestamp == 0) revert IBoard.InvalidProposal();
+        address owner = tryOwnerOf(nft, tokenId);
+        if (owner == address(0) || owner != msg.sender) revert IBoard.NotASeatSupporter();
+
+        uint256 len = proposal.supporters.length;
+        uint256 index = len;
+        for (uint256 i; i < len;) {
+            if (proposal.supporters[i] == tokenId) {
+                index = i;
+                break;
+            }
+            unchecked {
+                ++i;
+            }
+        }
+        if (index == len) revert IBoard.NotASeatSupporter();
+
+        for (uint256 i = index; i + 1 < len;) {
+            proposal.supporters[i] = proposal.supporters[i + 1];
+            unchecked {
+                ++i;
+            }
+        }
+        proposal.supporters.pop();
+        delete $.seatSupporter[tokenId];
+        emit IBoard.SeatSupportWithdrawn(tokenId, owner);
     }
 
     function cancelSeatUpdate(BoardTypes.BoardStorage storage $, uint256 tokenId) external {
         BoardTypes.SeatUpdate storage proposal = $.seatUpdate;
         if (proposal.timestamp == 0) revert IBoard.InvalidProposal();
 
-        authorizeSeatUpdateCancel(proposal, tokenId);
-        delete $.seatUpdate;
+        authorizeSeatUpdateCancel($, tokenId);
+        _deleteSeatUpdate($);
         emit IBoard.SeatUpdateCancelled(tokenId);
     }
 
@@ -676,14 +733,32 @@ library BoardLib {
         return false;
     }
 
-    function authorizeSeatUpdateCancel(BoardTypes.SeatUpdate storage proposal, uint256 tokenId) internal view {
-        if (proposal.supporters.length > 0 && proposal.supporters[0] == tokenId) {
-            return;
+    function authorizeSeatUpdateCancel(BoardTypes.BoardStorage storage $, uint256 tokenId) internal view {
+        BoardTypes.SeatUpdate storage proposal = $.seatUpdate;
+        uint256 proposer = $.seatProposalProposer;
+        if (proposer == 0 && proposal.supporters.length > 0) {
+            proposer = proposal.supporters[0];
         }
+        if (proposer == tokenId) return;
         if (proposal.timestamp != 0 && block.timestamp >= proposal.timestamp + BoardTypes.SEAT_UPDATE_EXPIRY) {
             return;
         }
         revert IBoard.OnlyProposerCanCancel();
+    }
+
+    /// @dev Drops the proposal and the appended controller snaps. `delete` on the struct does not
+    ///      clear `seatSupporter` or `seatProposalProposer`.
+    function _deleteSeatUpdate(BoardTypes.BoardStorage storage $) internal {
+        BoardTypes.SeatUpdate storage proposal = $.seatUpdate;
+        uint256 len = proposal.supporters.length;
+        for (uint256 i; i < len;) {
+            delete $.seatSupporter[proposal.supporters[i]];
+            unchecked {
+                ++i;
+            }
+        }
+        delete $.seatUpdate;
+        delete $.seatProposalProposer;
     }
 
     /// @dev Every tokenId the holder still has weight on, including evicted ids, in insertion order.

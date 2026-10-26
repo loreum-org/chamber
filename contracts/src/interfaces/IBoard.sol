@@ -160,4 +160,15 @@ interface IBoard {
     /// @notice Thrown when a delegation row written before 1.2.0 (no live-weight epoch) would move
     ///         weight on a node still on the board. 1.3.0 cannot account for it; redeploy the chamber.
     error LegacyDelegation();
+
+    /// @notice Thrown when `tokenId` is not an endorser of the live seat proposal, or the caller
+    ///         does not currently own it.
+    error NotASeatSupporter();
+
+    /**
+     * @notice Emitted when the current owner pulls `tokenId` off the live seat proposal.
+     * @param tokenId The membership token that withdrew support
+     * @param owner `ownerOf(tokenId)` at withdrawal
+     */
+    event SeatSupportWithdrawn(uint256 indexed tokenId, address indexed owner);
 }

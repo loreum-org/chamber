@@ -56,6 +56,13 @@ library BoardTypes {
         /// @dev Bumped each time a node is removed (eviction, drain, inert cleanup). Holder weight
         ///      recorded under an older epoch is not in the current node. Appended for layout safety.
         mapping(uint256 tokenId => uint256) nodeEpoch;
+        /// @dev Token that opened the live seat proposal. Appended. Zero falls back to `supporters[0]`
+        ///      so a proposal created before this field still cancels the same way.
+        uint256 seatProposalProposer;
+        /// @dev `ownerOf` when `tokenId` endorsed the live seat proposal. A mismatch does not count
+        ///      (R-1012-M5). Appended so existing ERC-7201 slots stay put. Zero means "not recorded"
+        ///      and still counts, for a proposal written before this field existed.
+        mapping(uint256 tokenId => address) seatSupporter;
     }
 
     /// @dev keccak256(abi.encode(uint256(keccak256("erc7201:loreum.Board")) - 1)) & ~bytes32(uint256(0xff))
