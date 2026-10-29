@@ -5,9 +5,11 @@ import { asHex, upsertChamber } from "./lib/directory";
 import { refreshNewChamber } from "./lib/state";
 
 ponder.on("Factory:ChamberCreated", async ({ context, event }) => {
+  const chainId = context.network.chainId;
   const address = asHex(event.args.chamber);
 
   await context.db.insert(factory_ChamberCreated).values({
+    chainId,
     id: event.log.id,
     chamber: address,
     asset: asHex(event.args.asset),
@@ -19,6 +21,7 @@ ponder.on("Factory:ChamberCreated", async ({ context, event }) => {
   });
 
   await upsertChamber(context.db, {
+    chainId,
     id: address,
     address,
     asset: asHex(event.args.asset),
@@ -32,7 +35,7 @@ ponder.on("Factory:ChamberCreated", async ({ context, event }) => {
     createdAt: event.block.timestamp,
   });
 
-  await refreshNewChamber(context, address, {
+  await refreshNewChamber(context, chainId, address, {
     number: event.block.number,
     timestamp: event.block.timestamp,
   });

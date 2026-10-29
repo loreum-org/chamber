@@ -1,6 +1,6 @@
 import { ponder } from "ponder:registry";
 import { boardSeat, chamber } from "ponder:schema";
-import { eq } from "ponder";
+import { and, eq } from "ponder";
 
 import { asHex, refreshBoard, refreshChamber, type Ctx } from "./lib/state";
 
@@ -8,6 +8,7 @@ import { asHex, refreshBoard, refreshChamber, type Ctx } from "./lib/state";
  * Directors are the NFT owners of the top board tokenIds, and seating
  * maturity resets on transfer. Neither emits a Chamber event, so watch each
  * chamber's membership NFT and refresh boards that hold the moved tokenId.
+ * The NFT address is matched on the event's chain only.
  */
 async function onNftTransfer({
   event,
@@ -20,21 +21,23 @@ async function onNftTransfer({
   };
   context: Ctx;
 }) {
+  const chainId = context.network.chainId;
   const nft = asHex(event.log.address);
   const chambers = await context.db.sql
     .select({ id: chamber.id })
     .from(chamber)
-    .where(eq(chamber.nft, nft));
+    .where(and(eq(chamber.chainId, chainId), eq(chamber.nft, nft)));
   const block = { number: event.block.number, timestamp: event.block.timestamp };
 
   for (const { id } of chambers) {
     const seat = await context.db.find(boardSeat, {
+      chainId,
       chamberId: id,
       tokenId: event.args.tokenId,
     });
     if (!seat) continue;
-    await refreshBoard(context, id, block);
-    await refreshChamber(context, id, block);
+    await refreshBoard(context, chainId, id, block);
+    await refreshChamber(context, chainId, id, block);
   }
 }
 

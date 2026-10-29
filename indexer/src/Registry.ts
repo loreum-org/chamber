@@ -11,9 +11,11 @@ import { asHex, upsertChamber } from "./lib/directory";
 import { refreshNewChamber } from "./lib/state";
 
 ponder.on("Registry:ChamberCreated", async ({ context, event }) => {
+  const chainId = context.network.chainId;
   const address = asHex(event.args.chamber);
 
   await context.db.insert(registry_ChamberCreated).values({
+    chainId,
     id: event.log.id,
     chamber: event.args.chamber,
     seats: event.args.seats,
@@ -25,6 +27,7 @@ ponder.on("Registry:ChamberCreated", async ({ context, event }) => {
 
   // Legacy event has no creator; createChamber is called by the deployer EOA.
   await upsertChamber(context.db, {
+    chainId,
     id: address,
     address,
     asset: asHex(event.args.erc20Token),
@@ -38,7 +41,7 @@ ponder.on("Registry:ChamberCreated", async ({ context, event }) => {
     createdAt: event.block.timestamp,
   });
 
-  await refreshNewChamber(context, address, {
+  await refreshNewChamber(context, chainId, address, {
     number: event.block.number,
     timestamp: event.block.timestamp,
   });
@@ -46,6 +49,7 @@ ponder.on("Registry:ChamberCreated", async ({ context, event }) => {
 
 ponder.on("Registry:Initialized", async ({ context, event }) => {
   await context.db.insert(registry_Initialized).values({
+    chainId: context.network.chainId,
     id: event.log.id,
     version: event.args.version,
   });
@@ -53,6 +57,7 @@ ponder.on("Registry:Initialized", async ({ context, event }) => {
 
 ponder.on("Registry:RoleAdminChanged", async ({ context, event }) => {
   await context.db.insert(registry_RoleAdminChanged).values({
+    chainId: context.network.chainId,
     id: event.log.id,
     role: event.args.role,
     previousAdminRole: event.args.previousAdminRole,
@@ -62,6 +67,7 @@ ponder.on("Registry:RoleAdminChanged", async ({ context, event }) => {
 
 ponder.on("Registry:RoleGranted", async ({ context, event }) => {
   await context.db.insert(registry_RoleGranted).values({
+    chainId: context.network.chainId,
     id: event.log.id,
     role: event.args.role,
     account: event.args.account,
@@ -71,6 +77,7 @@ ponder.on("Registry:RoleGranted", async ({ context, event }) => {
 
 ponder.on("Registry:RoleRevoked", async ({ context, event }) => {
   await context.db.insert(registry_RoleRevoked).values({
+    chainId: context.network.chainId,
     id: event.log.id,
     role: event.args.role,
     account: event.args.account,

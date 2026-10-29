@@ -11,7 +11,8 @@
     "lint": "eslint . --ext .ts",
     "typecheck": "tsc",
     "check-deployment": "node scripts/check-deployment.mjs",
-    "stage-deployment": "node scripts/stage-deployment.mjs"
+    "stage-deployment": "node scripts/stage-deployment.mjs",
+    "test": "node --test test/*.mjs"
   },
   "dependencies": {
     "ponder": "^0.8.22",

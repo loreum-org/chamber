@@ -5,6 +5,7 @@ import { zeroAddress } from "viem";
 type DirectoryDb = Context<"Registry:ChamberCreated">["db"];
 
 export type ChamberRow = {
+  chainId: number;
   id: `0x${string}`;
   address: `0x${string}`;
   asset: `0x${string}`;
@@ -34,21 +35,23 @@ export async function upsertChamber(
  */
 export async function applyShareTransfer(
   db: DirectoryDb,
+  chainId: number,
   chamberAddress: `0x${string}`,
   from: `0x${string}`,
   to: `0x${string}`,
   value: bigint,
 ): Promise<void> {
   if (from !== zeroAddress) {
-    await applyShareDelta(db, chamberAddress, from, -value);
+    await applyShareDelta(db, chainId, chamberAddress, from, -value);
   }
   if (to !== zeroAddress) {
-    await applyShareDelta(db, chamberAddress, to, value);
+    await applyShareDelta(db, chainId, chamberAddress, to, value);
   }
 }
 
 async function applyShareDelta(
   db: DirectoryDb,
+  chainId: number,
   chamberAddress: `0x${string}`,
   account: `0x${string}`,
   delta: bigint,
@@ -56,6 +59,7 @@ async function applyShareDelta(
   await db
     .insert(chamberHolder)
     .values({
+      chainId,
       chamberId: chamberAddress,
       account,
       shares: delta > 0n ? delta : 0n,

@@ -13,8 +13,8 @@ import {
 const PAGE_LIMIT = 1000
 
 const CHAMBER_PROPOSALS_QUERY = /* GraphQL */ `
-  query ChamberProposals($chamber: String!, $limit: Int!) {
-    proposals(where: { chamberId: $chamber }, orderBy: "nonce", orderDirection: "asc", limit: $limit) {
+  query ChamberProposals($chainId: Int!, $chamber: String!, $limit: Int!) {
+    proposals(where: { chainId: $chainId, chamberId: $chamber }, orderBy: "nonce", orderDirection: "asc", limit: $limit) {
       items {
         nonce
         executed
@@ -30,7 +30,7 @@ const CHAMBER_PROPOSALS_QUERY = /* GraphQL */ `
         metadataURI
       }
     }
-    proposalVotes(where: { chamberId: $chamber }, limit: $limit) {
+    proposalVotes(where: { chainId: $chainId, chamberId: $chamber }, limit: $limit) {
       items {
         nonce
         tokenId
@@ -129,8 +129,8 @@ export function useIndexedProposals(chamberAddress: `0x${string}` | undefined) {
     queryFn: async () => {
       const { data, head } = await indexerRequest<ProposalsResponse>(
         CHAMBER_PROPOSALS_QUERY,
-        { chamber, limit: PAGE_LIMIT },
-        { chamber },
+        { chamber, chainId, limit: PAGE_LIMIT },
+        { chamber, chainId },
       )
       const proposals = data.proposals.items
         .map(parseProposal)

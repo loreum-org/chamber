@@ -9,6 +9,7 @@ interface ImportMetaEnv {
   readonly VITE_ENABLE_COMPLIANCE?: string
   readonly VITE_INDEXER_URL?: string
   readonly VITE_INDEXER_CHAIN_ID?: string
+  readonly VITE_INDEXER_CHAIN_IDS?: string
   readonly VITE_SEPOLIA_FACTORY_START_BLOCK?: string
   readonly VITE_SEPOLIA_REGISTRY_START_BLOCK?: string
   readonly VITE_MAINNET_FACTORY?: string

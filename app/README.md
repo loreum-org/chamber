@@ -51,12 +51,13 @@ npm install
    ```
    Enable Ethereum, Sepolia, Base, and Arbitrum apps in the Alchemy dashboard. The same key powers **wagmi RPC** (read/write on those chains) and the **Chamber assets** panel. Production `eth_getLogs` pagination for **My chambers** also uses this RPC (not a single getLogs-from-0).
 
-2. Optional — **Ponder indexer** ([`indexer/`](../indexer/README.md) in this repo) for **My chambers** that survive public-RPC log truncation and a new browser (no `localStorage` recents). Dual discovery: Factory `ChamberCreated` (from `contracts/deployments/base-sepolia.txt`, unless `PONDER_FACTORY_ADDRESS` overrides it) plus leftover Registry creates. GraphQL `chambers` / `chamberHolders` = creator OR current share balance.
+2. Optional — **Ponder indexer** ([`indexer/`](../indexer/README.md) in this repo) for **My chambers** that survive public-RPC log truncation and a new browser (no `localStorage` recents). One host indexes each testnet whose deployment file has a Factory. GraphQL `chambers` / `chamberHolders` are filtered by `chainId` (creator OR current share balance).
    ```bash
    VITE_INDEXER_URL=https://your-ponder-host.example
+   # VITE_INDEXER_CHAIN_IDS=84532
    # VITE_INDEXER_CHAIN_ID=84532
    ```
-   The app POSTs to `{VITE_INDEXER_URL}/graphql` (`MyChambers`). If the host is unset or down, discovery falls back to chunked Factory/Registry `getLogs` from the configured start block (Base Sepolia Factory `48743114`). A live Ponder host is not required. See `app/.env.template`.
+   The app POSTs to `{VITE_INDEXER_URL}/graphql` with a `chainId` filter (`MyChambers`). One host serves every chain in `VITE_INDEXER_CHAIN_IDS`. `VITE_INDEXER_CHAIN_ID` is the single-id fallback when the list is unset. Chains outside that list, and a host that is unset or down, use chunked Factory/Registry `getLogs`. A live Ponder host is not required. See `app/.env.template`.
 
 3. Update the WalletConnect Project ID in `src/lib/wagmi.ts`:
    ```typescript

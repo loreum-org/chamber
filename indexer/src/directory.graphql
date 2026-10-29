@@ -3,8 +3,8 @@
 # Mine = creator on `chamber` OR current share balance on `chamberHolder`.
 # Board / directors: see `boardSeats` in chamber.graphql.
 
-query Chamber($id: String!) {
-  chamber(id: $id) {
+query Chamber($chainId: Int!, $id: String!) {
+  chamber(chainId: $chainId, id: $id) {
     id
     address
     asset
@@ -19,8 +19,8 @@ query Chamber($id: String!) {
   }
 }
 
-query ChambersByCreator($creator: String!) {
-  chambers(where: { creator: $creator }, orderBy: "createdBlock", orderDirection: "desc") {
+query ChambersByCreator($chainId: Int!, $creator: String!) {
+  chambers(where: { chainId: $chainId, creator: $creator }, orderBy: "createdBlock", orderDirection: "desc") {
     items {
       id
       address
@@ -36,8 +36,8 @@ query ChambersByCreator($creator: String!) {
   }
 }
 
-query ChambersHeldBy($account: String!) {
-  chamberHolders(where: { account: $account, shares_gt: "0" }) {
+query ChambersHeldBy($chainId: Int!, $account: String!) {
+  chamberHolders(where: { chainId: $chainId, account: $account, shares_gt: "0" }) {
     items {
       chamberId
       account
@@ -58,8 +58,8 @@ query ChambersHeldBy($account: String!) {
   }
 }
 
-query MyChambers($account: String!) {
-  created: chambers(where: { creator: $account }, orderBy: "createdBlock", orderDirection: "desc") {
+query MyChambers($chainId: Int!, $account: String!) {
+  created: chambers(where: { chainId: $chainId, creator: $account }, orderBy: "createdBlock", orderDirection: "desc") {
     items {
       id
       address
@@ -72,7 +72,7 @@ query MyChambers($account: String!) {
       creator
     }
   }
-  held: chamberHolders(where: { account: $account, shares_gt: "0" }) {
+  held: chamberHolders(where: { chainId: $chainId, account: $account, shares_gt: "0" }) {
     items {
       shares
       chamber {

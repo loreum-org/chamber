@@ -14,8 +14,8 @@ query GetRegistryChamberCreatedEvents($limit: Int) {
   }
 }
 
-query GetFactoryChamberCreatedEvents($limit: Int, $creator: String) {
-  factory_ChamberCreateds(where: { creator: $creator }, limit: $limit, orderBy: "id", orderDirection: "desc") {
+query GetFactoryChamberCreatedEvents($chainId: Int!, $limit: Int, $creator: String) {
+  factory_ChamberCreateds(where: { chainId: $chainId, creator: $creator }, limit: $limit, orderBy: "id", orderDirection: "desc") {
     items {
       id
       chamber
@@ -38,8 +38,8 @@ query GetInitializedEvents($limit: Int) {
   }
 }
 
-query GetRoleAdminChangedEvents($limit: Int, $role: String) {
-  registry_RoleAdminChangeds(where: { role: $role }, limit: $limit, orderBy: "id", orderDirection: "desc") {
+query GetRoleAdminChangedEvents($chainId: Int!, $limit: Int, $role: String) {
+  registry_RoleAdminChangeds(where: { chainId: $chainId, role: $role }, limit: $limit, orderBy: "id", orderDirection: "desc") {
     items {
       id
       role
@@ -49,8 +49,8 @@ query GetRoleAdminChangedEvents($limit: Int, $role: String) {
   }
 }
 
-query GetRoleGrantedEvents($limit: Int, $account: String) {
-  registry_RoleGranteds(where: { account: $account }, limit: $limit, orderBy: "id", orderDirection: "desc") {
+query GetRoleGrantedEvents($chainId: Int!, $limit: Int, $account: String) {
+  registry_RoleGranteds(where: { chainId: $chainId, account: $account }, limit: $limit, orderBy: "id", orderDirection: "desc") {
     items {
       id
       role
@@ -60,8 +60,8 @@ query GetRoleGrantedEvents($limit: Int, $account: String) {
   }
 }
 
-query GetRoleRevokedEvents($limit: Int, $account: String) {
-  registry_RoleRevokeds(where: { account: $account }, limit: $limit, orderBy: "id", orderDirection: "desc") {
+query GetRoleRevokedEvents($chainId: Int!, $limit: Int, $account: String) {
+  registry_RoleRevokeds(where: { chainId: $chainId, account: $account }, limit: $limit, orderBy: "id", orderDirection: "desc") {
     items {
       id
       role
