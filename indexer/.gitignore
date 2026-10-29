@@ -17,5 +17,5 @@ yarn-error.log*
 /generated/
 /.ponder/
 
-# Staged copy of contracts/deployments/base-sepolia.txt
+# Staged copies of contracts/deployments/*.txt (indexer-only checkouts)
 /.deployment/

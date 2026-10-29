@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useQueryClient, type QueryClient } from '@tanstack/react-query'
+import { useChainId } from 'wagmi'
 import { requireIndexerBlock } from '@/lib/indexer'
 
 /**
@@ -39,14 +40,15 @@ export function useInvalidateOnReceipt(
   account: `0x${string}` | undefined,
 ) {
   const queryClient = useQueryClient()
+  const chainId = useChainId()
   const handledRef = useRef<string | undefined>()
 
   useEffect(() => {
     if (!hash || !receipt || handledRef.current === hash) return
     handledRef.current = hash
     // Indexer reads for this chamber wait until the indexer has this block.
-    if (chamberAddress) requireIndexerBlock(chamberAddress, receipt.blockNumber)
+    if (chamberAddress) requireIndexerBlock(chamberAddress, receipt.blockNumber, chainId)
     invalidateChamberQueries(queryClient, chamberAddress)
     invalidateChamberQueries(queryClient, account)
-  }, [hash, receipt, chamberAddress, account, queryClient])
+  }, [hash, receipt, chamberAddress, account, chainId, queryClient])
 }

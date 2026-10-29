@@ -6,9 +6,13 @@ import { index, onchainEnum, onchainTable, primaryKey, relations } from "ponder"
  * contract's own views at that block (src/lib/state.ts), so board ranking,
  * quorum and proposal status match what the contract enforces.
  *
+ * Every table's primary key includes `chainId` (`context.network.chainId`).
+ * Factory is CREATE2, so the same address on two chains is two rows. Changing
+ * these keys requires a full reindex (drop the Ponder schema and restart).
+ *
  * Time-dependent checks (proposal expiry, seating maturity, session-key
  * liveness) are left to the client: compare the stored deadline / seatedAt /
- * liveAt with `_meta.status` block number and timestamp.
+ * liveAt with `_meta.status` block number and timestamp for that chain.
  */
 
 export const chamberSource = onchainEnum("chamber_source", [
@@ -20,7 +24,8 @@ export const chamberSource = onchainEnum("chamber_source", [
 export const chamber = onchainTable(
   "chamber",
   (t) => ({
-    id: t.hex().primaryKey(),
+    chainId: t.integer().notNull(),
+    id: t.hex().notNull(),
     address: t.hex().notNull(),
     asset: t.hex().notNull(),
     nft: t.hex().notNull(),
@@ -46,10 +51,12 @@ export const chamber = onchainTable(
     updatedAt: t.bigint(),
   }),
   (table) => ({
-    creatorIdx: index().on(table.creator),
-    sourceIdx: index().on(table.source),
-    assetIdx: index().on(table.asset),
-    nftIdx: index().on(table.nft),
+    pk: primaryKey({ columns: [table.chainId, table.id] }),
+    chainIdx: index().on(table.chainId),
+    creatorIdx: index().on(table.chainId, table.creator),
+    sourceIdx: index().on(table.chainId, table.source),
+    assetIdx: index().on(table.chainId, table.asset),
+    nftIdx: index().on(table.chainId, table.nft),
   }),
 );
 
@@ -57,14 +64,15 @@ export const chamber = onchainTable(
 export const chamberHolder = onchainTable(
   "chamber_holder",
   (t) => ({
+    chainId: t.integer().notNull(),
     chamberId: t.hex().notNull(),
     account: t.hex().notNull(),
     shares: t.bigint().notNull(),
   }),
   (table) => ({
-    pk: primaryKey({ columns: [table.chamberId, table.account] }),
-    accountIdx: index().on(table.account),
-    chamberIdx: index().on(table.chamberId),
+    pk: primaryKey({ columns: [table.chainId, table.chamberId, table.account] }),
+    accountIdx: index().on(table.chainId, table.account),
+    chamberIdx: index().on(table.chainId, table.chamberId),
   }),
 );
 
@@ -72,6 +80,7 @@ export const chamberHolder = onchainTable(
 export const boardSeat = onchainTable(
   "board_seat",
   (t) => ({
+    chainId: t.integer().notNull(),
     chamberId: t.hex().notNull(),
     tokenId: t.bigint().notNull(),
     rank: t.integer().notNull(),
@@ -83,9 +92,9 @@ export const boardSeat = onchainTable(
     updatedBlock: t.bigint().notNull(),
   }),
   (table) => ({
-    pk: primaryKey({ columns: [table.chamberId, table.tokenId] }),
-    chamberIdx: index().on(table.chamberId),
-    ownerIdx: index().on(table.owner),
+    pk: primaryKey({ columns: [table.chainId, table.chamberId, table.tokenId] }),
+    chamberIdx: index().on(table.chainId, table.chamberId),
+    ownerIdx: index().on(table.chainId, table.owner),
   }),
 );
 
@@ -93,6 +102,7 @@ export const boardSeat = onchainTable(
 export const delegation = onchainTable(
   "delegation",
   (t) => ({
+    chainId: t.integer().notNull(),
     chamberId: t.hex().notNull(),
     holder: t.hex().notNull(),
     tokenId: t.bigint().notNull(),
@@ -100,9 +110,11 @@ export const delegation = onchainTable(
     updatedBlock: t.bigint().notNull(),
   }),
   (table) => ({
-    pk: primaryKey({ columns: [table.chamberId, table.holder, table.tokenId] }),
-    chamberIdx: index().on(table.chamberId),
-    holderIdx: index().on(table.holder),
+    pk: primaryKey({
+      columns: [table.chainId, table.chamberId, table.holder, table.tokenId],
+    }),
+    chamberIdx: index().on(table.chainId, table.chamberId),
+    holderIdx: index().on(table.chainId, table.holder),
   }),
 );
 
@@ -110,6 +122,7 @@ export const delegation = onchainTable(
 export const proposal = onchainTable(
   "proposal",
   (t) => ({
+    chainId: t.integer().notNull(),
     chamberId: t.hex().notNull(),
     nonce: t.bigint().notNull(),
     proposerTokenId: t.bigint(),
@@ -131,8 +144,8 @@ export const proposal = onchainTable(
     updatedBlock: t.bigint().notNull(),
   }),
   (table) => ({
-    pk: primaryKey({ columns: [table.chamberId, table.nonce] }),
-    chamberIdx: index().on(table.chamberId),
+    pk: primaryKey({ columns: [table.chainId, table.chamberId, table.nonce] }),
+    chamberIdx: index().on(table.chainId, table.chamberId),
   }),
 );
 
@@ -140,6 +153,7 @@ export const proposal = onchainTable(
 export const proposalVote = onchainTable(
   "proposal_vote",
   (t) => ({
+    chainId: t.integer().notNull(),
     chamberId: t.hex().notNull(),
     nonce: t.bigint().notNull(),
     tokenId: t.bigint().notNull(),
@@ -148,25 +162,35 @@ export const proposalVote = onchainTable(
     updatedBlock: t.bigint().notNull(),
   }),
   (table) => ({
-    pk: primaryKey({ columns: [table.chamberId, table.nonce, table.tokenId] }),
-    chamberNonceIdx: index().on(table.chamberId, table.nonce),
+    pk: primaryKey({
+      columns: [table.chainId, table.chamberId, table.nonce, table.tokenId],
+    }),
+    chamberNonceIdx: index().on(table.chainId, table.chamberId, table.nonce),
   }),
 );
 
 /** Active seat-count change proposal (getSeatUpdate). Row is kept with timestamp 0 when none is active. */
-export const seatUpdate = onchainTable("seat_update", (t) => ({
-  chamberId: t.hex().primaryKey(),
-  proposedSeats: t.bigint().notNull(),
-  timestamp: t.bigint().notNull(),
-  requiredQuorum: t.bigint().notNull(),
-  supporters: t.bigint().array().notNull(),
-  updatedBlock: t.bigint().notNull(),
-}));
+export const seatUpdate = onchainTable(
+  "seat_update",
+  (t) => ({
+    chainId: t.integer().notNull(),
+    chamberId: t.hex().notNull(),
+    proposedSeats: t.bigint().notNull(),
+    timestamp: t.bigint().notNull(),
+    requiredQuorum: t.bigint().notNull(),
+    supporters: t.bigint().array().notNull(),
+    updatedBlock: t.bigint().notNull(),
+  }),
+  (table) => ({
+    pk: primaryKey({ columns: [table.chainId, table.chamberId] }),
+  }),
+);
 
 /** Session-key operator per membership tokenId. */
 export const directorOperator = onchainTable(
   "director_operator",
   (t) => ({
+    chainId: t.integer().notNull(),
     chamberId: t.hex().notNull(),
     tokenId: t.bigint().notNull(),
     owner: t.hex().notNull(),
@@ -177,8 +201,8 @@ export const directorOperator = onchainTable(
     updatedBlock: t.bigint().notNull(),
   }),
   (table) => ({
-    pk: primaryKey({ columns: [table.chamberId, table.tokenId] }),
-    operatorIdx: index().on(table.operator),
+    pk: primaryKey({ columns: [table.chainId, table.chamberId, table.tokenId] }),
+    operatorIdx: index().on(table.chainId, table.operator),
   }),
 );
 
@@ -186,7 +210,8 @@ export const directorOperator = onchainTable(
 export const chamberEvent = onchainTable(
   "chamber_event",
   (t) => ({
-    id: t.text().primaryKey(),
+    chainId: t.integer().notNull(),
+    id: t.text().notNull(),
     chamberId: t.hex().notNull(),
     name: t.text().notNull(),
     args: t.json().notNull(),
@@ -196,9 +221,10 @@ export const chamberEvent = onchainTable(
     logIndex: t.integer().notNull(),
   }),
   (table) => ({
-    chamberIdx: index().on(table.chamberId),
-    nameIdx: index().on(table.name),
-    blockIdx: index().on(table.blockNumber),
+    pk: primaryKey({ columns: [table.chainId, table.id] }),
+    chamberIdx: index().on(table.chainId, table.chamberId),
+    nameIdx: index().on(table.chainId, table.name),
+    blockIdx: index().on(table.chainId, table.blockNumber),
   }),
 );
 
@@ -210,44 +236,59 @@ export const chamberRelations = relations(chamber, ({ many, one }) => ({
   operators: many(directorOperator),
   events: many(chamberEvent),
   seatUpdate: one(seatUpdate, {
-    fields: [chamber.id],
-    references: [seatUpdate.chamberId],
+    fields: [chamber.chainId, chamber.id],
+    references: [seatUpdate.chainId, seatUpdate.chamberId],
   }),
 }));
 
 export const chamberHolderRelations = relations(chamberHolder, ({ one }) => ({
   chamber: one(chamber, {
-    fields: [chamberHolder.chamberId],
-    references: [chamber.id],
+    fields: [chamberHolder.chainId, chamberHolder.chamberId],
+    references: [chamber.chainId, chamber.id],
   }),
 }));
 
 export const boardSeatRelations = relations(boardSeat, ({ one }) => ({
-  chamber: one(chamber, { fields: [boardSeat.chamberId], references: [chamber.id] }),
+  chamber: one(chamber, {
+    fields: [boardSeat.chainId, boardSeat.chamberId],
+    references: [chamber.chainId, chamber.id],
+  }),
 }));
 
 export const delegationRelations = relations(delegation, ({ one }) => ({
-  chamber: one(chamber, { fields: [delegation.chamberId], references: [chamber.id] }),
+  chamber: one(chamber, {
+    fields: [delegation.chainId, delegation.chamberId],
+    references: [chamber.chainId, chamber.id],
+  }),
 }));
 
 export const proposalRelations = relations(proposal, ({ one, many }) => ({
-  chamber: one(chamber, { fields: [proposal.chamberId], references: [chamber.id] }),
+  chamber: one(chamber, {
+    fields: [proposal.chainId, proposal.chamberId],
+    references: [chamber.chainId, chamber.id],
+  }),
   votes: many(proposalVote),
 }));
 
 export const proposalVoteRelations = relations(proposalVote, ({ one }) => ({
   proposal: one(proposal, {
-    fields: [proposalVote.chamberId, proposalVote.nonce],
-    references: [proposal.chamberId, proposal.nonce],
+    fields: [proposalVote.chainId, proposalVote.chamberId, proposalVote.nonce],
+    references: [proposal.chainId, proposal.chamberId, proposal.nonce],
   }),
 }));
 
 export const directorOperatorRelations = relations(directorOperator, ({ one }) => ({
-  chamber: one(chamber, { fields: [directorOperator.chamberId], references: [chamber.id] }),
+  chamber: one(chamber, {
+    fields: [directorOperator.chainId, directorOperator.chamberId],
+    references: [chamber.chainId, chamber.id],
+  }),
 }));
 
 export const chamberEventRelations = relations(chamberEvent, ({ one }) => ({
-  chamber: one(chamber, { fields: [chamberEvent.chamberId], references: [chamber.id] }),
+  chamber: one(chamber, {
+    fields: [chamberEvent.chainId, chamberEvent.chamberId],
+    references: [chamber.chainId, chamber.id],
+  }),
 }));
 
 // Registry / Factory discovery events
@@ -255,7 +296,8 @@ export const chamberEventRelations = relations(chamberEvent, ({ one }) => ({
 export const registry_ChamberCreated = onchainTable(
   "chamber_created_event",
   (t) => ({
-    id: t.text().primaryKey(),
+    chainId: t.integer().notNull(),
+    id: t.text().notNull(),
     chamber: t.text().notNull(),
     seats: t.bigint().notNull(),
     name: t.text().notNull(),
@@ -264,13 +306,15 @@ export const registry_ChamberCreated = onchainTable(
     erc721Token: t.text().notNull(),
   }),
   (table) => ({
-    chamberIdx: index().on(table.chamber),
+    pk: primaryKey({ columns: [table.chainId, table.id] }),
+    chamberIdx: index().on(table.chainId, table.chamber),
   }),
 );
 export const factory_ChamberCreated = onchainTable(
   "factory_chamber_created_event",
   (t) => ({
-    id: t.text().primaryKey(),
+    chainId: t.integer().notNull(),
+    id: t.text().notNull(),
     chamber: t.hex().notNull(),
     asset: t.hex().notNull(),
     nft: t.hex().notNull(),
@@ -280,57 +324,67 @@ export const factory_ChamberCreated = onchainTable(
     creator: t.hex().notNull(),
   }),
   (table) => ({
-    chamberIdx: index().on(table.chamber),
-    creatorIdx: index().on(table.creator),
+    pk: primaryKey({ columns: [table.chainId, table.id] }),
+    chamberIdx: index().on(table.chainId, table.chamber),
+    creatorIdx: index().on(table.chainId, table.creator),
   }),
 );
 
 export const registry_Initialized = onchainTable(
   "initialized_event",
   (t) => ({
-    id: t.text().primaryKey(),
+    chainId: t.integer().notNull(),
+    id: t.text().notNull(),
     version: t.bigint().notNull(),
+  }),
+  (table) => ({
+    pk: primaryKey({ columns: [table.chainId, table.id] }),
   }),
 );
 
 export const registry_RoleAdminChanged = onchainTable(
   "role_admin_changed_event",
   (t) => ({
-    id: t.text().primaryKey(),
+    chainId: t.integer().notNull(),
+    id: t.text().notNull(),
     role: t.text().notNull(),
     previousAdminRole: t.text().notNull(),
     newAdminRole: t.text().notNull(),
   }),
   (table) => ({
-    roleIdx: index().on(table.role),
+    pk: primaryKey({ columns: [table.chainId, table.id] }),
+    roleIdx: index().on(table.chainId, table.role),
   }),
 );
 
 export const registry_RoleGranted = onchainTable(
   "role_granted_event",
   (t) => ({
-    id: t.text().primaryKey(),
+    chainId: t.integer().notNull(),
+    id: t.text().notNull(),
     role: t.text().notNull(),
     account: t.text().notNull(),
     sender: t.text().notNull(),
   }),
   (table) => ({
-    roleIdx: index().on(table.role),
-    accountIdx: index().on(table.account),
+    pk: primaryKey({ columns: [table.chainId, table.id] }),
+    roleIdx: index().on(table.chainId, table.role),
+    accountIdx: index().on(table.chainId, table.account),
   }),
 );
 
 export const registry_RoleRevoked = onchainTable(
   "role_revoked_event",
   (t) => ({
-    id: t.text().primaryKey(),
+    chainId: t.integer().notNull(),
+    id: t.text().notNull(),
     role: t.text().notNull(),
     account: t.text().notNull(),
     sender: t.text().notNull(),
   }),
   (table) => ({
-    roleIdx: index().on(table.role),
-    accountIdx: index().on(table.account),
+    pk: primaryKey({ columns: [table.chainId, table.id] }),
+    roleIdx: index().on(table.chainId, table.role),
+    accountIdx: index().on(table.chainId, table.account),
   }),
 );
-

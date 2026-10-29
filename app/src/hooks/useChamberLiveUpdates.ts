@@ -76,7 +76,7 @@ export function useChamberLiveUpdates(chamberAddress: `0x${string}` | undefined)
           if (n === undefined || n === null) continue
           if (block === undefined || n > block) block = n
         }
-        if (block !== undefined) requireIndexerBlock(chamberAddress, block)
+        if (block !== undefined) requireIndexerBlock(chamberAddress, block, chainId)
         invalidateChamberQueries(queryClient, chamberAddress)
       },
       onError() {
@@ -87,7 +87,7 @@ export function useChamberLiveUpdates(chamberAddress: `0x${string}` | undefined)
     return () => {
       unwatch()
     }
-  }, [chamberAddress, mode, publicClient, queryClient, wsUrl])
+  }, [chamberAddress, chainId, mode, publicClient, queryClient, wsUrl])
 
   useEffect(() => {
     if (!chamberAddress || mode !== 'poll') return

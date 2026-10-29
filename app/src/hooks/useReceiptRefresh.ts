@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { useWaitForTransactionReceipt } from 'wagmi'
+import { useChainId, useWaitForTransactionReceipt } from 'wagmi'
 import { type Hash } from 'viem'
 import toast from 'react-hot-toast'
 import { invalidateChamberQueries } from './invalidateChamberQueries'
@@ -132,6 +132,7 @@ export function useReceiptRefresh(options: {
 }) {
   const { chamberAddress, hash, successMessage, errorMessage, onSuccess, onError } = options
   const queryClient = useQueryClient()
+  const chainId = useChainId()
   const handledRef = useRef<string | undefined>()
   const onSuccessRef = useRef(onSuccess)
   const onErrorRef = useRef(onError)
@@ -157,7 +158,7 @@ export function useReceiptRefresh(options: {
 
     if (isSuccess) {
       handledRef.current = hash
-      if (chamberAddress && receipt) requireIndexerBlock(chamberAddress, receipt.blockNumber)
+      if (chamberAddress && receipt) requireIndexerBlock(chamberAddress, receipt.blockNumber, chainId)
       invalidateChamberQueries(queryClient, chamberAddress)
       toast.success(successMessage)
       onSuccessRef.current?.()
@@ -174,7 +175,7 @@ export function useReceiptRefresh(options: {
       toast.error(errorMessage)
       onErrorRef.current?.(err)
     }
-  }, [hash, isSuccess, isError, error, receipt, chamberAddress, queryClient, successMessage, errorMessage])
+  }, [hash, isSuccess, isError, error, receipt, chamberAddress, chainId, queryClient, successMessage, errorMessage])
 
   return { isConfirming, isSuccess, isError, error }
 }

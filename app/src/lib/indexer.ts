@@ -1,23 +1,34 @@
 /**
  * Ponder GraphQL client for the `indexer/` package.
  *
- * Dual discovery: Registry (legacy) + Factory when PONDER_FACTORY_ADDRESS is set.
- * “Mine” = chamber.creator OR chamberHolder.shares > 0. Directors stay on-chain
- * (`getDirectors`); the indexer does not reconstruct the board.
+ * One `VITE_INDEXER_URL` serves every chain in `VITE_INDEXER_CHAIN_IDS`
+ * (comma-separated). `VITE_INDEXER_CHAIN_ID` still sets a single chain when
+ * the list is unset. “Mine” = chamber.creator OR chamberHolder.shares > 0 on
+ * that chain. Directors stay on-chain (`getDirectors`).
  *
- * Host the indexer and set `VITE_INDEXER_URL` (e.g. https://indexer.example.com).
- * A live host is not required — `discoverChambers` falls back to chunked getLogs.
+ * Chains the indexer does not cover fall back to chunked getLogs.
  */
 
 import type { Address } from 'viem'
 import { isNonZeroAddress } from '@/lib/address'
 
-/** Base Sepolia (`indexer/ponder.config.ts`). Override with `VITE_INDEXER_CHAIN_ID`. */
+/** Base Sepolia, the chain indexed when no env list is set. */
 export const DEFAULT_INDEXER_CHAIN_ID = 84532
 
+/**
+ * Ponder network names in `indexer/ponder.config.ts` (`_meta.status` keys).
+ * `chainId` on the status row wins when Ponder includes it.
+ */
+const INDEXER_NETWORK_BY_CHAIN_ID: Record<number, string> = {
+  84532: 'baseSepolia',
+  421614: 'arbitrumSepolia',
+  11155420: 'opSepolia',
+  11155111: 'sepolia',
+}
+
 const MY_CHAMBERS_QUERY = /* GraphQL */ `
-  query MyChambers($account: String!) {
-    created: chambers(where: { creator: $account }, orderBy: "createdBlock", orderDirection: "desc") {
+  query MyChambers($chainId: Int!, $account: String!) {
+    created: chambers(where: { chainId: $chainId, creator: $account }, orderBy: "createdBlock", orderDirection: "desc") {
       items {
         id
         address
@@ -25,7 +36,7 @@ const MY_CHAMBERS_QUERY = /* GraphQL */ `
         source
       }
     }
-    held: chamberHolders(where: { account: $account, shares_gt: "0" }) {
+    held: chamberHolders(where: { chainId: $chainId, account: $account, shares_gt: "0" }) {
       items {
         shares
         chamber {
@@ -57,17 +68,41 @@ export function getIndexerUrl(): string | undefined {
   return trimmed.length > 0 ? trimmed : undefined
 }
 
-export function getIndexerChainId(): number {
-  const raw = import.meta.env?.VITE_INDEXER_CHAIN_ID
-  if (typeof raw === 'string' && raw.trim() !== '') {
-    const parsed = Number(raw.trim())
-    if (Number.isInteger(parsed) && parsed > 0) return parsed
+export function parsePositiveChainId(raw: string | undefined): number | undefined {
+  if (typeof raw !== 'string' || raw.trim() === '') return undefined
+  const parsed = Number(raw.trim())
+  if (!Number.isInteger(parsed) || parsed <= 0) return undefined
+  return parsed
+}
+
+/** `VITE_INDEXER_CHAIN_IDS` wins. A single `VITE_INDEXER_CHAIN_ID` is the fallback. */
+export function parseIndexerChainIds(list: string | undefined, single: string | undefined): number[] {
+  if (typeof list === 'string' && list.trim() !== '') {
+    const ids: number[] = []
+    for (const part of list.split(',')) {
+      const id = parsePositiveChainId(part)
+      if (id !== undefined && !ids.includes(id)) ids.push(id)
+    }
+    if (ids.length > 0) return ids
   }
-  return DEFAULT_INDEXER_CHAIN_ID
+  const one = parsePositiveChainId(single)
+  if (one !== undefined) return [one]
+  return [DEFAULT_INDEXER_CHAIN_ID]
+}
+
+export function getIndexerChainIds(): number[] {
+  return parseIndexerChainIds(
+    import.meta.env?.VITE_INDEXER_CHAIN_IDS,
+    import.meta.env?.VITE_INDEXER_CHAIN_ID,
+  )
+}
+
+export function getIndexerChainId(): number {
+  return getIndexerChainIds()[0] ?? DEFAULT_INDEXER_CHAIN_ID
 }
 
 export function indexerAppliesToChain(chainId: number): boolean {
-  return !!getIndexerUrl() && chainId === getIndexerChainId()
+  return !!getIndexerUrl() && getIndexerChainIds().includes(chainId)
 }
 
 export function indexerGraphqlUrl(base: string): string {
@@ -123,6 +158,7 @@ export function parseIndexerMyChambers(payload: unknown): IndexerMyChambers {
 export async function fetchIndexerMyChambers(
   url: string,
   account: Address,
+  chainId: number,
 ): Promise<IndexerMyChambers> {
   const endpoint = indexerGraphqlUrl(url)
   const res = await fetch(endpoint, {
@@ -130,7 +166,7 @@ export async function fetchIndexerMyChambers(
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
       query: MY_CHAMBERS_QUERY,
-      variables: { account: account.toLowerCase() },
+      variables: { account: account.toLowerCase(), chainId },
     }),
   })
   if (!res.ok) throw new Error(`Indexer HTTP ${res.status}`)
@@ -141,23 +177,47 @@ export async function fetchIndexerMyChambers(
   return parseIndexerMyChambers(json)
 }
 
-/** Indexer head from Ponder `_meta.status` (one network per deployment). */
+/** Indexer head from Ponder `_meta.status` for one network. */
 export type IndexerHead = { number: bigint; timestamp: bigint; ready: boolean }
 
-export function parseIndexerHead(status: unknown): IndexerHead | undefined {
-  if (!status || typeof status !== 'object') return undefined
-  for (const network of Object.values(status as Record<string, unknown>)) {
-    const row = network as { ready?: unknown; block?: { number?: unknown; timestamp?: unknown } } | null
-    const number = row?.block?.number
-    const timestamp = row?.block?.timestamp
-    if (number === undefined || number === null) continue
-    return {
-      number: BigInt(number as number | string),
-      timestamp: BigInt((timestamp ?? 0) as number | string),
-      ready: row?.ready === true,
-    }
+function headFromStatusRow(network: unknown): IndexerHead | undefined {
+  const row = network as { ready?: unknown; block?: { number?: unknown; timestamp?: unknown } } | null
+  const number = row?.block?.number
+  const timestamp = row?.block?.timestamp
+  if (number === undefined || number === null) return undefined
+  return {
+    number: BigInt(number as number | string),
+    timestamp: BigInt((timestamp ?? 0) as number | string),
+    ready: row?.ready === true,
   }
-  return undefined
+}
+
+function statusChainId(name: string, network: unknown): number | undefined {
+  if (network && typeof network === 'object' && 'chainId' in network) {
+    const value = (network as { chainId?: unknown }).chainId
+    if (typeof value === 'number' && Number.isInteger(value) && value > 0) return value
+  }
+  const known = Object.entries(INDEXER_NETWORK_BY_CHAIN_ID).find(([, networkName]) => networkName === name)
+  return known ? Number(known[0]) : undefined
+}
+
+export function parseIndexerHead(status: unknown, chainId?: number): IndexerHead | undefined {
+  if (!status || typeof status !== 'object') return undefined
+  const entries = Object.entries(status as Record<string, unknown>)
+  if (chainId === undefined) {
+    for (const [, network] of entries) {
+      const head = headFromStatusRow(network)
+      if (head) return head
+    }
+    return undefined
+  }
+  for (const [name, network] of entries) {
+    if (statusChainId(name, network) !== chainId) continue
+    return headFromStatusRow(network)
+  }
+  const networkName = INDEXER_NETWORK_BY_CHAIN_ID[chainId]
+  if (!networkName) return undefined
+  return headFromStatusRow((status as Record<string, unknown>)[networkName])
 }
 
 /** Thrown when the indexer has not reached a block the app is waiting for. React Query retries it. */
@@ -170,18 +230,24 @@ export class IndexerBehindError extends Error {
 
 /**
  * After a wallet write lands in block N, reads for that chamber must come from
- * an indexer at ≥ N or the UI would show pre-write state. Keyed by lowercase chamber.
+ * an indexer at ≥ N or the UI would show pre-write state. Keyed by chain and
+ * lowercase chamber so the same CREATE2 address on two chains stays independent.
  */
 const requiredBlockByChamber = new Map<string, bigint>()
 
-export function requireIndexerBlock(chamber: string, blockNumber: bigint): void {
-  const key = chamber.toLowerCase()
+function freshnessKey(chainId: number | undefined, chamber: string): string {
+  const address = chamber.toLowerCase()
+  return chainId === undefined ? address : `${chainId}:${address}`
+}
+
+export function requireIndexerBlock(chamber: string, blockNumber: bigint, chainId?: number): void {
+  const key = freshnessKey(chainId, chamber)
   const current = requiredBlockByChamber.get(key)
   if (current === undefined || blockNumber > current) requiredBlockByChamber.set(key, blockNumber)
 }
 
-export function requiredIndexerBlock(chamber: string): bigint | undefined {
-  return requiredBlockByChamber.get(chamber.toLowerCase())
+export function requiredIndexerBlock(chamber: string, chainId?: number): bigint | undefined {
+  return requiredBlockByChamber.get(freshnessKey(chainId, chamber))
 }
 
 /**
@@ -191,7 +257,7 @@ export function requiredIndexerBlock(chamber: string): bigint | undefined {
 export async function indexerRequest<T>(
   query: string,
   variables: Record<string, unknown>,
-  options: { url?: string; chamber?: string } = {},
+  options: { url?: string; chamber?: string; chainId?: number } = {},
 ): Promise<{ data: T; head: IndexerHead | undefined }> {
   const url = options.url ?? getIndexerUrl()
   if (!url) throw new Error('Indexer URL not configured')
@@ -208,8 +274,8 @@ export async function indexerRequest<T>(
   if (json.errors?.length) throw new Error(json.errors[0]?.message || 'Indexer GraphQL error')
   if (!json.data) throw new Error('Indexer returned no data')
 
-  const head = parseIndexerHead(json.data._meta?.status)
-  const required = options.chamber ? requiredIndexerBlock(options.chamber) : undefined
+  const head = parseIndexerHead(json.data._meta?.status, options.chainId)
+  const required = options.chamber ? requiredIndexerBlock(options.chamber, options.chainId) : undefined
   if (required !== undefined && (!head || head.number < required)) {
     throw new IndexerBehindError(head?.number, required)
   }

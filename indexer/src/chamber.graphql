@@ -1,9 +1,10 @@
 # Chamber state queries (Ponder 0.8: limit / items, not first / skip).
-# Ids are lowercase hex. Select `_meta { status }` to get the indexed head
-# (block number + timestamp) for freshness and time-based checks.
+# Ids are lowercase hex. Every row is scoped by chainId (CREATE2 addresses
+# repeat across chains). Select `_meta { status }` and read the network that
+# matches the chain (baseSepolia, arbitrumSepolia, opSepolia, sepolia).
 
-query ChamberState($chamber: String!) {
-  chamber(id: $chamber) {
+query ChamberState($chainId: Int!, $chamber: String!) {
+  chamber(chainId: $chainId, id: $chamber) {
     address
     name
     symbol
@@ -23,7 +24,7 @@ query ChamberState($chamber: String!) {
     version
     updatedBlock
   }
-  seatUpdate(chamberId: $chamber) {
+  seatUpdate(chainId: $chainId, chamberId: $chamber) {
     proposedSeats
     timestamp
     requiredQuorum
@@ -35,8 +36,8 @@ query ChamberState($chamber: String!) {
 }
 
 # Ranked board. Top seats are rank < chamber.seats; directors are their owners.
-query ChamberBoard($chamber: String!) {
-  boardSeats(where: { chamberId: $chamber }, orderBy: "rank", orderDirection: "asc", limit: 1000) {
+query ChamberBoard($chainId: Int!, $chamber: String!) {
+  boardSeats(where: { chainId: $chainId, chamberId: $chamber }, orderBy: "rank", orderDirection: "asc", limit: 1000) {
     items {
       tokenId
       rank
@@ -50,8 +51,8 @@ query ChamberBoard($chamber: String!) {
   }
 }
 
-query ChamberProposals($chamber: String!) {
-  proposals(where: { chamberId: $chamber }, orderBy: "nonce", orderDirection: "asc", limit: 1000) {
+query ChamberProposals($chainId: Int!, $chamber: String!) {
+  proposals(where: { chainId: $chainId, chamberId: $chamber }, orderBy: "nonce", orderDirection: "asc", limit: 1000) {
     items {
       nonce
       proposerTokenId
@@ -71,7 +72,7 @@ query ChamberProposals($chamber: String!) {
       executedTx
     }
   }
-  proposalVotes(where: { chamberId: $chamber }, limit: 1000) {
+  proposalVotes(where: { chainId: $chainId, chamberId: $chamber }, limit: 1000) {
     items {
       nonce
       tokenId
@@ -84,20 +85,20 @@ query ChamberProposals($chamber: String!) {
   }
 }
 
-query HolderDelegations($chamber: String!, $holder: String!) {
-  delegations(where: { chamberId: $chamber, holder: $holder, amount_gt: "0" }) {
+query HolderDelegations($chainId: Int!, $chamber: String!, $holder: String!) {
+  delegations(where: { chainId: $chainId, chamberId: $chamber, holder: $holder, amount_gt: "0" }) {
     items {
       tokenId
       amount
     }
   }
-  chamberHolder(chamberId: $chamber, account: $holder) {
+  chamberHolder(chainId: $chainId, chamberId: $chamber, account: $holder) {
     shares
   }
 }
 
-query DirectorOperators($chamber: String!) {
-  directorOperators(where: { chamberId: $chamber }) {
+query DirectorOperators($chainId: Int!, $chamber: String!) {
+  directorOperators(where: { chainId: $chainId, chamberId: $chamber }) {
     items {
       tokenId
       owner
@@ -109,8 +110,8 @@ query DirectorOperators($chamber: String!) {
   }
 }
 
-query ChamberActivity($chamber: String!, $limit: Int) {
-  chamberEvents(where: { chamberId: $chamber }, orderBy: "blockNumber", orderDirection: "desc", limit: $limit) {
+query ChamberActivity($chainId: Int!, $chamber: String!, $limit: Int) {
+  chamberEvents(where: { chainId: $chainId, chamberId: $chamber }, orderBy: "blockNumber", orderDirection: "desc", limit: $limit) {
     items {
       name
       args

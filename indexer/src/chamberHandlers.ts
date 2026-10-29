@@ -32,50 +32,67 @@ type AnyEvent = {
   transaction: { hash: Hex };
 };
 
-type Handler = (context: Ctx, chamber: Address, event: AnyEvent, block: BlockRef) => Promise<void>;
+type Handler = (
+  context: Ctx,
+  chainId: number,
+  chamber: Address,
+  event: AnyEvent,
+  block: BlockRef,
+) => Promise<void>;
 
 const big = (v: unknown) => v as bigint;
 const addr = (v: unknown) => asHex(v as string);
 
-async function refreshBoardState(context: Ctx, chamber: Address, block: BlockRef) {
-  await refreshBoard(context, chamber, block);
-  await refreshChamber(context, chamber, block);
+async function refreshBoardState(
+  context: Ctx,
+  chainId: number,
+  chamber: Address,
+  block: BlockRef,
+) {
+  await refreshBoard(context, chainId, chamber, block);
+  await refreshChamber(context, chainId, chamber, block);
 }
 
-async function refreshSeatState(context: Ctx, chamber: Address, block: BlockRef) {
-  await refreshSeatUpdate(context, chamber, block);
-  await refreshBoardState(context, chamber, block);
+async function refreshSeatState(
+  context: Ctx,
+  chainId: number,
+  chamber: Address,
+  block: BlockRef,
+) {
+  await refreshSeatUpdate(context, chainId, chamber, block);
+  await refreshBoardState(context, chainId, chamber, block);
 }
 
-const byNonce: Handler = (context, chamber, event, block) =>
-  refreshProposal(context, chamber, big(event.args.nonce), block);
+const byNonce: Handler = (context, chainId, chamber, event, block) =>
+  refreshProposal(context, chainId, chamber, big(event.args.nonce), block);
 
-const byTransactionId: Handler = (context, chamber, event, block) =>
-  refreshProposal(context, chamber, big(event.args.transactionId), block);
+const byTransactionId: Handler = (context, chainId, chamber, event, block) =>
+  refreshProposal(context, chainId, chamber, big(event.args.transactionId), block);
 
-const vote: Handler = async (context, chamber, event, block) => {
+const vote: Handler = async (context, chainId, chamber, event, block) => {
   const nonce = big(event.args.nonce);
-  await refreshVote(context, chamber, nonce, big(event.args.tokenId), block);
-  await refreshProposal(context, chamber, nonce, block);
+  await refreshVote(context, chainId, chamber, nonce, big(event.args.tokenId), block);
+  await refreshProposal(context, chainId, chamber, nonce, block);
 };
 
-const seatChange: Handler = (context, chamber, _event, block) =>
-  refreshSeatState(context, chamber, block);
+const seatChange: Handler = (context, chainId, chamber, _event, block) =>
+  refreshSeatState(context, chainId, chamber, block);
 
-const chamberOnly: Handler = (context, chamber, _event, block) =>
-  refreshChamber(context, chamber, block);
+const chamberOnly: Handler = (context, chainId, chamber, _event, block) =>
+  refreshChamber(context, chainId, chamber, block);
 
 const HANDLERS: Record<string, Handler | null> = {
   Approval: null,
-  Transfer: async (context, chamber, event, block) => {
+  Transfer: async (context, chainId, chamber, event, block) => {
     await applyShareTransfer(
       context.db,
+      chainId,
       chamber,
       addr(event.args.from),
       addr(event.args.to),
       big(event.args.value),
     );
-    await refreshChamber(context, chamber, block);
+    await refreshChamber(context, chainId, chamber, block);
   },
   Deposit: chamberOnly,
   Withdraw: chamberOnly,
@@ -86,17 +103,32 @@ const HANDLERS: Record<string, Handler | null> = {
   Initialized: chamberOnly,
   Upgraded: chamberOnly,
 
-  Delegate: async (context, chamber, event, block) => {
-    await refreshDelegation(context, chamber, addr(event.args.sender), big(event.args.tokenId), block);
-    await refreshBoardState(context, chamber, block);
+  Delegate: async (context, chainId, chamber, event, block) => {
+    await refreshDelegation(
+      context,
+      chainId,
+      chamber,
+      addr(event.args.sender),
+      big(event.args.tokenId),
+      block,
+    );
+    await refreshBoardState(context, chainId, chamber, block);
   },
-  Undelegate: async (context, chamber, event, block) => {
-    await refreshDelegation(context, chamber, addr(event.args.sender), big(event.args.tokenId), block);
-    await refreshBoardState(context, chamber, block);
+  Undelegate: async (context, chainId, chamber, event, block) => {
+    await refreshDelegation(
+      context,
+      chainId,
+      chamber,
+      addr(event.args.sender),
+      big(event.args.tokenId),
+      block,
+    );
+    await refreshBoardState(context, chainId, chamber, block);
   },
-  DelegationUpdated: (context, chamber, event, block) =>
+  DelegationUpdated: (context, chainId, chamber, event, block) =>
     refreshDelegation(
       context,
+      chainId,
       chamber,
       addr(event.args.holder),
       big(event.args.tokenId),
@@ -110,8 +142,8 @@ const HANDLERS: Record<string, Handler | null> = {
   SeatsRecovered: seatChange,
   InertSeatCleaned: seatChange,
 
-  SubmitTransaction: async (context, chamber, event, block) => {
-    await refreshProposal(context, chamber, big(event.args.nonce), block, {
+  SubmitTransaction: async (context, chainId, chamber, event, block) => {
+    await refreshProposal(context, chainId, chamber, big(event.args.nonce), block, {
       proposerTokenId: big(event.args.tokenId),
       target: addr(event.args.to),
       value: big(event.args.value),
@@ -120,7 +152,7 @@ const HANDLERS: Record<string, Handler | null> = {
       submittedAt: block.timestamp,
       submittedTx: event.transaction.hash,
     });
-    await refreshChamber(context, chamber, block);
+    await refreshChamber(context, chainId, chamber, block);
   },
   TransactionDeadlineSet: byNonce,
   ProposalMetadataSet: byNonce,
@@ -130,20 +162,21 @@ const HANDLERS: Record<string, Handler | null> = {
   CancelTransaction: vote,
   // An executed proposal can call anything on the chamber (seats, upgrade,
   // transfers out), so refresh all chamber-level state.
-  ExecuteTransaction: async (context, chamber, event, block) => {
-    await refreshProposal(context, chamber, big(event.args.nonce), block, {
+  ExecuteTransaction: async (context, chainId, chamber, event, block) => {
+    await refreshProposal(context, chainId, chamber, big(event.args.nonce), block, {
       executedTx: event.transaction.hash,
     });
-    await refreshSeatState(context, chamber, block);
+    await refreshSeatState(context, chainId, chamber, block);
   },
   TransactionSubmitted: byTransactionId,
   TransactionConfirmed: byTransactionId,
   TransactionExecuted: byTransactionId,
   TransactionCancelVoted: byTransactionId,
 
-  DirectorOperatorSet: (context, chamber, event, block) =>
+  DirectorOperatorSet: (context, chainId, chamber, event, block) =>
     refreshOperator(
       context,
+      chainId,
       chamber,
       big(event.args.tokenId),
       addr(event.args.owner),
@@ -170,12 +203,14 @@ export function registerChamberHandlers(source: ChamberSource): void {
 
   for (const [name, handler] of Object.entries(HANDLERS)) {
     on(`${source}:${name}`, async ({ event, context }) => {
+      const chainId = context.network.chainId;
       const chamber = asHex(event.log.address);
       const block: BlockRef = {
         number: event.block.number,
         timestamp: event.block.timestamp,
       };
       await context.db.insert(chamberEvent).values({
+        chainId,
         id: event.log.id,
         chamberId: chamber,
         name,
@@ -185,7 +220,7 @@ export function registerChamberHandlers(source: ChamberSource): void {
         txHash: event.transaction.hash,
         logIndex: event.log.logIndex,
       });
-      if (handler) await handler(context, chamber, event, block);
+      if (handler) await handler(context, chainId, chamber, event, block);
     });
   }
 }

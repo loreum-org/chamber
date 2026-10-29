@@ -6,12 +6,12 @@ on:
     branches: [main]
     paths:
       - 'indexer/**'
-      - 'contracts/deployments/base-sepolia.txt'
+      - 'contracts/deployments/*.txt'
       - '.github/workflows/indexer.yml'
   pull_request:
     paths:
       - 'indexer/**'
-      - 'contracts/deployments/base-sepolia.txt'
+      - 'contracts/deployments/*.txt'
       - '.github/workflows/indexer.yml'
 
 jobs:
@@ -41,6 +41,9 @@ jobs:
 
       - name: Typecheck
         run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
 
       - name: Deployment record
         run: pnpm check-deployment && pnpm stage-deployment

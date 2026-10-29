@@ -3,7 +3,9 @@
  *
  * Order:
  * 1. Ponder GraphQL (`VITE_INDEXER_URL`) — `indexer/` `chambers` /
- *    `chamberHolders` (creator OR share balance). Base Sepolia (84532) by default.
+ *    `chamberHolders` (creator OR share balance), filtered by chain id.
+ *    Chains listed in `VITE_INDEXER_CHAIN_IDS` (or the single
+ *    `VITE_INDEXER_CHAIN_ID`) use that host. Others use getLogs.
  * 2. Factory / Registry `ChamberCreated` via chunked `eth_getLogs` (not one
  *    getLogs-from-0). Factory remains the source of creation events; Registry
  *    logs are leftover legacy deploys only.
@@ -347,7 +349,7 @@ export async function discoverChambers(options: {
   let indexerOk = false
   if (indexerUrl) {
     try {
-      const mine = await fetchIndexerMyChambers(indexerUrl, userAddress)
+      const mine = await fetchIndexerMyChambers(indexerUrl, userAddress, chainId)
       mergeIndexerRows(addresses, seen, creators, mine.created)
       mergeIndexerRows(addresses, seen, creators, mine.held)
       indexerOk = true

@@ -7,48 +7,35 @@ import { ChamberAbi } from "./abis/ChamberAbi";
 import { Erc721Abi } from "./abis/Erc721Abi";
 import { FactoryAbi } from "./abis/FactoryAbi";
 import { RegistryAbi } from "./abis/RegistryAbi";
-import { readBaseSepoliaDeployment } from "./baseSepoliaDeployment.mjs";
+import {
+  assertIndexedChains,
+  loadIndexedChains,
+  registrySource,
+  rpcUrlFor,
+} from "./baseSepoliaDeployment.mjs";
 
 /**
- * Base Sepolia (chain 84532). Factory address and start block come from
- * `contracts/deployments/base-sepolia.txt`. `PONDER_FACTORY_*` overrides that
- * file. This package does not keep a second copy of those values.
- * Ethereum Sepolia stays in `contracts/deployments/sepolia.txt` and is not indexed.
+ * One Ponder process for every testnet that has a Factory in
+ * `contracts/deployments/<network>.txt` (staged copy: `indexer/.deployment/`).
  *
- * This deploy has no Registry. Registry / Chamber / RegistryNft stay in the
- * config because their handlers are registered. They watch a non-registry
- * address from the Factory block so the backfill stays empty. Set
- * PONDER_REGISTRY_* only after a Registry exists on this chain.
+ * Chain table: 84532 base-sepolia, 421614 arbitrum-sepolia, 11155420 op-sepolia,
+ * 11155111 sepolia. Sepolia is included only after a 1.3.0 Factory is recorded;
+ * the Aug 26 pre-1.3.0 Factory is ignored. Files that say "Not deployed yet"
+ * are skipped. Mainnet is not in the table.
  *
- * RPC: set PONDER_RPC_URL_84532 to a dedicated Alchemy Base Sepolia HTTPS URL
- * (network `base-sepolia`). Do not use an origin-locked frontend key.
+ * RPC: `PONDER_RPC_URL_<chainId>`. Overrides: `PONDER_FACTORY_ADDRESS_<chainId>`,
+ * `PONDER_FACTORY_START_BLOCK_<chainId>`, `PONDER_REGISTRY_ADDRESS_<chainId>`,
+ * `PONDER_REGISTRY_START_BLOCK_<chainId>`.
+ *
+ * A chain with a Factory and no Registry still watches the placeholder address
+ * `0x000000000000000000000000000000000000dEaD` from the Factory block, so those
+ * handlers stay registered and the backfill stays empty.
  */
-const deployment = readBaseSepoliaDeployment();
-
-/** Not a Chamber registry. Handlers require a Registry source; this one emits nothing. */
-const DEFAULT_REGISTRY_ADDRESS =
-  "0x000000000000000000000000000000000000dEaD" as const;
-
-const registryAddress = addressFromEnv(
-  process.env.PONDER_REGISTRY_ADDRESS,
-  DEFAULT_REGISTRY_ADDRESS,
-  "PONDER_REGISTRY_ADDRESS",
-);
-const registryStartBlock = blockFromEnv(
-  process.env.PONDER_REGISTRY_START_BLOCK,
-  deployment.factoryStartBlock,
-  "PONDER_REGISTRY_START_BLOCK",
-);
-
-const factoryAddress = addressFromEnv(
-  process.env.PONDER_FACTORY_ADDRESS,
-  deployment.factory,
-  "PONDER_FACTORY_ADDRESS",
-);
-const factoryStartBlock = blockFromEnv(
-  process.env.PONDER_FACTORY_START_BLOCK,
-  deployment.factoryStartBlock,
-  "PONDER_FACTORY_START_BLOCK",
+const sources = assertIndexedChains(loadIndexedChains(process.env)).map(
+  (chain) => ({
+    ...chain,
+    rpcUrl: rpcUrlFor(chain, process.env),
+  }),
 );
 
 const registryChamberCreatedEvent = parseAbiItem(
@@ -59,119 +46,109 @@ const factoryChamberCreatedEvent = parseAbiItem(
   "event ChamberCreated(address indexed chamber, address indexed asset, address indexed nft, uint256 seats, string name, string symbol, address creator)",
 );
 
-function addressFromEnv(
-  value: string | undefined,
-  fallback: Address,
-  envName: string,
-): Address {
-  if (value === undefined || value.trim() === "") return fallback;
-  const trimmed = value.trim();
-  if (!isAddress(trimmed)) {
+function asAddress(value: string, label: string): Address {
+  if (!isAddress(value)) {
     throw new Error(
-      `Invalid ${envName} '${trimmed}'. Expected a 20-byte hex address.`,
+      `Invalid ${label} '${value}'. Expected a 20-byte hex address.`,
     );
   }
-  return trimmed;
+  return value;
 }
 
-function blockFromEnv(
-  value: string | undefined,
-  fallback: number,
-  envName: string,
-): number {
-  if (value === undefined || value.trim() === "") return fallback;
-  const parsed = Number(value);
-  if (!Number.isInteger(parsed) || parsed < 0) {
-    throw new Error(
-      `Invalid ${envName} '${value}'. Expected a non-negative integer.`,
-    );
-  }
-  return parsed;
+function perChain<T>(
+  build: (chain: (typeof sources)[number]) => T,
+): Record<string, T> {
+  return Object.fromEntries(sources.map((chain) => [chain.name, build(chain)]));
+}
+
+function minStart(pick: (chain: (typeof sources)[number]) => number): number {
+  return sources.reduce(
+    (min, chain) => Math.min(min, pick(chain)),
+    Number.POSITIVE_INFINITY,
+  );
 }
 
 export default createConfig({
-  networks: {
-    baseSepolia: {
-      chainId: 84532,
-      transport: http(process.env.PONDER_RPC_URL_84532),
-    },
-  },
+  networks: perChain((chain) => ({
+    chainId: chain.chainId,
+    transport: http(chain.rpcUrl),
+  })),
   contracts: {
     Registry: {
       abi: RegistryAbi,
-      network: {
-        baseSepolia: {
-          address: registryAddress,
-        },
-      },
-      startBlock: registryStartBlock,
+      network: perChain((chain) => {
+        const registry = registrySource(chain);
+        return {
+          address: asAddress(registry.address, `Registry on ${chain.network}`),
+          startBlock: registry.startBlock,
+        };
+      }),
+      startBlock: minStart((chain) => registrySource(chain).startBlock),
     },
     Factory: {
       abi: FactoryAbi,
-      network: {
-        baseSepolia: {
-          address: factoryAddress,
-          startBlock: factoryStartBlock,
-        },
-      },
-      startBlock: factoryStartBlock,
+      network: perChain((chain) => ({
+        address: asAddress(chain.factory, `Factory on ${chain.network}`),
+        startBlock: chain.factoryStartBlock,
+      })),
+      startBlock: minStart((chain) => chain.factoryStartBlock),
     },
     Chamber: {
       abi: ChamberAbi,
-      network: {
-        baseSepolia: {
+      network: perChain((chain) => {
+        const registry = registrySource(chain);
+        return {
           address: factory({
-            address: registryAddress,
+            address: asAddress(registry.address, `Registry on ${chain.network}`),
             event: registryChamberCreatedEvent,
             parameter: "chamber",
           }),
-        },
-      },
-      startBlock: registryStartBlock,
+          startBlock: registry.startBlock,
+        };
+      }),
+      startBlock: minStart((chain) => registrySource(chain).startBlock),
     },
     // Same Chamber ABI, discovered from Factory ChamberCreated (different event).
     // Ponder 0.8 accepts one factory() per contract, so this is a second source.
     FactoryChamber: {
       abi: ChamberAbi,
-      network: {
-        baseSepolia: {
-          address: factory({
-            address: factoryAddress,
-            event: factoryChamberCreatedEvent,
-            parameter: "chamber",
-          }),
-          startBlock: factoryStartBlock,
-        },
-      },
-      startBlock: factoryStartBlock,
+      network: perChain((chain) => ({
+        address: factory({
+          address: asAddress(chain.factory, `Factory on ${chain.network}`),
+          event: factoryChamberCreatedEvent,
+          parameter: "chamber",
+        }),
+        startBlock: chain.factoryStartBlock,
+      })),
+      startBlock: minStart((chain) => chain.factoryStartBlock),
     },
     // Membership NFTs: seat owners change on ERC-721 Transfer with no Chamber event.
     RegistryNft: {
       abi: Erc721Abi,
-      network: {
-        baseSepolia: {
+      network: perChain((chain) => {
+        const registry = registrySource(chain);
+        return {
           address: factory({
-            address: registryAddress,
+            address: asAddress(registry.address, `Registry on ${chain.network}`),
             event: registryChamberCreatedEvent,
             parameter: "erc721Token",
           }),
-        },
-      },
-      startBlock: registryStartBlock,
+          startBlock: registry.startBlock,
+        };
+      }),
+      startBlock: minStart((chain) => registrySource(chain).startBlock),
     },
     FactoryNft: {
       abi: Erc721Abi,
-      network: {
-        baseSepolia: {
-          address: factory({
-            address: factoryAddress,
-            event: factoryChamberCreatedEvent,
-            parameter: "nft",
-          }),
-          startBlock: factoryStartBlock,
-        },
-      },
-      startBlock: factoryStartBlock,
+      network: perChain((chain) => ({
+        address: factory({
+          address: asAddress(chain.factory, `Factory on ${chain.network}`),
+          event: factoryChamberCreatedEvent,
+          parameter: "nft",
+        }),
+        startBlock: chain.factoryStartBlock,
+      })),
+      startBlock: minStart((chain) => chain.factoryStartBlock),
     },
   },
 });

@@ -20,9 +20,12 @@ import { Erc721Abi } from "../../abis/Erc721Abi";
  * results), then upserts the state row. Reads go through Multicall3 with
  * allowFailure so views missing from older implementations become null
  * instead of failing the handler.
+ *
+ * `chainId` is part of every primary key. The same chamber address on two
+ * chains does not share rows.
  */
 
-export type Ctx = Pick<Context<"Chamber:Transfer">, "db" | "client">;
+export type Ctx = Pick<Context<"Chamber:Transfer">, "db" | "client" | "network">;
 export type Address = `0x${string}`;
 
 export type BlockRef = { number: bigint; timestamp: bigint };
@@ -75,10 +78,11 @@ function versionLabel(v: unknown): string | null {
 /** Chamber-wide totals, quorum, seats, pause flag, implementation. */
 export async function refreshChamber(
   context: Ctx,
+  chainId: number,
   address: Address,
   block: BlockRef,
 ): Promise<void> {
-  const existing = await context.db.find(chamber, { id: address });
+  const existing = await context.db.find(chamber, { chainId, id: address });
   if (!existing) return;
 
   const c = (functionName: string): ChamberCall => ({
@@ -119,7 +123,7 @@ export async function refreshChamber(
   const implementation =
     implSlot && implSlot !== "0x" ? asHex(`0x${implSlot.slice(-40)}`) : null;
 
-  await context.db.update(chamber, { id: address }).set({
+  await context.db.update(chamber, { chainId, id: address }).set({
     totalAssets: bigOrNull(totalAssets),
     totalSupply: bigOrNull(totalSupply),
     decimals: numOrNull(decimals),
@@ -140,10 +144,11 @@ export async function refreshChamber(
 /** Full ranked board: getTop(getSize()), each node's NFT owner and seatedAt. */
 export async function refreshBoard(
   context: Ctx,
+  chainId: number,
   address: Address,
   block: BlockRef,
 ): Promise<void> {
-  const row = await context.db.find(chamber, { id: address });
+  const row = await context.db.find(chamber, { chainId, id: address });
   if (!row) return;
 
   const [size] = await readMany(context, [
@@ -203,25 +208,27 @@ export async function refreshBoard(
     };
     await context.db
       .insert(boardSeat)
-      .values({ chamberId: address, tokenId, ...values })
+      .values({ chainId, chamberId: address, tokenId, ...values })
       .onConflictDoUpdate(values);
   }
 
   // Drop nodes that left the board (fully undelegated or cleaned up).
+  const onThisChain = and(
+    eq(boardSeat.chainId, chainId),
+    eq(boardSeat.chamberId, address),
+  );
   await context.db.sql
     .delete(boardSeat)
     .where(
       tokenIds.length > 0
-        ? and(
-            eq(boardSeat.chamberId, address),
-            notInArray(boardSeat.tokenId, [...tokenIds]),
-          )
-        : eq(boardSeat.chamberId, address),
+        ? and(onThisChain, notInArray(boardSeat.tokenId, [...tokenIds]))
+        : onThisChain,
     );
 }
 
 export async function refreshDelegation(
   context: Ctx,
+  chainId: number,
   address: Address,
   holder: Address,
   tokenId: bigint,
@@ -244,13 +251,14 @@ export async function refreshDelegation(
   const values = { amount, updatedBlock: block.number };
   await context.db
     .insert(delegation)
-    .values({ chamberId: address, holder: asHex(holder), tokenId, ...values })
+    .values({ chainId, chamberId: address, holder: asHex(holder), tokenId, ...values })
     .onConflictDoUpdate(values);
 }
 
 /** Wallet transaction status; `seed` carries fields only the submit event has. */
 export async function refreshProposal(
   context: Ctx,
+  chainId: number,
   address: Address,
   nonce: bigint,
   block: BlockRef,
@@ -304,12 +312,13 @@ export async function refreshProposal(
   );
   await context.db
     .insert(proposal)
-    .values({ chamberId: address, nonce, ...values })
+    .values({ chainId, chamberId: address, nonce, ...values })
     .onConflictDoUpdate({ ...update, executed: values.executed, cancelled: values.cancelled });
 }
 
 export async function refreshVote(
   context: Ctx,
+  chainId: number,
   address: Address,
   nonce: bigint,
   tokenId: bigint,
@@ -336,12 +345,13 @@ export async function refreshVote(
   };
   await context.db
     .insert(proposalVote)
-    .values({ chamberId: address, nonce, tokenId, ...values })
+    .values({ chainId, chamberId: address, nonce, tokenId, ...values })
     .onConflictDoUpdate(values);
 }
 
 export async function refreshSeatUpdate(
   context: Ctx,
+  chainId: number,
   address: Address,
   block: BlockRef,
 ): Promise<void> {
@@ -364,12 +374,13 @@ export async function refreshSeatUpdate(
   };
   await context.db
     .insert(seatUpdate)
-    .values({ chamberId: address, ...values })
+    .values({ chainId, chamberId: address, ...values })
     .onConflictDoUpdate(values);
 }
 
 export async function refreshOperator(
   context: Ctx,
+  chainId: number,
   address: Address,
   tokenId: bigint,
   owner: Address,
@@ -401,17 +412,18 @@ export async function refreshOperator(
   };
   await context.db
     .insert(directorOperator)
-    .values({ chamberId: address, tokenId, ...values })
+    .values({ chainId, chamberId: address, tokenId, ...values })
     .onConflictDoUpdate(values);
 }
 
 /** Initial snapshot after ChamberCreated (Initialized fires before the directory row exists). */
 export async function refreshNewChamber(
   context: Ctx,
+  chainId: number,
   address: Address,
   block: BlockRef,
 ): Promise<void> {
-  await refreshChamber(context, address, block);
-  await refreshBoard(context, address, block);
-  await refreshSeatUpdate(context, address, block);
+  await refreshChamber(context, chainId, address, block);
+  await refreshBoard(context, chainId, address, block);
+  await refreshSeatUpdate(context, chainId, address, block);
 }
