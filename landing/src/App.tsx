@@ -269,6 +269,8 @@ const COMPARE: { q: string; multisig: string; loreum: string }[] = [
   { q: 'Can outsiders check it?', multisig: 'Signer list plus a policy doc', loreum: 'Seats, quorum and every proposal are contract state' },
 ];
 
+const ARTIFICIAL_BEING_URL = 'https://www.amazon.com/dp/B0HNWWPCP8';
+
 const TESTS = [
   {
     title: 'Transparent and programmatic',
@@ -603,19 +605,21 @@ function App() {
       <section className="border-t border-line bg-ink-950/40" aria-labelledby="artificial-being-heading">
         <div className="container-x py-20 sm:py-24">
           <Reveal>
-            <div className="surface p-6 sm:p-10 grid gap-8 sm:gap-10 md:grid-cols-[176px_1fr] md:items-center">
-              <div
-                aria-hidden
-                className="mx-auto md:mx-0 w-[176px] aspect-[2/3] rounded-lg border border-line-strong bg-ink-700 px-4 py-6 flex flex-col justify-between shadow-[0_24px_50px_-28px_rgba(0,0,0,0.85)]"
+            <div className="surface p-6 sm:p-10 grid gap-8 sm:gap-10 md:grid-cols-[200px_1fr] md:items-center">
+              <a
+                href={ARTIFICIAL_BEING_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mx-auto md:mx-0 block w-[180px] sm:w-[200px] rounded-lg border border-line-strong overflow-hidden shadow-[0_24px_50px_-28px_rgba(0,0,0,0.85)]"
               >
-                <span className="h-1 w-10 rounded-full bg-accent-500" />
-                <p className="text-[1.35rem] sm:text-[1.5rem] leading-[1.12] font-light tracking-[-0.02em] text-slate-50">
-                  The Artificial Being
-                </p>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.11em] text-slate-400 whitespace-nowrap">
-                  Chad W. D. Lynch
-                </p>
-              </div>
+                <img
+                  src="/the-artificial-being.webp"
+                  alt="The Artificial Being by Chad W. D. Lynch — cover"
+                  width={480}
+                  height={768}
+                  className="block w-full h-auto"
+                />
+              </a>
               <div className="min-w-0 text-center md:text-left">
                 <p className="eyebrow mb-3">The book</p>
                 <h2
@@ -624,19 +628,20 @@ function App() {
                 >
                   The Artificial Being
                 </h2>
-                <div className="mt-4 space-y-3 text-base sm:text-lg text-slate-400 leading-relaxed max-w-2xl md:mx-0 mx-auto">
-                  <p>
-                    As autonomous agents act in the world, who holds the keys and who answers for them matters.
-                  </p>
-                  <p>
-                    Chad W. D. Lynch&apos;s <cite className="text-slate-200 not-italic">The Artificial Being</cite> explores
-                    the artificial being. Chamber is the accountable, member-elected structure for governing what acts
-                    on our behalf: members elect a board that holds the keys, and nothing moves without its quorum.
-                  </p>
-                </div>
+                <p className="mt-2 text-sm text-slate-500 leading-relaxed">
+                  Four Thousand Years of the Corporation, from Clay Tablets to Code
+                </p>
+                <p className="mt-4 text-base sm:text-lg text-slate-400 leading-relaxed max-w-2xl md:mx-0 mx-auto">
+                  For four thousand years, people have built artificial beings: corporations that own property, sign
+                  contracts and outlive their founders, from clay-tablet partnerships to the joint-stock company. Chad
+                  W. D. Lynch&apos;s <cite className="text-slate-200 not-italic">The Artificial Being</cite> traces that
+                  history to the point where the corporation becomes code. Chamber is that next step: an organization
+                  whose members elect the board that holds the keys, and where nothing moves without the board&apos;s
+                  quorum.
+                </p>
                 <div className="mt-8 flex flex-col sm:flex-row sm:items-center gap-3 justify-center md:justify-start">
                   <a
-                    href="https://www.amazon.com/dp/B0HNWWPCP8"
+                    href={ARTIFICIAL_BEING_URL}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="btn btn-primary"
