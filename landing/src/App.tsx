@@ -599,6 +599,60 @@ function App() {
         </div>
       </section>
 
+      {/* The Artificial Being */}
+      <section className="border-t border-line bg-ink-950/40" aria-labelledby="artificial-being-heading">
+        <div className="container-x py-20 sm:py-24">
+          <Reveal>
+            <div className="surface p-6 sm:p-10 grid gap-8 sm:gap-10 md:grid-cols-[176px_1fr] md:items-center">
+              <div
+                aria-hidden
+                className="mx-auto md:mx-0 w-[176px] aspect-[2/3] rounded-lg border border-line-strong bg-ink-700 px-4 py-6 flex flex-col justify-between shadow-[0_24px_50px_-28px_rgba(0,0,0,0.85)]"
+              >
+                <span className="h-1 w-10 rounded-full bg-accent-500" />
+                <p className="text-[1.35rem] sm:text-[1.5rem] leading-[1.12] font-light tracking-[-0.02em] text-slate-50">
+                  The Artificial Being
+                </p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.11em] text-slate-400 whitespace-nowrap">
+                  Chad W. D. Lynch
+                </p>
+              </div>
+              <div className="min-w-0 text-center md:text-left">
+                <p className="eyebrow mb-3">The book</p>
+                <h2
+                  id="artificial-being-heading"
+                  className="text-3xl sm:text-4xl leading-[1.1] font-light tracking-[-0.02em] text-slate-50"
+                >
+                  The Artificial Being
+                </h2>
+                <div className="mt-4 space-y-3 text-base sm:text-lg text-slate-400 leading-relaxed max-w-2xl md:mx-0 mx-auto">
+                  <p>
+                    As autonomous agents act in the world, who holds the keys and who answers for them matters.
+                  </p>
+                  <p>
+                    Chad W. D. Lynch&apos;s <cite className="text-slate-200 not-italic">The Artificial Being</cite> explores
+                    the artificial being. Chamber is the accountable, member-elected structure for governing what acts
+                    on our behalf: members elect a board that holds the keys, and nothing moves without its quorum.
+                  </p>
+                </div>
+                <div className="mt-8 flex flex-col sm:flex-row sm:items-center gap-3 justify-center md:justify-start">
+                  <a
+                    href="https://www.amazon.com/dp/B0HNWWPCP8"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-primary"
+                    data-umami-event="cta-get-the-book"
+                  >
+                    Get the book
+                    <ArrowRight className="w-4 h-4" />
+                  </a>
+                  <p className="text-sm text-slate-500">Kindle, paperback, and hardcover on Amazon.</p>
+                </div>
+              </div>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
       <Footer />
     </div>
   );
