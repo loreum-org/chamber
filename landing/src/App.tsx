@@ -251,7 +251,7 @@ const STEPS = [
   {
     n: '03',
     title: 'Seat',
-    body: 'The most-delegated seats fill the board, up to 20 directors. A seat is a membership NFT. Its owner — a person or an autonomous agent — is the director. The board follows delegation one block later.',
+    body: 'The most-delegated members fill the board, up to 20 directors. A director is a member elected to a board seat, held by any wallet, including an agent\'s. The board follows delegation one block later.',
     note: 'People or agents',
   },
   {
@@ -288,7 +288,7 @@ const COMPARE: { q: string; other: string; loreum: string }[] = [
   {
     q: 'Where do agents sit?',
     other: 'Safe: another signer, if someone adds one. Aragon: a DAO body, not a company director.',
-    loreum: 'On the board. An agent that owns the seat signs as that director.',
+    loreum: "On the board. A member elected to a seat, held by any wallet, including an agent's.",
   },
 ];
 
@@ -305,7 +305,7 @@ const TESTS = [
   },
   {
     title: 'Directors can be agents',
-    body: 'A seat is the membership NFT. A person or an autonomous agent that owns it signs as that director, through its own wallet, under the same quorum.',
+    body: "A director is a member elected to a board seat, held by any wallet, including an agent's. That wallet signs under the same quorum as every other director.",
   },
 ];
 
@@ -348,9 +348,9 @@ function App() {
             className="mt-6 text-lg sm:text-xl text-slate-400 leading-relaxed"
           >
             Chamber is the treasury and the board for a startup or a company. Shareholders elect up
-            to 20 directors. A director is a seat: a person, or an autonomous agent signing from its
-            own wallet. Nothing moves without the board's quorum. A public token community is
-            optional. Unlike a DAO treasury, the public is not the premise.
+            to 20 directors. A director is a member elected to a board seat, held by any wallet,
+            including an agent's. Nothing moves without the board's quorum. A public token community
+            is optional. Unlike a DAO treasury, the public is not the premise.
           </motion.p>
           <motion.div
             initial={{ opacity: 0, y: 14 }}
@@ -431,7 +431,7 @@ function App() {
           <SectionTitle
             eyebrow="How it works"
             title="Shareholders elect the board. Directors — people or agents — hold the keys."
-            lead="A chamber is one contract: the corporate treasury, a board of up to 20 seats, and a single queue. The agent is a director because it owns the seat. Chamber does not run the agent."
+            lead="A chamber is one contract: the corporate treasury, a board of up to 20 seats, and a single queue. A director is a member elected to a board seat, held by any wallet, including an agent's. Chamber does not run the agent."
           />
           <ol className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {STEPS.map((s, i) => (
@@ -481,7 +481,7 @@ function App() {
                 },
                 {
                   t: 'Agents hold seats',
-                  b: "Any address can own a membership NFT. Once that NFT is seated, its owner is the director — a person, or an autonomous agent's wallet, including a smart account that calls Chamber as itself. Chamber keeps no agent registry.",
+                  b: "A director is a member elected to a board seat, held by any wallet, including an agent's. A smart account can call Chamber as that wallet. Chamber keeps no agent registry.",
                 },
               ].map((f) => (
                 <li key={f.t} className="flex gap-3">
@@ -600,8 +600,8 @@ function App() {
               Seat the company's board.
             </h2>
             <p className="mt-4 text-slate-400 max-w-xl mx-auto leading-relaxed">
-              Pick the treasury token and a membership collection, and choose a board of up to 20
-              directors. People or autonomous agents can hold the seats. Try it on Sepolia first.
+              Pick the treasury token and the memberships, and choose a board of up to 20 directors.
+              A seat is held by any wallet, including an agent's. Try it on Sepolia first.
             </p>
             <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
               <a href={chamberAppUrl} className="btn btn-primary" data-umami-event="cta-launch-app">
