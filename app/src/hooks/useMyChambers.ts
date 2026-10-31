@@ -11,6 +11,8 @@ import {
   type ChamberDiscoveryHealth,
 } from '@/lib/chamberDiscovery'
 import { getIndexerUrl, indexerAppliesToChain } from '@/lib/indexer'
+import { isLegacyChamberVersion } from '@/lib/chamberUpgrade'
+import { chamberVersionBytes32ToLabel } from '@/lib/utils'
 import { addRecentChamber, getRecentChambers } from '@/lib/recentChambers'
 import { TESTNET_DEPLOYMENTS } from '@/lib/testnetDeployments'
 import {
@@ -58,6 +60,8 @@ export type MyChamberEntry = {
   isDirector: boolean
   balance: bigint
   isCreator: boolean
+  /** Older than 1.2.0 (or no readable VERSION): cannot be upgraded in place. */
+  isLegacy: boolean
 }
 
 type ChainChambers = { chambers: MyChamberEntry[]; health: ChamberDiscoveryHealth }
@@ -96,7 +100,7 @@ async function findMyChambersOnChain(
   if (candidates.length === 0) return { chambers: [], health }
 
   const user = userAddress.toLowerCase()
-  const [dirs, bals] = await Promise.all([
+  const [dirs, bals, versions] = await Promise.all([
     multicall(client, {
       contracts: candidates.map((address) => ({
         address,
@@ -111,6 +115,14 @@ async function findMyChambersOnChain(
         abi: chamberAbi,
         functionName: 'balanceOf' as const,
         args: [userAddress] as const,
+      })),
+      allowFailure: true,
+    }),
+    multicall(client, {
+      contracts: candidates.map((address) => ({
+        address,
+        abi: chamberAbi,
+        functionName: 'VERSION' as const,
       })),
       allowFailure: true,
     }),
@@ -130,8 +142,14 @@ async function findMyChambersOnChain(
     const hasBalance = balance > 0n
     const isCreator = creators.get(address) === user
     const isRecent = recents.includes(address)
+    const versionResult = versions[i]
+    const versionLabel =
+      versionResult?.status === 'success'
+        ? chamberVersionBytes32ToLabel(versionResult.result as `0x${string}`)
+        : undefined
+    const isLegacy = isLegacyChamberVersion(versionLabel)
     if (isCreator || isDirector || hasBalance || isRecent) {
-      mine.push({ address, chainId, isDirector, balance, isCreator })
+      mine.push({ address, chainId, isDirector, balance, isCreator, isLegacy })
     }
   }
   return { chambers: mine, health }
@@ -172,7 +190,12 @@ export function useMyChambers() {
     }),
   })
 
-  const chambers = results.flatMap((r) => r.data?.chambers ?? [])
+  const found = results.flatMap((r) => r.data?.chambers ?? [])
+  // Chambers older than 1.2.0 cannot be upgraded in place, so they are hidden by default.
+  const chambers = found.filter((c) => !c.isLegacy)
+  const legacyChambers = found.filter((c) => c.isLegacy)
+  const legacyKeys = new Set(legacyChambers.map((c) => `${c.chainId}:${c.address.toLowerCase()}`))
+  const currentRecents = recents.filter((r) => !legacyKeys.has(`${r.chainId}:${r.address.toLowerCase()}`))
   const isLoading = results.length > 0 && results.every((r) => r.isLoading)
   const failedChainIds = chainIds.filter((_, i) => {
     const r = results[i]!
@@ -190,7 +213,10 @@ export function useMyChambers() {
   )
 
   return {
+    /** The user's chambers on 1.2.0 or newer. */
     chambers,
+    /** The user's chambers older than 1.2.0, hidden unless the page asks for them. */
+    legacyChambers,
     /** True while no chain has answered yet. Chains that answer first show right away. */
     isLoading,
     /** True while at least one chain is still loading. */
@@ -200,7 +226,8 @@ export function useMyChambers() {
     /** Chains whose lookup failed or was only partly answered. */
     failedChainIds,
     refetch,
-    recents,
+    /** Recently opened chambers, minus known legacy ones. */
+    recents: currentRecents,
     remember,
     factoryAddress,
     registryAddress,

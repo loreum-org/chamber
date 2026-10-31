@@ -111,6 +111,9 @@ The app supports four testnets: Ethereum Sepolia, Base Sepolia, Arbitrum Sepolia
 Each network reads its addresses from `contracts/deployments/<network>.txt`. A network
 with no Factory in its file shows in the picker but cannot be picked.
 
+**My chambers** hides chambers older than 1.2.0, because they can't be upgraded in place
+and must be redeployed. A "Show" link under the list brings them back.
+
 To deploy the Factory and demo tokens to a network, from `contracts/`:
 
 ```bash
