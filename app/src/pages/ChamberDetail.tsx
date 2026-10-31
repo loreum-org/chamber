@@ -186,7 +186,7 @@ function ChamberDetailContent({ chamberAddress }: { chamberAddress: `0x${string}
         proposalCount={queuedTransactionCount}
         actions={
           <Link to={`/chamber/${chamberAddress}/transactions`} className="btn btn-secondary">
-            Open proposals
+            Open transactions
           </Link>
         }
       >
@@ -692,11 +692,11 @@ function RecentProposals({
 
   return (
     <Section
-      title="Recent proposals"
-      description="Treasury proposals and board changes"
+      title="Recent transactions"
+      description="Vault transactions and board changes"
       actions={
         <Link to={queueHref} className="text-xs text-accent-300 hover:text-accent-200">
-          All proposals →
+          All transactions →
         </Link>
       }
       flush
@@ -744,10 +744,10 @@ function RecentProposals({
         </ul>
       ) : (
         <div className="px-5 py-10 text-center">
-          <p className="text-slate-300 text-sm">No proposals yet</p>
-          <p className="text-slate-500 text-xs mt-1">Treasury proposals and board changes appear here.</p>
+          <p className="text-slate-300 text-sm">No transactions yet</p>
+          <p className="text-slate-500 text-xs mt-1">Vault transactions and board changes appear here.</p>
           <Link to={queueHref} className="btn btn-secondary btn-sm mt-4">
-            Open proposals
+            Open transactions
           </Link>
         </div>
       )}

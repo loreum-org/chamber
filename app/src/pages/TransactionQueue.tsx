@@ -136,13 +136,13 @@ function indexedTokenHasLiveConfirmation(
 function queueHeaderCta(needsYourConfirmation: number, readyToExecute: number): string {
   if (needsYourConfirmation > 0) {
     return needsYourConfirmation === 1
-      ? '1 proposal needs your confirmation.'
-      : `${needsYourConfirmation} proposals need your confirmation.`
+      ? '1 transaction needs your confirmation.'
+      : `${needsYourConfirmation} transactions need your confirmation.`
   }
   if (readyToExecute > 0) {
     return readyToExecute === 1
-      ? '1 proposal is ready to execute.'
-      : `${readyToExecute} proposals are ready to execute.`
+      ? '1 transaction is ready to execute.'
+      : `${readyToExecute} transactions are ready to execute.`
   }
   return 'Nothing needs you right now.'
 }
@@ -227,7 +227,7 @@ function classifyTransactionRisk(
     return {
       level: 'high' as RiskLevel,
       label: 'Invalid: Chamber self-call',
-      summary: 'Proposals reject Chamber self-calls except upgrades. Use Board changes for seat changes.',
+      summary: 'Transactions reject Chamber self-calls except upgrades. Use Board changes for seat changes.',
     }
   }
 
@@ -244,7 +244,7 @@ function classifyTransactionRisk(
       level: 'medium' as RiskLevel,
       label: sendsEth ? 'Medium risk: treasury transfer' : 'Medium risk: contract call',
       summary: sendsEth
-        ? 'Moves treasury ETH. Verify recipient, amount, and proposal rationale.'
+        ? 'Moves treasury ETH. Verify recipient, amount, and the stated reason.'
         : 'Executes calldata on an external contract. Verify function selector and target contract.',
     }
   }
@@ -281,7 +281,7 @@ function classifyTransactionRiskFromDataHash(
       level: 'high' as RiskLevel,
       label: 'Invalid: Chamber self-call',
       summary:
-        'Proposals reject Chamber self-calls except upgrades. Use Board changes for seat changes.',
+        'Transactions reject Chamber self-calls except upgrades. Use Board changes for seat changes.',
     }
   }
 
@@ -290,7 +290,7 @@ function classifyTransactionRiskFromDataHash(
       level: 'high' as RiskLevel,
       label: 'High risk: Chamber self-call',
       summary:
-        'Calls this Chamber from Treasury proposals. Verify calldata matches the intended action (e.g. upgrade) before approving.',
+        'Calls this Chamber from a transaction. Verify calldata matches the intended action (e.g. upgrade) before approving.',
     }
   }
 
@@ -820,7 +820,7 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
             ) : (
               <button type="button" onClick={() => setActiveTab('new')} className="btn btn-primary">
                 <FiPlus className="w-4 h-4" aria-hidden />
-                New proposal
+                New transaction
               </button>
             )
           ) : (
@@ -879,21 +879,21 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
             </button>
           }
         >
-          Proposals could not be loaded from the indexer. The list below may be empty or out of date.
+          Transactions could not be loaded from the indexer. The list below may be empty or out of date.
         </Banner>
       )}
 
       {activeTab === 'new' ? (
         <div>
-          <h2 className="section-title">New proposal</h2>
+          <h2 className="section-title">New transaction</h2>
           <p className="text-slate-500 text-xs mt-0.5">
-            Proposal #{transactionCount} · {chamberInfo.quorum} of {chamberInfo.seats} confirmations to execute
+            Transaction #{transactionCount} · {chamberInfo.quorum} of {chamberInfo.seats} confirmations to execute
           </p>
         </div>
       ) : (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Segmented
-            ariaLabel="Proposal lists"
+            ariaLabel="Transaction lists"
             items={[
               { id: 'queue' as const, label: 'Queue', count: queueCount },
               { id: 'history' as const, label: 'History', count: historyCount },
@@ -1041,17 +1041,17 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
                 ) : (
                   <>
                     <h3 className="font-heading text-xl font-semibold text-slate-300 mb-2">
-                      No pending proposals
+                      No pending transactions
                     </h3>
                     <p className="text-slate-500 mb-6 max-w-sm mx-auto">
-                      Create a proposal with a title and description. Directors can confirm and execute once quorum is reached.
+                      Create a transaction with a title and description. Directors can confirm and execute once quorum is reached.
                     </p>
                     <button
                       onClick={() => setActiveTab('new')}
                       className="btn btn-primary inline-flex"
                     >
                       <FiPlus className="w-4 h-4" />
-                      New proposal
+                      New transaction
                     </button>
                   </>
                 )}
@@ -1667,7 +1667,7 @@ function TransactionCard({
                     : resolvedCalldata.source === 'event'
                       ? 'onchain submit event'
                       : resolvedCalldata.source === 'metadata'
-                        ? 'proposal metadata'
+                        ? 'transaction metadata'
                         : resolvedCalldata.source === 'indexer'
                           ? 'chamber indexer'
                           : 'this browser'}
@@ -2101,7 +2101,7 @@ function BoardProposalCard({
                 onClick={() => void cancelProposal()}
                 disabled={busy}
                 className="btn btn-secondary py-2 px-3 border-slate-600 hover:border-slate-500 text-slate-400 hover:text-slate-200"
-                title={isProposer ? 'Proposer can cancel anytime' : 'Proposal expired — any director may cancel'}
+                title={isProposer ? 'Proposer can cancel anytime' : 'Board proposal expired — any director may cancel'}
               >
                 {isCancelPending || isCancelConfirming ? (
                   <FiLoader className="w-4 h-4 animate-spin" />
@@ -2161,7 +2161,7 @@ function NewProposalDirectorGate({
         </h3>
         <p className="text-slate-500 text-sm max-w-sm mx-auto">
           {boardEmpty
-            ? 'There are no directors, so new proposals stay locked. Hold a membership NFT and delegate shares to it.'
+            ? 'There are no directors, so new transactions and board changes stay locked. Hold a membership NFT and delegate shares to it.'
             : 'You must be a board director to submit transactions. Delegate shares to a member token to earn a board seat.'}
         </p>
       </div>
@@ -2458,7 +2458,7 @@ function NewTransactionForm({
     e.preventDefault()
 
     if (userTokenId === undefined) {
-      toast.error('You must be a director to submit proposals')
+      toast.error('You must be a director to submit transactions')
       return
     }
 
@@ -2544,7 +2544,7 @@ function NewTransactionForm({
           functionName: 'transfer',
           calldata: txData,
           riskLevel: 'medium' as RiskLevel,
-          riskSummary: 'Token transfer proposal. Verify token contract, recipient, amount, and treasury balance.',
+          riskSummary: 'Token transfer. Verify token contract, recipient, amount, and treasury balance.',
         }
         const metadataURI = createProposalMetadataURI(metadata)
         onWriteStart('submit')
@@ -2635,8 +2635,8 @@ function NewTransactionForm({
           <FiSend className="w-5 h-5" />
         </div>
         <div>
-          <h3 className="font-heading font-semibold text-slate-100">New Proposal</h3>
-          <p className="text-slate-500 text-xs">Create a treasury proposal or board change</p>
+          <h3 className="font-heading font-semibold text-slate-100">New transaction</h3>
+          <p className="text-slate-500 text-xs">Create a vault transaction or board change</p>
         </div>
       </div>
 
@@ -2645,7 +2645,7 @@ function NewTransactionForm({
           {
             id: 'transaction',
             icon: FiDollarSign,
-            title: 'Treasury proposals',
+            title: 'Vault transactions',
             description: 'Submit a wallet transaction for director confirmation.',
           },
           {
@@ -2995,7 +2995,7 @@ function NewTransactionForm({
                   : 'Enter a valid target address to generate a governance risk summary for directors.'}
               </p>
               <p className="text-[11px] text-slate-500 mt-2">
-                Proposal title, description, and risk summary will be committed onchain as metadata for auditability.
+                Transaction title, description, and risk summary will be committed onchain as metadata for auditability.
               </p>
               {/* Deadline input is out of scope: useSubmitTransaction calls the no-deadline
                   overloads, which apply WalletTypes.DEFAULT_TRANSACTION_MAX_AGE (30 days). */}
@@ -3039,7 +3039,7 @@ function NewTransactionForm({
           ) : (
             <>
               <FiSend className="w-4 h-4" />
-              {proposalType === 'seats' ? 'Create board change' : 'Submit proposal'}
+              {proposalType === 'seats' ? 'Create board change' : 'Submit transaction'}
             </>
           )}
         </button>
