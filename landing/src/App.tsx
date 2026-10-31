@@ -56,17 +56,19 @@ function SectionTitle({
 /* Hero visual: delegation moves, the board re-sorts itself                    */
 /* ────────────────────────────────────────────────────────────────────────── */
 
-type Seat = { id: string; name: string; token: string; weight: number };
+type Seat = { id: string; name: string; token: string; weight: number; kind: 'person' | 'agent' };
 
+/** Example board in the hero. Protocol max is 20; this preview shows 5. */
 const SEATS = 5;
+const MAX_DIRECTORS = 20;
 
 const INITIAL: Seat[] = [
-  { id: 'aria', name: 'aria.eth', token: '#7', weight: 2410 },
-  { id: 'kofi', name: 'kofi.eth', token: '#12', weight: 1905 },
-  { id: 'treasury', name: 'grants.eth', token: '#31', weight: 1120 },
-  { id: 'lena', name: 'lena.eth', token: '#44', weight: 980 },
-  { id: 'marco', name: 'marco.eth', token: '#58', weight: 612 },
-  { id: 'nadia', name: 'nadia.eth', token: '#63', weight: 540 },
+  { id: 'aria', name: 'aria.eth', token: '#7', weight: 2410, kind: 'person' },
+  { id: 'ops', name: 'ops', token: '#19', weight: 1880, kind: 'agent' },
+  { id: 'kofi', name: 'kofi.eth', token: '#12', weight: 1705, kind: 'person' },
+  { id: 'lena', name: 'lena.eth', token: '#44', weight: 980, kind: 'person' },
+  { id: 'marco', name: 'marco.eth', token: '#58', weight: 612, kind: 'person' },
+  { id: 'nadia', name: 'nadia.eth', token: '#63', weight: 540, kind: 'person' },
 ];
 
 function fmt(n: number) {
@@ -75,8 +77,8 @@ function fmt(n: number) {
 
 /**
  * Every few seconds some delegated weight moves from marco to nadia (and back),
- * so the viewer watches seat 5 change hands. That is the whole product idea in
- * one motion: the board follows delegation.
+ * so the viewer watches seat 5 change hands. The board follows delegation.
+ * One seated director is an agent wallet; the rest are people.
  */
 function BoardPreview() {
   const [phase, setPhase] = useState(0);
@@ -100,7 +102,9 @@ function BoardPreview() {
             <span className="font-semibold text-slate-100">Example chamber</span>
             <span className="chip chip-accent">eqLORE</span>
           </div>
-          <p className="text-xs text-slate-500 mt-0.5 tabular-nums">{SEATS} seats · quorum 3 of {SEATS}</p>
+          <p className="text-xs text-slate-500 mt-0.5 tabular-nums">
+            Example · {SEATS} of {MAX_DIRECTORS} seats · quorum 3 of {SEATS}
+          </p>
         </div>
         <span className="chip">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
@@ -128,9 +132,12 @@ function BoardPreview() {
                 </span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-3">
-                    <span className={`text-sm truncate ${seated ? 'text-slate-100' : 'text-slate-500'}`}>
-                      {s.name}
-                      <span className="text-slate-500 mono text-xs ml-2">{s.token}</span>
+                    <span className={`text-sm flex items-center min-w-0 ${seated ? 'text-slate-100' : 'text-slate-500'}`}>
+                      <span className="truncate">{s.name}</span>
+                      <span className="text-slate-500 mono text-xs ml-2 shrink-0">{s.token}</span>
+                      {s.kind === 'agent' && (
+                        <span className="chip chip-accent ml-2 shrink-0">Agent</span>
+                      )}
                     </span>
                     <span className="text-xs tabular-nums mono text-slate-400 shrink-0">{fmt(s.weight)}</span>
                   </div>
@@ -152,7 +159,7 @@ function BoardPreview() {
       </LayoutGroup>
 
       <div className="border-t border-line px-5 py-3 text-xs text-slate-500 flex items-center justify-between gap-3">
-        <span>Delegation moves, the board re-sorts.</span>
+        <span>Delegation re-sorts the board.</span>
         <span className="tabular-nums">seat changes take effect after 1 block</span>
       </div>
     </div>
@@ -166,7 +173,7 @@ function BoardPreview() {
 const QUEUE = [
   {
     id: 46,
-    title: 'Transfer 120,000 USDC to the Grants Safe',
+    title: 'Transfer 120,000 USDC to operating reserves',
     decoded: 'USDC.transfer(0x4d2e…9A1c, 120,000)',
     sim: 'Simulation passes · treasury −120,000 USDC',
     status: 'Ready to execute',
@@ -175,9 +182,9 @@ const QUEUE = [
   },
   {
     id: 47,
-    title: 'Add a sixth board seat',
-    decoded: 'updateSeats(6) · board change · 7-day timelock',
-    sim: 'Quorum rises to 4 of 6 once it executes',
+    title: 'Raise the board to 12 directors',
+    decoded: 'updateSeats(12) · board change · 7-day timelock',
+    sim: 'Quorum rises to 7 of 12 once it executes',
     status: 'Timelock',
     tone: 'chip-warn',
     confirmations: '2 of 3',
@@ -231,42 +238,58 @@ function QueuePreview() {
 const STEPS = [
   {
     n: '01',
-    title: 'Deposit',
-    body: 'Members put the treasury token into the chamber vault and receive shares. Withdraw any time.',
+    title: 'Capital',
+    body: 'Shareholders deposit the treasury token and receive shares. Withdraw any time. A public token sale is not required.',
     note: 'ERC-4626 vault',
   },
   {
     n: '02',
-    title: 'Delegate',
-    body: 'Point your shares at a member you trust. You keep your shares; only the weight moves. Change your mind whenever you like.',
+    title: 'Elect',
+    body: "Point your shares at the seats you want on the board: a founder, an operator, or an agent's wallet. You keep the shares. Only the weight moves.",
     note: 'No lockups',
   },
   {
     n: '03',
     title: 'Seat',
-    body: 'The most-delegated members fill the board seats automatically. When delegation shifts, the board shifts with it one block later.',
-    note: 'Board follows delegation',
+    body: 'The most-delegated members fill the board, up to 20 directors. A director is a member elected to a board seat, held by any wallet, including an agent\'s. The board follows delegation one block later.',
+    note: 'People or agents',
   },
   {
     n: '04',
-    title: 'Decide',
-    body: 'Any director proposes a transaction. Everyone sees what it does and a simulation of the result. A quorum confirms, then it executes.',
-    note: 'Nothing moves alone',
+    title: 'Act',
+    body: 'Any director, human or agent, proposes from their own wallet. The board sees the decoded call and a simulation. Quorum confirms, then it executes. One seat cannot move funds alone.',
+    note: 'Board quorum',
   },
 ];
 
 const RULES = [
-  { k: 'Quorum', v: '1 + ⌊n × 51 / 100⌋', s: 'so 3 of 5 directors' },
+  { k: 'Quorum', v: '1 + ⌊n × 51 / 100⌋', s: 'board size sets it, up to 20 directors' },
   { k: 'Seat changes', v: '1 block', s: 'then the new director can act' },
-  { k: 'Board resize', v: '7 days', s: 'public timelock before it applies' },
+  { k: 'Board resize', v: '7 days', s: 'timelock before a new size applies' },
   { k: 'Stale proposals', v: '30 days', s: 'then they expire unexecuted' },
 ];
 
-const COMPARE: { q: string; multisig: string; loreum: string }[] = [
-  { q: 'Who can move funds?', multisig: 'A fixed list of signer addresses', loreum: 'Whoever currently holds the most delegated weight' },
-  { q: 'How does leadership change?', multisig: 'Someone edits the signer list, by hand', loreum: 'Members move their delegation; seats update themselves' },
-  { q: 'What does a vote do?', multisig: 'Signals in Discord. Signers still decide.', loreum: 'A confirmation on the actual transaction' },
-  { q: 'Can outsiders check it?', multisig: 'Signer list plus a policy doc', loreum: 'Seats, quorum and every proposal are contract state' },
+const COMPARE: { q: string; other: string; loreum: string }[] = [
+  {
+    q: 'Who can move funds?',
+    other: 'Safe: the signer list. Aragon: a DAO vote, then a separate executor.',
+    loreum: 'Seated directors — people or agents — and only at quorum',
+  },
+  {
+    q: 'How does the board change?',
+    other: 'Safe: edit the signer list by hand. Aragon: pass a governance proposal.',
+    loreum: 'Shareholders move delegation. Seats update themselves, up to 20.',
+  },
+  {
+    q: 'Who is it for?',
+    other: 'Safe: a shared wallet. Aragon: a public token community.',
+    loreum: 'A startup or company. A public community is optional.',
+  },
+  {
+    q: 'Where do agents sit?',
+    other: 'Safe: another signer, if someone adds one. Aragon: a DAO body, not a company director.',
+    loreum: "On the board. A member elected to a seat, held by any wallet, including an agent's.",
+  },
 ];
 
 const ARTIFICIAL_BEING_URL = 'https://www.amazon.com/dp/B0HNWWPCP8';
@@ -274,22 +297,22 @@ const ARTIFICIAL_BEING_URL = 'https://www.amazon.com/dp/B0HNWWPCP8';
 const TESTS = [
   {
     title: 'Transparent and programmatic',
-    body: 'Decisions run on published contract rules, not on polls or admin keys.',
+    body: 'Decisions run on published contract rules. Seats, quorum, and proposals are state anyone can read.',
   },
   {
-    title: 'No unilateral control',
-    body: 'There is no owner key. Treasury and upgrades move only through a board quorum.',
+    title: 'No owner key beside the board',
+    body: 'Treasury and upgrades move only when directors reach quorum. Board size, from 1 to 20, sets that quorum.',
   },
   {
-    title: 'Distributed and impartial',
-    body: 'Seats go to whoever members delegate to, and anyone can verify who that is.',
+    title: 'Directors can be agents',
+    body: "A director is a member elected to a board seat, held by any wallet, including an agent's. That wallet signs under the same quorum as every other director.",
   },
 ];
 
 function App() {
   useSeo(
-    'Loreum — Accountable boards for onchain treasuries',
-    'Loreum gives a shared treasury an elected board. Members deposit, delegate to people they trust, and nothing moves without a quorum. Open source, non-custodial, on Ethereum.',
+    'Loreum — Corporate treasuries for decentralized autonomous corporations',
+    "Chamber is a corporate treasury and board for startups and companies. Shareholders elect up to 20 directors — people or autonomous agents — and nothing moves without the board's quorum.",
     '/',
   );
 
@@ -308,7 +331,7 @@ function App() {
             transition={{ duration: 0.5 }}
             className="eyebrow mb-5"
           >
-            Onchain treasury governance
+            Decentralized autonomous corporations
           </motion.p>
           <motion.h1
             initial={{ opacity: 0, y: 14 }}
@@ -316,7 +339,7 @@ function App() {
             transition={{ duration: 0.6, delay: 0.05 }}
             className="text-[2.6rem] sm:text-6xl lg:text-[4rem] leading-[1.02] font-light tracking-[-0.02em] text-slate-50"
           >
-            A treasury your community actually controls.
+            A corporate treasury. Directors can be agents.
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 14 }}
@@ -324,9 +347,10 @@ function App() {
             transition={{ duration: 0.6, delay: 0.15 }}
             className="mt-6 text-lg sm:text-xl text-slate-400 leading-relaxed"
           >
-            Loreum gives a shared treasury an elected board. Members deposit, delegate to the people
-            they trust, and the most-trusted members take the seats. Nothing moves without a quorum,
-            and the contract enforces every rule. Not us.
+            Chamber is the treasury and the board for a startup or a company. Shareholders elect up
+            to 20 directors. A director is a member elected to a board seat, held by any wallet,
+            including an agent's. Nothing moves without the board's quorum. A public token community
+            is optional. Unlike a DAO treasury, the public is not the premise.
           </motion.p>
           <motion.div
             initial={{ opacity: 0, y: 14 }}
@@ -372,26 +396,22 @@ function App() {
         <div className="container-x py-20 sm:py-28">
           <SectionTitle
             eyebrow="The problem"
-            title={
-              <>
-                Most “decentralized” treasuries are five founders and a Discord poll.
-              </>
-            }
-            lead="A multisig is a good lock. It is not a way to run an organization. Three things go wrong as soon as the group grows."
+            title="A company treasury is not a public DAO."
+            lead="Safe is a lock with a fixed signer list. Aragon is built for a token community. A startup needs shareholders, a board, and a treasury that still runs when some directors are agents."
           />
           <div className="mt-12 grid gap-4 md:grid-cols-3">
             {[
               {
-                t: 'The signer list never changes',
-                b: 'Power moved to new contributors, but the wallet still trusts last year’s five addresses.',
+                t: 'Safe never reseats itself',
+                b: 'The signer list is whoever was typed in. Hiring, firing, or seating an agent means editing the wallet by hand.',
               },
               {
-                t: 'Votes don’t execute anything',
-                b: 'The forum says yes. Execution is still whoever holds the keys, whenever they get to it.',
+                t: 'Aragon assumes a public DAO',
+                b: 'Token votes and a community treasury. A company may have shareholders and no public token at all.',
               },
               {
-                t: 'Nobody can check who is in charge',
-                b: 'Token holders exist, but who speaks for them is informal and lives in chat history.',
+                t: 'An agent has no seat',
+                b: 'A multisig still waits for a person to click approve. An autonomous agent can hold a wallet, but it is not a director until the board gives it a seat and holds it to quorum.',
               },
             ].map((c, i) => (
               <Reveal key={c.t} delay={i * 0.08}>
@@ -410,8 +430,8 @@ function App() {
         <div className="container-x py-20 sm:py-28">
           <SectionTitle
             eyebrow="How it works"
-            title="Delegation picks the board. The board runs one queue."
-            lead="A chamber is one contract that holds the treasury, ranks the board, and executes approved transactions. Four steps, all onchain."
+            title="Shareholders elect the board. Directors — people or agents — hold the keys."
+            lead="A chamber is one contract: the corporate treasury, a board of up to 20 seats, and a single queue. A director is a member elected to a board seat, held by any wallet, including an agent's. Chamber does not run the agent."
           />
           <ol className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {STEPS.map((s, i) => (
@@ -446,8 +466,8 @@ function App() {
           <div>
             <SectionTitle
               eyebrow="The queue"
-              title="Decoded before anyone signs."
-              lead="Directors never confirm a blob of hex. Every proposal shows what it will do in plain words, and a simulation of the result, before a single confirmation."
+              title="Decoded before a director signs."
+              lead="A human director and an agent director see the same proposal: plain language, a simulation, then a confirmation. One seat still cannot move the treasury alone."
             />
             <ul className="mt-8 space-y-5">
               {[
@@ -457,11 +477,11 @@ function App() {
                 },
                 {
                   t: 'Simulated first',
-                  b: 'Execution runs a simulation against the latest block and shows the balance change before your wallet opens.',
+                  b: 'Execution runs a simulation against the latest block and shows the balance change before the director confirms.',
                 },
                 {
-                  t: 'Scoped keys for teams',
-                  b: 'A seat owned by a Safe or another contract can register a key that is limited to specific actions and always expires.',
+                  t: 'Agents hold seats',
+                  b: "A director is a member elected to a board seat, held by any wallet, including an agent's. A smart account can call Chamber as that wallet. Chamber keeps no agent registry.",
                 },
               ].map((f) => (
                 <li key={f.t} className="flex gap-3">
@@ -484,14 +504,14 @@ function App() {
       <section className="border-t border-line bg-ink-950/40">
         <div className="container-x py-20 sm:py-28">
           <SectionTitle
-            eyebrow="Versus a multisig"
-            title="Same safety idea. A shape that keeps up with the group."
-            lead="Both stop one person from draining the treasury. Only one of them knows who should hold the keys this month."
+            eyebrow="Versus Safe and Aragon"
+            title="A corporate board, not a signer list or a DAO."
+            lead="Safe keeps a fixed list of addresses. Aragon governs a public DAO. Chamber is the company: shareholders elect the directors, and those directors are the keys."
           />
           <Reveal delay={0.1} className="mt-12 surface overflow-hidden">
             <div className="hidden md:grid grid-cols-[1.1fr_1fr_1fr] px-6 py-3 border-b border-line text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
               <span />
-              <span>Plain multisig</span>
+              <span>Safe and Aragon</span>
               <span className="text-accent-300">Loreum chamber</span>
             </div>
             <ul className="divide-y divide-line">
@@ -499,8 +519,8 @@ function App() {
                 <li key={row.q} className="grid gap-2 md:gap-6 md:grid-cols-[1.1fr_1fr_1fr] px-6 py-5">
                   <p className="text-slate-100 font-medium">{row.q}</p>
                   <p className="text-sm text-slate-500">
-                    <span className="md:hidden text-[11px] uppercase tracking-[0.12em] mr-2">Multisig</span>
-                    {row.multisig}
+                    <span className="md:hidden text-[11px] uppercase tracking-[0.12em] mr-2">Safe / Aragon</span>
+                    {row.other}
                   </p>
                   <p className="text-sm text-slate-200">
                     <span className="md:hidden text-[11px] uppercase tracking-[0.12em] text-accent-300 mr-2">Loreum</span>
@@ -517,12 +537,13 @@ function App() {
       <section className="border-t border-line">
         <div className="container-x py-20 sm:py-28 grid gap-12 lg:grid-cols-2 lg:items-start">
           <SectionTitle
-            eyebrow="Built for the rules that are coming"
-            title="Decentralized in a way you can prove."
+            eyebrow="A board you can audit"
+            title="The board holds the keys, and anyone can check."
             lead={
               <>
-                Regulators increasingly ask one question of a protocol: does anyone still hold effective
-                control? A chamber is designed so the honest answer is no, and so that anyone can check.{' '}
+                Control sits with the directors, not with a founder key or a chat. Anyone can read who
+                holds each seat, what the quorum is, and which proposals passed. An agent on the board
+                is a named seat, under the same quorum as every other director.{' '}
                 <Link to="/whitepaper" className="text-accent-300 hover:text-accent-200">
                   Read the whitepaper
                 </Link>
@@ -576,11 +597,11 @@ function App() {
         <div className="container-x py-20 sm:py-28">
           <Reveal className="surface p-8 sm:p-12 text-center">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-light tracking-[-0.02em] text-slate-50">
-              Deploy a chamber in minutes.
+              Seat the company's board.
             </h2>
             <p className="mt-4 text-slate-400 max-w-xl mx-auto leading-relaxed">
-              Pick the treasury token and a membership collection, choose the number of seats, and the
-              contract does the rest. Try it on Sepolia first.
+              Pick the treasury token and the memberships, and choose a board of up to 20 directors.
+              A seat is held by any wallet, including an agent's. Try it on Sepolia first.
             </p>
             <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
               <a href={chamberAppUrl} className="btn btn-primary" data-umami-event="cta-launch-app">

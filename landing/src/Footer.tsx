@@ -18,8 +18,8 @@ function Footer() {
             <span className="font-semibold tracking-[0.02em] text-slate-100">Loreum</span>
           </div>
           <p className="text-slate-500 text-sm max-w-xs leading-relaxed">
-            Open-source contracts that give a shared treasury an elected board. Non-custodial,
-            enforced on Ethereum.
+            Open-source contracts for a corporate treasury. Shareholders elect up to 20 directors —
+            people or autonomous agents — and nothing moves without the board's quorum.
           </p>
         </div>
 
