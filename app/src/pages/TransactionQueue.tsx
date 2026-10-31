@@ -2464,7 +2464,7 @@ function NewTransactionForm({
 
     if (proposalType === 'seats') {
       if (hasSeatProposal) {
-        toast.error('A board change is already active. Support or execute it from Proposals.')
+        toast.error('A board change is already active. Support or execute it from Transactions.')
         return
       }
       const n = Number(seatDraft)
@@ -2698,7 +2698,7 @@ function NewTransactionForm({
 
             {hasSeatProposal && (
               <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 text-sm text-amber-300">
-                A board change is already active. Return to Proposals to support or execute it.
+                A board change is already active. Return to Transactions to support or execute it.
               </div>
             )}
 
