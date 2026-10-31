@@ -118,6 +118,15 @@ export const MIN_IN_PLACE_UPGRADE_VERSION: SemVer = [1, 2, 0]
 /** First build without the pre-1.2.0 delegation backfill. */
 export const BACKFILL_REMOVED_VERSION: SemVer = [1, 3, 0]
 
+/**
+ * True for a chamber the app can no longer upgrade in place (older than 1.2.0, or with no
+ * readable VERSION). My chambers hides these by default; they must be redeployed.
+ */
+export function isLegacyChamberVersion(label: string | undefined): boolean {
+  const version = parseChamberVersion(label)
+  return !version || compareVersions(version, MIN_IN_PLACE_UPGRADE_VERSION) < 0
+}
+
 async function readVersion(client: UpgradePreflightClient, address: `0x${string}`): Promise<string | undefined> {
   try {
     const raw = await client.readContract({ address, abi: versionAbi, functionName: 'VERSION' })

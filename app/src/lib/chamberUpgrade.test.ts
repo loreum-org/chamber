@@ -6,6 +6,7 @@ import {
   PROXY_ADMIN_RENOUNCE_OWNERSHIP_SELECTOR,
   PROXY_ADMIN_TRANSFER_OWNERSHIP_SELECTOR,
   classifyProxyAdminCall,
+  isLegacyChamberVersion,
   proxyAdminRisk,
   UPGRADE_AND_CALL_SELECTOR,
   buildUpgradeProposal,
@@ -208,5 +209,20 @@ describe('ProxyAdmin ownership calls are high risk', () => {
     expect(r?.functionName).toBe('renounceOwnership')
     expect(r?.highRisk).toBe(true)
     expect(decodeTransactionAction({ target: impl, value: 0n, calldata: transfer, proxyAdmin })?.highRisk).toBeFalsy()
+  })
+})
+
+describe('isLegacyChamberVersion', () => {
+  it('flags chambers older than 1.2.0 or with no readable VERSION', () => {
+    expect(isLegacyChamberVersion('1.1.5')).toBe(true)
+    expect(isLegacyChamberVersion('v1.1.9')).toBe(true)
+    expect(isLegacyChamberVersion(undefined)).toBe(true)
+    expect(isLegacyChamberVersion('garbage')).toBe(true)
+  })
+
+  it('keeps 1.2.0 and newer', () => {
+    expect(isLegacyChamberVersion('1.2.0')).toBe(false)
+    expect(isLegacyChamberVersion('1.3.0')).toBe(false)
+    expect(isLegacyChamberVersion('2.0.0')).toBe(false)
   })
 })

@@ -33,6 +33,7 @@ export default function Dashboard() {
   const { openConnectModal } = useConnectModal()
   const [viewMode, setViewMode] = useState<'mine' | 'organizations'>('mine')
   const [networkFilter, setNetworkFilter] = useState<string>('all')
+  const [showLegacy, setShowLegacy] = useState(false)
   const openChamber = useOpenChamber()
   const [openAddress, setOpenAddress] = useState('')
   const [openError, setOpenError] = useState<string | null>(null)
@@ -42,7 +43,8 @@ export default function Dashboard() {
   const switchLabel = switchToSupportedChainLabel(preferredChainId)
 
   const {
-    chambers: allMyChambers,
+    chambers: currentChambers,
+    legacyChambers,
     isLoading,
     isFetchingMore,
     failedChainIds,
@@ -54,6 +56,8 @@ export default function Dashboard() {
     factoryAddress,
     registryAddress,
   } = useMyChambers()
+  // Chambers older than 1.2.0 can't be upgraded in place; they stay hidden unless asked for.
+  const allMyChambers = showLegacy ? [...currentChambers, ...legacyChambers] : currentChambers
   // Networks in display order that hold at least one of the user's chambers.
   const chainOrder = getConfiguredChainIds()
   const chamberChainIds = chainOrder.filter((id) => allMyChambers.some((c) => c.chainId === id))
@@ -270,6 +274,7 @@ export default function Dashboard() {
                 Checking other networks…
               </p>
             )}
+            <LegacyToggle count={legacyChambers.length} shown={showLegacy} onToggle={() => setShowLegacy((v) => !v)} />
           </div>
         ) : isFetchingMore ? (
           <p className="flex items-center gap-2 text-sm text-slate-500">
@@ -277,7 +282,10 @@ export default function Dashboard() {
             Checking other networks…
           </p>
         ) : (
-          <EmptyChambers />
+          <div className="space-y-3">
+            <EmptyChambers />
+            <LegacyToggle count={legacyChambers.length} shown={showLegacy} onToggle={() => setShowLegacy((v) => !v)} />
+          </div>
         )
       ) : !isConnected ? (
         <EmptyChambers disconnected />
@@ -309,6 +317,20 @@ export default function Dashboard() {
         <EmptyChambers />
       )}
     </div>
+  )
+}
+
+function LegacyToggle({ count, shown, onToggle }: { count: number; shown: boolean; onToggle: () => void }) {
+  if (count === 0) return null
+  return (
+    <p className="text-xs text-slate-500">
+      {shown
+        ? `Showing ${count} old ${count === 1 ? 'chamber' : 'chambers'} (before v1.2.0) that can't be upgraded.`
+        : `${count} old ${count === 1 ? 'chamber' : 'chambers'} (before v1.2.0) hidden because they can't be upgraded.`}{' '}
+      <button type="button" onClick={onToggle} className="text-slate-400 hover:text-slate-100 underline transition-colors">
+        {shown ? 'Hide' : 'Show'}
+      </button>
+    </p>
   )
 }
 
