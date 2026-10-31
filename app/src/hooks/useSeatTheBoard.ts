@@ -21,7 +21,7 @@ export function seatTheBoardHref(
   action: SeatTheBoardAction,
   tokenId?: bigint,
 ): string {
-  if (action === 'deposit') return `/chamber/${chamberAddress}/staking`
+  if (action === 'deposit') return `/chamber/${chamberAddress}/vault`
   if (action === 'mint') return `/chamber/${chamberAddress}`
   const q = tokenId !== undefined ? `?tokenId=${tokenId.toString()}` : ''
   return `/chamber/${chamberAddress}/delegation${q}`

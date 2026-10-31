@@ -8,7 +8,7 @@ import { chamberTabHref, type ChamberTab } from '@/lib/chamberTabs'
 export type { ChamberTab }
 
 /**
- * The one chamber header. Overview, Board, Treasury, Delegation and Proposals
+ * The one chamber header. Overview, Board, Vault, Delegation and Transactions
  * all render under it, so moving between them never changes the frame.
  */
 export function ChamberHeader({
@@ -40,11 +40,11 @@ export function ChamberHeader({
   const tabs = [
     { id: 'overview' as const, label: 'Overview', to: chamberTabHref(chamberAddress, 'overview') },
     { id: 'board' as const, label: 'Board', to: chamberTabHref(chamberAddress, 'board') },
-    { id: 'staking' as const, label: 'Treasury', to: chamberTabHref(chamberAddress, 'staking') },
+    { id: 'vault' as const, label: 'Vault', to: chamberTabHref(chamberAddress, 'vault') },
     { id: 'delegation' as const, label: 'Delegation', to: chamberTabHref(chamberAddress, 'delegation') },
     {
       id: 'proposals' as const,
-      label: 'Proposals',
+      label: 'Transactions',
       to: chamberTabHref(chamberAddress, 'proposals'),
       count: proposalCount,
     },

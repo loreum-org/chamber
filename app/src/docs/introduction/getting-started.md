@@ -44,7 +44,7 @@ Happy path on **Sepolia** or **Anvil**:
 2. **Hold a membership NFT** — the creator must own at least one token from the ERC‑721 you pasted.
    - **Anvil / Sepolia mock collection:** use **Mint Test NFT** (header) or **Seat the board → Mint founder NFT**.
    - **Your own collection:** receive or already hold a token. Chamber does not mint third-party NFTs and does not auto-seat strangers.
-3. **Deposit shares** — **Staking** tab. Delegation needs Chamber shares.
+3. **Deposit shares** — **Vault** tab. Delegation needs Chamber shares.
 4. **Delegate** to a token ID you hold — **Delegation** tab (the CTA prefills a token you own when it can).
 5. **Wait `SEATING_DELAY`** — **1 block**. Then the creator is a seated director and the queue can run. The same 1-block delay applies when `ownerOf` changes for an already-seated token.
 
@@ -58,7 +58,7 @@ The header shows vault size, seats, quorum, and your balance. Main areas:
 |------------|---------|
 | **Overview** | Summary and next action (empty-board bootstrap, or the proposal queue once seated) |
 | **Board** | Leaderboard — who has the most delegated weight |
-| **Staking** | Deposit or withdraw underlying tokens |
+| **Vault** | Deposit or withdraw underlying tokens |
 | **Delegation** | Point your shares at NFT token IDs |
 | **Transactions** | Proposal queue (directors) |
 
@@ -68,7 +68,7 @@ If **no one has delegated yet**, Overview explains how to seat the board instead
 
 ## Step 3 — Add funds (deposit)
 
-**Go to:** **Staking** tab
+**Go to:** **Vault** tab
 
 1. Hold enough of the Chamber’s **underlying ERC‑20** in your wallet.  
 2. **Approve** the Chamber when prompted.  
@@ -114,7 +114,7 @@ This is the Chamber equivalent of a multisig transaction — but confirmations a
 | I want to… | Where in the app |
 |-----------|------------------|
 | Create a Chamber | **Deploy** |
-| Put money in the treasury | **Staking → Deposit** |
+| Put money in the treasury | **Vault → Deposit** |
 | Support leaders | **Delegation** |
 | See who leads | **Board** |
 | Spend treasury / interact with contracts | **Transactions** |

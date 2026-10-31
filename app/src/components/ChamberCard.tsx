@@ -75,7 +75,7 @@ export default function ChamberCard({ address, chainId }: ChamberCardProps) {
   facts.push(`${formatAmount(totalAssets)} ${(assetSymbol as string | undefined) ?? ''}`.trim())
   if (seats !== undefined) facts.push(`${seats} seats`)
   if (quorum !== undefined && seats !== undefined) facts.push(`quorum ${quorum} of ${seats}`)
-  if (transactionCount !== undefined) facts.push(`${transactionCount} proposals`)
+  if (transactionCount !== undefined) facts.push(`${transactionCount} transactions`)
 
   return (
     <a

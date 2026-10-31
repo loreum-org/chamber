@@ -468,7 +468,7 @@ function DirectorProfileContent({
               <FiLayers className="w-3.5 h-3.5" /> View Chamber
             </Link>
             <Link to={`/chamber/${chamberAddress}/transactions`} className="flex items-center gap-2 text-sm text-slate-400 hover:text-accent-400 transition-colors">
-              <FiActivity className="w-3.5 h-3.5" /> Proposals
+              <FiActivity className="w-3.5 h-3.5" /> Transactions
             </Link>
             {nftOwner && nftOwner !== zeroAddress && explorerUrl && (
               <a

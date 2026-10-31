@@ -1,6 +1,6 @@
-export type ChamberTab = 'overview' | 'board' | 'staking' | 'delegation' | 'proposals'
+export type ChamberTab = 'overview' | 'board' | 'vault' | 'delegation' | 'proposals'
 
-/** Route for each section of a chamber page; Proposals lives at /transactions. */
+/** Route for each section of a chamber page; the Transactions tab lives at /transactions. */
 export function chamberTabHref(chamberAddress: `0x${string}`, tab: ChamberTab): string {
   switch (tab) {
     case 'overview':
