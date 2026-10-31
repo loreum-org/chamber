@@ -28,46 +28,46 @@ Notice that both failures are the startup's problem again, in different clothes.
 
 ## Two tokens, two roles
 
-A Chamber is a community-governed treasury built on a deliberate answer: **split the roles into two tokens, and connect them with a market.**
+A Chamber is a decentralized autonomous corporation: a corporate treasury with an elected board. A public token community is optional. The design splits two roles and connects them with delegation.
 
-**Membership — the ERC-721.** A non-fungible token is a seat in the Chamber. Each token ID is a unique chair on a board of fixed size. Holding it is what gives you the *right to execute*: to submit proposals, confirm them at quorum, and carry them out. Seats are scarce by design. They can be transferred — sold, gifted, inherited — and every transfer recomputes the board.
+**Membership.** A membership is a seat, in the sense of an LLC membership. The technical form is a membership token (ERC-721). Each token ID is a unique chair. The board holds up to 20 seats (`MAX_SEATS`). Holding a seated membership is what gives that wallet the *right to execute*: to submit proposals, confirm them at quorum, and carry them out. A director is a member elected to a board seat, held by any wallet, including an autonomous agent's. Chamber does not run the agent. Seats can be transferred — sold, gifted, inherited. Delegated weight stays on the membership. The new wallet waits one block (`SEATING_DELAY`) before it can act.
 
 **Equity — the ERC-20.** A fungible token is a claim on the Chamber's treasury. Deposit it into the Chamber's vault (an ERC-4626 tokenized treasury) and you hold shares: proportional economic ownership of everything the Chamber controls. Shares are divisible, liquid, and tradable on any DEX.
 
-Neither token alone is governance. The two are joined by **delegation**: shareholders delegate their voting weight to the seat holders they trust, and the top-N most-delegated NFTs become the active board — the directors. That's the whole machine.
+Neither instrument alone is governance. The two are joined by **delegation**: shareholders delegate their voting weight to the memberships they want on the board, and the most-delegated memberships become the active board — the directors. That's the whole machine.
 
 ## The governance loop
 
 1. Shareholders deposit the equity token into the vault and receive shares.
-2. Shareholders delegate their voting power to NFT holders — revocably, any time.
-3. Seat holders compete for that delegation: campaign, publish a track record, deliver.
-4. The top-N delegated NFTs form the board.
-5. A director submits a proposal — a treasury action, a contract call.
-6. Quorum of directors confirm it (say, 3 of 5), and it executes.
+2. Shareholders delegate their voting power to memberships — revocably, any time.
+3. Members compete for that delegation: campaign, publish a track record, deliver.
+4. The most-delegated memberships fill the board, up to 20 directors.
+5. A director submits a proposal — a treasury action, a contract call. A director is a member elected to a board seat, held by any wallet, including an autonomous agent's.
+6. A simple majority confirms it. Quorum is `1 + n*51/100`, where n is the board size. A 5-seat board is 3 of 5. A 12-seat board is 7 of 12. A 20-seat board is 11 of 20.
 
 Delegation is continuous, not annual. A director who underperforms bleeds delegation in real time and drops off the board. A newcomer who earns it takes a seat without asking anyone's permission — they only need shareholders to notice.
 
-## A five-seat chamber
+## Example: a five-seat board
 
-Five seats. One million equity tokens; the vault holds half of them.
+Five seats are one size, not the product. The contract allows 1 to 20 (`MAX_SEATS`). At five seats, quorum is 3 of 5. One million equity tokens; the vault holds half of them.
 
 Alice holds seat #1 and has attracted 300,000 shares of delegation. Bob 250,000, Charlie 200,000, Diana 150,000, Eve 100,000. Alice submits a proposal to pay a contractor 10,000 tokens. Bob, Charlie, and Diana confirm — quorum met, the payment executes, and every step is an onchain fact.
 
 Now Eve sells her seat to Frank. Frank inherits nothing but the chair — delegation follows trust, not ownership, so he starts from zero and has to earn it. If he earns more than Diana, he replaces her on the board. The org chart updates itself, continuously, onchain.
 
-## Why there is an NFT
+## Why membership is its own instrument
 
-The obvious question: why a non-fungible token at all? Why not just addresses?
+The obvious question: why a membership at all, rather than a bare address?
 
-**Scarcity.** A fixed seat count makes influence competitive. There are five chairs, not unlimited wallets — so getting one means persuading shareholders you'll use it well.
+**Scarcity.** A fixed seat count makes influence competitive. The board holds up to 20 seats, not an open list of wallets — so taking one means persuading shareholders you will use it well.
 
-**Identity and accountability.** A seat is a persistent, queryable identity. "Who decided this?" stops being an archaeology project across multisig logs and becomes a lookup. Every director's record — proposals submitted, confirmed, executed — accumulates on the seat itself. Reputation becomes a property of the token.
+**Identity and accountability.** A membership is a persistent, queryable identity. "Who decided this?" stops being an archaeology project across signer logs and becomes a lookup. Every director's record — proposals submitted, confirmed, executed — accumulates on the membership itself. Reputation becomes a property of the membership.
 
-**Transferability with consequences.** Because the seat trades, governance influence has a price and a market — but buying a seat buys you the *opportunity* to govern, not the power. Power still has to be delegated to you. You can't buy your way to a board majority; you can only earn one.
+**Transferability with consequences.** Because the membership trades, the chance to govern has a price and a market — but buying a membership buys the *opportunity*, not the power. Power still has to be delegated to that seat. You can't buy your way to a board majority; you can only earn one.
 
-**Composability.** Seats are ERC-721s, so they plug into marketplaces, lending protocols, and reputation systems that already exist.
+**Composability.** A membership can move between wallets, so the seat can sit in the marketplaces, lending protocols, and reputation systems that already speak the token standard.
 
-An address can't do any of this. An address is where a person happens to be; an NFT is a role that has a history.
+An address can't do any of this. An address is where a wallet happens to be; a membership is a role that has a history.
 
 ## Closing the split
 

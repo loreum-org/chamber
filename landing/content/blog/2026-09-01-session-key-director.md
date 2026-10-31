@@ -1,13 +1,13 @@
 ---
-title: Session key for contract-owned membership NFTs
+title: Session key for contract-owned memberships
 date: 2026-09-01
-summary: Contract-owned membership NFTs can register a session-key operator. Queue and ChamberDetail show owner vs operator.
+summary: Contract-owned memberships could register a session-key operator. Queue and ChamberDetail showed owner vs operator. Chamber 1.3.0 removed that path.
 ---
 
-**Update, 18 October 2026:** Chamber 1.3.0 removed session keys. Agents now act through the owner's own wallet, using a Safe module or a smart-account session key.
+**Update, 18 October 2026:** Chamber 1.3.0 removed session keys. A director is a member elected to a board seat, held by any wallet, including an autonomous agent's. That wallet calls Chamber as itself. Chamber does not run the agent, keeps no session-key list, and does not call ERC-1271.
 
-1 September 2026. Session key for contract-owned membership NFTs.
+1 September 2026. Session key for contract-owned memberships.
 
-- If a membership NFT is owned by a contract wallet, the owner can set a session key. That key can submit, confirm, execute, and change the board the same way the owner can.
-- Transfer clears the session. EOA-owned NFTs do not get this path. Chamber does not call ERC-1271.
-- Queue and ChamberDetail show NFT owner vs operator.
+- If a membership was owned by a contract wallet, the owner could set a session key. That key could submit, confirm, execute, and change the board the same way the owner could. The technical form is a membership token (ERC-721).
+- Transfer cleared the session. A membership held by an EOA did not get this path. Chamber does not call ERC-1271.
+- Queue and ChamberDetail showed the membership owner vs the operator.

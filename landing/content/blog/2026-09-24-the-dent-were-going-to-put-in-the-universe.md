@@ -12,13 +12,13 @@ So here's my pep talk. Not for the org chart. For the people who are actually bu
 
 ## The mechanism is invisible
 
-Nobody wakes up excited about a sorted linked list. Nobody joins a DAO because the quorum formula was elegant. They join because the product does something they couldn't do before, and it felt obvious.
+Nobody wakes up excited about a sorted linked list. Nobody joins a company because the quorum formula was elegant. They join because the product does something they couldn't do before, and it felt obvious.
 
 Every line of governance we write should disappear into the experience. If a member has to think about the structure, we failed. The Chamber — our core contract — is a vault, a board, and a wallet. That's it. Three primitives. The complexity is in the engineering, not in the user's head.
 
 ## Focus is saying no
 
-A DAO's failure mode isn't bad ideas. It's twenty good ones running at once with nobody's name on any of them.
+A company's failure mode isn't bad ideas. It's twenty good ones running at once with nobody's name on any of them.
 
 Every proposal that lands in this channel gets a single owner or it dies. No committees designing anything. Crowds don't have taste. People do, and they sign their work.
 
@@ -39,11 +39,11 @@ Give a crowd a yes/no on everything and you get a mediocre everything. Our job a
 - We own the whole thing — the onboarding, the contract, the docs, the error message. You don't stop at "my part." Taste is not a department.
 - Say the hard thing early. The truth, delivered late, costs ten times more.
 
-## The DAO LLC is a tool, not an identity
+## The LLC is a tool, not an identity
 
 We hold the legal wrapper like a tool. It gives us a bank account, a court to stand in, and limited liability for the people building. That's the entire reason it exists. Don't let the lawyers become the product.
 
-The DAO is the capital and the consent. The LLC is the chassis. Neither one is the point. The point is what we ship.
+Chamber is a decentralized autonomous corporation: the capital and the consent, with an elected board. Loreum DAO LLC is the legal chassis. Neither the wrapper nor the mechanism is the point. The point is what we ship.
 
 ## Stay hungry. Stay foolish.
 
