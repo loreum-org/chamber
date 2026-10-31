@@ -116,155 +116,158 @@ export default function BoardVisualization({
           )}
         </div>
       )}
-      {/* Board Visualization */}
-      <div className="panel p-6 sm:p-8">
-        <div className="mb-8">
-          <h3 className="section-title">Board of directors</h3>
-          <p className="text-slate-500 text-xs mt-0.5">
-            {seats} seats · {filledSeatCount} filled · the top {seats} members by delegated shares. Ranking changes the moment delegation changes.
-          </p>
-        </div>
+      {/* Two columns on wide screens: board on the left, leaderboard on the right */}
+      <div className="grid gap-6 xl:grid-cols-2 xl:items-start">
+        {/* Board Visualization */}
+        <div className="panel p-6 sm:p-8 min-w-0">
+          <div className="mb-8">
+            <h3 className="section-title">Board of directors</h3>
+            <p className="text-slate-500 text-xs mt-0.5">
+              {seats} seats · {filledSeatCount} filled · the top {seats} members by delegated shares. Ranking changes the moment delegation changes.
+            </p>
+          </div>
 
-        {/* Board Layout: semi-circle for ≤8 seats; single scrollable row for 9–20 */}
-        {seats <= 8 ? (
-          <div className="relative h-[320px] max-w-3xl mx-auto">
-            {/* Center podium */}
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-24 h-16 bg-gradient-to-t from-accent-500/20 to-accent-500/5 rounded-t-full border-t border-l border-r border-accent-500/30">
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 flex flex-row-reverse justify-center items-center">
-                {podiumAvatars.length > 0 ? (
-                  podiumAvatars.map((m, i) => {
-                    const url = memberImages?.get(m.tokenId.toString())
-                    const skeleton = nftMetaLoading && !url
-                    return (
-                      <div
-                        key={m.tokenId.toString()}
-                        className={`ring-2 ring-slate-900 rounded-full shrink-0 w-9 h-9 overflow-hidden bg-slate-800 ${
-                          i > 0 ? 'mr-[-10px]' : ''
-                        }`}
-                        style={{ zIndex: podiumAvatars.length - i }}
-                      >
-                        <PodiumNftThumb url={url} skeleton={skeleton} />
-                      </div>
-                    )
-                  })
-                ) : (
-                  <FiAward className="w-6 h-6 text-accent-400 shrink-0" />
-                )}
+          {/* Board Layout: semi-circle for ≤8 seats; single scrollable row for 9–20 */}
+          {seats <= 8 ? (
+            <div className="relative h-[320px] max-w-3xl mx-auto">
+              {/* Center podium */}
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-24 h-16 bg-gradient-to-t from-accent-500/20 to-accent-500/5 rounded-t-full border-t border-l border-r border-accent-500/30">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 flex flex-row-reverse justify-center items-center">
+                  {podiumAvatars.length > 0 ? (
+                    podiumAvatars.map((m, i) => {
+                      const url = memberImages?.get(m.tokenId.toString())
+                      const skeleton = nftMetaLoading && !url
+                      return (
+                        <div
+                          key={m.tokenId.toString()}
+                          className={`ring-2 ring-slate-900 rounded-full shrink-0 w-9 h-9 overflow-hidden bg-slate-800 ${
+                            i > 0 ? 'mr-[-10px]' : ''
+                          }`}
+                          style={{ zIndex: podiumAvatars.length - i }}
+                        >
+                          <PodiumNftThumb url={url} skeleton={skeleton} />
+                        </div>
+                      )
+                    })
+                  ) : (
+                    <FiAward className="w-6 h-6 text-accent-400 shrink-0" />
+                  )}
+                </div>
               </div>
+
+              {Array.from({ length: seats }).map((_, index) => {
+                const member = members[index]
+                const isDirector = index < seats && !!member
+                const angle = 180 - (180 / (seats + 1)) * (index + 1)
+                const radius = 140
+                const x = Math.cos((angle * Math.PI) / 180) * radius
+                const y = Math.sin((angle * Math.PI) / 180) * radius * 0.7
+
+                return (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, scale: 0 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: index * 0.1, type: 'spring', bounce: 0.4 }}
+                    className="absolute"
+                    style={{
+                      left: `calc(50% + ${x}px)`,
+                      bottom: `${60 + y}px`,
+                      transform: 'translate(-50%, 0)',
+                    }}
+                  >
+                    <SeatCard
+                      chamberAddress={chamberAddress}
+                      seatNumber={index + 1}
+                      member={member}
+                      nftImagePending={nftMetaLoading}
+                      memberImageUrl={member ? memberImages?.get(member.tokenId.toString()) : undefined}
+                      isDirector={isDirector}
+                      totalDelegated={totalDelegated}
+                      ownersLoading={ownersLoading}
+                    />
+                  </motion.div>
+                )
+              })}
+
+              {/* Decorative arcs */}
+              <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 600 320">
+                <path d="M 50 280 Q 300 0 550 280" fill="none" stroke="url(#accentGradient)" strokeWidth="1" strokeDasharray="4 4" opacity="0.3" />
+                <path d="M 100 280 Q 300 50 500 280" fill="none" stroke="url(#accentGradient)" strokeWidth="1" strokeDasharray="4 4" opacity="0.2" />
+                <defs>
+                  <linearGradient id="accentGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="transparent" />
+                    <stop offset="50%" stopColor="#3b82f6" />
+                    <stop offset="100%" stopColor="transparent" />
+                  </linearGradient>
+                </defs>
+              </svg>
             </div>
-
-            {Array.from({ length: seats }).map((_, index) => {
-              const member = members[index]
-              const isDirector = index < seats && !!member
-              const angle = 180 - (180 / (seats + 1)) * (index + 1)
-              const radius = 140
-              const x = Math.cos((angle * Math.PI) / 180) * radius
-              const y = Math.sin((angle * Math.PI) / 180) * radius * 0.7
-
-              return (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, scale: 0 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: index * 0.1, type: 'spring', bounce: 0.4 }}
-                  className="absolute"
-                  style={{
-                    left: `calc(50% + ${x}px)`,
-                    bottom: `${60 + y}px`,
-                    transform: 'translate(-50%, 0)',
-                  }}
-                >
-                  <SeatCard
-                    chamberAddress={chamberAddress}
-                    seatNumber={index + 1}
-                    member={member}
-                    nftImagePending={nftMetaLoading}
-                    memberImageUrl={member ? memberImages?.get(member.tokenId.toString()) : undefined}
-                    isDirector={isDirector}
-                    totalDelegated={totalDelegated}
-                    ownersLoading={ownersLoading}
-                  />
-                </motion.div>
-              )
-            })}
-
-            {/* Decorative arcs */}
-            <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 600 320">
-              <path d="M 50 280 Q 300 0 550 280" fill="none" stroke="url(#accentGradient)" strokeWidth="1" strokeDasharray="4 4" opacity="0.3" />
-              <path d="M 100 280 Q 300 50 500 280" fill="none" stroke="url(#accentGradient)" strokeWidth="1" strokeDasharray="4 4" opacity="0.2" />
-              <defs>
-                <linearGradient id="accentGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="transparent" />
-                  <stop offset="50%" stopColor="#3b82f6" />
-                  <stop offset="100%" stopColor="transparent" />
-                </linearGradient>
-              </defs>
-            </svg>
-          </div>
-        ) : (
-          <div
-            className="w-full overflow-x-auto overflow-y-visible py-4 scroll-smooth"
-            style={{
-              display: 'grid',
-              gridTemplateColumns: `repeat(${Math.max(seats, 1)}, minmax(2.25rem, 1fr))`,
-              columnGap: 'clamp(0.25rem, 1.2vw, 0.625rem)',
-            }}
-          >
-            {Array.from({ length: seats }).map((_, index) => {
-              const member = members[index]
-              const isDirector = index < seats && !!member
-              return (
-                <motion.div
-                  key={index}
-                  className="min-w-0 flex justify-center"
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: index * 0.04, type: 'spring', bounce: 0.3 }}
-                >
-                  <SeatCard
-                    chamberAddress={chamberAddress}
-                    seatNumber={index + 1}
-                    member={member}
-                    nftImagePending={nftMetaLoading}
-                    memberImageUrl={member ? memberImages?.get(member.tokenId.toString()) : undefined}
-                    isDirector={isDirector}
-                    totalDelegated={totalDelegated}
-                    ownersLoading={ownersLoading}
-                    fluidWidth
-                  />
-                </motion.div>
-              )
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Member List */}
-      <div className="panel">
-        <div className="p-4 border-b border-slate-700/30">
-          <h4 className="font-heading font-semibold text-slate-100">Leaderboard</h4>
-          <p className="text-slate-500 text-xs mt-1">All delegated members ranked by voting power</p>
-        </div>
-        <div className="divide-y divide-slate-700/30">
-          {members.length > 0 ? (
-            members.map((member, index) => (
-              <MemberRow
-                key={member.tokenId.toString()}
-                chamberAddress={chamberAddress}
-                member={member}
-                nftImagePending={nftMetaLoading}
-                memberImageUrl={memberImages?.get(member.tokenId.toString())}
-                rank={index + 1}
-                isDirector={index < seats}
-                totalDelegated={totalDelegated}
-                ownersLoading={ownersLoading}
-              />
-            ))
           ) : (
-            <div className="p-8 text-center text-slate-500">
-              No members have received delegations yet
+            <div
+              className="w-full overflow-x-auto overflow-y-visible py-4 scroll-smooth"
+              style={{
+                display: 'grid',
+                gridTemplateColumns: `repeat(${Math.max(seats, 1)}, minmax(2.25rem, 1fr))`,
+                columnGap: 'clamp(0.25rem, 1.2vw, 0.625rem)',
+              }}
+            >
+              {Array.from({ length: seats }).map((_, index) => {
+                const member = members[index]
+                const isDirector = index < seats && !!member
+                return (
+                  <motion.div
+                    key={index}
+                    className="min-w-0 flex justify-center"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: index * 0.04, type: 'spring', bounce: 0.3 }}
+                  >
+                    <SeatCard
+                      chamberAddress={chamberAddress}
+                      seatNumber={index + 1}
+                      member={member}
+                      nftImagePending={nftMetaLoading}
+                      memberImageUrl={member ? memberImages?.get(member.tokenId.toString()) : undefined}
+                      isDirector={isDirector}
+                      totalDelegated={totalDelegated}
+                      ownersLoading={ownersLoading}
+                      fluidWidth
+                    />
+                  </motion.div>
+                )
+              })}
             </div>
           )}
+        </div>
+
+        {/* Member List */}
+        <div className="panel min-w-0">
+          <div className="p-4 border-b border-slate-700/30">
+            <h4 className="font-heading font-semibold text-slate-100">Leaderboard</h4>
+            <p className="text-slate-500 text-xs mt-1">All delegated members ranked by voting power</p>
+          </div>
+          <div className="divide-y divide-slate-700/30">
+            {members.length > 0 ? (
+              members.map((member, index) => (
+                <MemberRow
+                  key={member.tokenId.toString()}
+                  chamberAddress={chamberAddress}
+                  member={member}
+                  nftImagePending={nftMetaLoading}
+                  memberImageUrl={memberImages?.get(member.tokenId.toString())}
+                  rank={index + 1}
+                  isDirector={index < seats}
+                  totalDelegated={totalDelegated}
+                  ownersLoading={ownersLoading}
+                />
+              ))
+            ) : (
+              <div className="p-8 text-center text-slate-500">
+                No members have received delegations yet
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
