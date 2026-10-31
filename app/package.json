@@ -12,8 +12,7 @@
     "test": "vitest run",
     "preview": "vite preview",
     "test:discovery": "npx --yes tsx --tsconfig tsconfig.json scripts/verify-chamber-discovery.ts && npx --yes tsx --tsconfig tsconfig.json scripts/verify-sepolia-discovery.ts && npx --yes tsx --tsconfig tsconfig.json scripts/verify-chamber-route-gate.ts && npx --yes tsx --tsconfig tsconfig.json scripts/verify-impl-source-label.ts",
-    "test:mainnet-addresses": "npx --yes tsx --tsconfig tsconfig.json scripts/verify-mainnet-addresses.ts",
-    "test": "vitest run"
+    "test:mainnet-addresses": "npx --yes tsx --tsconfig tsconfig.json scripts/verify-mainnet-addresses.ts"
   },
   "dependencies": {
     "@rainbow-me/rainbowkit": "^2.1.0",
@@ -45,6 +44,7 @@
     "eslint": "^8.57.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.6",
+    "jsdom": "^26.1.0",
     "postcss": "^8.4.38",
     "tailwindcss": "^3.4.1",
     "typescript": "^5.4.2",

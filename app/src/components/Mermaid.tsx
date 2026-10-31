@@ -3,7 +3,11 @@ import mermaid from 'mermaid'
 import DOMPurify from 'dompurify'
 
 mermaid.initialize({
-  startOnLoad: true,
+  // We render each diagram ourselves; don't scan the page on load.
+  startOnLoad: false,
+  // On a bad diagram, throw instead of drawing Mermaid's "Syntax error in text"
+  // graphic (which can be left behind at the bottom of the page).
+  suppressErrorRendering: true,
   theme: 'dark',
   securityLevel: 'strict',
   htmlLabels: false,
@@ -49,7 +53,8 @@ export default function Mermaid({ chart }: MermaidProps) {
       } catch (err) {
         console.error('Mermaid rendering failed:', err)
         if (isMounted) {
-          setError('Failed to render diagram')
+          const detail = err instanceof Error ? err.message.split('\n')[0] : ''
+          setError(detail ? `Failed to render diagram: ${detail}` : 'Failed to render diagram')
         }
       }
     }
