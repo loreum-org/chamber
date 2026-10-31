@@ -9,7 +9,7 @@ This is a **map of screens** in the Chamber web app. Pair it with **[Getting sta
 | **`/`** | **Dashboard** — **My chambers** (indexer and/or Factory/Registry `ChamberCreated` logs + recents + open-by-address) |
 | **`/deploy`** | **Create** a new Chamber |
 | **`/chamber/:address`** | **Overview** — summary, tabs, balances |
-| **`/chamber/:address/staking`** | **Deposit / withdraw** underlying tokens |
+| **`/chamber/:address/vault`** | **Vault** tab: **deposit / withdraw** underlying tokens |
 | **`/chamber/:address/delegation`** | **Delegate** shares to NFT token IDs |
 | **`/chamber/:address/transactions`** | **Proposal queue** (directors) |
 | **`/chamber/:address/director/:tokenId`** | View tied to one **membership token ID** |
@@ -35,7 +35,7 @@ flowchart TD
   Hub --> Open[Open existing Chamber]
   Deploy --> Seat[Seat the board]
   Seat --> HoldNft[Hold membership NFT]
-  HoldNft --> Stake[Staking tab]
+  HoldNft --> Stake[Vault tab]
   Stake --> Del[Delegation tab]
   Del --> Wait[Wait 1 block]
   Wait --> Open

@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, Navigate } from 'react-router-dom'
 import { useAccount, useBalance, useReadContract, useReadContracts, useChainId } from 'wagmi'
 import { formatUnits, zeroAddress } from 'viem'
 import { erc20Abi } from '@/contracts'
@@ -38,10 +38,12 @@ import type { SeatUpdate } from '@/types'
 
 type Tab = Exclude<ChamberTab, 'proposals'>
 
-const validTabs: Tab[] = ['overview', 'board', 'staking', 'delegation']
+const validTabs: Tab[] = ['overview', 'board', 'vault', 'delegation']
 
 export default function ChamberDetail() {
-  const { address } = useParams<{ address: string; tab?: string }>()
+  const { address, tab } = useParams<{ address: string; tab?: string }>()
+  // The Vault tab used to live at /staking; keep old links working.
+  if (address && tab === 'staking') return <Navigate to={`/chamber/${address}/vault`} replace />
   return (
     <ChamberRouteGate address={address}>
       {(chamberAddress) => <ChamberDetailContent chamberAddress={chamberAddress} />}
@@ -287,7 +289,7 @@ function ChamberDetailContent({ chamberAddress }: { chamberAddress: `0x${string}
         </div>
       )}
 
-      {activeTab === 'staking' && (
+      {activeTab === 'vault' && (
         <TreasuryOverview
           chamberAddress={chamberAddress}
           chamberInfo={chamberInfo}
@@ -475,7 +477,7 @@ function OverviewTab({
                 </span>
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
-                <Link to={`/chamber/${chamberAddress}/staking`} className="btn btn-secondary btn-sm">
+                <Link to={`/chamber/${chamberAddress}/vault`} className="btn btn-secondary btn-sm">
                   Deposit or withdraw
                 </Link>
                 <Link to={`/chamber/${chamberAddress}/delegation`} className="btn btn-secondary btn-sm">
