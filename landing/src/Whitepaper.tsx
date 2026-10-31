@@ -19,7 +19,7 @@ const FadeIn = ({ children, delay = 0, className = "" }: { children: React.React
 function Whitepaper() {
   useSeo(
     'Whitepaper — Loreum',
-    'The Loreum Chamber whitepaper: protocol design for credible decentralized governance on Ethereum.',
+    'Chamber is a decentralized autonomous corporation: a corporate treasury and an elected board of up to 20 directors. A director is a member elected to a board seat, held by any wallet, including an agent\'s.',
     '/whitepaper',
   );
 
@@ -34,7 +34,7 @@ function Whitepaper() {
         <FadeIn>
           <div className="mb-12 text-center">
             <h1 className="text-5xl md:text-6xl font-display mb-4">Loreum</h1>
-            <p className="text-xl text-gray-400 font-light">A Technical Framework for Agentic Organizational Governance</p>
+            <p className="text-xl text-gray-400 font-light">A corporate treasury with an elected board</p>
             <p className="text-sm text-gray-500 mt-4">Version 1.3.0 | September 2026</p>
           </div>
         </FadeIn>
@@ -54,16 +54,21 @@ function Whitepaper() {
                 credibly claim decentralization.
               </p>
               <p className="text-gray-300 leading-relaxed mb-4">
-                This paper presents <strong className="text-white font-normal">Loreum</strong>, a smart contract architecture
-                designed so that consensus, treasury action, and upgrade authority are exercised <em>solely</em> through pre-established
-                onchain logic: an ERC4626-compliant vault for asset management, a delegation-driven board ranked by transparent rules
-                (sorted linked list), and quorum-based multisig-style execution. The design targets the functional requirements for
-                credible decentralization — programmatic transparency, dispersed authority, and impartial, rules-bound execution — while
-                enabling autonomous agents and humans to act as first-class directors.
+                This paper presents <strong className="text-white font-normal">Loreum Chamber</strong>, a decentralized
+                autonomous corporation: a corporate treasury with an elected board. Shareholders elect the directors.
+                A director is a member elected to a board seat, held by any wallet, including an autonomous agent&apos;s.
+                A public token community is optional. Consensus, treasury action, and upgrade authority are exercised{" "}
+                <em>solely</em> through pre-established onchain logic: an ERC4626-compliant vault, a delegation-driven
+                board ranked by transparent rules (sorted linked list), and quorum-based execution. The board holds up
+                to 20 seats. Quorum is a simple majority, <code className="text-space-accent">1 + n*51/100</code>.
+                Chamber does not run the agent. The design targets programmatic transparency, dispersed authority,
+                and impartial, rules-bound execution.
               </p>
               <p className="text-gray-300 leading-relaxed">
-                Technical contributions include: (1) NFT-based directorship (live auth is the membership NFT owner as{" "}
-                <code className="text-space-accent">msg.sender</code>; agents act through the owner&apos;s own smart wallet; Chamber never calls ERC-1271 —
+                Technical contributions include: (1) membership directorship (a director is a member elected to a board
+                seat, held by any wallet, including an autonomous agent&apos;s; live auth is that wallet as{" "}
+                <code className="text-space-accent">msg.sender</code> on the membership token (ERC-721); agents act
+                through the owner&apos;s own smart wallet; Chamber never calls ERC-1271 and does not run the agent —
                 EIP-1271 contract-agent directors remain research, not shipped), (2) liquid delegation without governance lockups,
                 subject to solvency checks on delegated balances, (3) circuit-safe linked list repositioning for the governance
                 leaderboard, and (4) self-sovereign upgrade paths executed only through quorum-approved transactions. We provide
@@ -108,19 +113,19 @@ function Whitepaper() {
                 Transparent &amp; programmatic operation</strong> — every material action flows through Chamber&apos;s published
                 solidity; <strong className="text-space-accent font-normal">dispersed authority</strong> — liquid delegation to a
                 ranked board plus majority quorum on execution resists single-actor capture when parameters and seat counts
-                are tuned to policy; <strong className="text-space-accent font-normal">agent parity</strong> — an agent acts
-                through a smart wallet that owns the membership NFT (a Safe module or a smart-account session key), so the
-                wallet calls Chamber as <code className="text-space-accent">msg.sender</code> without Chamber consulting
-                ERC-1271. A designed EIP-1271 path remains research; it is not shipped.
+                are tuned to policy;                 <strong className="text-space-accent font-normal">agent directors</strong> — a director is a member
+                elected to a board seat, held by any wallet, including an autonomous agent&apos;s. The wallet calls
+                Chamber as <code className="text-space-accent">msg.sender</code>. Chamber does not run the agent and
+                does not consult ERC-1271. A designed EIP-1271 path remains research; it is not shipped.
               </p>
 
               <h3 className="text-2xl font-display mb-4 mt-10 text-white">1.2 Chamber as protocol response</h3>
               <p className="text-gray-300 leading-relaxed mb-4">
-                Onchain governance has emerged as a paradigm for collective decision-making in blockchain ecosystems.
-                However, many stacks remain ill-suited to the requirements for credible decentralization: static membership,
-                offchain voting with onchain rubber-stamping, or agent-hostile signature models. Chamber addresses these
-                limitations with a flexible, agent-centric governance framework built on Ethereum where the enforcement layer
-                is the contract system itself.
+                Chamber is a decentralized autonomous corporation: one contract holds the corporate treasury, ranks a
+                board of up to 20 seats, and runs a single queue. A director is a member elected to a board seat, held
+                by any wallet, including an autonomous agent&apos;s. Chamber does not run the agent. A public token
+                community is optional. Static signer lists and offchain polls leave execution with whoever holds the
+                keys. Here the enforcement layer is the contract.
               </p>
               <p className="text-gray-300 leading-relaxed mb-4">
                 The protocol&apos;s name derives from its core abstraction: a <em>Chamber</em> represents a self-contained
@@ -132,7 +137,7 @@ function Whitepaper() {
                 This paper contributes: (1) a formal specification of the Chamber architecture aligned to decentralized
                 governance requirements, (2) analysis of the sorted linked list delegation mechanism, (3) security
                 properties and attack surface evaluation, (4) gas optimization strategies, and (5) implementation details
-                for agentic governance use cases.
+                for a corporate treasury whose directors may be people or autonomous agents.
               </p>
             </section>
           </FadeIn>
@@ -145,7 +150,7 @@ function Whitepaper() {
               <h3 className="text-2xl font-display mb-4 mt-8 text-white">2.1 System Components</h3>
               <p className="text-gray-300 leading-relaxed mb-4">
                 The shipped object is a Factory-deployed ERC-4626 vault, a liquid-delegated
-                ranked board of membership NFTs, and a quorum wallet. Create deploys that
+                ranked board of memberships, and a quorum wallet. Create deploys that
                 standalone Chamber. Nested Sub-Chambers and Registry parent↔child wiring
                 are a contemplated pattern — not the live architecture. The primary
                 contracts are Factory, Chamber, Board, and Wallet.
@@ -304,12 +309,16 @@ function Whitepaper() {
                   quorum = 1 + (n × 51) / 100
                 </code>
                 <p className="text-gray-400 text-sm mt-2">
-                  Exact integer formula (`/` truncates). Live quorum is computed over{" "}
-                  <strong className="text-white font-normal">reachable</strong> authorized
-                  top-seat tokenIds: empty slots and burned / inert ids do not inflate the bar.
-                  This is not a simple majority — one- and two-seat chambers require 100% of
-                  seats. Cancel votes use the same formula: when cancel confirmations reach
-                  quorum the proposal is dead and can no longer be confirmed or executed.
+                  A simple majority. Exact integer formula (<code className="text-space-accent">/</code> truncates),
+                  the same rule as <code className="text-space-accent">BoardLib.quorumFor</code>:{" "}
+                  <code className="text-space-accent">1 + n*51/100</code>, where n is the board size. Boards hold
+                  from 1 to 20 seats (<code className="text-space-accent">MAX_SEATS</code>). A 5-seat board is 3 of 5.
+                  A 12-seat board is 7 of 12. A 20-seat board is 11 of 20. Five seats are an example, not the product.
+                  Live quorum uses <strong className="text-white font-normal">reachable</strong> authorized top-seat
+                  tokenIds: empty slots and burned / inert ids do not inflate the bar. One- and two-seat boards need
+                  every reachable director, because that is what the integer formula returns. Cancel votes use the
+                  same formula: when cancel confirmations reach quorum the proposal is dead and can no longer be
+                  confirmed or executed.
                 </p>
               </div>
 
@@ -357,16 +366,18 @@ function Whitepaper() {
                 For a seated <code className="text-space-accent">tokenId</code>, Chamber
                 authorizes <code className="text-space-accent">msg.sender</code> if and only if{" "}
                 <code className="text-space-accent">msg.sender == nft.ownerOf(tokenId)</code>.
-                The NFT owner (EOA or contract wallet) acts as itself.
+                The wallet that holds the membership (an EOA or a contract wallet) acts as itself.
+                A director is a member elected to a board seat, held by any wallet, including an
+                autonomous agent&apos;s.
               </p>
 
               <p className="text-gray-300 leading-relaxed mb-4">
-                A Safe, ERC-4337 account, or other contract wallet that holds the membership NFT
+                A Safe, ERC-4337 account, or other contract wallet that holds the membership
                 calls Chamber as itself (for example Safe{" "}
                 <code className="text-space-accent">execTransaction</code>). To let an agent act,
-                the wallet grants it a module or session key with its own limits, and the agent
-                calls Chamber through the wallet. Chamber keeps no key list of its own.
-                Transferring the NFT to a new wallet cuts off the old wallet&apos;s keys.
+                that wallet calls Chamber as the seated member. Chamber keeps no agent registry
+                and no key list of its own, and it does not run the agent. Transferring the
+                membership to a new wallet cuts off the old wallet&apos;s keys.
               </p>
 
               <h3 className="text-2xl font-display mb-4 mt-8 text-white">4.2 Agent delegation patterns</h3>
@@ -378,7 +389,7 @@ function Whitepaper() {
                 <div className="bg-space-800/40 border border-white/10 rounded-lg p-4">
                   <h4 className="text-lg font-display mb-2 text-space-accent">Pattern 1: Direct ownership</h4>
                   <p className="text-gray-300 text-sm">
-                    An agent contract owns an NFT tokenId and calls Chamber as{" "}
+                    An agent&apos;s wallet holds a membership tokenId and calls Chamber as{" "}
                     <code className="text-space-accent">msg.sender</code>. The token must
                     accumulate enough delegations to enter the top N seats, then wait{" "}
                     <code className="text-space-accent">SEATING_DELAY</code> (1 block).
@@ -386,12 +397,12 @@ function Whitepaper() {
                 </div>
                 
                 <div className="bg-space-800/40 border border-white/10 rounded-lg p-4">
-                  <h4 className="text-lg font-display mb-2 text-space-accent">Pattern 2: Wallet session key</h4>
+                  <h4 className="text-lg font-display mb-2 text-space-accent">Pattern 2: Contract wallet</h4>
                   <p className="text-gray-300 text-sm">
-                    A Safe or smart account holds the NFT and gives the agent a module or an
-                    ERC-4337 / ERC-7579 session key. The wallet checks the agent&apos;s limits and
-                    then calls Chamber, so Chamber sees the owner as{" "}
-                    <code className="text-space-accent">msg.sender</code>.
+                    A Safe or smart account holds the membership and calls Chamber as that
+                    wallet, so Chamber sees the owner as{" "}
+                    <code className="text-space-accent">msg.sender</code>. Chamber keeps no
+                    session-key list. Any limit on the agent lives in the wallet, not in Chamber.
                   </p>
                 </div>
                 
@@ -399,7 +410,7 @@ function Whitepaper() {
                   <h4 className="text-lg font-display mb-2 text-space-accent">Pattern 3: Voting power delegation</h4>
                   <p className="text-gray-300 text-sm">
                     Agents delegate their Chamber tokens to specific tokenIds, influencing director selection without 
-                    holding NFTs themselves. This enables liquid democracy where agents can redelegate based on 
+                    holding memberships themselves. This enables liquid democracy where agents can redelegate based on 
                     performance or policy alignment.
                   </p>
                 </div>
@@ -408,7 +419,7 @@ function Whitepaper() {
               <h3 className="text-2xl font-display mb-4 mt-8 text-white">4.3 EIP-1271 (research — not shipped)</h3>
               <p className="text-gray-400 leading-relaxed mb-4 text-sm md:text-base">
                 The following is a design specification only. Chamber does not call{" "}
-                <code className="text-space-accent">isValidSignature</code>. Safe-owned NFTs
+                <code className="text-space-accent">isValidSignature</code>. Memberships held by a Safe
                 do not use this path.
               </p>
               <p className="text-gray-300 leading-relaxed mb-4">
@@ -507,7 +518,7 @@ if (IERC1271(owner).isValidSignature(hash, abi.encode(msg.sender))
                 <li>Zero address checks for all address parameters</li>
                 <li>Zero amount checks for token operations</li>
                 <li>Balance checks before delegations and transfers</li>
-                <li>NFT existence verification via <code className="text-space-accent">ownerOf()</code> try-catch</li>
+                <li>Membership existence verification via <code className="text-space-accent">ownerOf()</code> try-catch</li>
                 <li>Seat count bounds (1-20 seats maximum)</li>
                 <li>Node count limits (50 nodes maximum; <code className="text-space-accent">MAX_NODES</code>)</li>
               </ul>
@@ -646,7 +657,11 @@ Node: 4 × uint256 = 4 storage slots (optimal for linked list operations)`}
           {/* Use Cases */}
           <FadeIn delay={0.9}>
             <section className="mb-16">
-              <h2 className="text-3xl font-display mb-6 text-space-accent">8. Agentic Governance Use Cases</h2>
+              <h2 className="text-3xl font-display mb-6 text-space-accent">8. Directors on a Corporate Treasury</h2>
+              <p className="text-gray-300 leading-relaxed mb-4">
+                A director is a member elected to a board seat, held by any wallet, including an autonomous
+                agent&apos;s. Chamber does not run the agent. The same quorum binds every director.
+              </p>
               
               <h3 className="text-2xl font-display mb-4 mt-8 text-white">8.1 Autonomous Treasury Management</h3>
               <p className="text-gray-300 leading-relaxed mb-4">
@@ -713,11 +728,11 @@ Node: 4 × uint256 = 4 storage slots (optimal for linked list operations)`}
             <section className="mb-16">
               <h2 className="text-3xl font-display mb-6 text-space-accent">10. Conclusion</h2>
               <p className="text-gray-300 leading-relaxed mb-4">
-                Loreum presents a novel architecture for agentic organizational governance on Ethereum
-                with the requirements for credible decentralized governance in view. By combining ERC4626 vault functionality,
-                dynamic board governance, and quorum-based execution enforced entirely in contract code, the protocol enables
-                autonomous agents and humans to participate in decentralized decision-making while keeping control legible and
-                diffuse — not dependent on informal social layers for enforcement.
+                Loreum Chamber is a decentralized autonomous corporation: a corporate treasury with an elected
+                board of up to 20 directors. By combining ERC4626 vault functionality, a board ranked by delegation,
+                and quorum-based execution enforced entirely in contract code, shareholders elect who holds the keys.
+                A director is a member elected to a board seat, held by any wallet, including an autonomous agent&apos;s.
+                Chamber does not run the agent. Control stays legible in contract state.
               </p>
               <p className="text-gray-300 leading-relaxed mb-4">
                 Key innovations include the sorted linked list delegation mechanism, liquid delegation patterns, agent directors
