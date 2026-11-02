@@ -3,6 +3,7 @@ import { motion, LayoutGroup } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Check, Github } from 'lucide-react';
 import Footer from './Footer.tsx';
+import { Chest, Crown, Decree, Forum, Helmet, IconBadge, Laurel, Portcullis, Scroll, Shield, Throne } from './Icons.tsx';
 import Nav from './Nav.tsx';
 import { chamberAppUrl } from './config.ts';
 import { formatPostDate, posts } from './posts.ts';
@@ -239,24 +240,28 @@ const STEPS = [
   {
     n: '01',
     title: 'Capital',
+    icon: Chest,
     body: 'Shareholders deposit the treasury token and receive shares. Withdraw any time. A public token sale is not required.',
     note: 'ERC-4626 vault',
   },
   {
     n: '02',
     title: 'Elect',
+    icon: Laurel,
     body: "Point your shares at the seats you want on the board: a founder, an operator, or an agent's wallet. You keep the shares. Only the weight moves.",
     note: 'No lockups',
   },
   {
     n: '03',
     title: 'Seat',
+    icon: Crown,
     body: 'The most-delegated members fill the board, up to 20 directors. A director is a member elected to a board seat, held by any wallet, including an agent\'s. The board follows delegation one block later.',
     note: 'People or agents',
   },
   {
     n: '04',
     title: 'Act',
+    icon: Decree,
     body: 'Any director, human or agent, proposes from their own wallet. The board sees the decoded call and a simulation. Quorum confirms, then it executes. One seat cannot move funds alone.',
     note: 'Board quorum',
   },
@@ -297,14 +302,17 @@ const ARTIFICIAL_BEING_URL = 'https://www.amazon.com/dp/B0HNWWPCP8';
 const TESTS = [
   {
     title: 'Transparent and programmatic',
+    icon: Scroll,
     body: 'Decisions run on published contract rules. Seats, quorum, and proposals are state anyone can read.',
   },
   {
     title: 'No owner key beside the board',
+    icon: Shield,
     body: 'Treasury and upgrades move only when directors reach quorum. Board size, from 1 to 20, sets that quorum.',
   },
   {
     title: 'Directors can be agents',
+    icon: Helmet,
     body: "A director is a member elected to a board seat, held by any wallet, including an agent's. That wallet signs under the same quorum as every other director.",
   },
 ];
@@ -403,20 +411,24 @@ function App() {
             {[
               {
                 t: 'Safe never reseats itself',
+                icon: Portcullis,
                 b: 'The signer list is whoever was typed in. Hiring, firing, or seating an agent means editing the wallet by hand.',
               },
               {
                 t: 'Aragon assumes a public DAO',
+                icon: Forum,
                 b: 'Token votes and a community treasury. A company may have shareholders and no public token at all.',
               },
               {
                 t: 'An agent has no seat',
+                icon: Throne,
                 b: 'A multisig still waits for a person to click approve. An autonomous agent can hold a wallet, but it is not a director until the board gives it a seat and holds it to quorum.',
               },
             ].map((c, i) => (
               <Reveal key={c.t} delay={i * 0.08}>
                 <div className="surface p-6 h-full">
-                  <h3 className="text-lg text-slate-100">{c.t}</h3>
+                  <IconBadge icon={c.icon} />
+                  <h3 className="mt-4 text-lg text-slate-100">{c.t}</h3>
                   <p className="mt-2 text-sm text-slate-400 leading-relaxed">{c.b}</p>
                 </div>
               </Reveal>
@@ -437,7 +449,10 @@ function App() {
             {STEPS.map((s, i) => (
               <Reveal key={s.n} delay={i * 0.08}>
                 <li className="surface p-6 h-full flex flex-col">
-                  <span className="mono text-xs text-accent-300">{s.n}</span>
+                  <div className="flex items-center justify-between">
+                    <IconBadge icon={s.icon} />
+                    <span className="mono text-xs text-accent-300">{s.n}</span>
+                  </div>
                   <h3 className="mt-3 text-xl text-slate-100">{s.title}</h3>
                   <p className="mt-2 text-sm text-slate-400 leading-relaxed flex-1">{s.body}</p>
                   <span className="mt-5 chip self-start">{s.note}</span>
@@ -555,7 +570,9 @@ function App() {
             {TESTS.map((t, i) => (
               <Reveal key={t.title} delay={i * 0.08}>
                 <li className="surface p-5 flex gap-4">
-                  <span className="mono text-xs text-accent-300 pt-1 w-6 shrink-0">0{i + 1}</span>
+                  <span className="shrink-0">
+                    <IconBadge icon={t.icon} />
+                  </span>
                   <div>
                     <p className="text-slate-100 font-medium">{t.title}</p>
                     <p className="text-sm text-slate-400 mt-1 leading-relaxed">{t.body}</p>
