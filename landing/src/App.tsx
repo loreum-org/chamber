@@ -3,18 +3,8 @@ import { motion, LayoutGroup } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Check, Github } from 'lucide-react';
 import Footer from './Footer.tsx';
-import {
-  AutomatonScene,
-  CrownScene,
-  DecreeScene,
-  ElectionScene,
-  ForumScene,
-  GatehouseScene,
-  ShieldScene,
-  TabletsScene,
-  ThroneScene,
-  TreasuryScene,
-} from './Illustrations.tsx';
+import { TAPESTRY } from './tapestry.ts';
+import { TapestryArt } from './TapestryArt.tsx';
 import Nav from './Nav.tsx';
 import { chamberAppUrl } from './config.ts';
 import { formatPostDate, posts } from './posts.ts';
@@ -251,28 +241,28 @@ const STEPS = [
   {
     n: '01',
     title: 'Capital',
-    art: TreasuryScene,
+    art: TAPESTRY.provisions,
     body: 'Shareholders deposit the treasury token and receive shares. Withdraw any time. A public token sale is not required.',
     note: 'ERC-4626 vault',
   },
   {
     n: '02',
     title: 'Elect',
-    art: ElectionScene,
+    art: TAPESTRY.crowning,
     body: "Point your shares at the seats you want on the board: a founder, an operator, or an agent's wallet. You keep the shares. Only the weight moves.",
     note: 'No lockups',
   },
   {
     n: '03',
     title: 'Seat',
-    art: CrownScene,
+    art: TAPESTRY.enthroned,
     body: 'The most-delegated members fill the board, up to 20 directors. A director is a member elected to a board seat, held by any wallet, including an agent\'s. The board follows delegation one block later.',
     note: 'People or agents',
   },
   {
     n: '04',
     title: 'Act',
-    art: DecreeScene,
+    art: TAPESTRY.shipbuilding,
     body: 'Any director, human or agent, proposes from their own wallet. The board sees the decoded call and a simulation. Quorum confirms, then it executes. One seat cannot move funds alone.',
     note: 'Board quorum',
   },
@@ -313,17 +303,17 @@ const ARTIFICIAL_BEING_URL = 'https://www.amazon.com/dp/B0HNWWPCP8';
 const TESTS = [
   {
     title: 'Transparent and programmatic',
-    art: TabletsScene,
+    art: TAPESTRY.oath,
     body: 'Decisions run on published contract rules. Seats, quorum, and proposals are state anyone can read.',
   },
   {
     title: 'No owner key beside the board',
-    art: ShieldScene,
+    art: TAPESTRY.keys,
     body: 'Treasury and upgrades move only when directors reach quorum. Board size, from 1 to 20, sets that quorum.',
   },
   {
     title: 'Directors can be agents',
-    art: AutomatonScene,
+    art: TAPESTRY.council,
     body: "A director is a member elected to a board seat, held by any wallet, including an agent's. That wallet signs under the same quorum as every other director.",
   },
 ];
@@ -422,24 +412,24 @@ function App() {
             {[
               {
                 t: 'Safe never reseats itself',
-                art: GatehouseScene,
+                art: TAPESTRY.gatehouse,
                 b: 'The signer list is whoever was typed in. Hiring, firing, or seating an agent means editing the wallet by hand.',
               },
               {
                 t: 'Aragon assumes a public DAO',
-                art: ForumScene,
+                art: TAPESTRY.feast,
                 b: 'Token votes and a community treasury. A company may have shareholders and no public token at all.',
               },
               {
                 t: 'An agent has no seat',
-                art: ThroneScene,
+                art: TAPESTRY.messengers,
                 b: 'A multisig still waits for a person to click approve. An autonomous agent can hold a wallet, but it is not a director until the board gives it a seat and holds it to quorum.',
               },
             ].map((c, i) => (
               <Reveal key={c.t} delay={i * 0.08}>
                 <div className="surface overflow-hidden h-full">
                   <div className="aspect-[2/1] border-b border-line">
-                    <c.art />
+                    <TapestryArt art={c.art} />
                   </div>
                   <div className="p-6">
                     <h3 className="text-lg text-slate-100">{c.t}</h3>
@@ -465,7 +455,7 @@ function App() {
               <Reveal key={s.n} delay={i * 0.08}>
                 <li className="surface overflow-hidden h-full flex flex-col">
                   <div className="aspect-[2/1] border-b border-line">
-                    <s.art />
+                    <TapestryArt art={s.art} />
                   </div>
                   <div className="p-6 flex-1 flex flex-col">
                     <span className="mono text-xs text-accent-300">{s.n}</span>
@@ -588,7 +578,7 @@ function App() {
               <Reveal key={t.title} delay={i * 0.08}>
                 <li className="surface overflow-hidden flex flex-col sm:flex-row">
                   <div className="aspect-[2/1] sm:aspect-auto sm:w-40 shrink-0 border-b sm:border-b-0 sm:border-r border-line">
-                    <t.art />
+                    <TapestryArt art={t.art} />
                   </div>
                   <div className="p-5">
                     <p className="text-slate-100 font-medium">{t.title}</p>
