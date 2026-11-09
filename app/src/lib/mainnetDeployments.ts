@@ -7,6 +7,7 @@ export type MainnetDeploymentAddresses = {
   registry: `0x${string}`
   factory: `0x${string}`
   chamberImplementation: `0x${string}`
+  factoryStartBlock?: bigint
 }
 
 const EMPTY_MAINNET: MainnetDeploymentAddresses = {
@@ -15,7 +16,9 @@ const EMPTY_MAINNET: MainnetDeploymentAddresses = {
   chamberImplementation: ZERO_ADDRESS,
 }
 
-const LINE_PARSERS: Array<{ key: keyof MainnetDeploymentAddresses; re: RegExp }> = [
+type MainnetAddressKey = 'registry' | 'factory' | 'chamberImplementation'
+
+const LINE_PARSERS: Array<{ key: MainnetAddressKey; re: RegExp }> = [
   { key: 'registry', re: /^Registry \(proxy\)\s+(0x[a-fA-F0-9]{40})\s*$/i },
   { key: 'factory', re: /^Factory\s+(0x[a-fA-F0-9]{40})\s*$/i },
   { key: 'chamberImplementation', re: /^Chamber implementation\s+(0x[a-fA-F0-9]{40})\s*$/i },
@@ -36,6 +39,11 @@ export function parseMainnetDeploymentAddresses(text: string): MainnetDeployment
   for (const line of text.split(/\r?\n/)) {
     const trimmed = line.trim()
     if (!trimmed) continue
+    const start = trimmed.match(/^Factory start block\s+(\d+)\s*$/i)
+    if (start?.[1]) {
+      out.factoryStartBlock = BigInt(start[1])
+      continue
+    }
     for (const { key, re } of LINE_PARSERS) {
       const match = trimmed.match(re)
       if (!match?.[1]) continue
@@ -48,7 +56,7 @@ export function parseMainnetDeploymentAddresses(text: string): MainnetDeployment
 
 /**
  * Committed mainnet Factory / impl / Registry from `mainnet.txt`.
- * The template ships with TBD — `getContractAddresses(1)` stays empty
- * until a human pastes a verified chain-id-1 receipt. Never copy Sepolia.
+ * The Nov 10, 2026 Factory receipt is live. Chamber proxy and Registry
+ * stay TBD (zero). Never copy a Sepolia address onto chain id 1.
  */
 export const mainnetDeploymentAddresses = parseMainnetDeploymentAddresses(mainnetTxt)

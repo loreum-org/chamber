@@ -9,8 +9,8 @@ import sepoliaTxt from '../../contracts/deployments/sepolia.txt?raw'
  */
 const EXPECTED_BASELINE = {
   registry: '0x7AECf59eAD4B054A58bD42Af8704d381FdD9E821' as const,
-  factory: '0x43aA92c8A26392f21F63cdA88B6BaB5031C40550' as const,
-  chamberImplementation: '0xd441f1FDad2d3a447d2621DE4DE8b5738e02d39c' as const,
+  factory: '0xE87FF28C44593122e4BD87e48A18c9f08eBc811d' as const,
+  chamberImplementation: '0x07026D7DC398b8eF7874aEa1bBC00ACA231B20Af' as const,
   mockERC20: '0x486D69BcAF1E07e4F90edDA9fA7e09De50CD01a2' as const,
   mockERC721: '0x03CBb0Bb72aeB043b0dc8B299FaCFe77f9159688' as const,
 }

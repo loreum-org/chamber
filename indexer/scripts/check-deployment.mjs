@@ -11,11 +11,20 @@ import {
 } from "../baseSepoliaDeployment.mjs";
 
 const chains = loadIndexedChains({});
-assert.equal(chains.some((chain) => chain.chainId === 1), false);
 assert.equal(
   chains.some((chain) => chain.chainId === 84532),
   true,
   "base-sepolia Factory should be indexed",
+);
+assert.equal(
+  chains.some((chain) => chain.chainId === 11155111),
+  true,
+  "Ethereum Sepolia Factory should be indexed",
+);
+assert.equal(
+  chains.some((chain) => chain.chainId === 1),
+  true,
+  "mainnet Factory should be indexed",
 );
 
 const tableByNetwork = new Map(INDEXED_CHAIN_TABLE.map((chain) => [chain.network, chain]));

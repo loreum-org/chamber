@@ -5,20 +5,24 @@ import {Test} from "forge-std/Test.sol";
 import {MainnetLoreHandoff} from "test/utils/MainnetLoreHandoff.sol";
 import {MainnetDeployGuard} from "script/MainnetDeployGuard.sol";
 
-/// @dev Guards the verified mainnet package: TBD file, no invented Factory/Chamber,
+/// @dev Guards the verified mainnet package: receipt addresses, no Sepolia copy,
 ///      rehearsal still blocks broadcast, scripts never call transferOwnership.
 contract MainnetDeployPackageTest is Test {
     address internal constant SEPOLIA_FACTORY = 0x43aA92c8A26392f21F63cdA88B6BaB5031C40550;
+    address internal constant SEPOLIA_FACTORY_NOV_2026 = 0xE87FF28C44593122e4BD87e48A18c9f08eBc811d;
 
-    function test_mainnetTxtHasTbdDeployAddresses() public view {
+    function test_mainnetTxtRecordsNov2026FactoryReceipt() public view {
         string memory raw = vm.readFile("deployments/mainnet.txt");
-        assertTrue(_contains(raw, "Factory                   TBD"), "Factory line must stay TBD");
-        assertTrue(_contains(raw, "Chamber implementation    TBD"), "impl line must stay TBD");
-        assertTrue(_contains(raw, "BoardLib                  TBD"), "BoardLib line must stay TBD");
-        assertTrue(_contains(raw, "WalletLib                 TBD"), "WalletLib line must stay TBD");
-        assertTrue(_contains(raw, "Chamber (proxy)           TBD"), "Chamber proxy must stay TBD");
-        assertTrue(_contains(raw, "Registry (proxy)          TBD"), "Registry must stay TBD");
-        assertEq(_labeledValue(raw, "Factory"), "TBD", "Factory value must stay TBD");
+        assertEq(_labeledValue(raw, "Factory"), "0x35977d540799db1e8910c00F476a879E2c0e1a24", "Factory");
+        assertEq(
+            _labeledValue(raw, "Chamber implementation"),
+            "0x49479286057636c820b6bEBcc048c17A79C59DB4",
+            "impl"
+        );
+        assertEq(_labeledValue(raw, "Factory start block"), "26379502", "start block");
+        assertEq(_labeledValue(raw, "Chamber (proxy)"), "TBD", "Chamber proxy must stay TBD");
+        assertEq(_labeledValue(raw, "Registry (proxy)"), "TBD", "Registry must stay TBD");
+        assertFalse(_contains(raw, "NOT DEPLOYED"), "Factory receipt is live");
     }
 
     function test_appMainnetTxtMatchesContractsCopy() public view {
@@ -34,8 +38,8 @@ contract MainnetDeployPackageTest is Test {
         assertTrue(_containsInsensitive(raw, _hexNoPrefix(MainnetLoreHandoff.LORE)), "LORE");
         assertTrue(_containsInsensitive(raw, _hexNoPrefix(MainnetLoreHandoff.MEMBERSHIP_NFT)), "membership NFT");
         assertTrue(_containsInsensitive(raw, _hexNoPrefix(MainnetLoreHandoff.TEAM_SAFE)), "team Safe");
-        assertTrue(_contains(raw, "NOT DEPLOYED"), "template must say not deployed");
-        assertTrue(_contains(raw, "Do not treat TBD as live"), "template must say TBD is not live");
+        assertTrue(_contains(raw, "Nov 10, 2026"), "must record the Factory receipt date");
+        assertTrue(_contains(raw, "Do not treat TBD as live"), "proxy and Registry TBD are not live");
         assertTrue(_contains(raw, "#210"), "must cite merged PMN-M02");
         assertTrue(_contains(raw, "#211"), "must cite merged PMN-M03");
         assertTrue(_contains(raw, "#224"), "must cite PMN-M02 PR");
@@ -57,12 +61,12 @@ contract MainnetDeployPackageTest is Test {
         assertTrue(_contains(raw, "[x] PMN-M02 (#210) / PMN-M03 (#211) fixed on main via #224 / #225"));
         assertTrue(_contains(raw, "[x] PRs #213 (1.1.7 eviction) and #206 (Halmos harness) merged"));
         assertTrue(_contains(raw, "[x] Verified deploy package on main via #214"));
-        assertTrue(_contains(raw, "[ ] DeployMainnetFactory broadcast on chain id 1"));
-        assertTrue(_contains(raw, "[ ] Paste Factory, Chamber implementation, BoardLib, WalletLib from receipt"));
+        assertTrue(_contains(raw, "[x] DeployMainnetFactory broadcast on chain id 1"));
+        assertTrue(_contains(raw, "[x] Paste Factory, Chamber implementation, BoardLib, WalletLib from receipt"));
         assertTrue(_contains(raw, "[ ] make verify-mainnet-factory"));
         assertTrue(_contains(raw, "[ ] CreateMainnetLoreChamber broadcast"));
         assertTrue(_contains(raw, "[ ] Paste Chamber (proxy) from that receipt"));
-        assertTrue(_contains(raw, "[ ] App: VITE_MAINNET_FACTORY only after verify"));
+        assertTrue(_contains(raw, "[x] App reads Factory and Chamber implementation from this file"));
         assertTrue(_contains(raw, "[ ] Safe transferOwnership"));
         assertFalse(_contains(raw, "[ ] PMN-M02"), "PMN-M02 must be checked");
         assertFalse(_contains(raw, "[ ] PRs #213"), "#213 / #206 must be checked");
@@ -70,10 +74,14 @@ contract MainnetDeployPackageTest is Test {
 
     function test_mainnetTxtDoesNotTreatSepoliaFactoryAsMainnetFactory() public view {
         string memory raw = vm.readFile("deployments/mainnet.txt");
-        assertEq(_labeledValue(raw, "Factory"), "TBD");
-        assertEq(_labeledValue(raw, "Chamber implementation"), "TBD");
-        // Sepolia Factory may appear only as a do-not-copy warning, not as the Factory value.
-        assertTrue(_containsInsensitive(raw, _hexNoPrefix(SEPOLIA_FACTORY)), "must warn against copying Sepolia Factory");
+        assertEq(_labeledValue(raw, "Factory"), "0x35977d540799db1e8910c00F476a879E2c0e1a24");
+        assertEq(_labeledValue(raw, "Chamber implementation"), "0x49479286057636c820b6bEBcc048c17A79C59DB4");
+        // Sepolia Factories may appear only as a do-not-copy warning, not as the Factory value.
+        assertTrue(_containsInsensitive(raw, _hexNoPrefix(SEPOLIA_FACTORY)), "must warn against copying Aug 26 Sepolia Factory");
+        assertTrue(
+            _containsInsensitive(raw, _hexNoPrefix(SEPOLIA_FACTORY_NOV_2026)),
+            "must warn against copying Nov 2026 Sepolia Factory"
+        );
     }
 
     function test_rehearsalScriptStillBlocksBroadcast() public view {
@@ -125,6 +133,7 @@ contract MainnetDeployPackageTest is Test {
         assertEq(MainnetLoreHandoff.NAME, "Chamber LORE");
         assertEq(MainnetLoreHandoff.SYMBOL, "cLORE");
         assertEq(MainnetDeployGuard.SEPOLIA_FACTORY, SEPOLIA_FACTORY);
+        assertEq(MainnetDeployGuard.SEPOLIA_FACTORY_NOV_2026, SEPOLIA_FACTORY_NOV_2026);
     }
 
     function test_deployFactoryLinkedLeavesChamberUnset() public {
@@ -139,10 +148,13 @@ contract MainnetDeployPackageTest is Test {
     }
 
     function test_refuseSepoliaFactory() public {
-        try this.externalRefuseSepoliaFactory(SEPOLIA_FACTORY) {
-            revert("expected Sepolia Factory refusal");
-        } catch Error(string memory reason) {
-            assertEq(reason, "refusing Sepolia Factory on chain id 1");
+        address[2] memory sepoliaFactories = [SEPOLIA_FACTORY, SEPOLIA_FACTORY_NOV_2026];
+        for (uint256 i; i < sepoliaFactories.length; ++i) {
+            try this.externalRefuseSepoliaFactory(sepoliaFactories[i]) {
+                revert("expected Sepolia Factory refusal");
+            } catch Error(string memory reason) {
+                assertEq(reason, "refusing Sepolia Factory on chain id 1");
+            }
         }
     }
 
@@ -172,7 +184,10 @@ contract MainnetDeployPackageTest is Test {
             if (!matchPrefix) continue;
             // Next char must be whitespace so "Factory constructor" does not match "Factory".
             if (t[needle.length] != " " && t[needle.length] != "\t") continue;
-            found = _lastField(line);
+            string memory rest = _trim(_slice(t, needle.length, t.length));
+            // "Factory start block" must not satisfy the "Factory" label.
+            if (_contains(rest, " ") || _contains(rest, "\t")) continue;
+            found = rest;
         }
         if (bytes(found).length == 0) revert("label line not found");
         return found;

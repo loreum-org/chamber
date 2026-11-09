@@ -176,11 +176,11 @@ export const config = getDefaultConfig({
   transports: appTransports,
 })
 
-// Sepolia Factory path — 26 Aug 2026 (`contracts/deployments/sepolia.txt`).
-// Env still wins when set (`VITE_SEPOLIA_FACTORY`, `VITE_SEPOLIA_CHAMBER_IMPL`).
-export const SEPOLIA_FACTORY = '0x43aA92c8A26392f21F63cdA88B6BaB5031C40550' as `0x${string}`
+// Sepolia Factory path — 10 Nov 2026 (`contracts/deployments/sepolia.txt`).
+// The Aug 26 Factory stays in that file for discovery. Env still wins when set.
+export const SEPOLIA_FACTORY = '0xE87FF28C44593122e4BD87e48A18c9f08eBc811d' as `0x${string}`
 export const SEPOLIA_CHAMBER_IMPLEMENTATION =
-  '0xd441f1FDad2d3a447d2621DE4DE8b5738e02d39c' as `0x${string}`
+  '0x07026D7DC398b8eF7874aEa1bBC00ACA231B20Af' as `0x${string}`
 
 // Contract addresses - localhost uses auto-generated deployments.json from `make deploy-anvil-all`
 // Sepolia reads committed `contracts/deployments/sepolia.txt`; env vars override.

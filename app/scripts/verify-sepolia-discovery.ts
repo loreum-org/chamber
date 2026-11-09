@@ -12,7 +12,7 @@ import { addRecentChamber, getRecentChambers } from '../src/lib/recentChambers.t
 import { discoverChambers, getEventLogsPaged, registryCreatedEvent } from '../src/lib/chamberDiscovery.ts'
 
 const REGISTRY = '0xB028110234375A368Aa0b5fFB138ae1dDfb0b4cc' as const
-const FACTORY = '0x43aA92c8A26392f21F63cdA88B6BaB5031C40550' as const
+const FACTORY = '0xE87FF28C44593122e4BD87e48A18c9f08eBc811d' as const
 const KNOWN_OLD = '0x0ad3205ecfa76cdb52be5ebe099b990c35489888'
 const KNOWN_OLD_BLOCK = 7453727n
 const RPC = 'https://sepolia.gateway.tenderly.co'

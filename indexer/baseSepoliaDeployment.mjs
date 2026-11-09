@@ -14,7 +14,7 @@ export const deploymentsDir = join(packageRoot, "../contracts/deployments");
 export const stagedDeploymentsDir = join(packageRoot, ".deployment");
 
 /**
- * Testnets this process can index. Mainnet is intentionally absent.
+ * Testnets, plus Ethereum mainnet once `mainnet.txt` has a Factory.
  * A chain is included only when its deployment file (or a per-chain env
  * override) has a Factory and a Factory start block.
  */
@@ -23,6 +23,7 @@ export const INDEXED_CHAIN_TABLE = [
   { chainId: 421614, network: "arbitrum-sepolia", name: "arbitrumSepolia" },
   { chainId: 11155420, network: "op-sepolia", name: "opSepolia" },
   { chainId: 11155111, network: "sepolia", name: "sepolia" },
+  { chainId: 1, network: "mainnet", name: "mainnet" },
 ];
 
 /**
