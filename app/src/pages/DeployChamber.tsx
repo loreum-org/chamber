@@ -483,7 +483,7 @@ export default function DeployChamber() {
                         </p>
                       )}
                     </div>
-                    {membershipPath === 'need-collection' ? (
+                    {membershipPath === 'need-collection' && (
                       <div className="rounded-xl p-4 bg-amber-500/10 border border-amber-500/30 flex items-start gap-3">
                         <FiAlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
                         <div className="space-y-2 min-w-0">
@@ -510,47 +510,6 @@ export default function DeployChamber() {
                           </Link>
                         </div>
                       </div>
-                    ) : (
-                      <>
-                        <input
-                          type="text"
-                          placeholder="0x..."
-                          className={`input font-mono ${erc721Error ? 'border-red-500/60 focus:border-red-500' : erc721Confirmed ? 'border-emerald-500/60' : ''}`}
-                          value={formData.erc721Token}
-                          onChange={(e) => setFormData({ ...formData, erc721Token: e.target.value })}
-                          required
-                        />
-                        <div className="mt-1.5 min-h-[1.25rem]">
-                          {erc721Loading && erc721Valid && (
-                            <span className="text-slate-500 text-xs flex items-center gap-1">
-                              <FiLoader className="w-3 h-3 animate-spin" /> Verifying contract…
-                            </span>
-                          )}
-                          {erc721Confirmed && (
-                            <span className="text-emerald-400 text-xs flex items-center gap-1">
-                              <FiCheck className="w-3 h-3" /> {erc721Name as string}{erc721Symbol ? ` (${erc721Symbol})` : ''}
-                            </span>
-                          )}
-                          {erc721Error && (
-                            <span className="text-red-400 text-xs flex items-center gap-1">
-                              <FiAlertCircle className="w-3 h-3" /> Address is not a valid ERC721 contract
-                            </span>
-                          )}
-                          {!erc721Valid && !formData.erc721Token && (
-                            <span className="text-slate-500 text-xs">
-                              Token holders can become board members via delegation. The collection must already exist.
-                            </span>
-                          )}
-                          {demoPrefillReady && erc20Valid && erc721Valid && (
-                            <p className="text-slate-500 text-xs mt-2">
-                              {currentNetworkName} demo tokens are pre-filled. Use{' '}
-                              <span className="text-accent-400">Mint Test NFT</span> and{' '}
-                              <span className="text-accent-400">Mint Test ERC20</span> in the header so your wallet holds
-                              the membership NFT and demo asset.
-                            </p>
-                          )}
-                        </div>
-                      </>
                     )}
                   </div>
 
