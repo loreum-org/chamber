@@ -16,7 +16,9 @@ const EMPTY_MAINNET: MainnetDeploymentAddresses = {
   chamberImplementation: ZERO_ADDRESS,
 }
 
-const LINE_PARSERS: Array<{ key: keyof MainnetDeploymentAddresses; re: RegExp }> = [
+type MainnetAddressKey = 'registry' | 'factory' | 'chamberImplementation'
+
+const LINE_PARSERS: Array<{ key: MainnetAddressKey; re: RegExp }> = [
   { key: 'registry', re: /^Registry \(proxy\)\s+(0x[a-fA-F0-9]{40})\s*$/i },
   { key: 'factory', re: /^Factory\s+(0x[a-fA-F0-9]{40})\s*$/i },
   { key: 'chamberImplementation', re: /^Chamber implementation\s+(0x[a-fA-F0-9]{40})\s*$/i },
