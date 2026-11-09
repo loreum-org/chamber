@@ -11,8 +11,9 @@
 
 import type { Address } from 'viem'
 import { isNonZeroAddress } from '@/lib/address'
+import { chainIdsToQuery } from '@/lib/supportedChain'
 
-/** Base Sepolia, the chain indexed when no env list is set. */
+/** Historical indexer default (Base Sepolia). Ignored unless that id is in `SUPPORTED_WALLET_CHAIN_IDS`. */
 export const DEFAULT_INDEXER_CHAIN_ID = 84532
 
 /**
@@ -91,14 +92,16 @@ export function parseIndexerChainIds(list: string | undefined, single: string | 
 }
 
 export function getIndexerChainIds(): number[] {
-  return parseIndexerChainIds(
-    import.meta.env?.VITE_INDEXER_CHAIN_IDS,
-    import.meta.env?.VITE_INDEXER_CHAIN_ID,
+  return chainIdsToQuery(
+    parseIndexerChainIds(
+      import.meta.env?.VITE_INDEXER_CHAIN_IDS,
+      import.meta.env?.VITE_INDEXER_CHAIN_ID,
+    ),
   )
 }
 
-export function getIndexerChainId(): number {
-  return getIndexerChainIds()[0] ?? DEFAULT_INDEXER_CHAIN_ID
+export function getIndexerChainId(): number | undefined {
+  return getIndexerChainIds()[0]
 }
 
 export function indexerAppliesToChain(chainId: number): boolean {

@@ -49,30 +49,34 @@ npm install
    ```bash
    VITE_ALCHEMY_API_KEY=your_key
    ```
-   Enable Ethereum, Sepolia, Base, and Arbitrum apps in the Alchemy dashboard. The same key powers **wagmi RPC** (read/write on those chains) and the **Chamber assets** panel. Production `eth_getLogs` pagination for **My chambers** also uses this RPC (not a single getLogs-from-0).
+   Enable Ethereum and Sepolia apps in the Alchemy dashboard. The same key powers **wagmi RPC** (read/write on the offered chains) and the **Chamber assets** panel. Production `eth_getLogs` pagination for **My chambers** also uses this RPC (not a single getLogs-from-0).
 
 2. Optional — **Ponder indexer** ([`indexer/`](../indexer/README.md) in this repo) for **My chambers** that survive public-RPC log truncation and a new browser (no `localStorage` recents). One host indexes each testnet whose deployment file has a Factory. GraphQL `chambers` / `chamberHolders` are filtered by `chainId` (creator OR current share balance).
    ```bash
    VITE_INDEXER_URL=https://your-ponder-host.example
-   # VITE_INDEXER_CHAIN_IDS=84532
-   # VITE_INDEXER_CHAIN_ID=84532
+   # VITE_INDEXER_CHAIN_IDS=11155111
+   # VITE_INDEXER_CHAIN_ID=11155111
    ```
-   The app POSTs to `{VITE_INDEXER_URL}/graphql` with a `chainId` filter (`MyChambers`). One host serves every chain in `VITE_INDEXER_CHAIN_IDS`. `VITE_INDEXER_CHAIN_ID` is the single-id fallback when the list is unset. Chains outside that list, and a host that is unset or down, use chunked Factory/Registry `getLogs`. A live Ponder host is not required. See `app/.env.template`.
+   The app POSTs to `{VITE_INDEXER_URL}/graphql` with a `chainId` filter (`MyChambers`). One host serves every chain in `VITE_INDEXER_CHAIN_IDS` that is also in `SUPPORTED_WALLET_CHAIN_IDS`. Chain ids the wallet no longer offers (Base Sepolia and the other testnets) are not queried. `VITE_INDEXER_CHAIN_ID` is the single-id fallback when the list is unset. Chains outside that list, and a host that is unset or down, use chunked Factory/Registry `getLogs`. A live Ponder host is not required. See `app/.env.template`.
 
 3. Update the WalletConnect Project ID in `src/lib/wagmi.ts`:
    ```typescript
    projectId: 'YOUR_WALLETCONNECT_PROJECT_ID'
    ```
 
-4. The live Factory is Base Sepolia (chain 84532) from
-   `contracts/deployments/base-sepolia.txt` (`getContractAddresses(84532)`).
-   Ethereum Sepolia Factory / Registry / demo tokens stay in
+4. The wallet offers Ethereum Sepolia and Ethereum mainnet
+   (`SUPPORTED_WALLET_CHAIN_IDS` in `src/lib/supportedChain.ts`).
+   Sepolia Factory / Registry / demo tokens come from
    `contracts/deployments/sepolia.txt` (`getContractAddresses(11155111)`).
-   Env vars (`VITE_BASE_SEPOLIA_*`, `VITE_SEPOLIA_*`) still override. Other networks: set `VITE_*` in `.env`.
+   Env vars (`VITE_SEPOLIA_*`) still override.
    Ethereum mainnet (`getContractAddresses(1)`) reads `VITE_MAINNET_*` then
    `contracts/deployments/mainnet.txt`. The committed file is TBD — chain id 1
    stays unset and never uses Sepolia addresses. Paste Factory / impl / Chamber
-   only after a verified chain-id-1 deploy.
+   only after a verified chain-id-1 deploy. Mainnet still appears in the wallet;
+   without those addresses the app asks you to switch back to Sepolia.
+   Other deployment files (Base Sepolia, Arbitrum Sepolia, OP Sepolia) stay in
+   the repo for the indexer. Add their chain ids back to
+   `SUPPORTED_WALLET_CHAIN_IDS` to offer them in the wallet again.
 
 ### Development
 

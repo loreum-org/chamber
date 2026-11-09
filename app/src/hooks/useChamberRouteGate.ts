@@ -1,6 +1,5 @@
-import { useQuery } from '@tanstack/react-query'
 import { getPublicClient } from 'wagmi/actions'
-import { useChainId } from 'wagmi'
+import { useQuery } from '@tanstack/react-query'
 import type { PublicClient } from 'viem'
 import { chamberAbi, registryAbi } from '@/contracts/abis'
 import { classifyChamberRoute, type ChamberRouteDecision } from '@/lib/chamberRoute'
@@ -12,6 +11,7 @@ import {
   isNonZeroAddress,
 } from '@/lib/wagmi'
 import { useIsChamber } from './useRegistry'
+import { useConnectedChainId } from './useConnectedChainId'
 
 async function probeLooksLikeChamber(
   client: PublicClient,
@@ -44,7 +44,7 @@ function useChamberOnOtherConfiguredChain(
   address: `0x${string}` | undefined,
   enabled: boolean,
 ) {
-  const chainId = useChainId()
+  const chainId = useConnectedChainId()
   const otherIds = getConfiguredChainIds().filter((id) => id !== chainId)
 
   return useQuery({
@@ -70,7 +70,7 @@ function useChamberOnOtherConfiguredChain(
 export function useChamberRouteDecision(
   address: `0x${string}` | undefined,
 ): ChamberRouteDecision {
-  const chainId = useChainId()
+  const chainId = useConnectedChainId()
   const configValid = hasValidAddresses(chainId)
   const supportedChainIds = getConfiguredChainIds()
   const isChamber = useIsChamber(address, { enabled: configValid })

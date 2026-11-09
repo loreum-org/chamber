@@ -7,12 +7,12 @@ import { isAddress, parseEventLogs, zeroAddress } from 'viem'
 import { useQueryClient } from '@tanstack/react-query'
 import { FiAlertCircle, FiAlertTriangle, FiCheck, FiLoader, FiArrowRight, FiArrowLeft, FiCopy } from 'react-icons/fi'
 import { useCreateChamberTarget, useCreateChamberWithStatus } from '@/hooks'
+import { isSupportedWalletChain } from '@/lib/supportedChain'
 import {
-  getConfiguredChainIds,
   getContractAddresses,
   getNetworkName,
   getPreferredSupportedChainId,
-  getTestnetChainIds,
+  getWalletChainIds,
   hasValidAddresses,
   isNonZeroAddress,
 } from '@/lib/wagmi'
@@ -132,7 +132,7 @@ export default function DeployChamber() {
       setFormData((prev) => ({ ...prev, erc20Token: erc20, erc721Token: erc721 }))
       return
     }
-    if (typeof chainId !== 'number') return
+    if (typeof chainId !== 'number' || !isSupportedWalletChain(chainId)) return
     const addresses = getContractAddresses(chainId)
     const mock20 =
       addresses?.mockERC20 &&
@@ -156,33 +156,34 @@ export default function DeployChamber() {
   // Live validation: read token names/symbols to confirm addresses are real contracts
   const erc20Valid = isValidAddress(formData.erc20Token)
   const erc721Valid = isValidAddress(formData.erc721Token)
+  const readsEnabled = typeof chainId === 'number' && isSupportedWalletChain(chainId)
 
   const { data: erc20Symbol, isLoading: erc20Loading } = useReadContract({
     address: erc20Valid ? (formData.erc20Token as `0x${string}`) : undefined,
     abi: erc20Abi,
     functionName: 'symbol',
-    query: { enabled: erc20Valid, retry: 1 },
+    query: { enabled: erc20Valid && readsEnabled, retry: 1 },
   })
 
   const { data: erc20Name } = useReadContract({
     address: erc20Valid ? (formData.erc20Token as `0x${string}`) : undefined,
     abi: erc20Abi,
     functionName: 'name',
-    query: { enabled: erc20Valid, retry: 1 },
+    query: { enabled: erc20Valid && readsEnabled, retry: 1 },
   })
 
   const { data: erc721Name, isLoading: erc721Loading } = useReadContract({
     address: erc721Valid ? (formData.erc721Token as `0x${string}`) : undefined,
     abi: erc721Abi,
     functionName: 'name',
-    query: { enabled: erc721Valid, retry: 1 },
+    query: { enabled: erc721Valid && readsEnabled, retry: 1 },
   })
 
   const { data: erc721Symbol } = useReadContract({
     address: erc721Valid ? (formData.erc721Token as `0x${string}`) : undefined,
     abi: erc721Abi,
     functionName: 'symbol',
-    query: { enabled: erc721Valid, retry: 1 },
+    query: { enabled: erc721Valid && readsEnabled, retry: 1 },
   })
 
   const erc20Confirmed = erc20Valid && !!erc20Symbol
@@ -816,13 +817,13 @@ function CreateTargetMissing({
 }
 
 /**
- * Pick the chain to deploy on. Choosing one switches the wallet; networks
- * without a Factory yet are shown but cannot be picked.
+ * Pick the chain to deploy on. The choices are `SUPPORTED_WALLET_CHAIN_IDS`.
+ * Choosing one switches the wallet. A chain without a Factory yet is shown
+ * but cannot be picked.
  */
 function NetworkPicker({ chainId }: { chainId: number | undefined }) {
   const { switchChain, isPending, variables } = useSwitchChain()
-  const testnets = getTestnetChainIds()
-  const ids = [...testnets, ...getConfiguredChainIds().filter((id) => !testnets.includes(id))]
+  const ids = getWalletChainIds()
   if (ids.length < 2) return null
 
   return (
