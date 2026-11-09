@@ -70,9 +70,9 @@ npm install
    `contracts/deployments/sepolia.txt` (`getContractAddresses(11155111)`).
    Env vars (`VITE_BASE_SEPOLIA_*`, `VITE_SEPOLIA_*`) still override. Other networks: set `VITE_*` in `.env`.
    Ethereum mainnet (`getContractAddresses(1)`) reads `VITE_MAINNET_*` then
-   `contracts/deployments/mainnet.txt`. The committed file is TBD — chain id 1
-   stays unset and never uses Sepolia addresses. Paste Factory / impl / Chamber
-   only after a verified chain-id-1 deploy.
+   `contracts/deployments/mainnet.txt`. The Nov 10, 2026 Factory is
+   `0x35977d540799db1e8910c00F476a879E2c0e1a24` (start block `26379502`).
+   Chamber proxy and Registry stay unset. Sepolia addresses are not used on chain id 1.
 
 ### Development
 

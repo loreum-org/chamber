@@ -14,8 +14,9 @@ import {Vm} from "forge-std/Vm.sol";
 library MainnetDeployGuard {
     Vm internal constant vm = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
 
-    /// @dev Sepolia Factory — reference only. Must not be used as a chain-id-1 address.
+    /// @dev Sepolia Factories — reference only. Must not be used as chain-id-1 addresses.
     address internal constant SEPOLIA_FACTORY = 0x43aA92c8A26392f21F63cdA88B6BaB5031C40550;
+    address internal constant SEPOLIA_FACTORY_NOV_2026 = 0xE87FF28C44593122e4BD87e48A18c9f08eBc811d;
 
     function revertIfBroadcastBlocked() internal view {
         if (vm.isContext(VmSafe.ForgeContext.ScriptBroadcast) || vm.isContext(VmSafe.ForgeContext.ScriptResume)) {
@@ -32,6 +33,8 @@ library MainnetDeployGuard {
     }
 
     function refuseSepoliaFactory(address factory) internal pure {
-        if (factory == SEPOLIA_FACTORY) revert("refusing Sepolia Factory on chain id 1");
+        if (factory == SEPOLIA_FACTORY || factory == SEPOLIA_FACTORY_NOV_2026) {
+            revert("refusing Sepolia Factory on chain id 1");
+        }
     }
 }

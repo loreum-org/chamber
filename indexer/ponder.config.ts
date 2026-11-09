@@ -19,9 +19,9 @@ import {
  * `contracts/deployments/<network>.txt` (staged copy: `indexer/.deployment/`).
  *
  * Chain table: 84532 base-sepolia, 421614 arbitrum-sepolia, 11155420 op-sepolia,
- * 11155111 sepolia. Sepolia is included only after a 1.3.0 Factory is recorded;
- * the Aug 26 pre-1.3.0 Factory is ignored. Files that say "Not deployed yet"
- * are skipped. Mainnet is not in the table.
+ * 11155111 sepolia, 1 mainnet. Sepolia is included only after a Factory other
+ * than the Aug 26 pre-1.3.0 Factory is recorded. Files that say
+ * "Not deployed yet" are skipped.
  *
  * RPC: `PONDER_RPC_URL_<chainId>`. Overrides: `PONDER_FACTORY_ADDRESS_<chainId>`,
  * `PONDER_FACTORY_START_BLOCK_<chainId>`, `PONDER_REGISTRY_ADDRESS_<chainId>`,

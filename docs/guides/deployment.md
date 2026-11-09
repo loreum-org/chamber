@@ -2,6 +2,17 @@
 
 This guide covers deploying the Chamber system to various networks.
 
+## Recorded addresses
+
+Live Factory receipts are in `contracts/deployments/` (copied to `app/contracts/deployments/` and `explorers/deployments/`). Do not copy a Sepolia Factory onto chain id 1.
+
+| Network | Factory | Start block |
+| --- | --- | --- |
+| Ethereum Sepolia (10 Nov 2026) | `0xE87FF28C44593122e4BD87e48A18c9f08eBc811d` | `12099299` |
+| Ethereum mainnet (10 Nov 2026) | `0x35977d540799db1e8910c00F476a879E2c0e1a24` | `26379502` |
+
+The Aug 26, 2026 Sepolia Factory `0x43aA92c8A26392f21F63cdA88B6BaB5031C40550` stays in `sepolia.txt` so older chambers remain discoverable. Mainnet Chamber proxy and Registry are still unset. Etherscan verification of the Nov 10 receipts is still open. Chad runbook: `contracts/docs/mainnet-verified-deploy.md`.
+
 ## Table of Contents
 
 1. [Prerequisites](#prerequisites)

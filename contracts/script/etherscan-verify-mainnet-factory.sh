@@ -24,9 +24,9 @@ TXT="$ROOT/deployments/mainnet.txt"
 
 labeled_value() {
 	local label="$1"
-	# Last matching line; last field is the value (TBD or 0x…).
+	# Exact label only. "Factory start block" must not satisfy "Factory".
 	local line
-	line="$(grep -E "^[[:space:]]*${label}[[:space:]]+" "$TXT" | tail -n 1 || true)"
+	line="$(grep -E "^[[:space:]]*${label}[[:space:]]+[^[:space:]]+[[:space:]]*$" "$TXT" | tail -n 1 || true)"
 	[[ -n "$line" ]] || { echo "Label '${label}' not found in deployments/mainnet.txt" >&2; exit 1; }
 	awk '{print $NF}' <<<"$line"
 }
@@ -43,6 +43,7 @@ WALLET_LIB="$(labeled_value 'WalletLib')"
 ADMIN=0x5d45A213B2B6259F0b3c116a8907B56AB5E22095
 
 SEPOLIA_FACTORY=0x43aA92c8A26392f21F63cdA88B6BaB5031C40550
+SEPOLIA_FACTORY_NOV_2026=0xE87FF28C44593122e4BD87e48A18c9f08eBc811d
 
 for pair in "Factory:${FACTORY}" "Chamber implementation:${CHAMBER}" "BoardLib:${BOARD_LIB}" "WalletLib:${WALLET_LIB}"; do
 	name="${pair%%:*}"
@@ -55,8 +56,8 @@ for pair in "Factory:${FACTORY}" "Chamber implementation:${CHAMBER}" "BoardLib:$
 	fi
 done
 
-if [[ "${FACTORY,,}" == "${SEPOLIA_FACTORY,,}" ]]; then
-	echo "Factory in mainnet.txt is the Sepolia Factory. Do not copy it onto chain id 1." >&2
+if [[ "${FACTORY,,}" == "${SEPOLIA_FACTORY,,}" || "${FACTORY,,}" == "${SEPOLIA_FACTORY_NOV_2026,,}" ]]; then
+	echo "Factory in mainnet.txt is a Sepolia Factory. Do not copy it onto chain id 1." >&2
 	exit 1
 fi
 

@@ -78,12 +78,17 @@ Live Factory. Record: [`contracts/deployments/base-sepolia.txt`](./contracts/dep
 
 Supported by the app, not deployed yet. The deploy uses CREATE2, so the Factory gets the same address on every chain. Deploy with `make deploy-testnet network=arbitrum-sepolia account=<keystore>` (or `network=op-sepolia`, or `network=all`) from `contracts/`. The script writes [`arbitrum-sepolia.txt`](./contracts/deployments/arbitrum-sepolia.txt) / [`op-sepolia.txt`](./contracts/deployments/op-sepolia.txt), which the app reads.
 
-### Ethereum Sepolia (26 Aug 2026, chain 11155111)
-- Factory: `0x43aA92c8A26392f21F63cdA88B6BaB5031C40550`
-- Chamber implementation: `0xd441f1FDad2d3a447d2621DE4DE8b5738e02d39c`
-- BoardLib: `0xC3E0Fe4e89e01ca69e384bd61DA78a5a6379762D`
-- WalletLib: `0x0320284b176657bb5048CF586DEef530F4B2499a`
-- Team Multisig: `0x5d45a213b2b6259f0b3c116a8907b56ab5e22095`
+### Ethereum Sepolia (10 Nov 2026, chain 11155111)
+
+New chambers use this Factory. The Aug 26, 2026 Factory `0x43aA92c8A26392f21F63cdA88B6BaB5031C40550` stays in [`contracts/deployments/sepolia.txt`](./contracts/deployments/sepolia.txt) so older chambers still show up.
+
+- Factory: `0xE87FF28C44593122e4BD87e48A18c9f08eBc811d`
+- Chamber implementation: `0x07026D7DC398b8eF7874aEa1bBC00ACA231B20Af`
+- BoardLib: `0x7D5c6d334426a58aBeBF6453d58d958B76a408cd`
+- WalletLib: `0x74024B02dd1fcaBBA9eb9c0E2EABe480a81fDa3F`
+- Admin: `0x5d45A213B2B6259F0b3c116a8907B56AB5E22095`
+- Start block: `12099299`
+- Factory tx: `0x9817964df506d85f31570ff882be96e79c084200a5fbb1196f29dc56ac36d036`
 - Demo ERC-20 (`MockERC20`, Deploy form default): `0x486D69BcAF1E07e4F90edDA9fA7e09De50CD01a2`
 - Demo membership ERC-721 (`MockERC721`, Deploy form default): `0x03CBb0Bb72aeB043b0dc8B299FaCFe77f9159688`
 
@@ -92,7 +97,14 @@ These demo tokens are recorded in `contracts/deployments/sepolia.txt` and are wh
 ## Ethereum
 - Governance Token: `0x7756d245527f5f8925a537be509bf54feb2fdc99`
 - Membership Token: `0xB99DEdbDe082B8Be86f06449f2fC7b9FED044E15`
-- Factory / Chamber implementation / Chamber proxy: **not deployed**. TBD in [`contracts/deployments/mainnet.txt`](./contracts/deployments/mainnet.txt). Do not copy Sepolia Factory `0x43aA92c8A26392f21F63cdA88B6BaB5031C40550` onto chain id 1. `getContractAddresses(1)` stays empty until a verified receipt is pasted. Chad runbook: [`contracts/docs/mainnet-verified-deploy.md`](./contracts/docs/mainnet-verified-deploy.md). Review blockers are merged; remaining broadcast / paste / app env / Safe is Chad-only ([#188](https://github.com/loreum-org/chamber/issues/188)).
+- Factory: `0x35977d540799db1e8910c00F476a879E2c0e1a24`
+- Chamber implementation: `0x49479286057636c820b6bEBcc048c17A79C59DB4`
+- BoardLib: `0x5ed9315ab0274B0C546b71ed5a7ABE9982FF1E8D`
+- WalletLib: `0x5F1469E20Ed5b6B96891CdFA0902d8E412951ED2`
+- Start block: `26379502`
+- Factory tx: `0xc860c4e7b07f78d0e1c5d0d300fff8b6579800e2888566c173aca7e645f94839`
+- Admin (team Safe): `0x5d45A213B2B6259F0b3c116a8907B56AB5E22095`
+- Chamber proxy: not created yet. Record: [`contracts/deployments/mainnet.txt`](./contracts/deployments/mainnet.txt). `getContractAddresses(1)` reads that file. Runbook: [`contracts/docs/mainnet-verified-deploy.md`](./contracts/docs/mainnet-verified-deploy.md).
 
 ## Documentation
 
