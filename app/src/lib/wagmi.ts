@@ -147,15 +147,15 @@ if (import.meta.env.DEV && alchemyApiKey) {
 }
 
 /**
- * Production: the four testnets (Base Sepolia first, the default), plus
- * Mainnet when configured. Dev adds Base, Arbitrum and local.
+ * Production: Ethereum mainnet first (the default) when its Factory is
+ * configured, then the four testnets. Dev adds Base, Arbitrum and local.
  */
 const appChains: Chain[] = [
+  ...(isMainnetConfigured ? [mainnet] : []),
   baseSepolia,
   sepolia,
   arbitrumSepolia,
   optimismSepolia,
-  ...(isMainnetConfigured ? [mainnet] : []),
   ...(productionApp ? [] : [base, arbitrum, localhost]),
 ]
 
@@ -356,11 +356,11 @@ export function getConfiguredChainIds(): number[] {
 }
 
 /**
- * Prefer Base Sepolia when that Factory is configured, otherwise the first
+ * Prefer Ethereum mainnet when that Factory is configured, otherwise the first
  * wagmi chain that has a Factory or Registry.
  */
 export function getPreferredSupportedChainId(): number | undefined {
-  return pickPreferredSupportedChainId(getConfiguredChainIds(), baseSepolia.id)
+  return pickPreferredSupportedChainId(getConfiguredChainIds(), mainnet.id)
 }
 
 /** Supported testnets in display order, whether or not a Factory is deployed yet. */

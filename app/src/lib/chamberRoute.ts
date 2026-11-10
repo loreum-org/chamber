@@ -1,3 +1,5 @@
+import { MAINNET_CHAIN_ID, SEPOLIA_CHAIN_ID } from '@/lib/supportedChain'
+
 export type ChamberRouteDecision =
   | { status: 'invalid-address' }
   | { status: 'loading' }
@@ -36,11 +38,12 @@ export function classifyChamberRoute(input: {
   if (!hasAddress) return { status: 'invalid-address' }
 
   if (!configValid) {
-    const sepoliaId = 11_155_111
     const preferred =
-      supportedChainIds.includes(sepoliaId)
-        ? sepoliaId
-        : supportedChainIds.length === 1
+      supportedChainIds.includes(MAINNET_CHAIN_ID)
+        ? MAINNET_CHAIN_ID
+        : supportedChainIds.includes(SEPOLIA_CHAIN_ID)
+          ? SEPOLIA_CHAIN_ID
+          : supportedChainIds.length === 1
           ? supportedChainIds[0]
           : undefined
     return {

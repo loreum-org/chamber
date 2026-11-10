@@ -1,4 +1,5 @@
-/** Sepolia — preferred when a Factory or Registry is already configured. */
+/** Ethereum mainnet — the default network when its Factory is configured. */
+export const MAINNET_CHAIN_ID = 1
 export const SEPOLIA_CHAIN_ID = 11_155_111
 export const BASE_SEPOLIA_CHAIN_ID = 84_532
 export const ARBITRUM_SEPOLIA_CHAIN_ID = 421_614
@@ -37,13 +38,13 @@ export function getNetworkName(chainId: number, configuredName?: string): string
 }
 
 /**
- * Prefer Sepolia when it is in the configured-and-supported list, otherwise the
- * first entry. Callers must pass only chains that already have a Factory or
+ * Prefer Ethereum mainnet when it is in the configured-and-supported list,
+ * otherwise the first entry. Callers must pass only chains that already have a Factory or
  * Registry — this does not invent addresses.
  */
 export function pickPreferredSupportedChainId(
   configuredSupportedIds: readonly number[],
-  prefer: number = SEPOLIA_CHAIN_ID,
+  prefer: number = MAINNET_CHAIN_ID,
 ): number | undefined {
   if (configuredSupportedIds.includes(prefer)) return prefer
   return configuredSupportedIds[0]

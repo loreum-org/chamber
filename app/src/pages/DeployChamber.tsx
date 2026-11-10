@@ -17,6 +17,7 @@ import {
   isNonZeroAddress,
 } from '@/lib/wagmi'
 import { addRecentChamber } from '@/lib/recentChambers'
+import { MAINNET_CHAIN_ID } from '@/lib/supportedChain'
 import { factoryAbi, registryAbi } from '@/contracts/abis'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { erc20Abi, erc721Abi } from '@/contracts'
@@ -822,7 +823,14 @@ function CreateTargetMissing({
 function NetworkPicker({ chainId }: { chainId: number | undefined }) {
   const { switchChain, isPending, variables } = useSwitchChain()
   const testnets = getTestnetChainIds()
-  const ids = [...testnets, ...getConfiguredChainIds().filter((id) => !testnets.includes(id))]
+  const configured = getConfiguredChainIds()
+  // Ethereum mainnet first (the default), then testnets, then any other configured chain.
+  const mainnetFirst = configured.includes(MAINNET_CHAIN_ID) ? [MAINNET_CHAIN_ID] : []
+  const ids = [
+    ...mainnetFirst,
+    ...testnets,
+    ...configured.filter((id) => id !== MAINNET_CHAIN_ID && !testnets.includes(id)),
+  ]
   if (ids.length < 2) return null
 
   return (
