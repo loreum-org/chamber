@@ -74,7 +74,7 @@ Set **`ADMIN`** in the environment if the admin should not be `msg.sender`.
 
 ## Post-create board bootstrap (Anvil or Sepolia)
 
-`createChamber` leaves the board empty. The creator must hold a membership NFT and delegate after depositing shares. Director rights unlock after `SEATING_DELAY` (1 block). Quorum is `1 + (n * 51) / 100` over reachable authorized directors (PMN-M01).
+`createChamber` leaves the board empty. The creator must hold a membership NFT and delegate after depositing shares. Director rights unlock after `SEATING_DELAY` (2 days since 1.4.0). Quorum is `1 + (n * 51) / 100` over reachable authorized directors (PMN-M01).
 
 ```bash
 # 1. Membership NFT — mock mint on Anvil/Sepolia, or transfer an existing token
@@ -93,9 +93,9 @@ cast send "$CHAMBER" "deposit(uint256,address)" 100ether "$CREATOR" \
 cast send "$CHAMBER" "delegate(uint256,uint256)" "$TOKEN_ID" 100ether \
   --rpc-url "$RPC_URL" --private-key "$PRIVATE_KEY"
 
-# 4. Wait SEATING_DELAY (1 block)
-cast rpc evm_mine --rpc-url http://127.0.0.1:8545   # Anvil
-# On Sepolia, wait for the next block
+# 4. Wait SEATING_DELAY (2 days)
+cast rpc evm_increaseTime 172800 --rpc-url http://127.0.0.1:8545 && cast rpc evm_mine --rpc-url http://127.0.0.1:8545   # Anvil
+# On a live network, wait two days
 
 # 5. Confirm the creator is seated
 cast call "$CHAMBER" "getDirectors()(address[])" --rpc-url "$RPC_URL"

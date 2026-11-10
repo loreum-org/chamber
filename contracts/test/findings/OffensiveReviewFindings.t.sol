@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
+import {BoardTypes} from "src/types/BoardTypes.sol";
+
 import {Test, console} from "forge-std/Test.sol";
 import {Chamber} from "src/Chamber.sol";
 import {IChamber} from "src/interfaces/IChamber.sol";
@@ -49,6 +51,7 @@ contract OffensiveReviewFindingsTest is Test {
         _depositAndDelegate(user2, 2, small);
         _depositAndDelegate(user3, 3, small);
         vm.roll(block.number + 1);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
     }
 
     function _depositAndDelegate(address user, uint256 tokenId, uint256 amount) internal {
@@ -244,6 +247,7 @@ contract OffensiveReviewFindingsTest is Test {
         // Second roll in this test: `block.number` is the test-tx start, so +2 reaches
         // the block after the new directors' seating checkpoint.
         vm.roll(block.number + 2);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
     }
 
     /// Finding 2 (M-01): a promiscuous ERC-1271 owner cannot authorize a random caller
@@ -258,6 +262,7 @@ contract OffensiveReviewFindingsTest is Test {
         chamber.deposit(amount, address(this));
         chamber.delegate(tokenId, amount);
         vm.roll(block.number + 1);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
 
         assertTrue(_isDirectorToken(tokenId));
 

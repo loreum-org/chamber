@@ -42,6 +42,7 @@ contract FindingR1012ChamberHeldSeatSinkTest is Test {
         chamber.deposit(1000 ether, depositor);
         vm.stopPrank();
         vm.roll(block.number + BoardTypes.SEATING_DELAY);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
 
         // Chamber-held memberships: a treasury reserve, or NFTs anyone sent in.
         nft.mintWithTokenId(address(chamber), 10);

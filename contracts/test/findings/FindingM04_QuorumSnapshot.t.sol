@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
+import {BoardTypes} from "src/types/BoardTypes.sol";
+
 import {Test} from "forge-std/Test.sol";
 import {Chamber} from "src/Chamber.sol";
 import {IChamber} from "src/interfaces/IChamber.sol";
@@ -39,6 +41,7 @@ contract FindingM04QuorumSnapshotTest is Test {
         _setupDirector(user4, 4, 1 ether);
         _setupDirector(user5, 5, 1 ether);
         vm.roll(block.number + 1);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
 
         // 5 filled seats → reachable quorum = 1 + (5 * 51) / 100 = 3 (PMN-M01)
         assertEq(chamber.getSeats(), 5);

@@ -229,7 +229,7 @@ export class ChamberOperator {
 
   async getBoard(count?: bigint): Promise<BoardSnapshot> {
     try {
-      const [seats, quorum, paused, blockNumber, name, symbol] = await Promise.all([
+      const [seats, quorum, paused, block, name, symbol] = await Promise.all([
         this.publicClient.readContract({
           address: this.chamber,
           abi: chamberAbi,
@@ -245,7 +245,7 @@ export class ChamberOperator {
           abi: chamberAbi,
           functionName: 'paused',
         }),
-        this.publicClient.getBlockNumber(),
+        this.publicClient.getBlock(),
         this.publicClient
           .readContract({
             address: this.chamber,
@@ -281,6 +281,7 @@ export class ChamberOperator {
         directors = []
       }
 
+      const blockNumber = block.number
       const seatedAtList = await Promise.all(
         tokenIds.map((tokenId) =>
           this.publicClient.readContract({
@@ -304,7 +305,7 @@ export class ChamberOperator {
               ? director
               : undefined,
           seatedAt,
-          seatingMature: isSeatingMature(seatedAt, blockNumber),
+          seatingMature: isSeatingMature(seatedAt, blockNumber, block.timestamp),
         }
       })
 

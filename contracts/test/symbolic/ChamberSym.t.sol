@@ -264,9 +264,9 @@ contract ChamberSymTest is Test, SymTest {
         (bool beforeSync,) = address(chamber).call(_submitTx(1));
         assertFalse(beforeSync);
 
-        uint256 syncBlock = vm.getBlockNumber();
+        uint256 syncTime = vm.getBlockTimestamp();
         chamber.syncSeating(1);
-        assertEq(chamber.getSeatedAt(1), syncBlock + BoardTypes.SEATING_DELAY);
+        assertEq(chamber.getSeatedAt(1), syncTime + BoardTypes.SEATING_DELAY);
 
         vm.prank(USER2);
         (bool beforeDelay,) = address(chamber).call(_submitTx(1));
@@ -279,8 +279,8 @@ contract ChamberSymTest is Test, SymTest {
     }
 
     function _rollDelay() internal {
-        uint256 n = vm.getBlockNumber();
-        vm.roll(n + BoardTypes.SEATING_DELAY);
+        vm.roll(vm.getBlockNumber() + 1);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
     }
 
     function _submitTx(uint256 tokenId) internal view returns (bytes memory) {

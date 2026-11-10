@@ -48,7 +48,8 @@ library BoardTypes {
         uint256 tail;
         uint32 size;
         uint32 seats;
-        mapping(uint256 tokenId => uint256 seatedAtBlock) seatedAt;
+        /// @dev Unix time from which the seat may act (1.4.0+; earlier versions stored a block number).
+        mapping(uint256 tokenId => uint256 activatesAt) seatedAt;
         /// @dev Unused since 1.3.0 (pre-upgrade delegation backfill removed). Kept for layout stability.
         EnumerableSet.UintSet evictedTokenIds;
         /// @dev `ownerOf` snapshotted when seating last bound. Appended so existing ERC-7201 slots stay stable.
@@ -63,6 +64,10 @@ library BoardTypes {
         ///      (R-1012-M5). Appended so existing ERC-7201 slots stay put. Zero means "not recorded"
         ///      and still counts, for a proposal written before this field existed.
         mapping(uint256 tokenId => address) seatSupporter;
+        /// @dev Block in which a seated id fell out of the top seats (R-1110-C1). Its clock restarts
+        ///      only if it is still out at a later block, so a flash bump out and back in does not
+        ///      reset an honest director. Appended so existing ERC-7201 slots stay put.
+        mapping(uint256 tokenId => uint256 blockNumber) droppedAt;
     }
 
     /// @dev keccak256(abi.encode(uint256(keccak256("erc7201:loreum.Board")) - 1)) & ~bytes32(uint256(0xff))
@@ -71,8 +76,10 @@ library BoardTypes {
     /// @notice Maximum number of nodes allowed in the linked list
     uint256 internal constant MAX_NODES = 50;
 
-    /// @notice Blocks a newly seated tokenId must wait before exercising director rights
-    uint256 internal constant SEATING_DELAY = 1;
+    /// @notice Time a newly seated tokenId must wait before exercising director rights (R-1110-C1).
+    ///         Long enough that a takeover must hold its capital in public, and holders can
+    ///         out-delegate it or withdraw before it can act.
+    uint256 internal constant SEATING_DELAY = 2 days;
 
     /// @notice Delay after a seat-update proposal is created before it may be executed
     uint256 internal constant SEAT_UPDATE_TIMELOCK = 7 days;

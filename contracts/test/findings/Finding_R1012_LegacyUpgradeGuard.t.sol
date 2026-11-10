@@ -118,9 +118,10 @@ contract FindingR1012LegacyUpgradeGuardTest is Test {
             chamber.delegate(i + 1, AMOUNT);
         }
         vm.roll(block.number + BoardTypes.SEATING_DELAY + 1);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
 
         _upgrade(chamber, address(new Chamber()));
-        assertEq(chamber.VERSION(), bytes32("1.3.0"));
+        assertEq(chamber.VERSION(), bytes32("1.4.0"));
 
         // Delegation moves cleanly after the upgrade and the board tracks it exactly.
         vm.prank(user1);
@@ -146,6 +147,7 @@ contract FindingR1012LegacyUpgradeGuardTest is Test {
             LegacyLayoutChamber(payable(address(chamber))).legacyDelegate(i + 1, AMOUNT);
         }
         vm.roll(block.number + BoardTypes.SEATING_DELAY + 1);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
 
         _upgrade(chamber, address(new Chamber()));
 

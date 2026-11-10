@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
+import {BoardTypes} from "src/types/BoardTypes.sol";
+
 import {Test} from "forge-std/Test.sol";
 import {Chamber} from "src/Chamber.sol";
 import {IChamber} from "src/interfaces/IChamber.sol";
@@ -56,7 +58,7 @@ contract FindingPMNH01ControlTransferTest is Test {
     address public userB = address(0xB);
 
     uint256 public constant SEATS = 3;
-    uint256 public constant SEATING_DELAY = 1;
+    uint256 public constant SEATING_DELAY = BoardTypes.SEATING_DELAY;
 
     function setUp() public {
         token = new MockERC20("Mock Token", "MCK", 0);
@@ -66,6 +68,7 @@ contract FindingPMNH01ControlTransferTest is Test {
         _seat(user1, 1, 100 ether);
         _seat(user2, 2, 100 ether);
         vm.roll(block.number + SEATING_DELAY);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
     }
 
     /// @notice H-02 regression: a tokenId that newly enters the top-seat set waits the delay.
@@ -125,6 +128,7 @@ contract FindingPMNH01ControlTransferTest is Test {
         chamber.executeTransaction(1, 0, "");
 
         vm.roll(block.number + SEATING_DELAY);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
         assertTrue(block.number >= chamber.getSeatedAt(1));
 
         vm.prank(userB);
@@ -148,6 +152,7 @@ contract FindingPMNH01ControlTransferTest is Test {
 
         chamber.syncSeating(1);
         vm.roll(block.number + SEATING_DELAY);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
         assertTrue(block.number >= chamber.getSeatedAt(1), "B has waited the new delay");
 
         vm.prank(userB);

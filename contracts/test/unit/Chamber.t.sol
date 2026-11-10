@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
+import {BoardTypes} from "src/types/BoardTypes.sol";
+
 import {Test} from "forge-std/Test.sol";
 import {Chamber} from "src/Chamber.sol";
 import {IChamber} from "src/interfaces/IChamber.sol";
@@ -159,6 +161,7 @@ contract ChamberTest is Test {
         chamber.deposit(amount, user1);
         chamber.delegate(tokenId, 1);
         vm.roll(block.number + 1);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
 
         chamber.submitTransaction(1, target, value, data, "", 0);
         vm.stopPrank();
@@ -189,6 +192,7 @@ contract ChamberTest is Test {
         chamber.deposit(amount, user1);
         chamber.delegate(tokenId, 1);
         vm.roll(block.number + 1);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
 
         chamber.submitTransaction(1, target, value, data, metadataURI, 0);
         vm.stopPrank();
@@ -219,6 +223,7 @@ contract ChamberTest is Test {
         chamber.deposit(amount, user1);
         chamber.delegate(tokenId, 1);
         vm.roll(block.number + 1);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
 
         chamber.submitTransaction(1, target, value, data, "", 0);
         vm.stopPrank();
@@ -242,6 +247,7 @@ contract ChamberTest is Test {
         chamber.deposit(amount, user1);
         chamber.delegate(tokenId, 1);
         vm.roll(block.number + 1);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
 
         chamber.submitTransaction(1, target, value, data, "", 0);
         chamber.revokeConfirmation(1, 0);
@@ -288,6 +294,7 @@ contract ChamberTest is Test {
         chamber.delegate(tokenId + 2, 1);
         vm.stopPrank();
         vm.roll(block.number + 1);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
 
         vm.prank(user1);
         chamber.submitTransaction(1, target, value, data, "", 0);
@@ -323,6 +330,7 @@ contract ChamberTest is Test {
         chamber.deposit(amount, user1);
         chamber.delegate(tokenId, 1);
         vm.roll(block.number + 1);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
 
         chamber.submitTransaction(1, target, value, data, "", 0);
         vm.stopPrank();
@@ -815,6 +823,7 @@ contract ChamberTest is Test {
         chamber.delegate(3, 1);
         vm.stopPrank();
         vm.roll(block.number + 1);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
     }
 
     function test_Chamber_GetTotalHolderDelegations() public {
@@ -1619,7 +1628,7 @@ contract ChamberTest is Test {
     }
 
     function test_Chamber_Version() public view {
-        assertEq(chamber.VERSION(), bytes32("1.3.0"));
+        assertEq(chamber.VERSION(), bytes32("1.4.0"));
     }
 
     // ─── submitTransaction: short data when target == self ─────────────
@@ -1709,6 +1718,7 @@ contract ChamberTest is Test {
         chamber.deposit(amount, user1);
         chamber.delegate(tokenId, 1);
         vm.roll(block.number + 1);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
         chamber.submitTransaction(tokenId, address(0x3), 0, "", "", 0);
         vm.stopPrank();
 
@@ -1725,6 +1735,7 @@ contract ChamberTest is Test {
         chamber.deposit(1 ether, address(this));
         chamber.delegate(tokenId, 1 ether);
         vm.roll(block.number + 1);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
 
         vm.prank(address(wallet));
         chamber.submitTransaction(tokenId, address(0x9999), 0, "", "", 0);
@@ -1798,6 +1809,7 @@ contract ChamberTest is Test {
         // Delegate to tokenId2
         chamberB.delegate(tokenId2, 500e18);
         vm.roll(block.number + 1);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
 
         // 4. Chamber A submits a transaction on Chamber B by calling as itself
         bytes memory testData = abi.encodeWithSignature("testFunction()");
@@ -1887,6 +1899,7 @@ contract ChamberTest is Test {
         // Delegate to tokenId3
         chamberB.delegate(tokenId3, 400e18);
         vm.roll(block.number + 1);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
 
         // 5. Chamber A submits a transaction on Chamber B by calling as itself
         // This transaction will transfer tokens from Chamber B to Chamber C

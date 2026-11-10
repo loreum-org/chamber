@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
+import {BoardTypes} from "src/types/BoardTypes.sol";
+
 import {Test} from "forge-std/Test.sol";
 import {Chamber} from "src/Chamber.sol";
 import {IBoard} from "src/interfaces/IBoard.sol";
@@ -60,7 +62,7 @@ contract FindingPMNM02InertSeatedNftTest is Test {
     address public spendTarget = address(0x4);
 
     uint256 public constant SEATS = 3;
-    uint256 public constant SEATING_DELAY = 1;
+    uint256 public constant SEATING_DELAY = BoardTypes.SEATING_DELAY;
 
     function setUp() public {
         token = new MockERC20("Mock Token", "MCK", 0);
@@ -74,6 +76,7 @@ contract FindingPMNM02InertSeatedNftTest is Test {
         _seat(user1, 1, 100 ether);
         _seat(user2, 2, 100 ether);
         vm.roll(block.number + SEATING_DELAY);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
 
         vm.prank(user1);
         chamber.submitTransaction(1, spendTarget, 1 ether, "", "", 0);
@@ -97,6 +100,7 @@ contract FindingPMNM02InertSeatedNftTest is Test {
         _seat(user2, 2, 100 ether);
         _seat(user3, 3, 50 ether);
         vm.roll(block.number + SEATING_DELAY);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
 
         vm.prank(user1);
         chamber.submitTransaction(1, spendTarget, 1 ether, "", "", 0);
@@ -123,6 +127,7 @@ contract FindingPMNM02InertSeatedNftTest is Test {
         _seat(user1, 1, 100 ether);
         _seat(user2, 2, 100 ether);
         vm.roll(block.number + SEATING_DELAY);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
 
         vm.prank(user1);
         chamber.submitTransaction(1, spendTarget, 1 ether, "", "", 0);
@@ -153,6 +158,7 @@ contract FindingPMNM02InertSeatedNftTest is Test {
         _seat(user2, 2, 80 ether);
         _seat(user3, 3, 60 ether);
         vm.roll(block.number + SEATING_DELAY);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
 
         assertTrue(_inTop(1), "precondition: token 1 is in the top set");
 

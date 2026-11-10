@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
+import {BoardTypes} from "src/types/BoardTypes.sol";
+
 import {Test} from "forge-std/Test.sol";
 import {Registry} from "src/Registry.sol";
 import {IChamber} from "src/interfaces/IChamber.sol";
@@ -42,6 +44,7 @@ contract SeatUpdateExpiryTest is Test {
         _setupDirector(director3, 3, 1000e18);
         _setupDirector(minority, 4, 1e18);
         vm.roll(block.number + 1);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
 
         assertEq(chamber.getSeats(), 4);
         assertEq(chamber.getQuorum(), 3);

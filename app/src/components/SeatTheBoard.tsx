@@ -8,7 +8,9 @@ import toast from 'react-hot-toast'
 import { seatTheBoardHref, useSeatTheBoard, type SeatTheBoardAction } from '@/hooks'
 import { config, LOCAL_CHAIN_ID } from '@/lib/wagmi'
 import { formatLocalTestMintToast, formatWalletSendError } from '@/lib/utils'
-import { SEATING_DELAY_BLOCKS } from '@/lib/chamberGovernance'
+import { SEATING_DELAY_SEC } from '@/lib/chamberGovernance'
+
+const SEATING_DELAY_DAYS = Number(SEATING_DELAY_SEC / 86_400n)
 import { erc721Abi } from '@/contracts'
 
 /** Routes a seat-the-board CTA to the derived next step (not a blind /delegation link). */
@@ -109,7 +111,7 @@ export default function SeatTheBoard({
       cta: 'Deposit shares',
     },
     delegate: {
-      detail: `Delegate shares to a token you hold. Director rights unlock after ${SEATING_DELAY_BLOCKS.toString()} block (SEATING_DELAY).`,
+      detail: `Delegate shares to a token you hold. Director rights unlock ${SEATING_DELAY_DAYS} days later (SEATING_DELAY), so anyone can see a new seat before it acts.`,
       cta: 'Delegate to seat',
     },
   }
@@ -140,7 +142,7 @@ export default function SeatTheBoard({
       <ol className="space-y-2 text-sm">
         <Step done={holdsNft} loading={!!userAddress && nftsLoading && !holdsNft} label="Hold a membership token" />
         <Step done={hasShares} label="Deposit shares" />
-        <Step done={hasDelegated} label={`Delegate, then wait ${SEATING_DELAY_BLOCKS.toString()} block`} />
+        <Step done={hasDelegated} label={`Delegate, then wait ${SEATING_DELAY_DAYS} days`} />
       </ol>
 
       <p className="text-slate-400 text-sm leading-relaxed">{copy.detail}</p>

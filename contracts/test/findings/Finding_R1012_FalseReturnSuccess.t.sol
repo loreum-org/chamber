@@ -79,6 +79,7 @@ contract FindingR1012FalseReturnSuccessTest is Test {
         chamber.delegate(1, 1 ether);
         vm.stopPrank();
         vm.roll(block.number + BoardTypes.SEATING_DELAY);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
     }
 
     function _execute(address target, bytes memory data) internal returns (uint256 txId) {

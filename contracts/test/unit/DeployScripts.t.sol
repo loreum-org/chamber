@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
+import {BoardTypes} from "src/types/BoardTypes.sol";
 import {Test, Vm} from "forge-std/Test.sol";
 import {Chamber} from "src/Chamber.sol";
 import {Factory} from "src/Factory.sol";
@@ -55,6 +56,7 @@ contract DeployScriptsTest is Test {
         _seat(chamber, user2, 2);
         _seat(chamber, user3, 3);
         vm.roll(block.number + 1); // seating delay
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
     }
 
     // ---------------------------------------------------------------- fresh deploy
@@ -71,7 +73,7 @@ contract DeployScriptsTest is Test {
         assertTrue(proxyAdmin.owner() != address(factory), "Factory keeps no upgrade rights");
         assertTrue(proxyAdmin.owner() != factory.owner(), "Factory admin keeps no upgrade rights");
         assertEq(_impl(chamber), impl, "proxy points at the Factory implementation");
-        assertEq(Chamber(payable(chamber)).VERSION(), bytes32("1.3.0"));
+        assertEq(Chamber(payable(chamber)).VERSION(), bytes32("1.4.0"));
     }
 
     function test_ChamberScript_UsesFactoryPath_ChamberOwnsProxyAdmin() public {
@@ -90,14 +92,14 @@ contract DeployScriptsTest is Test {
         Registry registry = ScriptDeploy.deployRegistry(admin);
         address impl = registry.implementation();
         assertGt(impl.code.length, 0);
-        assertEq(Chamber(payable(impl)).VERSION(), bytes32("1.3.0"));
+        assertEq(Chamber(payable(impl)).VERSION(), bytes32("1.4.0"));
     }
 
     function test_DeployChamberImplementationScript() public {
         address impl = new DeployChamberImplementation().run();
         assertGt(impl.code.length, 0);
         assertLe(impl.code.length, 24_576, "EIP-170");
-        assertEq(Chamber(payable(impl)).VERSION(), bytes32("1.3.0"));
+        assertEq(Chamber(payable(impl)).VERSION(), bytes32("1.4.0"));
         // Bare implementation cannot be initialized (initializers disabled).
         vm.expectRevert();
         Chamber(payable(impl)).initialize(address(token), address(nft), 5, "X", "X");
@@ -225,7 +227,7 @@ contract DeployScriptsTest is Test {
         Chamber chamber = _boardChamber();
         ProposeChamberUpgrade script = new ProposeChamberUpgrade();
         address impl = address(new Chamber());
-        vm.mockCall(address(chamber), abi.encodeWithSignature("VERSION()"), abi.encode(bytes32("1.3.1")));
+        vm.mockCall(address(chamber), abi.encodeWithSignature("VERSION()"), abi.encode(bytes32("1.4.1")));
         script.preflight(address(chamber), impl);
         assertEq(script.propose(address(chamber), impl, "", 1, "", false), type(uint256).max);
         (bytes32 current, bytes32 next) = script.versions(address(chamber), impl);

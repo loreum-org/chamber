@@ -123,6 +123,9 @@ library BoardLib {
         if ($.seatedAt[tokenId] != 0) {
             delete $.seatedAt[tokenId];
         }
+        if ($.droppedAt[tokenId] != 0) {
+            delete $.droppedAt[tokenId];
+        }
 
         if ($.size > 0) {
             unchecked {
@@ -475,10 +478,10 @@ library BoardLib {
     function isSeatingMature(BoardTypes.BoardStorage storage $, uint256 tokenId) external view returns (bool) {
         uint256 seatedAt = $.seatedAt[tokenId];
         if (seatedAt == 0) return true;
-        return block.number >= seatedAt;
+        return block.timestamp >= seatedAt;
     }
 
-    /// @dev Stored checkpoint, or `block.number + SEATING_DELAY` when `ownerOf` != seated snap (PMN-H01 A).
+    /// @dev Stored checkpoint, or `block.timestamp + SEATING_DELAY` when `ownerOf` != seated snap (PMN-H01 A).
     function effectiveSeatedAt(BoardTypes.BoardStorage storage $, IERC721 nft, uint256 tokenId)
         public
         view
@@ -489,7 +492,7 @@ library BoardLib {
         if (snap == address(0)) return stored;
         address owner = tryOwnerOf(nft, tokenId);
         if (owner != address(0) && owner != snap) {
-            return block.number + BoardTypes.SEATING_DELAY;
+            return block.timestamp + BoardTypes.SEATING_DELAY;
         }
         return stored;
     }
@@ -501,7 +504,7 @@ library BoardLib {
     {
         uint256 seatedAt = effectiveSeatedAt($, nft, tokenId);
         if (seatedAt == 0) return true;
-        return block.number >= seatedAt;
+        return block.timestamp >= seatedAt;
     }
 
     /// @dev Bind or reset the seating clock when `ownerOf` changes. Call after board mutations and before director checks.
@@ -526,7 +529,11 @@ library BoardLib {
 
         $.seatedOwner[tokenId] = owner;
         if (inTopSeats($, tokenId)) {
-            $.seatedAt[tokenId] = block.number + BoardTypes.SEATING_DELAY;
+            $.seatedAt[tokenId] = block.timestamp + BoardTypes.SEATING_DELAY;
+        } else if ($.seatedAt[tokenId] != 0) {
+            // Out of the top seats with a kept clock (R-1110-C1): the new owner starts fresh on entry.
+            delete $.seatedAt[tokenId];
+            delete $.droppedAt[tokenId];
         }
     }
 
@@ -703,20 +710,27 @@ library BoardLib {
     function refreshSeating(BoardTypes.BoardStorage storage $, uint256[] memory prevTop) internal {
         uint256 current = $.head;
         uint256 remaining = $.seats;
-        uint256 activationBlock = block.number + BoardTypes.SEATING_DELAY;
+        uint256 activatesAt = block.timestamp + BoardTypes.SEATING_DELAY;
 
         while (current != 0) {
             if (remaining != 0) {
                 // TokenId-scoped: a token already in the previous top keeps seatedAt.
                 // Control-transfer reset is Chamber/BoardLib.syncSeatingControl (PMN-H01 A).
-                if ($.seatedAt[current] == 0 && !wasInTop(current, prevTop)) {
-                    $.seatedAt[current] = activationBlock;
+                uint256 dropped = $.droppedAt[current];
+                if (dropped != 0) {
+                    // Back in the top seats. Out since an earlier block: the clock restarts.
+                    // Out and back in the same block (a flash bump): the clock is kept (R-1110-C1).
+                    if (dropped != block.number) $.seatedAt[current] = activatesAt;
+                    delete $.droppedAt[current];
+                } else if ($.seatedAt[current] == 0 && !wasInTop(current, prevTop)) {
+                    $.seatedAt[current] = activatesAt;
                 }
                 unchecked {
                     --remaining;
                 }
-            } else if ($.seatedAt[current] != 0) {
-                delete $.seatedAt[current];
+            } else if ($.seatedAt[current] != 0 && $.droppedAt[current] == 0) {
+                // Keep the clock and note the block, so a same-block return does not reset it.
+                $.droppedAt[current] = block.number;
             }
             current = uint256($.nodes[current].next);
         }

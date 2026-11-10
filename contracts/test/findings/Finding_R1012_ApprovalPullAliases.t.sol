@@ -56,6 +56,7 @@ contract FindingR1012ApprovalPullAliasesTest is Test {
         chamber.delegate(1, 1 ether);
         vm.stopPrank();
         vm.roll(block.number + BoardTypes.SEATING_DELAY);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
 
         token.mint(victim, 500 ether);
         vm.prank(victim);

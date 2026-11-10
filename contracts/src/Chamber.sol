@@ -86,7 +86,7 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
      *      (length word + data word) and incurs an SLOAD on every read. A bytes32 constant is
      *      inlined at compile time: zero runtime gas, zero storage slots.
      */
-    bytes32 public constant VERSION = "1.3.0";
+    bytes32 public constant VERSION = "1.4.0";
 
     /// @notice Id the next implementation must return before a ProxyAdmin upgrade is accepted.
     /// @dev Stable across versions. See {ChamberId}.
@@ -778,11 +778,11 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
     }
 
     /**
-     * @notice First block at which `tokenId` may exercise director rights.
+     * @notice First time at which `tokenId` may exercise director rights.
      * @param tokenId The membership token ID
-     * @return seatedAtBlock Activation block, or zero if no checkpoint is stored
+     * @return activatesAt Unix time from which the seat may act, or zero if no checkpoint is stored
      */
-    function getSeatedAt(uint256 tokenId) public view override returns (uint256 seatedAtBlock) {
+    function getSeatedAt(uint256 tokenId) public view override returns (uint256 activatesAt) {
         return _effectiveSeatedAt(_getChamberStorage().nft, tokenId);
     }
 

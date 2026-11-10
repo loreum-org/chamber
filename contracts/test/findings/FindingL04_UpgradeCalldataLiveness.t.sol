@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
+import {BoardTypes} from "src/types/BoardTypes.sol";
+
 import {Test} from "forge-std/Test.sol";
 import {Registry} from "src/Registry.sol";
 import {Chamber} from "src/Chamber.sol";
@@ -41,6 +43,7 @@ contract FindingL04UpgradeCalldataLivenessTest is Test {
 
         _setupDirectors();
         vm.roll(block.number + 1);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
     }
 
     function _setupDirectors() internal {

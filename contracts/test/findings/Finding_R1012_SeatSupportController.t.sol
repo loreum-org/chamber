@@ -27,6 +27,7 @@ contract FindingR1012SeatSupportControllerTest is Test {
         chamber = DeployChamber.deploy(address(token), address(nft), 1, "C", "C", address(0x9));
         _seat(seller, 1, 10 ether);
         vm.roll(block.number + BoardTypes.SEATING_DELAY);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
     }
 
     function _seat(address user, uint256 tokenId, uint256 amount) internal {
@@ -47,6 +48,7 @@ contract FindingR1012SeatSupportControllerTest is Test {
         nft.transferFrom(seller, buyer, 1);
         chamber.syncSeating(1);
         vm.roll(block.number + BoardTypes.SEATING_DELAY);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
         vm.warp(block.timestamp + BoardTypes.SEAT_UPDATE_TIMELOCK);
 
         vm.prank(buyer);
@@ -81,6 +83,7 @@ contract FindingR1012SeatSupportControllerTest is Test {
         nft.transferFrom(seller, buyer, 1);
         chamber.syncSeating(1);
         vm.roll(block.number + BoardTypes.SEATING_DELAY);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
 
         vm.prank(buyer);
         chamber.withdrawSeatSupport(1);
@@ -104,6 +107,7 @@ contract FindingR1012SeatSupportControllerTest is Test {
         chamber.executeSeatsUpdate(1);
         assertEq(chamber.getSeats(), 2);
         vm.roll(block.number + BoardTypes.SEATING_DELAY);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
 
         vm.prank(seller);
         chamber.updateSeats(1, 3);
@@ -138,6 +142,7 @@ contract FindingR1012SeatSupportControllerTest is Test {
         nft.transferFrom(seller, buyer, 1);
         chamber.syncSeating(1);
         vm.roll(block.number + BoardTypes.SEATING_DELAY);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
         vm.warp(block.timestamp + BoardTypes.SEAT_UPDATE_TIMELOCK);
 
         vm.prank(buyer);
