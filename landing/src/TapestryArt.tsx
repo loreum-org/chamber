@@ -9,10 +9,10 @@ export function TapestryArt({ art }: { art: Scene }) {
         alt={art.alt}
         loading="lazy"
         decoding="async"
-        className="h-full w-full object-cover sepia-[0.15]"
+        className="h-full w-full object-cover"
       />
       <figcaption className="absolute bottom-0 right-0 rounded-tl-md bg-ink-950/75 px-2 py-0.5 text-[10px] tracking-wide text-slate-300">
-        Bayeux Tapestry · scene {art.scene}
+        Loreum Tapestry · panel {art.panel}
       </figcaption>
     </figure>
   );
