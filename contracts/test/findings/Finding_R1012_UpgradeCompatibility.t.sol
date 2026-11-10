@@ -41,6 +41,7 @@ contract FindingR1012UpgradeCompatibilityTest is Test {
         chamber.delegate(1, 1 ether);
         vm.stopPrank();
         vm.roll(block.number + BoardTypes.SEATING_DELAY);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
     }
 
     function _submit(address target, bytes memory data) internal {
@@ -97,7 +98,7 @@ contract FindingR1012UpgradeCompatibilityTest is Test {
 
         vm.prank(director);
         chamber.executeTransaction(1, 0, "");
-        assertEq(chamber.VERSION(), bytes32("1.3.0"));
+        assertEq(chamber.VERSION(), bytes32("1.4.0"));
         assertEq(ProxyAdmin(admin).owner(), address(chamber));
     }
 
@@ -116,6 +117,6 @@ contract FindingR1012UpgradeCompatibilityTest is Test {
 
         (bool executed,,,,) = chamber.getTransaction(0);
         assertFalse(executed, "a changed implementation was upgraded");
-        assertEq(chamber.VERSION(), bytes32("1.3.0"));
+        assertEq(chamber.VERSION(), bytes32("1.4.0"));
     }
 }

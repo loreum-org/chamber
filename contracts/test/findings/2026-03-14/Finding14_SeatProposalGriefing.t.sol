@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
+import {BoardTypes} from "src/types/BoardTypes.sol";
+
 import {Test, console} from "forge-std/Test.sol";
 import {Registry} from "src/Registry.sol";
 import {Chamber} from "src/Chamber.sol";
@@ -43,6 +45,7 @@ contract SeatProposalGriefingTest is Test {
         _setupDirector(director3, 3, 1000e18);
         _setupDirector(griefer, 4, 1e18); // just 1 share — weakest director
         vm.roll(block.number + 1);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
 
         assertEq(chamber.getSeats(), 4, "4 seats");
         assertEq(chamber.getQuorum(), 3, "quorum = 3");

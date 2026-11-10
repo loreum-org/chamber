@@ -79,10 +79,6 @@ abstract contract Wallet {
         return WalletLib.resolveDeadline(deadline);
     }
 
-    function _requireNoThirdPartyPull(address target, address asset, bytes memory data) internal view {
-        WalletLib.requireNoThirdPartyPull(target, asset, data);
-    }
-
     /// @dev ProxyAdmin calls are restricted to a Chamber-id upgrade of this proxy (R-1012-L6).
     function _requireChamberUpgrade(bytes memory data) internal view {
         WalletLib.requireChamberUpgrade(data);

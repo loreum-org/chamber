@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
+import {BoardTypes} from "src/types/BoardTypes.sol";
+
 import {Test} from "forge-std/Test.sol";
 import {Chamber} from "src/Chamber.sol";
 import {Factory} from "src/Factory.sol";
@@ -33,7 +35,7 @@ contract FindingPMNM01ReachableQuorumTest is Test {
     address public spendTarget = address(0x4);
 
     uint256 public constant SEATS = 3;
-    uint256 public constant SEATING_DELAY = 1;
+    uint256 public constant SEATING_DELAY = BoardTypes.SEATING_DELAY;
 
     function setUp() public {
         token = new MockERC20("Mock Token", "MCK", 0);
@@ -50,6 +52,7 @@ contract FindingPMNM01ReachableQuorumTest is Test {
         _seat(user2, 2, 100 ether);
         _seat(user3, 3, 100 ether);
         vm.roll(block.number + SEATING_DELAY);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
 
         assertEq(chamber.getSeats(), 3);
         assertEq(ChamberReads.reachableDirectorCount(chamber), 3);
@@ -61,6 +64,7 @@ contract FindingPMNM01ReachableQuorumTest is Test {
     function test_PMNM01_caseA_emptySeatsDoNotSetDenominator() public {
         _seat(user1, 1, 100 ether);
         vm.roll(block.number + SEATING_DELAY);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
 
         assertEq(chamber.getSeats(), 3, "configured seats stay 3");
         assertEq(ChamberReads.reachableDirectorCount(chamber), 1, "only one authorized director");
@@ -85,6 +89,7 @@ contract FindingPMNM01ReachableQuorumTest is Test {
         _seat(user2, 2, 100 ether);
         _seat(user3, 3, 100 ether);
         vm.roll(block.number + SEATING_DELAY);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
 
         assertEq(chamber.getQuorum(), 2, "three reachable directors");
 
@@ -129,6 +134,7 @@ contract FindingPMNM01ReachableQuorumTest is Test {
     function test_PMNM01_caseC_recoveryLowersSeats() public {
         _seat(user1, 1, 100 ether);
         vm.roll(block.number + SEATING_DELAY);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
 
         assertEq(chamber.getSeats(), 3);
         assertEq(ChamberReads.reachableDirectorCount(chamber), 1);
@@ -162,6 +168,7 @@ contract FindingPMNM01ReachableQuorumTest is Test {
         _seat(user2, 2, 100 ether);
         _seat(user3, 3, 100 ether);
         vm.roll(block.number + SEATING_DELAY + 1);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
         assertEq(ChamberReads.reachableDirectorCount(filled), 3);
         assertGe(ChamberReads.reachableDirectorCount(filled), 1 + (filled.getSeats() * 51) / 100);
         assertTrue(block.number >= filled.getSeatedAt(1), "filled board directors are mature");

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
+import {BoardTypes} from "src/types/BoardTypes.sol";
+
 import {Test, stdStorage, StdStorage} from "forge-std/Test.sol";
 import {Chamber} from "src/Chamber.sol";
 import {IWallet} from "src/interfaces/IWallet.sol";
@@ -37,6 +39,7 @@ contract FindingM06WalletExpiryTest is Test {
         _setupDirector(user2, 2, 1 ether);
         _setupDirector(user3, 3, 1 ether);
         vm.roll(block.number + 1);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
     }
 
     function test_M06_ExecuteAfterDeadline_Reverts() public {

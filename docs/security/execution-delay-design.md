@@ -1,6 +1,6 @@
 # Design note: delay between quorum and execute
 
-Not implemented. This is a proposal for a later version. Chamber 1.3.0 still executes in the same transaction that reaches quorum.
+Not implemented, and rejected on 2026-11-10: spends must stay instant. The takeover this was meant to stop is closed in 1.4.0 by a 2-day seating delay instead (see `review-2026-11-10.md`, R-1110-C1).
 
 ## What is missing
 

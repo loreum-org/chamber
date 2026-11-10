@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAccount, useReadContract } from 'wagmi'
-import { formatUnits, parseUnits, maxUint256 } from 'viem'
+import { formatUnits, parseUnits } from 'viem'
 import {
   FiArrowDownCircle,
   FiArrowUpCircle,
@@ -217,9 +217,10 @@ export default function TreasuryOverview({ chamberAddress, chamberInfo, userBala
   }
 
   const handleApprove = async () => {
-    if (!chamberAddress) return
+    if (!chamberAddress || depositAmountBigInt === 0n) return
     try {
-      await approve(chamberAddress, maxUint256) // Approve max for convenience
+      // Exact amount only: the board can spend any approval given to the chamber (R-1110-M1).
+      await approve(chamberAddress, depositAmountBigInt)
       toast.success('Approval submitted!')
     } catch (err) {
       console.error(err)

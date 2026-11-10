@@ -17,7 +17,8 @@ Safe `execTransaction` or a 4337 account `execute` that calls Chamber).
 
 Seat-gated actions also need the token in the top seats, and a newly seated
 token (or a control transfer of a seated token) waits `SEATING_DELAY`
-(1 block) before director actions apply.
+(2 days since 1.4.0) before director actions apply. A seat bumped out and back in
+within the same block keeps its clock; one that stays out past a block starts over.
 
 Confirm and cancel bits count toward execute only while `ownerOf` succeeds
 and the recorded controller still matches (PMN-H01 A, PMN-M02 A). Burned

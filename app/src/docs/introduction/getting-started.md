@@ -46,9 +46,9 @@ Happy path on **Sepolia** or **Anvil**:
    - **Your own collection:** receive or already hold a token. Chamber does not mint third-party NFTs and does not auto-seat strangers.
 3. **Deposit shares** — **Vault** tab. Delegation needs Chamber shares.
 4. **Delegate** to a token ID you hold — **Delegation** tab (the CTA prefills a token you own when it can).
-5. **Wait `SEATING_DELAY`** — **1 block**. Then the creator is a seated director and the queue can run. The same 1-block delay applies when `ownerOf` changes for an already-seated token.
+5. **Wait `SEATING_DELAY`** — **2 days** (since 1.4.0). Then the creator is a seated director and the queue can run. The same delay applies when `ownerOf` changes for an already-seated token. It gives holders time to see a new seat and out-delegate it or withdraw before it can act.
 
-Quorum is `1 + (n * 51) / 100` over reachable authorized directors (PMN-M01). Seating delay stays 1 block (H-02).
+Quorum is `1 + (n * 51) / 100` over reachable authorized directors (PMN-M01). Seating delay is 2 days (R-1110-C1).
 
 **Go to:** **Dashboard** (`/`) → click your Chamber → **Overview** (`/chamber/:address`)
 

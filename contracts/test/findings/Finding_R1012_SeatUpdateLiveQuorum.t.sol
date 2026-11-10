@@ -38,6 +38,7 @@ contract FindingR1012SeatUpdateLiveQuorumTest is Test {
     function test_seatUpdateNeedsLiveQuorum() public {
         _seat(address(0x1), 1, 100 ether);
         vm.roll(block.number + BoardTypes.SEATING_DELAY);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
         assertEq(chamber.getQuorum(), 1);
 
         vm.prank(address(0x1));
@@ -47,6 +48,7 @@ contract FindingR1012SeatUpdateLiveQuorumTest is Test {
             _seat(address(uint160(i)), i, 200 ether);
         }
         vm.roll(block.number + BoardTypes.SEATING_DELAY);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
         assertEq(chamber.getQuorum(), 3);
 
         vm.warp(block.timestamp + BoardTypes.SEAT_UPDATE_TIMELOCK);

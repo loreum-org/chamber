@@ -37,7 +37,7 @@ flowchart TD
   Seat --> HoldNft[Hold membership NFT]
   HoldNft --> Stake[Vault tab]
   Stake --> Del[Delegation tab]
-  Del --> Wait[Wait 1 block]
+  Del --> Wait[Wait 2 days]
   Wait --> Open
   Open --> Tx[Transactions tab]
 ```

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
+import {BoardTypes} from "src/types/BoardTypes.sol";
+
 import {Test} from "forge-std/Test.sol";
 import {Chamber} from "src/Chamber.sol";
 import {IChamber} from "src/interfaces/IChamber.sol";
@@ -23,7 +25,7 @@ contract FindingH02SeatingDelayTest is Test {
     address public user3 = address(0x3);
 
     uint256 public constant SEATS = 3;
-    uint256 public constant SEATING_DELAY = 1;
+    uint256 public constant SEATING_DELAY = BoardTypes.SEATING_DELAY;
 
     function setUp() public {
         token = new MockERC20("Mock Token", "MCK", 0);
@@ -33,6 +35,7 @@ contract FindingH02SeatingDelayTest is Test {
         _seat(user1, 1, 100 ether);
         _seat(user2, 2, 100 ether);
         vm.roll(block.number + SEATING_DELAY);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
     }
 
     function test_H02_NewDirectorCannotConfirmUntilDelay() public {
@@ -93,6 +96,7 @@ contract FindingH02SeatingDelayTest is Test {
 
         _seat(user3, 3, 50 ether);
         vm.roll(block.number + SEATING_DELAY);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
 
         vm.prank(user3);
         chamber.confirmTransaction(3, 0);
@@ -124,6 +128,7 @@ contract FindingH02SeatingDelayTest is Test {
     function test_H02_ReseatedTokenMustWaitAgain() public {
         _seat(user3, 3, 50 ether);
         vm.roll(block.number + SEATING_DELAY);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
 
         uint256 firstActivation = chamber.getSeatedAt(3);
 
@@ -195,6 +200,7 @@ contract FindingH02SeatingDelayTest is Test {
         assertTrue(chamber.getConfirmation(2, 0));
 
         vm.roll(block.number + SEATING_DELAY);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
         vm.prank(user3);
         chamber.confirmTransaction(3, 0);
         assertTrue(chamber.getConfirmation(3, 0));
@@ -228,6 +234,7 @@ contract FindingH02SeatingDelayTest is Test {
 
         _seat(user3, 3, 50 ether);
         vm.roll(block.number + SEATING_DELAY);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
 
         vm.prank(user3);
         chamber.undelegate(3, 50 ether);

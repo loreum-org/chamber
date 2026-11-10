@@ -87,7 +87,7 @@ export const boardSeat = onchainTable(
     amount: t.bigint().notNull(),
     /** NFT owner; null when ownerOf reverts (burned / unreachable). */
     owner: t.hex(),
-    /** First block the token may act as director (getSeatedAt); null if the view is missing. */
+    /** When the token may act as director (getSeatedAt): unix time on 1.4.0+, block number before; null if the view is missing. */
     seatedAt: t.bigint(),
     updatedBlock: t.bigint().notNull(),
   }),
