@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAccount, useReadContract, useSwitchChain } from 'wagmi'
-import { sepolia } from 'wagmi/chains'
 import { isAddress, parseEventLogs, zeroAddress } from 'viem'
 import { useQueryClient } from '@tanstack/react-query'
 import { FiAlertCircle, FiAlertTriangle, FiCheck, FiLoader, FiArrowRight, FiArrowLeft, FiCopy } from 'react-icons/fi'
@@ -41,10 +40,6 @@ function isValidAddress(s: string): boolean {
   return isAddress(s)
 }
 
-function shortenAddress(addr: `0x${string}`) {
-  return `${addr.slice(0, 6)}…${addr.slice(-4)}`
-}
-
 export default function DeployChamber() {
   const { isConnected, chainId } = useAccount()
   const { switchChain, isPending: isSwitching } = useSwitchChain()
@@ -54,9 +49,6 @@ export default function DeployChamber() {
   const preferredCreateChainName =
     preferredCreateChainId != null ? getNetworkName(preferredCreateChainId) : 'this network'
   const currentNetworkName = typeof chainId === 'number' ? getNetworkName(chainId) : 'this network'
-  const sepoliaAddrs = getContractAddresses(sepolia.id)
-  const sepoliaDemoReady =
-    isNonZeroAddress(sepoliaAddrs?.mockERC20) && isNonZeroAddress(sepoliaAddrs?.mockERC721)
   const chainAddrs = typeof chainId === 'number' ? getContractAddresses(chainId) : undefined
   // Any testnet (or Anvil) whose deployments file lists the demo tokens.
   const demoPrefillReady =
@@ -348,13 +340,6 @@ export default function DeployChamber() {
                   Getting started
                 </Link>
               </p>
-              {sepoliaDemoReady && (
-                <p className="text-slate-500 text-xs mt-3 max-w-md mx-auto leading-relaxed">
-                  On Sepolia the form pre-fills demo ERC-20 {shortenAddress(sepoliaAddrs.mockERC20)} and membership
-                  ERC-721 {shortenAddress(sepoliaAddrs.mockERC721)}. After connecting, mint from the header so your
-                  wallet holds the membership token.
-                </p>
-              )}
             </div>
           ) : !canCreate ? (
             <>
