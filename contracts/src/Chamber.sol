@@ -558,9 +558,10 @@ contract Chamber is ERC4626Upgradeable, PausableUpgradeable, Board, Wallet, ICha
             // R-1012-L6: ownership handoff is rejected, and upgradeAndCall must name this proxy
             // and a deployed implementation that returns CHAMBER_ID.
             _requireChamberUpgrade(data);
-        } else {
-            _requireNoThirdPartyPull(target, asset(), data);
         }
+        // Calls to any other target, including the vault asset, are not filtered (R-1110-M1).
+        // The board can spend any approval a holder gave the chamber, so holders should
+        // approve only what they deposit.
 
         if (value > 0 && address(this).balance < value) {
             revert IChamber.InsufficientChamberBalance();
