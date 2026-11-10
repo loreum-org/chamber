@@ -118,7 +118,7 @@ The deploy page network picker shows the same list. A chain with no Factory show
 the picker but cannot be picked.
 
 **My chambers** hides chambers older than 1.2.0, because they can't be upgraded in place
-and must be redeployed. A "Show" link under the list brings them back.
+and must be redeployed.
 
 To deploy the Factory and demo tokens to a network, from `contracts/`:
 

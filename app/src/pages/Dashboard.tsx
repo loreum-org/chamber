@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAccount, useReadContracts, useSwitchChain } from 'wagmi'
 import { isAddress } from 'viem'
 import { useChainModal, useConnectModal } from '@rainbow-me/rainbowkit'
-import { FiAlertTriangle, FiLoader, FiRefreshCw } from 'react-icons/fi'
+import { FiLoader, FiRefreshCw } from 'react-icons/fi'
 import { useHasValidConfig, useMyChambers, useOpenChamber, useOrganizationsByNFT } from '@/hooks'
 import { useConnectedChainId } from '@/hooks/useConnectedChainId'
 import { erc721Abi } from '@/contracts'
@@ -35,7 +35,6 @@ export default function Dashboard() {
   const { openConnectModal } = useConnectModal()
   const [viewMode, setViewMode] = useState<'mine' | 'organizations'>('mine')
   const [networkFilter, setNetworkFilter] = useState<string>('all')
-  const [showLegacy, setShowLegacy] = useState(false)
   const openChamber = useOpenChamber()
   const [openAddress, setOpenAddress] = useState('')
   const [openError, setOpenError] = useState<string | null>(null)
@@ -46,10 +45,8 @@ export default function Dashboard() {
 
   const {
     chambers: currentChambers,
-    legacyChambers,
     isLoading,
     isFetchingMore,
-    failedChainIds,
     refetch: refetchMine,
     error: chambersError,
     recents,
@@ -57,11 +54,10 @@ export default function Dashboard() {
     factoryAddress,
     registryAddress,
   } = useMyChambers()
-  // Chambers older than 1.2.0 can't be upgraded in place; they stay hidden unless asked for.
-  const allMyChambers = showLegacy ? [...currentChambers, ...legacyChambers] : currentChambers
+  // Chambers older than 1.2.0 can't be upgraded in place, so they are not listed.
+  const allMyChambers = currentChambers
   // Networks in display order that hold at least one of the user's chambers.
   const chainOrder = getConfiguredChainIds()
-  const lookupFailures = failedChainIds.filter(isSupportedWalletChain)
   const chamberChainIds = chainOrder.filter((id) => allMyChambers.some((c) => c.chainId === id))
   const activeFilter =
     networkFilter !== 'all' && chamberChainIds.includes(Number(networkFilter)) ? networkFilter : 'all'
@@ -251,13 +247,6 @@ export default function Dashboard() {
         </p>
       )}
 
-      {isConnected && lookupFailures.length > 0 && (
-        <Banner tone="warn" title="This list may be incomplete" icon={<FiAlertTriangle className="w-4 h-4 text-amber-400" aria-hidden />}>
-          Chamber lookup failed on {lookupFailures.map((id) => getNetworkName(id)).join(', ')}. Open a chamber by
-          address above, or pick one from Recent.
-        </Banner>
-      )}
-
       {isConnected && chamberChainIds.length > 1 && (
         <Segmented
           ariaLabel="Network"
@@ -300,7 +289,6 @@ export default function Dashboard() {
                 Checking other networks…
               </p>
             )}
-            <LegacyToggle count={legacyChambers.length} shown={showLegacy} onToggle={() => setShowLegacy((v) => !v)} />
           </div>
         ) : isFetchingMore ? (
           <p className="flex items-center gap-2 text-sm text-slate-500">
@@ -308,10 +296,7 @@ export default function Dashboard() {
             Checking other networks…
           </p>
         ) : (
-          <div className="space-y-3">
-            <EmptyChambers />
-            <LegacyToggle count={legacyChambers.length} shown={showLegacy} onToggle={() => setShowLegacy((v) => !v)} />
-          </div>
+          <EmptyChambers />
         )
       ) : !isConnected ? (
         <EmptyChambers disconnected />
@@ -343,20 +328,6 @@ export default function Dashboard() {
         <EmptyChambers />
       )}
     </div>
-  )
-}
-
-function LegacyToggle({ count, shown, onToggle }: { count: number; shown: boolean; onToggle: () => void }) {
-  if (count === 0) return null
-  return (
-    <p className="text-xs text-slate-500">
-      {shown
-        ? `Showing ${count} old ${count === 1 ? 'chamber' : 'chambers'} (before v1.2.0) that can't be upgraded.`
-        : `${count} old ${count === 1 ? 'chamber' : 'chambers'} (before v1.2.0) hidden because they can't be upgraded.`}{' '}
-      <button type="button" onClick={onToggle} className="text-slate-400 hover:text-slate-100 underline transition-colors">
-        {shown ? 'Hide' : 'Show'}
-      </button>
-    </p>
   )
 }
 
