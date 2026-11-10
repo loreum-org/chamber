@@ -1,6 +1,6 @@
 /** Sepolia (11155111). Same Factory as `getContractAddresses` / verify-sepolia-discovery. */
 export const SEPOLIA_CHAIN_ID = 11155111
-export const SEPOLIA_FACTORY = '0x43aA92c8A26392f21F63cdA88B6BaB5031C40550' as const
+export const SEPOLIA_FACTORY = '0xE87FF28C44593122e4BD87e48A18c9f08eBc811d' as const
 
 /**
  * Known Sepolia chamber from Factory / leftover Registry discovery

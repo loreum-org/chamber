@@ -17,6 +17,7 @@
   Deployer                  0x0C6F86b338417B3b7FCB9B344DECC51d072919c9
   ADMIN                     0x5d45A213B2B6259F0b3c116a8907B56AB5E22095
   Factory                   0x43aA92c8A26392f21F63cdA88B6BaB5031C40550
+  Factory start block       11571185
   Chamber implementation    0xd441f1FDad2d3a447d2621DE4DE8b5738e02d39c
   BoardLib                  0xC3E0Fe4e89e01ca69e384bd61DA78a5a6379762D
   WalletLib                 0x0320284b176657bb5048CF586DEef530F4B2499a
@@ -58,3 +59,23 @@
     owner                   0x2e0049b05217290087BA613290BaCC761d7adD04 (EOA)
     source                  loreum-org/loreum-nft scripts/deployments.ts (sepolia)
 
+
+  Nov 10, 2026 - Sepolia (Factory redeploy)
+  ====================================================================
+  DeployFactory
+  ====================================================================
+  Deployer                  0x0C6F86b338417B3b7FCB9B344DECC51d072919c9
+  ADMIN                     0x5d45A213B2B6259F0b3c116a8907B56AB5E22095
+  BoardLib                  0x7D5c6d334426a58aBeBF6453d58d958B76a408cd
+  WalletLib                 0x74024B02dd1fcaBBA9eb9c0E2EABe480a81fDa3F
+  Chamber implementation    0x07026D7DC398b8eF7874aEa1bBC00ACA231B20Af
+  Factory                   0xE87FF28C44593122e4BD87e48A18c9f08eBc811d
+  Factory start block       12099299
+  Factory tx                0x9817964df506d85f31570ff882be96e79c084200a5fbb1196f29dc56ac36d036
+
+  Etherscan
+  ====================================================================
+  Factory                   https://sepolia.etherscan.io/address/0xE87FF28C44593122e4BD87e48A18c9f08eBc811d#code
+  Chamber implementation    https://sepolia.etherscan.io/address/0x07026D7DC398b8eF7874aEa1bBC00ACA231B20Af#code
+  BoardLib                  https://sepolia.etherscan.io/address/0x7D5c6d334426a58aBeBF6453d58d958B76a408cd#code
+  WalletLib                 https://sepolia.etherscan.io/address/0x74024B02dd1fcaBBA9eb9c0E2EABe480a81fDa3F#code

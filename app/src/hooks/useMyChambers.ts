@@ -16,6 +16,7 @@ import { chamberVersionBytes32ToLabel } from '@/lib/utils'
 import { addRecentChamber, getRecentChambers } from '@/lib/recentChambers'
 import { isSupportedWalletChain } from '@/lib/supportedChain'
 import { TESTNET_DEPLOYMENTS } from '@/lib/testnetDeployments'
+import { mainnetDeploymentAddresses } from '@/lib/mainnetDeployments'
 import {
   config,
   getConfiguredChainIds,
@@ -87,7 +88,9 @@ async function findMyChambersOnChain(
     userAddress,
     factoryAddress,
     extraFactoryAddresses,
-    factoryStartBlock: TESTNET_DEPLOYMENTS[chainId]?.factoryStartBlock,
+    factoryStartBlock:
+      TESTNET_DEPLOYMENTS[chainId]?.factoryStartBlock ??
+      (chainId === 1 ? mainnetDeploymentAddresses.factoryStartBlock : undefined),
     registryAddress,
   })
 

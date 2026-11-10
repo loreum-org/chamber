@@ -1,11 +1,12 @@
 import type { Chain } from 'viem'
-import { arbitrumSepolia, baseSepolia, optimismSepolia, sepolia } from 'viem/chains'
+import { arbitrumSepolia, baseSepolia, mainnet, optimismSepolia, sepolia } from 'viem/chains'
 import { ChamberOperatorError } from './errors.ts'
 
-export type NetworkName = 'sepolia' | 'base-sepolia' | 'arbitrum-sepolia' | 'op-sepolia'
+export type NetworkName = 'mainnet' | 'sepolia' | 'base-sepolia' | 'arbitrum-sepolia' | 'op-sepolia'
 
-/** Testnets with a Chamber Factory, with the same public RPCs the app falls back to. */
+/** Networks with a Chamber Factory, with the same public RPCs the app falls back to. */
 export const NETWORKS: Record<NetworkName, { chain: Chain; rpcUrl: string }> = {
+  mainnet: { chain: mainnet, rpcUrl: 'https://eth.llamarpc.com' },
   sepolia: { chain: sepolia, rpcUrl: 'https://ethereum-sepolia-rpc.publicnode.com' },
   'base-sepolia': { chain: baseSepolia, rpcUrl: 'https://sepolia.base.org' },
   'arbitrum-sepolia': { chain: arbitrumSepolia, rpcUrl: 'https://sepolia-rollup.arbitrum.io/rpc' },

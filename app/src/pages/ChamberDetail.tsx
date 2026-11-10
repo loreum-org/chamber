@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useParams, Link, Navigate } from 'react-router-dom'
 import { useAccount, useBalance, useReadContract, useReadContracts, useChainId } from 'wagmi'
 import { formatUnits, zeroAddress } from 'viem'
@@ -31,6 +31,7 @@ import { NftRetryableImage } from '@/components/NftRetryableImage'
 import { ChamberRouteGate } from '@/components/ChamberRouteGate'
 import { ChamberHeader, type ChamberTab } from '@/components/ChamberHeader'
 import { AddressChip, Banner, Section, Stat, StatRow } from '@/components/ui'
+import { boardReadStatus, boardViewShouldRefetch } from '@/lib/boardView'
 import { addRecentChamber } from '@/lib/recentChambers'
 import { implMismatchBannerCopy } from '@/lib/implSource'
 import { getBlockExplorerAddressUrl, shortenAddress } from '@/lib/utils'
@@ -75,6 +76,8 @@ function ChamberDetailContent({ chamberAddress }: { chamberAddress: `0x${string}
     refetch: refetchBoard,
     isPending: boardMembersPending,
     isFetched: boardMembersFetched,
+    isError: boardMembersError,
+    isFetching: boardMembersFetching,
   } = useBoardMembers(chamberAddress, 20)
   const membershipTokenIds = useMemo(() => boardMembersRaw.map((m) => m.tokenId), [boardMembersRaw])
   const {
@@ -90,7 +93,7 @@ function ChamberDetailContent({ chamberAddress }: { chamberAddress: `0x${string}
       })),
     [boardMembersRaw, membershipOwners],
   )
-  const { delegations } = useDelegations(chamberAddress, userAddress)
+  const { delegations, refetch: refetchDelegations } = useDelegations(chamberAddress, userAddress)
   const directorGate = useDirectorActionGate(chamberAddress, userAddress, chamberInfo.directors, members)
   const transactionIds = useMemo(
     () => Array.from({ length: chamberInfo.transactionCount || 0 }, (_, i) => i),
@@ -128,10 +131,18 @@ function ChamberDetailContent({ chamberAddress }: { chamberAddress: `0x${string}
     }, 0)
   }, [headerTransactionsData, headerCancelledData])
 
-  const refreshBoardViews = () => {
+  const refreshBoardViews = useCallback(() => {
     void refetchBoard()
+    void refetchDelegations()
     void refetchMembershipOwners()
-  }
+  }, [refetchBoard, refetchDelegations, refetchMembershipOwners])
+
+  const boardTabRef = useRef<Tab | null>(null)
+  useEffect(() => {
+    const previous = boardTabRef.current
+    boardTabRef.current = activeTab
+    if (boardViewShouldRefetch(previous, activeTab)) refreshBoardViews()
+  }, [activeTab, refreshBoardViews])
 
   const { data: assetSymbol } = useReadContract({
     address: chamberInfo.assetToken,
@@ -143,7 +154,13 @@ function ChamberDetailContent({ chamberAddress }: { chamberAddress: `0x${string}
   const { data: ethBalance } = useBalance({ address: chamberAddress })
 
   const totalDelegated = members.reduce((sum, m) => sum + m.amount, 0n)
-  const boardEmpty = boardMembersFetched && !boardMembersPending && members.length === 0
+  const boardEmpty =
+    boardMembersFetched && !boardMembersPending && !boardMembersError && members.length === 0
+  const boardStatus = boardReadStatus({
+    memberCount: members.length,
+    pending: boardMembersPending || boardMembersFetching,
+    error: boardMembersError && !boardMembersFetching,
+  })
 
   const chamberImplVersion = chamberInfo.version ?? implSync.chamberVersionLabel ?? undefined
   const chamberVersionTag =
@@ -278,12 +295,11 @@ function ChamberDetailContent({ chamberAddress }: { chamberAddress: `0x${string}
             totalDelegated={totalDelegated}
             ownersLoading={membershipTokenIds.length > 0 && membershipOwnersPending}
             delegations={delegations}
-            boardMembersFetched={boardMembersFetched}
-            boardMembersPending={boardMembersPending}
+            boardStatus={boardStatus}
             onRefreshBoard={refreshBoardViews}
           />
           <p className="text-xs text-slate-500">
-            Directors act as the membership NFT owner. To let an agent act for a seat, give it a
+            Directors act as the membership token owner. To let an agent act for a seat, give it a
             session key on the owner wallet (for example a Safe module or smart-account session key).
           </p>
         </div>

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { FiUser, FiStar, FiAward, FiTrendingUp, FiRefreshCw, FiSearch } from 'react-icons/fi'
 import { formatUnits, zeroAddress } from 'viem'
+import type { BoardReadStatus } from '@/lib/boardView'
 import type { BoardMember, Delegation } from '@/types'
 import { useNftImageMap } from '@/hooks'
 import { NftRetryableImage } from '@/components/NftRetryableImage'
@@ -17,8 +18,8 @@ interface BoardVisualizationProps {
   /** While ERC721 owners are resolving */
   ownersLoading?: boolean
   delegations?: Delegation[]
-  boardMembersFetched?: boolean
-  boardMembersPending?: boolean
+  /** Successful empty board vs a read that has not landed or failed. */
+  boardStatus?: BoardReadStatus
   onRefreshBoard?: () => void
 }
 
@@ -63,17 +64,15 @@ export default function BoardVisualization({
   totalDelegated,
   ownersLoading = false,
   delegations = [],
-  boardMembersFetched = false,
-  boardMembersPending = false,
+  boardStatus = 'ready',
   onRefreshBoard,
 }: BoardVisualizationProps) {
   const filledSeatCount = members.filter((_, i) => i < seats).length
   const userHasActiveDelegation = delegations.some((d) => d.amount > 0n)
   const boardDataMissing =
-    userHasActiveDelegation &&
-    members.length === 0 &&
-    boardMembersFetched &&
-    !boardMembersPending
+    boardStatus === 'ready' && userHasActiveDelegation && members.length === 0
+  const showBoardNotice = boardStatus === 'error' || boardDataMissing
+  const emptySeatLabel = boardStatus === 'loading' ? '…' : boardStatus === 'error' ? '—' : 'Empty'
 
   const memberTokenIds = useMemo(() => members.map((m) => m.tokenId), [members])
   const { data: memberImages, resolvingImages } = useNftImageMap(
@@ -98,11 +97,19 @@ export default function BoardVisualization({
 
   return (
     <div className="space-y-6">
-      {boardDataMissing && (
-        <div className="panel p-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between border-accent-500/20 bg-accent-500/5">
+      {showBoardNotice && (
+        <div
+          className={`panel p-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between ${
+            boardStatus === 'error'
+              ? 'border-red-500/30 bg-red-500/5'
+              : 'border-accent-500/20 bg-accent-500/5'
+          }`}
+          role={boardStatus === 'error' ? 'alert' : 'status'}
+        >
           <p className="text-sm text-slate-300">
-            Your delegation is onchain, but the ranked board hasn&apos;t loaded yet (or the indexer is behind).
-            Refresh after the transaction confirms.
+            {boardStatus === 'error'
+              ? 'Board rankings could not be loaded from the chain. Seats and membership tokens stay hidden until this read succeeds.'
+              : 'Your delegation is onchain, but the ranked board is still empty. Refresh to read seats and membership tokens again.'}
           </p>
           {onRefreshBoard && (
             <button
@@ -123,7 +130,11 @@ export default function BoardVisualization({
           <div className="mb-8">
             <h3 className="section-title">Board of directors</h3>
             <p className="text-slate-500 text-xs mt-0.5">
-              {seats} seats · {filledSeatCount} filled · the top {seats} members by delegated shares. Ranking changes the moment delegation changes.
+              {boardStatus === 'loading'
+                ? 'Loading seats, rankings, and membership tokens…'
+                : boardStatus === 'error'
+                  ? 'Board rankings could not be loaded.'
+                  : `${seats} seats · ${filledSeatCount} filled · the top ${seats} members by delegated shares. Ranking changes the moment delegation changes.`}
             </p>
           </div>
 
@@ -185,6 +196,7 @@ export default function BoardVisualization({
                       isDirector={isDirector}
                       totalDelegated={totalDelegated}
                       ownersLoading={ownersLoading}
+                      emptySeatLabel={emptySeatLabel}
                     />
                   </motion.div>
                 )
@@ -232,6 +244,7 @@ export default function BoardVisualization({
                       isDirector={isDirector}
                       totalDelegated={totalDelegated}
                       ownersLoading={ownersLoading}
+                      emptySeatLabel={emptySeatLabel}
                       fluidWidth
                     />
                   </motion.div>
@@ -262,6 +275,14 @@ export default function BoardVisualization({
                   ownersLoading={ownersLoading}
                 />
               ))
+            ) : boardStatus === 'loading' ? (
+              <div className="p-8 text-center text-slate-500" role="status">
+                Loading membership tokens…
+              </div>
+            ) : boardStatus === 'error' ? (
+              <div className="p-8 text-center text-slate-500" role="alert">
+                Membership tokens could not be loaded.
+              </div>
             ) : (
               <div className="p-8 text-center text-slate-500">
                 No members have received delegations yet
@@ -283,6 +304,7 @@ interface SeatCardProps {
   isDirector: boolean
   totalDelegated: bigint
   ownersLoading: boolean
+  emptySeatLabel: string
   /** One-row grid (9+ seats): card width tracks column; arc layout uses fixed width */
   fluidWidth?: boolean
 }
@@ -296,6 +318,7 @@ function SeatCard({
   isDirector,
   totalDelegated,
   ownersLoading,
+  emptySeatLabel,
   fluidWidth = false,
 }: SeatCardProps) {
   const [avatarDead, setAvatarDead] = useState(false)
@@ -354,7 +377,7 @@ function SeatCard({
           <div className="w-8 h-8 rounded-lg bg-slate-800/50 border border-dashed border-slate-600/50 flex items-center justify-center mb-1">
             <span className="text-slate-600 text-xs">{seatNumber}</span>
           </div>
-          <span className="text-[10px] text-slate-600">Empty</span>
+          <span className="text-[10px] text-slate-600">{emptySeatLabel}</span>
         </>
       )}
     </motion.div>

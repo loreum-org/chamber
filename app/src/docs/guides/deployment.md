@@ -106,9 +106,9 @@ Do not auto-seat addresses that do not hold a membership NFT.
 
 ## App configuration
 
-The wallet and network switcher offer Ethereum Sepolia and Ethereum mainnet.
+The wallet and network switcher offer Ethereum mainnet and Ethereum Sepolia.
 That list is `SUPPORTED_WALLET_CHAIN_IDS` in `app/src/lib/supportedChain.ts`.
-Sepolia is first, so a disconnected session defaults to the chain that has a Factory.
+Mainnet is first, so a disconnected session defaults to Ethereum.
 To offer another chain again, add its id there (Base Sepolia `84532`, Arbitrum Sepolia `421614`,
 OP Sepolia `11155420`, Base `8453`, Arbitrum `42161`, Anvil `31337`). Deployment files for those
 networks stay in the repo for the indexer and `getContractAddresses`.
@@ -140,22 +140,25 @@ Commit both files. Older Factories stay in the file so their chambers are still 
 Env overrides: `VITE_ARBITRUM_SEPOLIA_FACTORY`, `VITE_OP_SEPOLIA_FACTORY` (and `_CHAMBER_IMPL`,
 `_FACTORY_START_BLOCK`).
 
-The default create network is Ethereum Sepolia (chain 11155111), read from
-**`contracts/deployments/sepolia.txt`** (`getContractAddresses(11155111)`).
+The default network is Ethereum mainnet (chain 1). Its Factory is the Nov 10, 2026
+deploy in **`contracts/deployments/mainnet.txt`** (`getContractAddresses(1)`).
 Base Sepolia (chain 84532) addresses remain in
 **`contracts/deployments/base-sepolia.txt`** for the indexer. Optional env overrides
 `VITE_BASE_SEPOLIA_FACTORY` and `VITE_BASE_SEPOLIA_CHAMBER_IMPL` still apply to that file.
-Base Sepolia is not a wallet option until `84532` is added back to `SUPPORTED_WALLET_CHAIN_IDS`.
+Base Sepolia is not a wallet or lookup option until `84532` is added back to `SUPPORTED_WALLET_CHAIN_IDS`.
 
 Ethereum Sepolia Factory, Registry, Chamber implementation, and demo ERC-20 / membership ERC-721
-stay in **`contracts/deployments/sepolia.txt`**. Optional env overrides:
+stay in **`contracts/deployments/sepolia.txt`**. The current Factory is the Nov 10, 2026
+redeploy `0xE87FF28C44593122e4BD87e48A18c9f08eBc811d` (start block `12099299`). The Aug 26
+Factory stays in that file. Optional env overrides:
 `VITE_SEPOLIA_REGISTRY`, `VITE_SEPOLIA_FACTORY`, `VITE_SEPOLIA_CHAMBER_IMPL`,
 `VITE_SEPOLIA_MOCK_ERC20`, `VITE_SEPOLIA_MOCK_ERC721`.
 
 Ethereum mainnet Factory / impl come from **`contracts/deployments/mainnet.txt`**
-(TBD until a verified chain-id-1 receipt) or `VITE_MAINNET_FACTORY` /
-`VITE_MAINNET_CHAMBER_IMPL`. `getContractAddresses(1)` does not invent addresses
-and does not use Sepolia. See `contracts/docs/mainnet-verified-deploy.md`.
+(Nov 10, 2026 Factory `0x35977d540799db1e8910c00F476a879E2c0e1a24`, start block
+`26379502`) or `VITE_MAINNET_FACTORY` / `VITE_MAINNET_CHAMBER_IMPL`.
+`getContractAddresses(1)` does not use Sepolia. Chamber proxy is still unset.
+See `contracts/docs/mainnet-verified-deploy.md`.
 
 Optional **My chambers** indexer: `VITE_INDEXER_URL` → the `indexer/` package GraphQL (see `indexer/README.md`). Unset → chunked Factory/Registry `getLogs`.
 

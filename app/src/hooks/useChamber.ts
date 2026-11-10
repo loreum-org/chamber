@@ -291,7 +291,7 @@ export function useShareDecimals(chamberAddress: `0x${string}` | undefined): num
 }
 
 export function useBoardMembers(chamberAddress: `0x${string}` | undefined, count: number = 20) {
-  const { data, refetch, isPending, isFetched } = useReadContract({
+  const { data, refetch, isPending, isFetched, isError, isFetching } = useReadContract({
     address: chamberAddress,
     abi: chamberAbi,
     functionName: 'getTop',
@@ -313,7 +313,7 @@ export function useBoardMembers(chamberAddress: `0x${string}` | undefined, count
     }
   }
 
-  return { members, refetch, isPending, isFetched }
+  return { members, refetch, isPending, isFetched, isError, isFetching }
 }
 
 /**

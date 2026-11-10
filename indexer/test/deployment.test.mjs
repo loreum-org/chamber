@@ -1,13 +1,11 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import test from "node:test";
 
 import {
   INDEXED_CHAIN_TABLE,
   PRE_130_SEPOLIA_FACTORY,
   REGISTRY_PLACEHOLDER,
-  deploymentsDir,
   assertIndexedChains,
   chainPrimaryKey,
   ignoreFactoriesFor,
@@ -180,20 +178,32 @@ test("rpc is required for indexed chains and unused for skipped ones", () => {
   assert.equal(chains.some((chain) => chain.chainId === 421614), false);
 });
 
-test("no indexed chains is an error, and mainnet is not in the table", () => {
+test("no indexed chains is an error", () => {
   assert.throws(() => assertIndexedChains([]), /No testnet Factory/);
-  assert.equal(INDEXED_CHAIN_TABLE.some((chain) => chain.chainId === 1), false);
-  assert.equal(INDEXED_CHAIN_TABLE.some((chain) => chain.network === "mainnet"), false);
 });
 
-test("live deployment files stay inside the testnet table", () => {
+test("live deployment files index Base Sepolia, Ethereum Sepolia, and mainnet", () => {
   const chains = loadIndexedChains({});
-  assert.equal(chains.some((chain) => chain.chainId === 1), false);
   const base = chains.find((chain) => chain.chainId === 84532);
   assert.ok(base);
   assert.match(base.factory, /^0x[a-fA-F0-9]{40}$/);
   assert.equal(base.factoryStartBlock > 0, true);
   assert.equal(registrySource(base).placeholder, true);
+
+  const sepolia = chains.find((chain) => chain.chainId === 11155111);
+  assert.ok(sepolia);
+  assert.equal(sepolia.factory, "0xE87FF28C44593122e4BD87e48A18c9f08eBc811d");
+  assert.equal(sepolia.factoryStartBlock, 12099299);
+  assert.notEqual(
+    sepolia.factory.toLowerCase(),
+    PRE_130_SEPOLIA_FACTORY.toLowerCase(),
+  );
+
+  const mainnet = chains.find((chain) => chain.chainId === 1);
+  assert.ok(mainnet);
+  assert.equal(mainnet.factory, "0x35977d540799db1e8910c00F476a879E2c0e1a24");
+  assert.equal(mainnet.factoryStartBlock, 26379502);
+  assert.equal(registrySource(mainnet).placeholder, true);
 
   for (const entry of INDEXED_CHAIN_TABLE) {
     const path = resolveDeploymentPath(entry.network);
@@ -216,8 +226,4 @@ test("live deployment files stay inside the testnet table", () => {
       assert.equal(indexed, undefined);
     }
   }
-
-  const mainnet = readFileSync(join(deploymentsDir, "mainnet.txt"), "utf8");
-  assert.doesNotThrow(() => parseDeployment(mainnet));
-  assert.equal(chains.some((chain) => chain.network === "mainnet"), false);
 });

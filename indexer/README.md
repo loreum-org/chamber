@@ -1,6 +1,6 @@
 # chamber-indexer
 
-One Ponder process indexes every testnet that has a deployed Factory. Package root: `indexer/` in [loreum-org/chamber](https://github.com/loreum-org/chamber). The Vite app does not build or serve this package. It reads this GraphQL API when `VITE_INDEXER_URL` is set, and calls the chain directly only to check parameters and send a transaction.
+One Ponder process indexes every chain in the table that has a deployed Factory. Package root: `indexer/` in [loreum-org/chamber](https://github.com/loreum-org/chamber). The Vite app does not build or serve this package. It reads this GraphQL API when `VITE_INDEXER_URL` is set, and calls the chain directly only to check parameters and send a transaction.
 
 ## State tables
 
@@ -34,12 +34,13 @@ Factory address and Factory start block are read from `contracts/deployments/<ne
 | 421614 | Arbitrum Sepolia | `arbitrumSepolia` | `arbitrum-sepolia.txt` |
 | 11155420 | OP Sepolia | `opSepolia` | `op-sepolia.txt` |
 | 11155111 | Ethereum Sepolia | `sepolia` | `sepolia.txt` |
+| 1 | Ethereum mainnet | `mainnet` | `mainnet.txt` |
 
 A chain is added to each contract only when that file has the address the contract needs. A file that says "Not deployed yet" is skipped. Appending a `Factory` line and a `Factory start block` (what `make deploy-testnet` does) includes that chain on the next start, with no indexer code change.
 
-Ethereum Sepolia is indexed only after a 1.3.0 Factory is recorded. The Aug 26, 2026 Factory `0x43aA92c8A26392f21F63cdA88B6BaB5031C40550` is ignored. Mainnet is not in the chain table.
+Ethereum Sepolia ignores the Aug 26, 2026 Factory `0x43aA92c8A26392f21F63cdA88B6BaB5031C40550`. The Nov 10, 2026 Factory `0xE87FF28C44593122e4BD87e48A18c9f08eBc811d` (start block `12099299`) is the indexed source. Mainnet indexes `0x35977d540799db1e8910c00F476a879E2c0e1a24` from block `26379502`.
 
-With the deployment files in the repo today, the process indexes Base Sepolia only.
+With the deployment files in the repo today, the process indexes Base Sepolia, Ethereum Sepolia, and Ethereum mainnet.
 
 A chain with a Factory and no Registry still registers Registry, Chamber, and RegistryNft against `0x000000000000000000000000000000000000dEaD` from the Factory start block, so those handlers stay loaded and the backfill stays empty. A `Registry (proxy)` line in the file replaces the placeholder.
 
@@ -56,7 +57,8 @@ Do not use an origin-locked frontend key (`VITE_*` / browser Alchemy apps).
 | `PONDER_RPC_URL_84532` | Base Sepolia (`base-sepolia`) |
 | `PONDER_RPC_URL_421614` | Arbitrum Sepolia |
 | `PONDER_RPC_URL_11155420` | OP Sepolia |
-| `PONDER_RPC_URL_11155111` | Ethereum Sepolia, once a 1.3.0 Factory is in `sepolia.txt` |
+| `PONDER_RPC_URL_11155111` | Ethereum Sepolia. Required. Factory start block `12099299`. |
+| `PONDER_RPC_URL_1` | Ethereum mainnet. Required. Factory start block `26379502`. |
 
 A public RPC for a Base Sepolia smoke check, not production load: `https://sepolia.base.org`.
 
@@ -88,9 +90,10 @@ Postgres in production (`DATABASE_URL`). `ponder dev` can leave it unset and use
 | `PONDER_RPC_URL_84532` | Base Sepolia HTTPS RPC. Keep this set. |
 | `PONDER_RPC_URL_421614` | Arbitrum Sepolia HTTPS RPC. Safe to set before that Factory exists. |
 | `PONDER_RPC_URL_11155420` | OP Sepolia HTTPS RPC. Safe to set before that Factory exists. |
-| `PONDER_RPC_URL_11155111` | Ethereum Sepolia HTTPS RPC. Used once `sepolia.txt` has a 1.3.0 Factory. |
+| `PONDER_RPC_URL_11155111` | Ethereum Sepolia HTTPS RPC. Required for the Nov 10 Factory. |
+| `PONDER_RPC_URL_1` | Ethereum mainnet HTTPS RPC. Required for the Nov 10 Factory. |
 
-The app uses one indexer URL for every indexed chain. On the app service set `VITE_INDEXER_URL` and `VITE_INDEXER_CHAIN_IDS` to the chain ids this process actually indexes (today `84532`). Add `421614` and `11155420` after those deployment files contain a Factory. `VITE_INDEXER_CHAIN_ID` still works as a single-id fallback.
+The app uses one indexer URL for every indexed chain. On the app service set `VITE_INDEXER_URL` and `VITE_INDEXER_CHAIN_IDS` to the chain ids this process actually indexes (`84532,11155111,1` once the two new RPC URLs are set). Add `421614` and `11155420` after those deployment files contain a Factory. `VITE_INDEXER_CHAIN_ID` still works as a single-id fallback.
 
 Per-chain overrides, all optional:
 
@@ -127,7 +130,8 @@ Adding a Factory or moving its start block also creates new filters. Rebuild his
 | `_meta.status.baseSepolia.ready` | `true` |
 | `_meta.status.arbitrumSepolia` | absent until `arbitrum-sepolia.txt` has a Factory |
 | `_meta.status.opSepolia` | absent until `op-sepolia.txt` has a Factory |
-| `_meta.status.sepolia` | absent until `sepolia.txt` has a 1.3.0 Factory |
+| `_meta.status.sepolia.ready` | `true` once `PONDER_RPC_URL_11155111` is set (Nov 10 Factory, start block `12099299`) |
+| `_meta.status.mainnet.ready` | `true` once `PONDER_RPC_URL_1` is set (start block `26379502`) |
 
 Queries filter with `chainId`. The same chamber address on two chains is two `chamber` rows.
 

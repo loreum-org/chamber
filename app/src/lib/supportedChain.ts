@@ -1,14 +1,13 @@
-/** Sepolia — preferred when a Factory or Registry is already configured. */
-export const SEPOLIA_CHAIN_ID = 11_155_111
+/** Ethereum mainnet — the default network when its Factory is configured. */
 export const MAINNET_CHAIN_ID = 1
+export const SEPOLIA_CHAIN_ID = 11_155_111
 export const BASE_SEPOLIA_CHAIN_ID = 84_532
 export const ARBITRUM_SEPOLIA_CHAIN_ID = 421_614
 export const OP_SEPOLIA_CHAIN_ID = 11_155_420
 
 /**
- * Chains the wallet connector and in-app network switcher offer, in that order.
- * The first id is the disconnected default, so Sepolia stays first while mainnet
- * Factory addresses are still TBD.
+ * Chains the wallet connector, network switcher, and chamber lookup offer, in that order.
+ * The first id is the disconnected default. Mainnet is first now that its Factory is deployed.
  *
  * Temporary narrowing: Ethereum mainnet and Ethereum Sepolia only.
  * To offer another chain again, append its id (the deployment files and
@@ -16,7 +15,7 @@ export const OP_SEPOLIA_CHAIN_ID = 11_155_420
  * Base Sepolia 84532, Arbitrum Sepolia 421614, OP Sepolia 11155420,
  * Base 8453, Arbitrum 42161, Anvil 31337.
  */
-export const SUPPORTED_WALLET_CHAIN_IDS = [SEPOLIA_CHAIN_ID, MAINNET_CHAIN_ID] as const
+export const SUPPORTED_WALLET_CHAIN_IDS = [MAINNET_CHAIN_ID, SEPOLIA_CHAIN_ID] as const
 
 /** Known testnets that have deployment files, in historical display order. */
 export const TESTNET_CHAIN_IDS = [
@@ -85,13 +84,13 @@ export function getNetworkName(chainId: number, configuredName?: string): string
 }
 
 /**
- * Prefer Sepolia when it is in the configured-and-supported list, otherwise the
- * first entry. Callers must pass only chains that already have a Factory or
+ * Prefer Ethereum mainnet when it is in the configured-and-supported list,
+ * otherwise the first entry. Callers must pass only chains that already have a Factory or
  * Registry — this does not invent addresses.
  */
 export function pickPreferredSupportedChainId(
   configuredSupportedIds: readonly number[],
-  prefer: number = SEPOLIA_CHAIN_ID,
+  prefer: number = MAINNET_CHAIN_ID,
 ): number | undefined {
   if (configuredSupportedIds.includes(prefer)) return prefer
   return configuredSupportedIds[0]

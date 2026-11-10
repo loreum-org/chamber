@@ -45,8 +45,8 @@ describe('parseIndexerChainIds', () => {
     expect(chainIdsToQuery(parseIndexerChainIds(undefined, undefined))).toEqual([])
     expect(chainIdsToQuery(parseIndexerChainIds('84532', undefined))).toEqual([])
     expect(chainIdsToQuery(parseIndexerChainIds('84532, 11155111, 1', undefined))).toEqual([
-      SEPOLIA_CHAIN_ID,
       MAINNET_CHAIN_ID,
+      SEPOLIA_CHAIN_ID,
     ])
   })
 })

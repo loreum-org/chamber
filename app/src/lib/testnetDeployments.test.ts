@@ -22,7 +22,13 @@ describe('parseTestnetDeployment', () => {
 
   it('keeps the Sepolia Factory and demo tokens', () => {
     const sepolia = TESTNET_DEPLOYMENTS[SEPOLIA_CHAIN_ID]!
-    expect(sepolia.factory).toBe('0x43aA92c8A26392f21F63cdA88B6BaB5031C40550')
+    expect(sepolia.factory).toBe('0xE87FF28C44593122e4BD87e48A18c9f08eBc811d')
+    expect(sepolia.chamberImplementation).toBe('0x07026D7DC398b8eF7874aEa1bBC00ACA231B20Af')
+    expect(sepolia.factories).toEqual([
+      '0x43aA92c8A26392f21F63cdA88B6BaB5031C40550',
+      '0xE87FF28C44593122e4BD87e48A18c9f08eBc811d',
+    ])
+    expect(sepolia.factoryStartBlock).toBe(11_571_185n)
     expect(sepolia.mockERC20).toBe('0x486D69BcAF1E07e4F90edDA9fA7e09De50CD01a2')
     expect(sepolia.mockERC721).toBe('0x03CBb0Bb72aeB043b0dc8B299FaCFe77f9159688')
   })

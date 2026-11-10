@@ -1,9 +1,11 @@
   Ethereum mainnet — Factory path
   ====================================================================
-  NOT DEPLOYED. Do not treat TBD as live. Do not copy Sepolia Factory
-  0x43aA92c8A26392f21F63cdA88B6BaB5031C40550 (or any Sepolia address)
-  onto chain id 1. Chamber uses CREATE (no salt): the Chamber proxy
-  cannot be pre-committed until Factory exists.
+  Nov 10, 2026. Factory, Chamber implementation, BoardLib, and WalletLib
+  are on chain id 1 (block 26379502). Chamber (proxy) and Registry are
+  not created. Do not treat TBD as live. Do not copy a Sepolia Factory
+  onto chain id 1:
+    0x43aA92c8A26392f21F63cdA88B6BaB5031C40550
+    0xE87FF28C44593122e4BD87e48A18c9f08eBc811d
 
   Live tokens already on Ethereum (not Chamber / Factory)
   ====================================================================
@@ -28,12 +30,16 @@
   symbol                    cLORE
   Factory constructor       (chamberImplementation, Team Safe)
 
-  Paste ONLY after a verified chain-id-1 broadcast receipt
+  Nov 10, 2026 receipt (DeployMainnetFactory, chain id 1)
   ====================================================================
-  Factory                   TBD
-  Chamber implementation    TBD
-  BoardLib                  TBD
-  WalletLib                 TBD
+  Deployer                  0x0C6F86b338417B3b7FCB9B344DECC51d072919c9
+  ADMIN                     0x5d45A213B2B6259F0b3c116a8907B56AB5E22095
+  BoardLib                  0x5ed9315ab0274B0C546b71ed5a7ABE9982FF1E8D
+  WalletLib                 0x5F1469E20Ed5b6B96891CdFA0902d8E412951ED2
+  Chamber implementation    0x49479286057636c820b6bEBcc048c17A79C59DB4
+  Factory                   0x35977d540799db1e8910c00F476a879E2c0e1a24
+  Factory start block       26379502
+  Factory tx                0xc860c4e7b07f78d0e1c5d0d300fff8b6579800e2888566c173aca7e645f94839
   Chamber (proxy)           TBD
   Registry (proxy)          TBD
 
@@ -46,12 +52,12 @@
   [x] PMN-M02 (#210) / PMN-M03 (#211) fixed on main via #224 / #225
   [x] PRs #213 (1.1.7 eviction) and #206 (Halmos harness) merged
   [x] Verified deploy package on main via #214 (print / verify / gated scripts)
-  [ ] DeployMainnetFactory broadcast on chain id 1 (MAINNET_DEPLOY_UNBLOCKED=1) — Chad only
-  [ ] Paste Factory, Chamber implementation, BoardLib, WalletLib from receipt
+  [x] DeployMainnetFactory broadcast on chain id 1 (block 26379502)
+  [x] Paste Factory, Chamber implementation, BoardLib, WalletLib from receipt
   [ ] make verify-mainnet-factory (libs first, then Chamber impl, then Factory)
-  [ ] CreateMainnetLoreChamber broadcast (FACTORY=<verified Factory>) — Chad only
+  [ ] CreateMainnetLoreChamber broadcast (FACTORY=0x35977d540799db1e8910c00F476a879E2c0e1a24) — Chad only
   [ ] Paste Chamber (proxy) from that receipt — not before
-  [ ] App: VITE_MAINNET_FACTORY only after verify; never Sepolia addresses
+  [x] App reads Factory and Chamber implementation from this file
   [ ] Safe transferOwnership(LORE → Chamber proxy) is human-only — not a script
 
   Re-run verify (from contracts/): make verify-mainnet-factory

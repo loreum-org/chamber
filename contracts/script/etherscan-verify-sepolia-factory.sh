@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Verify the 26 Aug 2026 Sepolia Factory path on Etherscan:
+# Verify the 10 Nov 2026 Sepolia Factory path on Etherscan:
 #   BoardLib, WalletLib, Chamber impl, Factory
-# Addresses must match contracts/deployments/sepolia.txt (Aug 26 section).
+# Addresses must match contracts/deployments/sepolia.txt (Nov 10 section).
 #
 # One-command re-run (from contracts/):
 #   make verify-sepolia-factory
@@ -30,11 +30,11 @@ fi
 # Public fallback so --rpc-url sepolia resolves when a private RPC is unset.
 export SEPOLIA_RPC_URL="${SEPOLIA_RPC_URL:-https://ethereum-sepolia-rpc.publicnode.com}"
 
-# 26 Aug 2026 Factory path — keep in sync with deployments/sepolia.txt
-FACTORY=0x43aA92c8A26392f21F63cdA88B6BaB5031C40550
-CHAMBER=0xd441f1FDad2d3a447d2621DE4DE8b5738e02d39c
-BOARD_LIB=0xC3E0Fe4e89e01ca69e384bd61DA78a5a6379762D
-WALLET_LIB=0x0320284b176657bb5048CF586DEef530F4B2499a
+# 10 Nov 2026 Factory path — keep in sync with deployments/sepolia.txt
+FACTORY=0xE87FF28C44593122e4BD87e48A18c9f08eBc811d
+CHAMBER=0x07026D7DC398b8eF7874aEa1bBC00ACA231B20Af
+BOARD_LIB=0x7D5c6d334426a58aBeBF6453d58d958B76a408cd
+WALLET_LIB=0x74024B02dd1fcaBBA9eb9c0E2EABe480a81fDa3F
 ADMIN=0x5d45A213B2B6259F0b3c116a8907B56AB5E22095
 
 for addr in "$FACTORY" "$CHAMBER" "$BOARD_LIB" "$WALLET_LIB"; do
