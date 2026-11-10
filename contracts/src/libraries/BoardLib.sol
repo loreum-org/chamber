@@ -716,20 +716,23 @@ library BoardLib {
             if (remaining != 0) {
                 // TokenId-scoped: a token already in the previous top keeps seatedAt.
                 // Control-transfer reset is Chamber/BoardLib.syncSeatingControl (PMN-H01 A).
-                uint256 dropped = $.droppedAt[current];
-                if (dropped != 0) {
-                    // Back in the top seats. Out since an earlier block: the clock restarts.
-                    // Out and back in the same block (a flash bump): the clock is kept (R-1110-C1).
-                    if (dropped != block.number) $.seatedAt[current] = activatesAt;
-                    delete $.droppedAt[current];
-                } else if ($.seatedAt[current] == 0 && !wasInTop(current, prevTop)) {
-                    $.seatedAt[current] = activatesAt;
+                if (!wasInTop(current, prevTop)) {
+                    uint256 dropped = $.droppedAt[current];
+                    if (dropped != 0) {
+                        // Back in the top seats. Out since an earlier block: the clock restarts.
+                        // Out and back in the same block (a flash bump): the clock is kept (R-1110-C1).
+                        if (dropped != block.number) $.seatedAt[current] = activatesAt;
+                        delete $.droppedAt[current];
+                    } else if ($.seatedAt[current] == 0) {
+                        $.seatedAt[current] = activatesAt;
+                    }
                 }
                 unchecked {
                     --remaining;
                 }
-            } else if ($.seatedAt[current] != 0 && $.droppedAt[current] == 0) {
-                // Keep the clock and note the block, so a same-block return does not reset it.
+            } else if (wasInTop(current, prevTop) && $.seatedAt[current] != 0) {
+                // Just left the top seats. Keep the clock and note the block, so a same-block
+                // return does not reset it. Only ids from `prevTop` can have just left.
                 $.droppedAt[current] = block.number;
             }
             current = uint256($.nodes[current].next);
