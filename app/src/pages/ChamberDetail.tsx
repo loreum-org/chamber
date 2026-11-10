@@ -34,6 +34,7 @@ import { AddressChip, Banner, Section, Stat, StatRow } from '@/components/ui'
 import { boardReadStatus, boardViewShouldRefetch } from '@/lib/boardView'
 import { addRecentChamber } from '@/lib/recentChambers'
 import { implMismatchBannerCopy } from '@/lib/implSource'
+import { formatSeatUnlock } from '@/lib/chamberGovernance'
 import { getBlockExplorerAddressUrl, shortenAddress } from '@/lib/utils'
 import type { SeatUpdate } from '@/types'
 
@@ -250,7 +251,7 @@ function ChamberDetailContent({ chamberAddress }: { chamberAddress: `0x${string}
           </p>
           {directorGate.seatingPending && (
             <p className="mt-1">
-              You hold a live board seat, but director actions unlock at block {directorGate.seatedAt?.toString() ?? '…'}.
+              You hold a live board seat, but director actions unlock {formatSeatUnlock(directorGate.seatedAt)}.
             </p>
           )}
           <p className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
@@ -473,8 +474,8 @@ function OverviewTab({
               <div className="px-5 py-8 text-center space-y-3">
                 <p className="text-slate-300 text-sm">No directors seated</p>
                 <p className="text-slate-500 text-xs leading-relaxed">
-                  Hold a membership token, deposit shares, and delegate to that token. Director actions unlock after
-                  one block.
+                  Hold a membership token, deposit shares, and delegate to that token. Director actions unlock two
+                  days later.
                 </p>
                 <SeatTheBoardLink chamberAddress={chamberAddress} nftToken={chamberInfo.nftToken} className="btn btn-secondary btn-sm">
                   Seat the board

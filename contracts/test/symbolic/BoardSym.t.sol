@@ -84,20 +84,20 @@ contract BoardSymTest is Test, SymTest {
         assertEq(board.getQuorum(), 1 + (seats * 51) / 100);
     }
 
-    /// @dev A token that newly enters the top-seat set is immature until `SEATING_DELAY` blocks
+    /// @dev A token that newly enters the top-seat set is immature until `SEATING_DELAY` has passed
     function symbolicSeatingDelayOnNewTopNode() public {
         uint256 tokenId = svm.createUint(16, "tokenId");
         uint256 amount = svm.createUint(64, "amount");
         vm.assume(tokenId > 0 && amount > 0);
 
         board.setSeats(0, 1);
-        uint256 start = block.number;
+        uint256 start = block.timestamp;
         board.exposed_delegate(tokenId, amount);
 
         assertEq(board.getSeatedAt(tokenId), start + BoardTypes.SEATING_DELAY);
         assertFalse(board.isSeatingMature(tokenId));
 
-        vm.roll(start + BoardTypes.SEATING_DELAY);
+        vm.warp(start + BoardTypes.SEATING_DELAY);
         assertTrue(board.isSeatingMature(tokenId));
     }
 

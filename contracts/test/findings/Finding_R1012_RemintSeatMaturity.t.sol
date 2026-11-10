@@ -34,6 +34,7 @@ contract FindingR1012RemintSeatMaturityTest is Test {
         chamber.delegate(1, 1 ether);
         vm.stopPrank();
         vm.roll(block.number + BoardTypes.SEATING_DELAY);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
         assertLe(chamber.getSeatedAt(1), block.number, "incumbent should be seated");
     }
 
@@ -54,6 +55,7 @@ contract FindingR1012RemintSeatMaturityTest is Test {
         chamber.updateSeats(1, 2);
 
         vm.roll(readyAt);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
         vm.prank(buyer);
         chamber.updateSeats(1, 2);
         (uint256 proposed,,,) = chamber.getSeatUpdate();

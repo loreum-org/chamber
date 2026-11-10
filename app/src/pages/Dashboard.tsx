@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { useAccount, useChainId, useReadContracts, useSwitchChain } from 'wagmi'
+import { useAccount, useReadContracts, useSwitchChain } from 'wagmi'
 import { isAddress } from 'viem'
 import { useChainModal, useConnectModal } from '@rainbow-me/rainbowkit'
 import { FiLoader, FiRefreshCw } from 'react-icons/fi'
 import { useHasValidConfig, useMyChambers, useOpenChamber, useOrganizationsByNFT } from '@/hooks'
+import { useConnectedChainId } from '@/hooks/useConnectedChainId'
 import { erc721Abi } from '@/contracts'
 import {
   getConfiguredChainIds,
@@ -13,6 +14,7 @@ import {
   isMainnetConfigured,
 } from '@/lib/wagmi'
 import {
+  isSupportedWalletChain,
   readSimulatedChainId,
   showMainnetUnsupportedBanner,
   switchToSupportedChainLabel,
@@ -27,7 +29,7 @@ export default function Dashboard() {
   const { isConnected } = useAccount()
   const location = useLocation()
   const navigate = useNavigate()
-  const chainId = useChainId()
+  const chainId = useConnectedChainId()
   const { switchChainAsync, isPending: isSwitching } = useSwitchChain()
   const { openChainModal } = useChainModal()
   const { openConnectModal } = useConnectModal()
@@ -125,12 +127,36 @@ export default function Dashboard() {
             </button>
           }
         >
-          This deployment does not include Ethereum mainnet. Switch your wallet to Sepolia or another supported
-          network.
+          This deployment does not include Ethereum mainnet. Switch your wallet to Sepolia.
         </Banner>
       )}
 
-      {!isValid && !showUnsupportedMainnet && (
+      {!isValid && !showUnsupportedMainnet && !isSupportedWalletChain(chainId) && (
+        <Banner
+          tone="info"
+          title={`${getNetworkName(chainId)} is not available`}
+          actions={
+            <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              onClick={() => void handleSwitchToSupportedChain()}
+              disabled={isSwitching}
+            >
+              {isSwitching ? (
+                <FiLoader className="w-3.5 h-3.5 animate-spin" aria-hidden />
+              ) : (
+                <FiRefreshCw className="w-3.5 h-3.5" aria-hidden />
+              )}
+              {isSwitching ? 'Switching…' : switchLabel}
+            </button>
+          }
+        >
+          Your wallet is on {getNetworkName(chainId)} (chain {chainId}). This app offers Ethereum mainnet and
+          Sepolia. Switch to continue. Chambers on those networks still show below.
+        </Banner>
+      )}
+
+      {!isValid && !showUnsupportedMainnet && isSupportedWalletChain(chainId) && (
         <Banner tone="info" title={`Chambers can't be deployed on ${getNetworkName(chainId)}`}>
           Your wallet is on {getNetworkName(chainId)} (chain {chainId}), which has no Chamber Factory. Chambers on
           other networks still show below.

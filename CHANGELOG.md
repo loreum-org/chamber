@@ -2,7 +2,23 @@
 
 Contract-level changes to `Chamber` that affect integrations. App, docs, and tooling changes are tracked in PRs.
 
-## 1.3.0 (unreleased; not deployed)
+## 1.4.0 (unreleased)
+
+Fixes R-1110-C1 (one-block board takeover, `docs/security/review-2026-11-10.md`). Runtime bytecode 22,274 bytes.
+
+### Breaking: seating delay is 2 days, in time
+
+`SEATING_DELAY` was 1 block and is now 2 days. `getSeatedAt(tokenId)` returns a unix time instead of a block number (the return value is renamed `activatesAt`). Chambers before 1.4.0 stored block numbers; clients should read values below 1,000,000,000 as block numbers.
+
+A seat that leaves the top seats keeps its clock. If it is still out at a later block, the clock restarts when it returns; out and back in within one block keeps it. A new `droppedAt` mapping is appended to the Board ERC-7201 struct.
+
+Spends still execute as soon as quorum is met.
+
+### Breaking: no filter on wallet calls to tokens
+
+The R-1012-M3 check is removed. The board can call any function on any target, including the vault asset (for example LORE owner functions after the ownership handoff). A board majority can therefore spend any approval a holder gave the chamber. The app now approves only the deposit amount. Self-calls (pause/unpause) and ProxyAdmin calls (checked `upgradeAndCall`) keep their limits.
+
+## 1.3.0 (mainnet implementation behind Factory 0x3597…1a24)
 
 Scope cuts before mainnet (epic #395) took Chamber runtime bytecode from 24,571 to 21,810 bytes. The open-finding fixes below land at 22,567 bytes, 2,009 under the EIP-170 limit of 24,576.
 

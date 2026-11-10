@@ -824,7 +824,7 @@ export const ChamberAbi = [
     ],
     "outputs": [
       {
-        "name": "seatedAtBlock",
+        "name": "activatesAt",
         "type": "uint256",
         "internalType": "uint256"
       }

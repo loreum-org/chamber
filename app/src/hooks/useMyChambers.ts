@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useAccount, useChainId } from 'wagmi'
+import { useAccount } from 'wagmi'
 import { getPublicClient } from 'wagmi/actions'
 import { useQueries, useQueryClient } from '@tanstack/react-query'
 import { multicall } from 'viem/actions'
@@ -14,6 +14,7 @@ import { getIndexerUrl, indexerAppliesToChain } from '@/lib/indexer'
 import { isLegacyChamberVersion } from '@/lib/chamberUpgrade'
 import { chamberVersionBytes32ToLabel } from '@/lib/utils'
 import { addRecentChamber, getRecentChambers } from '@/lib/recentChambers'
+import { isSupportedWalletChain } from '@/lib/supportedChain'
 import { TESTNET_DEPLOYMENTS } from '@/lib/testnetDeployments'
 import { mainnetDeploymentAddresses } from '@/lib/mainnetDeployments'
 import {
@@ -24,6 +25,7 @@ import {
   isNonZeroAddress,
 } from '@/lib/wagmi'
 import { useFactoryAddress, useRegistryAddress } from './useRegistry'
+import { useConnectedChainId } from './useConnectedChainId'
 
 export type RecentChamber = { chainId: number; address: `0x${string}` }
 
@@ -35,7 +37,7 @@ function readRecents(chainIds: readonly number[]): RecentChamber[] {
 
 /** Chambers opened recently, on every configured chain. `remember` stores on the wallet's chain. */
 export function useRecentChambers() {
-  const chainId = useChainId()
+  const chainId = useConnectedChainId()
   const chainIds = getConfiguredChainIds()
   const chainKey = chainIds.join()
   const [recents, setRecents] = useState<RecentChamber[]>(() => readRecents(chainIds))
@@ -72,6 +74,7 @@ async function findMyChambersOnChain(
   userAddress: `0x${string}`,
   recents: readonly `0x${string}`[],
 ): Promise<ChainChambers> {
+  if (!isSupportedWalletChain(chainId)) return { chambers: [], health: EMPTY_DISCOVERY_HEALTH }
   const client = getPublicClient(config, { chainId })
   if (!client) return { chambers: [], health: EMPTY_DISCOVERY_HEALTH }
 
@@ -159,9 +162,9 @@ async function findMyChambersOnChain(
 }
 
 /**
- * Chambers the connected user participates in, on every chain that has a
- * Factory or Registry: Ponder indexer (optional) + Factory/Registry
- * `ChamberCreated` logs plus local recents, kept when the user is creator, a
+ * Chambers the connected user participates in, on every offered chain that has a
+ * Factory or Registry (`SUPPORTED_WALLET_CHAIN_IDS` only): Ponder indexer
+ * (optional) + Factory/Registry `ChamberCreated` logs plus local recents, kept when the user is creator, a
  * director, or holds shares. Each chain is queried on its own, so one slow or
  * failing RPC does not hide chambers on the others.
  */

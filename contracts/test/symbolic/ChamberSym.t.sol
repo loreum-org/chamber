@@ -30,7 +30,12 @@ contract ChamberSymTest is Test, SymTest {
     address internal constant USER2 = address(0xCAFE);
     address internal constant TARGET = address(0x100);
 
+    /// @dev Tracked clock. `vm.getBlockTimestamp` is not available in Halmos 0.3.3, and via-IR can
+    ///      reuse a stale `block.timestamp` read after `vm.warp`.
+    uint256 internal clock;
+
     function setUp() public {
+        clock = block.timestamp;
         nft = new MockERC721("Mock NFT", "MNFT");
         contractOwner = new MockContractOwner();
         chamber = new ChamberAuthHarness(address(nft), 2);
@@ -264,9 +269,9 @@ contract ChamberSymTest is Test, SymTest {
         (bool beforeSync,) = address(chamber).call(_submitTx(1));
         assertFalse(beforeSync);
 
-        uint256 syncBlock = vm.getBlockNumber();
+        uint256 syncTime = clock;
         chamber.syncSeating(1);
-        assertEq(chamber.getSeatedAt(1), syncBlock + BoardTypes.SEATING_DELAY);
+        assertEq(chamber.getSeatedAt(1), syncTime + BoardTypes.SEATING_DELAY);
 
         vm.prank(USER2);
         (bool beforeDelay,) = address(chamber).call(_submitTx(1));
@@ -279,8 +284,9 @@ contract ChamberSymTest is Test, SymTest {
     }
 
     function _rollDelay() internal {
-        uint256 n = vm.getBlockNumber();
-        vm.roll(n + BoardTypes.SEATING_DELAY);
+        vm.roll(vm.getBlockNumber() + 1);
+        clock += BoardTypes.SEATING_DELAY;
+        vm.warp(clock);
     }
 
     function _submitTx(uint256 tokenId) internal view returns (bytes memory) {

@@ -74,7 +74,7 @@ Set **`ADMIN`** in the environment if the admin should not be `msg.sender`.
 
 ## Post-create board bootstrap (Anvil or Sepolia)
 
-`createChamber` leaves the board empty. The creator must hold a membership NFT and delegate after depositing shares. Director rights unlock after `SEATING_DELAY` (1 block). Quorum is `1 + (n * 51) / 100` over reachable authorized directors (PMN-M01).
+`createChamber` leaves the board empty. The creator must hold a membership NFT and delegate after depositing shares. Director rights unlock after `SEATING_DELAY` (2 days since 1.4.0). Quorum is `1 + (n * 51) / 100` over reachable authorized directors (PMN-M01).
 
 ```bash
 # 1. Membership NFT — mock mint on Anvil/Sepolia, or transfer an existing token
@@ -93,9 +93,9 @@ cast send "$CHAMBER" "deposit(uint256,address)" 100ether "$CREATOR" \
 cast send "$CHAMBER" "delegate(uint256,uint256)" "$TOKEN_ID" 100ether \
   --rpc-url "$RPC_URL" --private-key "$PRIVATE_KEY"
 
-# 4. Wait SEATING_DELAY (1 block)
-cast rpc evm_mine --rpc-url http://127.0.0.1:8545   # Anvil
-# On Sepolia, wait for the next block
+# 4. Wait SEATING_DELAY (2 days)
+cast rpc evm_increaseTime 172800 --rpc-url http://127.0.0.1:8545 && cast rpc evm_mine --rpc-url http://127.0.0.1:8545   # Anvil
+# On a live network, wait two days
 
 # 5. Confirm the creator is seated
 cast call "$CHAMBER" "getDirectors()(address[])" --rpc-url "$RPC_URL"
@@ -106,10 +106,16 @@ Do not auto-seat addresses that do not hold a membership NFT.
 
 ## App configuration
 
-The app supports four testnets: Ethereum Sepolia, Base Sepolia, Arbitrum Sepolia and OP Sepolia.
-**My chambers** lists chambers from all of them, and the deploy page has a network picker.
-Each network reads its addresses from `contracts/deployments/<network>.txt`. A network
-with no Factory in its file shows in the picker but cannot be picked.
+The wallet and network switcher offer Ethereum mainnet and Ethereum Sepolia.
+That list is `SUPPORTED_WALLET_CHAIN_IDS` in `app/src/lib/supportedChain.ts`.
+Mainnet is first, so a disconnected session defaults to Ethereum.
+To offer another chain again, add its id there (Base Sepolia `84532`, Arbitrum Sepolia `421614`,
+OP Sepolia `11155420`, Base `8453`, Arbitrum `42161`, Anvil `31337`). Deployment files for those
+networks stay in the repo for the indexer and `getContractAddresses`.
+
+**My chambers** lists chambers on the offered chains that have a Factory or Registry.
+The deploy page network picker shows the same list. A chain with no Factory shows in
+the picker but cannot be picked.
 
 **My chambers** hides chambers older than 1.2.0, because they can't be upgraded in place
 and must be redeployed.
@@ -134,10 +140,12 @@ Commit both files. Older Factories stay in the file so their chambers are still 
 Env overrides: `VITE_ARBITRUM_SEPOLIA_FACTORY`, `VITE_OP_SEPOLIA_FACTORY` (and `_CHAMBER_IMPL`,
 `_FACTORY_START_BLOCK`).
 
-The default network is Ethereum mainnet (chain 1) when its Factory is set (see below);
-otherwise the app falls back to the first configured testnet. Base Sepolia (chain 84532)
-reads **`contracts/deployments/base-sepolia.txt`** (`getContractAddresses(84532)`).
-Optional env overrides: `VITE_BASE_SEPOLIA_FACTORY`, `VITE_BASE_SEPOLIA_CHAMBER_IMPL`.
+The default network is Ethereum mainnet (chain 1). Its Factory is the Nov 10, 2026
+deploy in **`contracts/deployments/mainnet.txt`** (`getContractAddresses(1)`).
+Base Sepolia (chain 84532) addresses remain in
+**`contracts/deployments/base-sepolia.txt`** for the indexer. Optional env overrides
+`VITE_BASE_SEPOLIA_FACTORY` and `VITE_BASE_SEPOLIA_CHAMBER_IMPL` still apply to that file.
+Base Sepolia is not a wallet or lookup option until `84532` is added back to `SUPPORTED_WALLET_CHAIN_IDS`.
 
 Ethereum Sepolia Factory, Registry, Chamber implementation, and demo ERC-20 / membership ERC-721
 stay in **`contracts/deployments/sepolia.txt`**. The current Factory is the Nov 10, 2026

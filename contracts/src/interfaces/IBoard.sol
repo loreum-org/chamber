@@ -59,16 +59,18 @@ interface IBoard {
     function getDirectors() external view returns (address[] memory directors);
 
     /**
-     * @notice First block at which `tokenId` may exercise director rights.
+     * @notice First time at which `tokenId` may exercise director rights.
      * @dev Zero means no checkpoint: a pre-upgrade incumbent already in the top set
-     *      (treated as mature), or a token that is not seated. Newly entering tokenIds
-     *      are set to `block.number + SEATING_DELAY`. After `ownerOf` changes for an
-     *      already-seated token, the effective value moves to `block.number + SEATING_DELAY`
-     *      until the new controller's delay elapses (PMN-H01 Solution A).
+     *      (treated as mature), or a token that has never been seated. Newly entering tokenIds
+     *      are set to `block.timestamp + SEATING_DELAY`. An id that leaves the top seats keeps
+     *      its value; if it is still out at a later block, it gets a new one when it returns
+     *      (R-1110-C1). After `ownerOf` changes for an already-seated token, the effective value
+     *      moves to `block.timestamp + SEATING_DELAY` until the new controller's delay elapses
+     *      (PMN-H01 Solution A). Chambers before 1.4.0 stored a block number here.
      * @param tokenId The membership token ID
-     * @return seatedAtBlock Activation block, or zero if no checkpoint is stored
+     * @return activatesAt Unix time from which the seat may act, or zero if no checkpoint is stored
      */
-    function getSeatedAt(uint256 tokenId) external view returns (uint256 seatedAtBlock);
+    function getSeatedAt(uint256 tokenId) external view returns (uint256 activatesAt);
 
     /**
      * @notice Active seat-change proposal, if any.

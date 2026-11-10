@@ -74,6 +74,7 @@ import {
   selectorOf,
   requiredExecuteConfirmations,
   computeQueueTxStatus,
+  formatSeatUnlock,
 } from '@/lib/chamberGovernance'
 import type { TransactionQueueItem } from '@/types'
 import type { IndexedProposalVote } from '@/hooks/useIndexedProposals'
@@ -846,7 +847,7 @@ function TransactionQueueContent({ chamberAddress }: { chamberAddress: `0x${stri
       )}
       {directorGate.seatingPending && (
         <Banner tone="warn">
-          You hold a live board seat, but director actions unlock at block {directorGate.seatedAt?.toString() ?? '…'}.
+          You hold a live board seat, but director actions unlock {formatSeatUnlock(directorGate.seatedAt)}.
         </Banner>
       )}
       {inFlight && <PendingTxBanner kind={inFlight.kind} hash={inFlight.hash} chainId={chainId} />}

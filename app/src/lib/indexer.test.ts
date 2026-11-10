@@ -8,6 +8,7 @@ import {
   parseIndexerHead,
   requireIndexerBlock,
 } from './indexer'
+import { chainIdsToQuery, MAINNET_CHAIN_ID, SEPOLIA_CHAIN_ID } from './supportedChain'
 
 const status = (number: number) => ({
   sepolia: { ready: true, block: { number, timestamp: 1788458532 } },
@@ -38,6 +39,15 @@ describe('parseIndexerChainIds', () => {
   it('keeps the single-id variable when the list is unset', () => {
     expect(parseIndexerChainIds(undefined, '11155111')).toEqual([11155111])
     expect(parseIndexerChainIds('   ', '421614')).toEqual([421614])
+  })
+
+  it('does not query Base Sepolia or other removed chains', () => {
+    expect(chainIdsToQuery(parseIndexerChainIds(undefined, undefined))).toEqual([])
+    expect(chainIdsToQuery(parseIndexerChainIds('84532', undefined))).toEqual([])
+    expect(chainIdsToQuery(parseIndexerChainIds('84532, 11155111, 1', undefined))).toEqual([
+      MAINNET_CHAIN_ID,
+      SEPOLIA_CHAIN_ID,
+    ])
   })
 })
 

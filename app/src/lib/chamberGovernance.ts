@@ -9,8 +9,8 @@ export const PAUSE_SELECTOR = '0x8456cb59' as const
 /** `unpause()` — L-02 / OZ Pausable */
 export const UNPAUSE_SELECTOR = '0x3f4ba83a' as const
 
-/** H-02 `SEATING_DELAY` (internal, 1 block). Do not change without the on-chain constant. */
-export const SEATING_DELAY_BLOCKS = 1n
+/** `BoardTypes.SEATING_DELAY` (internal, 2 days since 1.4.0; R-1110-C1). Do not change without the on-chain constant. */
+export const SEATING_DELAY_SEC = 2n * 24n * 60n * 60n
 /** H-03 `SEAT_UPDATE_TIMELOCK` (internal, 7 days) */
 export const SEAT_UPDATE_TIMELOCK_SEC = 7n * 24n * 60n * 60n
 /** H-03 `SEAT_UPDATE_EXPIRY` (internal, 14 days) */
@@ -70,18 +70,36 @@ export function requiredExecuteConfirmations(
 }
 
 /**
- * H-02: seating is mature when `block.number >= seatedAt`.
- * `seatedAt == 0` is the on-chain grandfather for pre-upgrade incumbents
- * (`Board._isSeatingMature`) — treat those seats as mature.
+ * Seating is mature once `seatedAt` has passed. `seatedAt == 0` is the on-chain grandfather
+ * for pre-upgrade incumbents (`Board._isSeatingMature`), so those seats are mature.
+ * Chamber 1.4.0+ stores a unix time (2-day `SEATING_DELAY`, R-1110-C1); older chambers stored
+ * a block number. Values below {@link SEATED_AT_TIME_FLOOR} are read as block numbers.
  */
 export function isSeatingMature(
   seatedAt: bigint | undefined,
   blockNumber: bigint | undefined,
+  nowSec: bigint = BigInt(Math.floor(Date.now() / 1000)),
 ): boolean {
   if (seatedAt === undefined) return false
   if (seatedAt === 0n) return true
+  if (seatedAt >= SEATED_AT_TIME_FLOOR) return nowSec >= seatedAt
   if (blockNumber === undefined) return false
   return blockNumber >= seatedAt
+}
+
+/** `seatedAt` at or above this is a unix time (1.4.0+), below it a block number (before 1.4.0). */
+export const SEATED_AT_TIME_FLOOR = 1_000_000_000n
+
+/** Human text for when a pending seat can act: "on <date, time>" (1.4.0+) or "at block N". */
+export function formatSeatUnlock(seatedAt: bigint | undefined): string {
+  if (seatedAt === undefined) return 'soon'
+  if (seatedAtIsTime(seatedAt)) return `on ${new Date(Number(seatedAt) * 1000).toLocaleString()}`
+  return `at block ${seatedAt.toString()}`
+}
+
+/** True when `seatedAt` is a unix time (Chamber 1.4.0+), false when it is a pre-1.4.0 block number. */
+export function seatedAtIsTime(seatedAt: bigint | undefined): boolean {
+  return seatedAt !== undefined && seatedAt >= SEATED_AT_TIME_FLOOR
 }
 
 export type QueueTxStatus = 'pending' | 'ready' | 'executed' | 'cancelled' | 'expired'

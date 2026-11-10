@@ -6,6 +6,7 @@ import { useChainModal, useConnectModal } from '@rainbow-me/rainbowkit'
 import { FiAlertTriangle, FiLoader, FiRefreshCw } from 'react-icons/fi'
 import { useChamberLiveUpdates } from '@/hooks/useChamberLiveUpdates'
 import { useChamberRouteDecision } from '@/hooks/useChamberRouteGate'
+import { isSupportedWalletChain } from '@/lib/supportedChain'
 import {
   getNetworkName,
   isMainnetConfigured,
@@ -116,11 +117,12 @@ export function WrongNetworkPanel({
           ) : currentChainId === 1 && !isMainnetConfigured ? (
             <p>
               This deployment does not include <strong className="text-slate-200">Ethereum mainnet</strong>.
-              Use your wallet to switch to <strong className="text-slate-200">Sepolia</strong>
-              {supportedNames.filter((name) => name !== 'Sepolia').length > 0
-                ? ' (or another supported network)'
-                : ''}
-              .
+              Use your wallet to switch to <strong className="text-slate-200">Sepolia</strong>.
+            </p>
+          ) : !isSupportedWalletChain(currentChainId) ? (
+            <p>
+              <strong className="text-slate-200">{currentName}</strong> is not offered in this app.
+              Switch to a supported network to open this chamber.
             </p>
           ) : (
             <p>

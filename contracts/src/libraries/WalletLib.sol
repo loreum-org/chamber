@@ -11,38 +11,6 @@ import {ChamberId} from "src/libraries/ChamberId.sol";
  * @dev Extracted to keep `Chamber` implementation under the EIP-170 size limit.
  */
 library WalletLib {
-    /// @dev Wallet calls may not spend approvals third parties gave the chamber (R-1012-M3).
-    ///      Depositors approve the chamber on the vault asset, so calls to `asset` are limited to
-    ///      `transfer` and `approve` (plain value sends with empty data are allowed). A selector
-    ///      denylist cannot cover every pull alias (DAI `move` / `pull`, ERC-1363
-    ///      `transferFromAndCall`), so it is only the fallback for other targets: there, ERC-20/721
-    ///      `transferFrom`, ERC-721/1155 `safeTransferFrom`, ERC-1155 `safeBatchTransferFrom`,
-    ///      `burnFrom`, DAI `move` / `pull`, ERC-1363 `transferFromAndCall` and ERC-777
-    ///      `operatorSend` must name the chamber as `from` (first argument). Runs in the chamber's
-    ///      context, so `address(this)` is the chamber.
-    function requireNoThirdPartyPull(address target, address asset, bytes memory data) external view {
-        if (target == asset) {
-            if (data.length == 0) return;
-            if (data.length >= 4) {
-                bytes4 s = bytes4(data);
-                if (s == 0xa9059cbb || s == 0x095ea7b3) return;
-            }
-            revert IWallet.InvalidTarget();
-        }
-        if (data.length < 36) return;
-        bytes4 selector = bytes4(data);
-        if (
-            selector != 0x23b872dd && selector != 0x42842e0e && selector != 0xb88d4fde && selector != 0xf242432a
-                && selector != 0x2eb2c2d6 && selector != 0x79cc6790 && selector != 0xbb35783b && selector != 0xf2d5d56b
-                && selector != 0xd8fbe994 && selector != 0xc1d34b89 && selector != 0x62ad1b83
-        ) return;
-        uint256 from;
-        assembly {
-            from := mload(add(data, 36))
-        }
-        if (from != uint256(uint160(address(this)))) revert IWallet.InvalidTarget();
-    }
-
     using WalletTypes for WalletTypes.WalletStorage;
 
     /// @dev The only accepted call to this chamber's ProxyAdmin (R-1012-L6).

@@ -263,7 +263,7 @@ export default function DelegationManager({
         <div className="panel p-4 border-accent-500/25 bg-accent-500/5">
           <p className="text-slate-200 text-sm font-medium">Seat the board</p>
           <p className="text-slate-400 text-xs mt-1 leading-relaxed">
-            The board is empty. Delegate shares to a membership token you hold. Director rights unlock one block later.
+            The board is empty. Delegate shares to a membership token you hold. Director rights unlock two days later.
           </p>
           <Link
             to="/docs/introduction/getting-started"

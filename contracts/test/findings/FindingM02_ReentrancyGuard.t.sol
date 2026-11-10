@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
+import {BoardTypes} from "src/types/BoardTypes.sol";
+
 import {Test} from "forge-std/Test.sol";
 import {Registry} from "src/Registry.sol";
 import {Chamber} from "src/Chamber.sol";
@@ -103,6 +105,7 @@ contract FindingM02ReentrancyGuardTest is Test {
         _setupDirector(user2, 2, 100e18);
         _setupDirector(user3, 3, 100e18);
         vm.roll(block.number + 1);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
     }
 
     function test_M02_DepositRevertsOnReenter() public {

@@ -990,6 +990,19 @@ export const chamberAbi = [
   },
   {
     "type": "function",
+    "name": "CHAMBER_ID",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "DEFAULT_TRANSACTION_MAX_AGE",
     "inputs": [],
     "outputs": [
@@ -1549,7 +1562,7 @@ export const chamberAbi = [
     ],
     "outputs": [
       {
-        "name": "seatedAtBlock",
+        "name": "activatesAt",
         "type": "uint256",
         "internalType": "uint256"
       }
@@ -2332,6 +2345,19 @@ export const chamberAbi = [
     "stateMutability": "nonpayable"
   },
   {
+    "type": "function",
+    "name": "withdrawSeatSupport",
+    "inputs": [
+      {
+        "name": "tokenId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
     "type": "event",
     "name": "Approval",
     "inputs": [
@@ -2630,6 +2656,25 @@ export const chamberAbi = [
         "type": "uint256",
         "indexed": true,
         "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "SeatSupportWithdrawn",
+    "inputs": [
+      {
+        "name": "tokenId",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "owner",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
       }
     ],
     "anonymous": false
@@ -3225,6 +3270,11 @@ export const chamberAbi = [
   {
     "type": "error",
     "name": "NodeDoesNotExist",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NotASeatSupporter",
     "inputs": []
   },
   {

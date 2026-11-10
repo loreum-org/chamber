@@ -15,3 +15,9 @@ test('seat is pending until block.number >= seatedAt', () => {
   assert.equal(isSeatingMature(10n, 10n), true)
   assert.equal(isSeatingMature(10n, 11n), true)
 })
+
+test('1.4.0+ seatedAt is a unix time', () => {
+  const t = 1_800_000_000n
+  assert.equal(isSeatingMature(t, 5n, t - 1n), false)
+  assert.equal(isSeatingMature(t, 5n, t), true)
+})

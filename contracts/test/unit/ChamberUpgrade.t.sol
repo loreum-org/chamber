@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
+import {BoardTypes} from "src/types/BoardTypes.sol";
+
 import {Test} from "forge-std/Test.sol";
 import {Chamber} from "src/Chamber.sol";
 import {IChamber} from "src/interfaces/IChamber.sol";
@@ -99,6 +101,7 @@ contract ChamberUpgradeTest is Test {
         chamber.delegate(3, amount);
         vm.stopPrank();
         vm.roll(block.number + 1);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
     }
 
     function test_Chamber_GetProxyAdmin() public view {
@@ -455,7 +458,7 @@ contract ChamberUpgradeTest is Test {
         chamber.executeTransaction(3, txId, "");
 
         assertEq(_impl(), address(newImplementation));
-        assertEq(chamberContract.VERSION(), bytes32("1.3.0"));
+        assertEq(chamberContract.VERSION(), bytes32("1.4.0"));
         assertEq(ProxyAdmin(chamber.getProxyAdmin()).owner(), chamberAddress, "ProxyAdmin stays with the chamber");
     }
 

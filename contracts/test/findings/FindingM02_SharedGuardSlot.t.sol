@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
+import {BoardTypes} from "src/types/BoardTypes.sol";
+
 import {Test} from "forge-std/Test.sol";
 import {Chamber} from "src/Chamber.sol";
 import {IChamber} from "src/interfaces/IChamber.sol";
@@ -123,6 +125,7 @@ contract FindingM02SharedGuardSlotTest is Test {
         _seat(IChamber(address(chamber)), asset, user1, 1);
         _seat(IChamber(address(chamber)), asset, user2, 2);
         vm.roll(block.number + 1);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
 
         asset.mint(user3, 1e18);
         vm.startPrank(user3);
@@ -152,6 +155,7 @@ contract FindingM02SharedGuardSlotTest is Test {
         _seat(chamber, ERC20Mintable(address(token)), user2, 2);
         _seat(chamber, ERC20Mintable(address(token)), user3, 3);
         vm.roll(block.number + 1);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
 
         DelegateReenterTarget target = new DelegateReenterTarget(address(chamber));
         deal(address(chamber), 1 ether);

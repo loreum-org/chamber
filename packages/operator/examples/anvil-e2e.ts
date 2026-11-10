@@ -302,7 +302,8 @@ async function main(): Promise<void> {
       }),
     )
 
-    log('mine until seating is mature (SEATING_DELAY = 1)')
+    log('advance time until seating is mature (SEATING_DELAY = 2 days)')
+    await increaseTime(2 * 24 * 60 * 60)
     for (let i = 0; i < 4; i++) {
       const board = await opA.getBoard()
       if (board.members.every((m) => m.seatingMature)) break

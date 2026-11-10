@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
+import {BoardTypes} from "src/types/BoardTypes.sol";
+
 import {Test} from "forge-std/Test.sol";
 import {Factory} from "src/Factory.sol";
 import {Chamber} from "src/Chamber.sol";
@@ -11,7 +13,7 @@ import {MockERC721} from "test/mock/MockERC721.sol";
 /// @dev #142: factory create leaves an empty board; creator seats after NFT + delegate + SEATING_DELAY.
 contract FactoryBootstrapTest is Test {
     uint256 internal constant SEATS = 5;
-    uint256 internal constant SEATING_DELAY = 1;
+    uint256 internal constant SEATING_DELAY = BoardTypes.SEATING_DELAY;
 
     Factory public factory;
     MockERC20 public token;
@@ -60,6 +62,7 @@ contract FactoryBootstrapTest is Test {
         chamber.submitTransaction(tokenId, address(token), 0, "", "", 0);
 
         vm.roll(block.number + SEATING_DELAY);
+        vm.warp(vm.getBlockTimestamp() + BoardTypes.SEATING_DELAY);
 
         vm.prank(creator);
         chamber.submitTransaction(tokenId, address(token), 0, "", "", 0);
