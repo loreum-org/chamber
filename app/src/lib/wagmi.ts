@@ -26,13 +26,15 @@ import { mainnetDeploymentAddresses } from '@/lib/mainnetDeployments'
 import { TESTNET_DEPLOYMENTS } from '@/lib/testnetDeployments'
 import {
   getNetworkName as networkNameFromId,
+  isSupportedWalletChain,
   pickPreferredSupportedChainId,
+  selectWalletChains,
+  SUPPORTED_WALLET_CHAIN_IDS,
   TESTNET_CHAIN_IDS,
+  chainIdsToQuery,
 } from '@/lib/supportedChain'
 
 export { isNonZeroAddress, ZERO_ADDRESS }
-
-const productionApp = import.meta.env.PROD
 
 function envAddress(raw: string | undefined): string {
   return raw?.trim() ?? ''
@@ -147,30 +149,52 @@ if (import.meta.env.DEV && alchemyApiKey) {
 }
 
 /**
- * Production: Ethereum mainnet first (the default) when its Factory is
- * configured, then the four testnets. Dev adds Base, Arbitrum and local.
+ * Every chain this file can still address. The wallet offers
+ * `SUPPORTED_WALLET_CHAIN_IDS` only — other entries stay so adding an id
+ * back re-enables that network without restoring deployment data.
+ * Anvil (`localhost`) is not in the offered list.
  */
-const appChains: Chain[] = [
-  ...(isMainnetConfigured ? [mainnet] : []),
-  baseSepolia,
+const CHAIN_CATALOG: readonly Chain[] = [
+  mainnet,
   sepolia,
+  baseSepolia,
   arbitrumSepolia,
   optimismSepolia,
-  ...(productionApp ? [] : [base, arbitrum, localhost]),
+  base,
+  arbitrum,
+  localhost,
 ]
+
+const selectedChains = selectWalletChains(CHAIN_CATALOG)
+const firstChain = selectedChains[0]
+if (!firstChain) {
+  throw new Error(
+    'SUPPORTED_WALLET_CHAIN_IDS matched no known chain. Add those ids to CHAIN_CATALOG in wagmi.ts.',
+  )
+}
+const appChains: [Chain, ...Chain[]] = [firstChain, ...selectedChains.slice(1)]
 
 const appTransports: Record<number, Transport> = {}
 for (const chain of appChains) {
-  appTransports[chain.id] =
-    chain.id === localhost.id
-      ? transportsFromPlan(planLocalChainTransports(localhost.rpcUrls.default.http[0]))
-      : chainTransport(chain.id, PUBLIC_RPC[chain.id]!)
+  if (chain.id === localhost.id) {
+    appTransports[chain.id] = transportsFromPlan(
+      planLocalChainTransports(localhost.rpcUrls.default.http[0]),
+    )
+    continue
+  }
+  const publicUrl = PUBLIC_RPC[chain.id]
+  if (!publicUrl) {
+    throw new Error(
+      `No public RPC for wallet chain ${chain.id}. Add it to PUBLIC_RPC before offering that chain.`,
+    )
+  }
+  appTransports[chain.id] = chainTransport(chain.id, publicUrl)
 }
 
 export const config = getDefaultConfig({
   appName: 'Chamber',
   projectId: walletConnectProjectId,
-  chains: appChains as [Chain, ...Chain[]],
+  chains: appChains,
   ssr: false,
   pollingInterval: POLLING_INTERVAL_MS,
   transports: appTransports,
@@ -333,6 +357,7 @@ export function getContractAddresses(chainId: number) {
 
 // Helper to check if we have valid addresses configured (factory or registry)
 export function hasValidAddresses(chainId: number): boolean {
+  if (!isSupportedWalletChain(chainId)) return false
   const addresses = getContractAddresses(chainId)
   if (!addresses) return false
   return isNonZeroAddress(addresses.factory) || isNonZeroAddress(addresses.registry)
@@ -345,25 +370,26 @@ export function getNetworkName(chainId: number): string {
 
 /** RainbowKit/wagmi chains that already have a Factory or Registry address. */
 export function getConfiguredChainIds(): number[] {
-  const seen = new Set<number>()
-  const ids: number[] = []
-  for (const chain of config.chains) {
-    if (seen.has(chain.id) || !hasValidAddresses(chain.id)) continue
-    seen.add(chain.id)
-    ids.push(chain.id)
-  }
-  return ids
+  const offered = SUPPORTED_WALLET_CHAIN_IDS.filter(
+    (id) => config.chains.some((chain) => chain.id === id) && hasValidAddresses(id),
+  )
+  return chainIdsToQuery(offered)
 }
 
 /**
  * Prefer Ethereum mainnet when that Factory is configured, otherwise the first
- * wagmi chain that has a Factory or Registry.
+ * offered chain that has a Factory or Registry.
  */
 export function getPreferredSupportedChainId(): number | undefined {
-  return pickPreferredSupportedChainId(getConfiguredChainIds(), mainnet.id)
+  return pickPreferredSupportedChainId(getConfiguredChainIds())
 }
 
-/** Supported testnets in display order, whether or not a Factory is deployed yet. */
+/** Wallet / network-switcher chains, in `SUPPORTED_WALLET_CHAIN_IDS` order. */
+export function getWalletChainIds(): number[] {
+  return chainIdsToQuery(SUPPORTED_WALLET_CHAIN_IDS.filter((id) => config.chains.some((chain) => chain.id === id)))
+}
+
+/** Offered testnets, whether or not a Factory is deployed yet. */
 export function getTestnetChainIds(): number[] {
   return TESTNET_CHAIN_IDS.filter((id) => config.chains.some((chain) => chain.id === id))
 }
@@ -374,6 +400,7 @@ export function getTestnetChainIds(): number[] {
  * made before a Factory redeploy stay visible.
  */
 export function getDiscoveryFactoryAddresses(chainId: number): `0x${string}`[] {
+  if (!isSupportedWalletChain(chainId)) return []
   const current = getContractAddresses(chainId)?.factory
   const older = chainId === localDeployments.chainId ? [] : (TESTNET_DEPLOYMENTS[chainId]?.factories ?? [])
   const out: `0x${string}`[] = []

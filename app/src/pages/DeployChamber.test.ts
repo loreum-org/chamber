@@ -100,6 +100,7 @@ vi.mock('@/lib/wagmi', () => ({
   getNetworkName: () => 'Sepolia',
   getPreferredSupportedChainId: () => 11155111,
   getTestnetChainIds: () => [11155111],
+  getWalletChainIds: () => [11155111],
   hasValidAddresses: () => true,
   isNonZeroAddress: () => false,
   config: {},

@@ -10,11 +10,13 @@ import {
 import { zeroAddress, type Hex, type PublicClient } from 'viem'
 import { registryAbi, chamberAbi, factoryAbi } from '@/contracts/abis'
 import { REGISTRY_PAGE_SIZE } from '@/lib/chamberGovernance'
+import { isSupportedWalletChain } from '@/lib/supportedChain'
 import {
   getContractAddresses,
   hasValidAddresses,
   isNonZeroAddress,
 } from '@/lib/wagmi'
+import { useConnectedChainId } from './useConnectedChainId'
 import { preferredImplSourceLabel } from '@/lib/implSource'
 import {
   ERC1967_IMPLEMENTATION_SLOT,
@@ -22,18 +24,24 @@ import {
   chamberVersionBytes32ToLabel,
 } from '@/lib/utils'
 
+/** Addresses for the connected chain. A chain the wallet no longer offers resolves to zero so reads and deploys do not run against it. */
+function addressesForConnectedChain(chainId: number) {
+  if (!isSupportedWalletChain(chainId)) return undefined
+  return getContractAddresses(chainId)
+}
+
 export function useRegistryAddress() {
-  const chainId = useChainId()
-  return getContractAddresses(chainId)?.registry ?? '0x0000000000000000000000000000000000000000' as `0x${string}`
+  const chainId = useConnectedChainId()
+  return addressesForConnectedChain(chainId)?.registry ?? zeroAddress
 }
 
 export function useFactoryAddress() {
-  const chainId = useChainId()
-  return getContractAddresses(chainId)?.factory ?? '0x0000000000000000000000000000000000000000' as `0x${string}`
+  const chainId = useConnectedChainId()
+  return addressesForConnectedChain(chainId)?.factory ?? zeroAddress
 }
 
 export function useHasValidConfig() {
-  const chainId = useChainId()
+  const chainId = useConnectedChainId()
   return {
     isValid: hasValidAddresses(chainId),
     chainId,
