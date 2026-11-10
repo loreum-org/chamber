@@ -134,8 +134,9 @@ Commit both files. Older Factories stay in the file so their chambers are still 
 Env overrides: `VITE_ARBITRUM_SEPOLIA_FACTORY`, `VITE_OP_SEPOLIA_FACTORY` (and `_CHAMBER_IMPL`,
 `_FACTORY_START_BLOCK`).
 
-The default Factory is Base Sepolia (chain 84532), read from
-**`contracts/deployments/base-sepolia.txt`** (`getContractAddresses(84532)`).
+The default network is Ethereum mainnet (chain 1) when its Factory is set (see below);
+otherwise the app falls back to the first configured testnet. Base Sepolia (chain 84532)
+reads **`contracts/deployments/base-sepolia.txt`** (`getContractAddresses(84532)`).
 Optional env overrides: `VITE_BASE_SEPOLIA_FACTORY`, `VITE_BASE_SEPOLIA_CHAMBER_IMPL`.
 
 Ethereum Sepolia Factory, Registry, Chamber implementation, and demo ERC-20 / membership ERC-721
