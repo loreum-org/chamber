@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { useChainId } from 'wagmi'
 import { requireIndexerBlock } from '@/lib/indexer'
+import { queryKeyIncludes } from '@/lib/queryKeyMatch'
 
 /**
  * Invalidate every cached read that mentions this chamber. Called after a wallet
@@ -18,14 +19,7 @@ export function invalidateChamberQueries(
   const chamberAddrLower = chamberAddress.toLowerCase()
 
   queryClient.invalidateQueries({
-    predicate: (query) => {
-      try {
-        const keyStr = JSON.stringify(query.queryKey).toLowerCase()
-        return keyStr.includes(chamberAddrLower)
-      } catch {
-        return false
-      }
-    },
+    predicate: (query) => queryKeyIncludes(query.queryKey, chamberAddrLower),
   })
 }
 
@@ -50,5 +44,12 @@ export function useInvalidateOnReceipt(
     if (chamberAddress) requireIndexerBlock(chamberAddress, receipt.blockNumber, chainId)
     invalidateChamberQueries(queryClient, chamberAddress)
     invalidateChamberQueries(queryClient, account)
+    // Public RPCs can lag the receipt. A second invalidate catches a stale first read.
+    // No cleanup: delegate/undelegate unmount when the user leaves that tab, and the
+    // retry must still run so the Board tab sees the confirmed ranking.
+    window.setTimeout(() => {
+      invalidateChamberQueries(queryClient, chamberAddress)
+      invalidateChamberQueries(queryClient, account)
+    }, 2000)
   }, [hash, receipt, chamberAddress, account, chainId, queryClient])
 }
