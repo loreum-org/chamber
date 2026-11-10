@@ -28,7 +28,7 @@ const Reveal = ({
     whileInView={{ opacity: 1, y: 0 }}
     viewport={{ once: true, margin: '-60px' }}
     transition={{ duration: 0.6, delay, ease: 'easeOut' }}
-    className={className}
+    className={`min-w-0 ${className}`}
   >
     {children}
   </motion.div>
@@ -98,10 +98,10 @@ function BoardPreview() {
 
   return (
     <div className="surface p-0 overflow-hidden text-left shadow-[0_30px_80px_-40px_rgba(0,0,0,0.8)]">
-      <div className="px-5 py-4 border-b border-line flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-slate-100">Example chamber</span>
+      <div className="px-4 py-4 sm:px-5 border-b border-line flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+        <div>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="font-semibold text-slate-100 whitespace-nowrap">Example chamber</span>
             <span className="chip chip-accent">eqLORE</span>
           </div>
           <p className="text-xs text-slate-500 mt-0.5 tabular-nums">
@@ -123,7 +123,7 @@ function BoardPreview() {
                 key={s.id}
                 layout
                 transition={{ type: 'spring', stiffness: 260, damping: 30 }}
-                className={`px-5 py-2.5 flex items-center gap-3 ${
+                className={`px-4 py-2.5 sm:px-5 flex flex-wrap items-center gap-x-2 gap-y-1 sm:gap-3 ${
                   i === SEATS ? 'border-t border-dashed border-line-strong mt-1 pt-3' : ''
                 }`}
               >
@@ -132,10 +132,10 @@ function BoardPreview() {
                 >
                   {i + 1}
                 </span>
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 basis-[11rem] min-w-0">
                   <div className="flex items-center justify-between gap-3">
                     <span className={`text-sm flex items-center min-w-0 ${seated ? 'text-slate-100' : 'text-slate-500'}`}>
-                      <span className="truncate">{s.name}</span>
+                      <span className="truncate min-w-0">{s.name}</span>
                       <span className="text-slate-500 mono text-xs ml-2 shrink-0">{s.token}</span>
                       {s.kind === 'agent' && (
                         <span className="chip chip-accent ml-2 shrink-0">Agent</span>
@@ -151,7 +151,7 @@ function BoardPreview() {
                     />
                   </div>
                 </div>
-                <span className={`chip ${seated ? 'chip-ok' : ''} w-[74px] justify-center`}>
+                <span className={`chip ${seated ? 'chip-ok' : ''} w-[74px] justify-center shrink-0`}>
                   {seated ? 'Seated' : 'Next'}
                 </span>
               </motion.li>
@@ -160,7 +160,7 @@ function BoardPreview() {
         </ol>
       </LayoutGroup>
 
-      <div className="border-t border-line px-5 py-3 text-xs text-slate-500 flex items-center justify-between gap-3">
+      <div className="border-t border-line px-5 py-3 text-xs text-slate-500 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
         <span>Delegation re-sorts the board.</span>
         <span className="tabular-nums">seat changes take effect after 1 block</span>
       </div>
@@ -205,7 +205,7 @@ const QUEUE = [
 function QueuePreview() {
   return (
     <div className="surface overflow-hidden">
-      <div className="px-5 py-4 border-b border-line flex items-center justify-between">
+      <div className="px-5 py-4 border-b border-line flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
         <span className="font-semibold text-slate-100">Proposals</span>
         <span className="text-xs text-slate-500">1 needs you · 1 ready · 1 waiting</span>
       </div>
@@ -428,7 +428,7 @@ function App() {
             ].map((c, i) => (
               <Reveal key={c.t} delay={i * 0.08}>
                 <div className="surface overflow-hidden h-full">
-                  <div className="aspect-[2/1] border-b border-line">
+                  <div className="relative aspect-[2/1] w-full min-w-0 overflow-hidden border-b border-line">
                     <TapestryArt art={c.art} />
                   </div>
                   <div className="p-6">
@@ -453,8 +453,8 @@ function App() {
           <ol className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {STEPS.map((s, i) => (
               <Reveal key={s.n} delay={i * 0.08}>
-                <li className="surface overflow-hidden h-full flex flex-col">
-                  <div className="aspect-[2/1] border-b border-line">
+                <li className="surface overflow-hidden h-full flex flex-col min-w-0">
+                  <div className="relative aspect-[2/1] w-full min-w-0 overflow-hidden border-b border-line">
                     <TapestryArt art={s.art} />
                   </div>
                   <div className="p-6 flex-1 flex flex-col">
@@ -471,9 +471,9 @@ function App() {
           <Reveal delay={0.1} className="mt-6">
             <dl className="surface grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-line">
               {RULES.map((r) => (
-                <div key={r.k} className="px-6 py-5">
+                <div key={r.k} className="min-w-0 px-6 py-5">
                   <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">{r.k}</dt>
-                  <dd className="mt-1.5 text-xl font-light text-slate-100 tabular-nums">{r.v}</dd>
+                  <dd className="mt-1.5 text-xl font-light text-slate-100 tabular-nums break-words">{r.v}</dd>
                   <dd className="text-xs text-slate-500 mt-0.5">{r.s}</dd>
                 </div>
               ))}
@@ -538,7 +538,7 @@ function App() {
             </div>
             <ul className="divide-y divide-line">
               {COMPARE.map((row) => (
-                <li key={row.q} className="grid gap-2 md:gap-6 md:grid-cols-[1.1fr_1fr_1fr] px-6 py-5">
+                <li key={row.q} className="grid min-w-0 gap-2 md:gap-6 md:grid-cols-[1.1fr_1fr_1fr] px-6 py-5">
                   <p className="text-slate-100 font-medium">{row.q}</p>
                   <p className="text-sm text-slate-500">
                     <span className="md:hidden text-[11px] uppercase tracking-[0.12em] mr-2">Safe / Aragon</span>
@@ -576,11 +576,11 @@ function App() {
           <ul className="grid gap-3">
             {TESTS.map((t, i) => (
               <Reveal key={t.title} delay={i * 0.08}>
-                <li className="surface overflow-hidden flex flex-col sm:flex-row">
-                  <div className="aspect-[2/1] sm:aspect-auto sm:w-40 shrink-0 border-b sm:border-b-0 sm:border-r border-line">
+                <li className="surface overflow-hidden flex flex-col sm:flex-row min-w-0">
+                  <div className="relative aspect-[2/1] w-full min-w-0 overflow-hidden sm:aspect-auto sm:h-auto sm:w-40 sm:shrink-0 sm:self-stretch border-b sm:border-b-0 sm:border-r border-line">
                     <TapestryArt art={t.art} />
                   </div>
-                  <div className="p-5">
+                  <div className="p-5 min-w-0">
                     <p className="text-slate-100 font-medium">{t.title}</p>
                     <p className="text-sm text-slate-400 mt-1 leading-relaxed">{t.body}</p>
                   </div>

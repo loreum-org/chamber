@@ -40,6 +40,7 @@
 @layer base {
   html {
     overflow-x: hidden;
+    max-width: 100%;
     color-scheme: dark;
     scroll-behavior: smooth;
   }
@@ -63,6 +64,7 @@
     background-image: radial-gradient(ellipse 120% 60% at 50% -20%, rgba(74, 47, 143, 0.16), transparent 55%);
     background-attachment: fixed;
     overflow-x: hidden;
+    max-width: 100%;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -94,6 +96,34 @@
 @layer components {
   .container-x {
     @apply max-w-6xl mx-auto px-5 sm:px-8 w-full min-w-0;
+  }
+
+  /*
+   * Grid items default to min-width: auto, which is the min-content size.
+   * On iOS that is a tapestry JPEG's intrinsic width (1000px), so the column
+   * grows past the viewport and the card is clipped on the right. Zero the
+   * minimum so the column stays inside the padded container.
+   */
+  .container-x.grid,
+  .container-x .grid {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .container-x.grid > *,
+  .container-x .grid > * {
+    min-width: 0;
+  }
+
+  /* Fill the aspect frame. max-width: none beats the preflight img cap so
+     object-fit can cover the frame instead of letterboxing at intrinsic size. */
+  .tapestry-art {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    object-fit: cover;
   }
 
   .eyebrow {
