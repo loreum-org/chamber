@@ -13,18 +13,15 @@ import type { Address } from 'viem'
 import { isNonZeroAddress } from '@/lib/address'
 import { chainIdsToQuery } from '@/lib/supportedChain'
 
-/** Historical indexer default (Base Sepolia). Ignored unless that id is in `SUPPORTED_WALLET_CHAIN_IDS`. */
-export const DEFAULT_INDEXER_CHAIN_ID = 84532
-
 /**
  * Ponder network names in `indexer/ponder.config.ts` (`_meta.status` keys).
  * `chainId` on the status row wins when Ponder includes it.
  */
 const INDEXER_NETWORK_BY_CHAIN_ID: Record<number, string> = {
-  84532: 'baseSepolia',
   421614: 'arbitrumSepolia',
   11155420: 'opSepolia',
   11155111: 'sepolia',
+  1: 'mainnet',
 }
 
 const MY_CHAMBERS_QUERY = /* GraphQL */ `
@@ -76,7 +73,7 @@ export function parsePositiveChainId(raw: string | undefined): number | undefine
   return parsed
 }
 
-/** `VITE_INDEXER_CHAIN_IDS` wins. A single `VITE_INDEXER_CHAIN_ID` is the fallback. */
+/** `VITE_INDEXER_CHAIN_IDS` wins. A single `VITE_INDEXER_CHAIN_ID` is the fallback. Neither set: no chains. */
 export function parseIndexerChainIds(list: string | undefined, single: string | undefined): number[] {
   if (typeof list === 'string' && list.trim() !== '') {
     const ids: number[] = []
@@ -88,7 +85,7 @@ export function parseIndexerChainIds(list: string | undefined, single: string | 
   }
   const one = parsePositiveChainId(single)
   if (one !== undefined) return [one]
-  return [DEFAULT_INDEXER_CHAIN_ID]
+  return []
 }
 
 export function getIndexerChainIds(): number[] {

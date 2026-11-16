@@ -12,13 +12,13 @@ import {
   loadIndexedChains,
   registrySource,
   rpcUrlFor,
-} from "./baseSepoliaDeployment.mjs";
+} from "./deployments.mjs";
 
 /**
  * One Ponder process for every testnet that has a Factory in
  * `contracts/deployments/<network>.txt` (staged copy: `indexer/.deployment/`).
  *
- * Chain table: 84532 base-sepolia, 421614 arbitrum-sepolia, 11155420 op-sepolia,
+ * Chain table: 421614 arbitrum-sepolia, 11155420 op-sepolia,
  * 11155111 sepolia, 1 mainnet. Sepolia is included only after a Factory other
  * than the Aug 26 pre-1.3.0 Factory is recorded. Files that say
  * "Not deployed yet" are skipped.

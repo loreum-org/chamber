@@ -15,7 +15,7 @@ import {
   resolveDeploymentPath,
   resolveIndexedChains,
   rpcUrlFor,
-} from "../baseSepoliaDeployment.mjs";
+} from "../deployments.mjs";
 
 const FACTORY = "0x9bd245B992f0ba869D208bdABecB608080984701";
 const OTHER = "0x1111111111111111111111111111111111111111";
@@ -90,12 +90,12 @@ test("same Factory address on two chains is two primary keys", () => {
   const text = `Factory ${FACTORY}\nFactory start block 10\n`;
   const chains = resolveIndexedChains(
     INDEXED_CHAIN_TABLE,
-    (network) => (network === "base-sepolia" || network === "op-sepolia" ? text : "Not deployed yet\n"),
+    (network) => (network === "arbitrum-sepolia" || network === "op-sepolia" ? text : "Not deployed yet\n"),
     {},
   );
   assert.deepEqual(
     chains.map((chain) => chain.chainId),
-    [84532, 11155420],
+    [421614, 11155420],
   );
   assert.equal(chains[0].factory.toLowerCase(), chains[1].factory.toLowerCase());
   const left = chainPrimaryKey(chains[0].chainId, chains[0].factoryKey);
@@ -107,19 +107,19 @@ test("same Factory address on two chains is two primary keys", () => {
 
 test("undeployed chains are omitted and a per-chain override adds one", () => {
   const text = (network) =>
-    network === "base-sepolia"
+    network === "arbitrum-sepolia"
       ? `Factory ${FACTORY}\nFactory start block 48743114\n`
       : "Not deployed yet\n";
   const skipped = resolveIndexedChains(INDEXED_CHAIN_TABLE, text, {});
-  assert.deepEqual(skipped.map((chain) => chain.chainId), [84532]);
+  assert.deepEqual(skipped.map((chain) => chain.chainId), [421614]);
 
-  const withArb = resolveIndexedChains(INDEXED_CHAIN_TABLE, text, {
-    PONDER_FACTORY_ADDRESS_421614: OTHER,
-    PONDER_FACTORY_START_BLOCK_421614: "80",
+  const withOp = resolveIndexedChains(INDEXED_CHAIN_TABLE, text, {
+    PONDER_FACTORY_ADDRESS_11155420: OTHER,
+    PONDER_FACTORY_START_BLOCK_11155420: "80",
   });
-  assert.deepEqual(withArb.map((chain) => chain.chainId), [84532, 421614]);
-  assert.equal(withArb[1].factory, OTHER);
-  assert.equal(withArb[1].factoryStartBlock, 80);
+  assert.deepEqual(withOp.map((chain) => chain.chainId), [421614, 11155420]);
+  assert.equal(withOp[1].factory, OTHER);
+  assert.equal(withOp[1].factoryStartBlock, 80);
 });
 
 test("a partial Factory override fails instead of skipping the chain", () => {
@@ -138,7 +138,7 @@ test("Registry placeholder is used only when the file has no Registry", () => {
   const bare = resolveIndexedChains(
     INDEXED_CHAIN_TABLE,
     (network) =>
-      network === "base-sepolia"
+      network === "arbitrum-sepolia"
         ? `Factory ${FACTORY}\nFactory start block 1\n`
         : null,
     {},
@@ -149,7 +149,7 @@ test("Registry placeholder is used only when the file has no Registry", () => {
   const withRegistry = resolveIndexedChains(
     INDEXED_CHAIN_TABLE,
     (network) =>
-      network === "base-sepolia"
+      network === "arbitrum-sepolia"
         ? `Factory ${FACTORY}\nFactory start block 1\nRegistry (proxy) 0x3333333333333333333333333333333333333333\n`
         : null,
     {},
@@ -165,30 +165,36 @@ test("rpc is required for indexed chains and unused for skipped ones", () => {
   const chains = resolveIndexedChains(
     INDEXED_CHAIN_TABLE,
     (network) =>
-      network === "base-sepolia"
+      network === "arbitrum-sepolia"
         ? `Factory ${FACTORY}\nFactory start block 1\n`
         : "Not deployed yet\n",
     {},
   );
-  assert.throws(() => rpcUrlFor(chains[0], {}), /PONDER_RPC_URL_84532/);
+  assert.throws(() => rpcUrlFor(chains[0], {}), /PONDER_RPC_URL_421614/);
   assert.equal(
-    rpcUrlFor(chains[0], { PONDER_RPC_URL_84532: " https://example.invalid/base " }),
-    "https://example.invalid/base",
+    rpcUrlFor(chains[0], { PONDER_RPC_URL_421614: " https://example.invalid/arb " }),
+    "https://example.invalid/arb",
   );
-  assert.equal(chains.some((chain) => chain.chainId === 421614), false);
+  assert.equal(chains.some((chain) => chain.chainId === 11155420), false);
 });
 
 test("no indexed chains is an error", () => {
   assert.throws(() => assertIndexedChains([]), /No testnet Factory/);
 });
 
-test("live deployment files index Base Sepolia, Ethereum Sepolia, and mainnet", () => {
+test("Base Sepolia is not indexed", () => {
+  assert.equal(INDEXED_CHAIN_TABLE.some((chain) => chain.chainId === 84532), false);
+  const chains = resolveIndexedChains(
+    INDEXED_CHAIN_TABLE,
+    () => `Factory ${FACTORY}\nFactory start block 1\n`,
+    { PONDER_FACTORY_ADDRESS_84532: OTHER, PONDER_FACTORY_START_BLOCK_84532: "1" },
+  );
+  assert.equal(chains.some((chain) => chain.chainId === 84532), false);
+});
+
+test("live deployment files index Ethereum Sepolia and mainnet", () => {
   const chains = loadIndexedChains({});
-  const base = chains.find((chain) => chain.chainId === 84532);
-  assert.ok(base);
-  assert.match(base.factory, /^0x[a-fA-F0-9]{40}$/);
-  assert.equal(base.factoryStartBlock > 0, true);
-  assert.equal(registrySource(base).placeholder, true);
+  assert.equal(chains.some((chain) => chain.chainId === 84532), false);
 
   const sepolia = chains.find((chain) => chain.chainId === 11155111);
   assert.ok(sepolia);

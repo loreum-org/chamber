@@ -19,7 +19,6 @@ export const stagedDeploymentsDir = join(packageRoot, ".deployment");
  * override) has a Factory and a Factory start block.
  */
 export const INDEXED_CHAIN_TABLE = [
-  { chainId: 84532, network: "base-sepolia", name: "baseSepolia" },
   { chainId: 421614, network: "arbitrum-sepolia", name: "arbitrumSepolia" },
   { chainId: 11155420, network: "op-sepolia", name: "opSepolia" },
   { chainId: 11155111, network: "sepolia", name: "sepolia" },
