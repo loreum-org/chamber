@@ -1,7 +1,7 @@
 # Chamber state queries (Ponder 0.8: limit / items, not first / skip).
 # Ids are lowercase hex. Every row is scoped by chainId (CREATE2 addresses
 # repeat across chains). Select `_meta { status }` and read the network that
-# matches the chain (baseSepolia, arbitrumSepolia, opSepolia, sepolia).
+# matches the chain (arbitrumSepolia, opSepolia, sepolia, mainnet).
 
 query ChamberState($chainId: Int!, $chamber: String!) {
   chamber(chainId: $chainId, id: $chamber) {

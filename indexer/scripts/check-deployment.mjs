@@ -8,14 +8,9 @@ import {
   ignoreFactoriesFor,
   loadIndexedChains,
   parseDeployment,
-} from "../baseSepoliaDeployment.mjs";
+} from "../deployments.mjs";
 
 const chains = loadIndexedChains({});
-assert.equal(
-  chains.some((chain) => chain.chainId === 84532),
-  true,
-  "base-sepolia Factory should be indexed",
-);
 assert.equal(
   chains.some((chain) => chain.chainId === 11155111),
   true,

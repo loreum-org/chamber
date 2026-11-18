@@ -5,7 +5,7 @@ import {
   INDEXED_CHAIN_TABLE,
   deploymentsDir,
   stagedDeploymentsDir,
-} from "../baseSepoliaDeployment.mjs";
+} from "../deployments.mjs";
 
 if (existsSync(deploymentsDir)) {
   const names = readdirSync(deploymentsDir).filter((name) => name.endsWith(".txt"));

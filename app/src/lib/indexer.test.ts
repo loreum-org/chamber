@@ -26,8 +26,8 @@ afterEach(() => {
 })
 
 describe('parseIndexerChainIds', () => {
-  it('defaults to Base Sepolia', () => {
-    expect(parseIndexerChainIds(undefined, undefined)).toEqual([84532])
+  it('defaults to no chains', () => {
+    expect(parseIndexerChainIds(undefined, undefined)).toEqual([])
   })
 
   it('reads a comma-separated list and ignores junk', () => {
@@ -67,10 +67,10 @@ describe('parseIndexerHead', () => {
 
   it('reads the network for the requested chain', () => {
     const status = {
-      baseSepolia: { ready: true, block: { number: 10, timestamp: 1 } },
-      arbitrumSepolia: { ready: true, block: { number: 20, timestamp: 2 } },
+      sepolia: { ready: true, block: { number: 10, timestamp: 1 } },
+      mainnet: { ready: true, block: { number: 20, timestamp: 2 } },
     }
-    expect(parseIndexerHead(status, 421614)).toEqual({
+    expect(parseIndexerHead(status, 1)).toEqual({
       number: 20n,
       timestamp: 2n,
       ready: true,
@@ -106,7 +106,7 @@ describe('indexerRequest freshness gate', () => {
   })
 
   it('does not gate the same address on another chain', async () => {
-    requireIndexerBlock(chamber, 500n, 84532)
+    requireIndexerBlock(chamber, 500n, 11155111)
     vi.stubGlobal(
       'fetch',
       vi.fn(async () =>
@@ -115,8 +115,8 @@ describe('indexerRequest freshness gate', () => {
             data: {
               _meta: {
                 status: {
-                  baseSepolia: { ready: true, block: { number: 1, timestamp: 1 } },
-                  arbitrumSepolia: { ready: true, block: { number: 20, timestamp: 2 } },
+                  sepolia: { ready: true, block: { number: 1, timestamp: 1 } },
+                  mainnet: { ready: true, block: { number: 20, timestamp: 2 } },
                 },
               },
             },
@@ -127,14 +127,14 @@ describe('indexerRequest freshness gate', () => {
     const { head } = await indexerRequest('{ _meta { status } }', {}, {
       url: 'http://indexer.test',
       chamber,
-      chainId: 421614,
+      chainId: 1,
     })
     expect(head?.number).toBe(20n)
     await expect(
       indexerRequest('{ _meta { status } }', {}, {
         url: 'http://indexer.test',
         chamber,
-        chainId: 84532,
+        chainId: 11155111,
       }),
     ).rejects.toBeInstanceOf(IndexerBehindError)
   })
@@ -147,13 +147,13 @@ describe('indexerRequest freshness gate', () => {
     await fetchIndexerMyChambers(
       'http://indexer.test',
       '0x0000000000000000000000000000000000000001',
-      84532,
+      11155111,
     )
     const call = fetchMock.mock.calls[0] as unknown as [string, { body: string }] | undefined
     const body = JSON.parse(call?.[1].body ?? '{}')
     expect(body.variables).toEqual({
       account: '0x0000000000000000000000000000000000000001',
-      chainId: 84532,
+      chainId: 11155111,
     })
     expect(body.query).toContain('chainId: $chainId')
   })
